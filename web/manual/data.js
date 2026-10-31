@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.12", items: [
+    ["Beta de la radio: MENU › SYSTEM › BLUETOOTH (apagado por defecto). Con la música parada, ON calibra la radio y el FM-1 aparece como 'JIANT FM-1' en Bluetooth MIDI. Todavía sin MIDI: es la prueba de la radio.", "Radio beta: MENU › SYSTEM › BLUETOOTH (off by default). With the music stopped, ON calibrates the radio and the FM-1 shows up as 'JIANT FM-1' over Bluetooth MIDI. No MIDI through it yet: this tests the radio."]]},
   {v: "V10.11", items: [
     ["Alimentación como el firmware de fábrica (el conversor DC-DC encendido), requisito de la radio Bluetooth; MENU › ABOUT muestra DC. La radio sigue apagada.", "Power supplies set up as the stock firmware does (the DC-DC on), the Bluetooth radio's prerequisite; MENU › ABOUT shows DC. The radio stays off."]]},
   {v: "V10.10", items: [
