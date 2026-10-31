@@ -8506,15 +8506,32 @@ static int test_project_page(void)
     ok &= song.g[G_SLOT] == 3;
     turn(EN_K1, 1); frame();
     ok &= song.g[G_SLOT] == 4 && song_cur == 1;
-    turn(EN_K2, 1); frame();                            /* (KNOB 2: the section's name, shown) */
-    ok &= song.g[G_SLOT] == 4 && song_cur == 1;
+    turn(EN_K2, 1); frame();                            /* (V10.17 KNOB 2: ERASE picked, nothing else) */
+    ok &= song.g[G_SLOT] == 4 && song_cur == 1 && ui.act == 2u;
+    turn(EN_K2, -1); frame();
+    ok &= ui.act == 0u;
     turn(EN_K1, -1); frame();
     ok &= song.g[G_SLOT] == 3;
-    bad += check("  LIBRARY's KNOB 2, SECTIONS' KNOB 1: the section (C); SECTIONS' KNOB 2 nothing (0.9.2: PRESETS a sound)", ok);
+    bad += check("  LIBRARY's KNOB 2, SECTIONS' KNOB 1: the section (C); SECTIONS' KNOB 2 ERASE (V10.17)", ok);
     turn(EN_K4, 1); press(B_OCTUP); frame();            /* SAVE into project 2's C: the NAME screen, then OK */
     for (k = 0; k < 8u && name_on(); k++) { press(B_OCTUP); frame(); }
     ok = project_used(2) && live.cur == 2;
     bad += check("  SAVE: the music into project 2's section C (the music's section: NOW)", ok);
+    transport_req = 1; frame();                         /* (V10.17) ERASE: playing, refused */
+    turn(EN_K2, 1); press(B_OCTUP); frame();
+    ok = !ui.confirm && project_used(2) && msg_is("STOP TO ERASE");
+    transport_req = 2; frame();
+    turn(EN_K2, 1); press(B_OCTUP); frame();            /* stopped: the dialog, OCT- cancels */
+    ok &= ui.confirm == CF_ERASE_SECT;
+    press(B_OCTDN); frame();
+    ok &= !ui.confirm && project_used(2);
+    turn(EN_K2, 1); press(B_OCTUP); frame(); press(B_OCTUP); frame();   /* .. OCT+ erases it */
+    ok &= !ui.confirm && !project_used(2) && live.cur < 0 && msg_is("ERASED SECT C") && trk[0].step[0].note[0] == 80;
+    turn(EN_K2, 1); press(B_OCTUP); frame();            /* (empty now: no dialog) */
+    ok &= !ui.confirm;
+    bad += check("V10.17 SECTIONS KNOB 2 ERASE: the dialog (ERASE SECT C?), then EMPTY; the music stays; not playing", ok);
+    turn(EN_K4, 1); press(B_OCTUP); frame();            /* (stored again for what follows) */
+    for (k = 0; k < 8u && name_on(); k++) { press(B_OCTUP); frame(); }
     turn(EN_SELECT, 1); frame();                        /* (V10.1: back to PROJECTS, the next page: KNOB 1 the project) */
     turn(EN_K1, -1); frame();
     ok = song_cur == 0 && (!FELUCCA_FLASH || project_used(0)) && !project_used(2) && chain_config.count == 2 &&

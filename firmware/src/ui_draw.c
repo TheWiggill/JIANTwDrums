@@ -1623,12 +1623,9 @@ static void draw_columns(void)
         uint32_t k = (uint32_t)song.g[G_SLOT] - 1u;
         int used = graph_project_used(k);
         if (save_level() == SV_PROJ) {                   /* (0.8.5) SAVE > PROJECT's SECTIONS: SECT, its NAME */
-            const char *nm;
             val[0] = (char)('A' + (k & 3u)); val[1] = 0;
             hot_gauge_column(0, "SECT", val, (int32_t)(k & 3u) * 1000 / 3);
-            nm = used ? graph_project_name(k) : "";
-            card_free_next = 1;
-            text_column(1, "NAME", !used ? "--" : nm[0] ? nm : "USED", used ? T_THEME : T_DIM);
+            draw_act_column(1, "ERASE", used ? T_THEME : T_DIM, ICON_AUTO);   /* (V10.17; the name: the card) */
         } else {
             fmt_int(val, (int32_t)song_cur + 1);
             hot_gauge_column(0, "PROJECT", val, (int32_t)song_cur * 1000 / (int32_t)(NSONG - 1u));
@@ -2160,6 +2157,12 @@ static void confirm_text(char *a, char *b)
         up_slot_label(a + str_len(a), k);
         str_cpy(a + str_len(a), "?", 2);
         up_name(k, b);                               /* the sound stored there */
+        break;
+    case CF_ERASE_SECT:                              /* (V10.17) SAVE > SECTIONS > ERASE */
+        str_cpy(a, "ERASE SECT A?", 24);
+        a[11] = (char)('A' + (k & 3u));
+        str_cpy(b, graph_project_used(k & 3u) && graph_project_name(k & 3u)[0] ? graph_project_name(k & 3u) :
+                   "THE SLOT GOES EMPTY", 24);
         break;
     case CF_ERASE_USER:
         str_cpy(a, "ERASE ", 24);

@@ -2090,6 +2090,30 @@ static void persist_boot(void)                    /* before settings_init / pane
 
 static int project_used(uint32_t slot) { return proj_import(&proj_scratch, &proj_slot[slot & 3u], sizeof(project_store_t)); }
 
+/* (V10.17) SAVE > SECTIONS > ERASE: section slot of the open project (song) empty again, in RAM and in flash (both
+ * copies' sectors erased: EMPTY, and the LIBRARY's chip dark); the music playing stays as it is. Stopped only (a flash
+ * erase). 0 done */
+static int project_erase(uint32_t slot)
+{
+    char b[8] = "SECT A";
+    slot &= 3u;
+    b[5] = (char)('A' + slot);
+    if (transport_busy()) { ui_message("STOP TO ERASE"); return 1; }
+    memset(&proj_slot[slot], 0, sizeof proj_slot[slot]);
+    live.dirty &= (uint8_t)~(1u << slot);               /* (nothing left to write) */
+    if (live.cur == (int8_t)slot) live.cur = -1;
+    proj_wire_gen++;                                    /* (the LIBRARY's picture again) */
+#if FELUCCA_FLASH
+    if (flash_ok && (st_erase(st_sector(proj_obj(slot), 0)) || st_erase(st_sector(proj_obj(slot), 1)))) {
+        ui_message("ERASE ERROR");
+        return 2;
+    }
+#endif
+    ui_say("ERASED ", b);
+    ui.force = 1;
+    return 0;
+}
+
 /* (0.8.5) SAVE > LIBRARY: project n's sections stored (a bit each) and its section A's name (b, PROJ_NAME_LEN + 1),
  * from the flash: the newer valid header of each section's two copies, and the name's 12 bytes of section A's
  * payload (today's 3840-byte store; an older one: no name). No payload read, no CRC: a picture, not a load (reads of a
