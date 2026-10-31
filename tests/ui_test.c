@@ -2828,6 +2828,26 @@ static int test_menu_tabs(void)
         menu_close();
         memset(&favorites.factory[6][22], 0, 10);
         memset(&bp, 0, sizeof bp);
+        {   /* (V10.18) the reading that moves is found: word 2's high byte here, the others still; the points lock it */
+            uint16_t q[64];
+            uint32_t j, ok2;
+            memset(&bp, 0, sizeof bp);
+            for (j = 0; j < 16u; j++) {
+                q[4u * j] = 0x2020; q[4u * j + 1u] = 0x1111;
+                q[4u * j + 2u] = (uint16_t)(((j < 8u ? 40u : 200u) << 8) | 0x55u); q[4u * j + 3u] = 0;
+            }
+            bt_prox_feed(q, 16, 1, t += 100u);
+            ok2 = bp.src == 8u && bp.have && bp.raw == q[60u + 2u];
+            ok2 &= (bp.lvl >> 8) > 80 && (bp.lvl >> 8) <= 100;   /* (200 / 2) */
+            bp.lock = 1;
+            for (j = 0; j < 16u; j++) q[4u * j] = (uint16_t)(j & 1u ? 0x3F3F : 0);   /* (word 0 swings wider: kept) */
+            bt_prox_feed(q, 16, 1, t += 100u);
+            ok2 &= bp.src == 8u;
+            bt_prox_feed(q, 0, 0, t += 100u);              /* (the link gone: its ranges forgotten) */
+            ok2 &= !bp.seen;
+            bad += check("V10.18 PROX: the RSSI reading that follows the distance is found (12 readings), kept once a point is stored", ok2);
+            memset(&bp, 0, sizeof bp);
+        }
         bt_up = 0;
         mod_prox = 0;
 #undef LV

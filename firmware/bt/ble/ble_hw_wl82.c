@@ -945,7 +945,7 @@ static void hw_rx_service(void)
 #ifdef BLE_HW_RX_RSSI
         if ((st & 0xFu) == 1u)                             /* (JIANT V10.14) a good packet's RSSI word (HW §3 0x138:
                                                             * RSSI2 / RSSI3 by the buffer, unverified) */
-            BLE_HW_RX_RSSI(CB->rssi[2u + b]);
+            BLE_HW_RX_RSSI(CB->rssi, b);                   /* (V10.18: the four words, the app finds the one that moves) */
 #endif
         if (!hwd.first_rx) {                               /* (diagnostics) the first packet of this connection */
             hwd.first_rx = 1;

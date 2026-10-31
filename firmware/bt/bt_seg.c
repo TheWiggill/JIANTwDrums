@@ -43,15 +43,21 @@
 #include "fm1_guard.h"
 /* (V10.14) PROX: the RSSI word of every good packet on the link (ble_hw_wl82.c hw_rx_service, the RX interrupt: one a
  * connection event, 89..133 a second), kept in a ring the app reads (bt_seg_rssi; src/bt.c filters it) */
-static volatile uint16_t bs_rq[16];
+static volatile uint16_t bs_rq[16][4];
 static volatile uint32_t bs_rw;
-static void bs_rssi(uint16_t w)
+/* (V10.18) all four RSSI words of the packet (RSSI2 / RSSI3 by the buffer first, as V10.14 read it, then the other, then
+ * RSSI0, RSSI1): which one follows the distance is found by the app (src/bt.c bt_prox_tick) */
+static void bs_rssi(const volatile uint16_t *r, uint32_t b)
 {
-    bs_rq[bs_rw & 15u] = w;
+    volatile uint16_t *q = bs_rq[bs_rw & 15u];
+    q[0] = r[2u + (b & 1u)];
+    q[1] = r[3u - (b & 1u)];
+    q[2] = r[0];
+    q[3] = r[1];
     RING_PUBLISH();
     bs_rw++;
 }
-#define BLE_HW_RX_RSSI(w) bs_rssi(w)
+#define BLE_HW_RX_RSSI(r, b) bs_rssi(r, b)
 #include "ble/ble_stack.c"
 
 /* the segment's header, first in it (app.ld .bt_head): magic, payload length, CRC-32 of the payload (zlib), filled by
@@ -138,15 +144,17 @@ uint32_t bt_seg_status(void)
     return (uint32_t)ble_connected() | (uint32_t)ble_midi_ready() << 1 | (uint32_t)bs_conns << 8;
 }
 
-/* (V10.14) the RSSI words since *rd (the newest 16 at most: a main loop held up by a flash write loses the older) */
+/* (V10.14) the RSSI words since *rd (the newest 16 packets at most: a main loop held up by a flash write loses the
+ * older); (V10.18) four words a packet, w[4 * i .. 4 * i + 3] */
 uint32_t bt_seg_rssi(uint16_t *w, uint32_t *rd)
 {
-    uint32_t e = bs_rw, n = e - *rd, i;
+    uint32_t e = bs_rw, n = e - *rd, i, j;
     RING_PUBLISH();
     if (n > 16u)
         n = 16u;
     for (i = 0; i < n; i++)
-        w[i] = bs_rq[(e - n + i) & 15u];
+        for (j = 0; j < 4u; j++)
+            w[4u * i + j] = bs_rq[(e - n + i) & 15u][j];
     *rd = e;
     return n;
 }

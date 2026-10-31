@@ -1418,7 +1418,7 @@ static void setup(int s)
     case S_MENU_SLIDE: ui.menu = 1; ui.menu_sel = MI_ACCEL; ui_prefs |= PREF_LATCH; break;
     /* (V10.14) BLUETOOTH > PROX: connected, calibrated, a hand half way (the widest numbers); not connected, not
      * calibrated */
-    case S_MENU_PROX: ui.menu = 3; ui.mlv = 1; ui.menu_sel = MI_BT; bp.conn = bp.have = 1; bp.lvl = 125 * 256 + 230; bp.raw = 0xBC3F;
+    case S_MENU_PROX: ui.menu = 3; ui.mlv = 1; ui.menu_sel = MI_BT; bp.conn = bp.have = 1; bp.lvl = 125 * 256 + 230; bp.raw = 0xBC3F; bp.w4[0] = 0xBC3F; bp.w4[1] = 0x8888; bp.w4[2] = 0xFFFF; bp.w4[3] = 0x0A0B; bp.src = 11;
         favorites.factory[6][22] = 252; favorites.factory[6][23] = 188; mod_prox = 23456; break;
     case S_MENU_PROX_OFF: ui.menu = 3; ui.mlv = 1; ui.menu_sel = MI_BT; bp.conn = bp.have = 0; mod_prox = 0;
         favorites.factory[6][22] = favorites.factory[6][23] = 0; break;

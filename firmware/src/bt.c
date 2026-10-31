@@ -152,6 +152,9 @@ static struct {
     int32_t lvl;                                        /* the level, Q8 */
     uint16_t raw;                                       /* the last RSSI word */
     uint8_t win[5], wn, have, conn;                     /* the median's last five (wn 0..9); a level; a central */
+    uint16_t w4[4];                                     /* (V10.18) the packet's four RSSI words, last */
+    uint8_t mn[12], mx[12], src, lock, seen;            /* (V10.18) each reading's range on this link; the one used; kept
+                                                         * (a point stored); a link seen */
 } bp;
 BTAPP_FN static int32_t bt_prox_map(int32_t lvl)
 {
@@ -188,11 +191,51 @@ BTAPP_FN static void bt_prox_step(const uint16_t *w, uint32_t n, uint32_t conn, 
     for (; now - bp.t >= 10u; bp.t += 10u)
         mod_prox = (int16_t)(mod_prox - (mod_prox + 31) / 32);
 }
+/* (V10.18) which reading follows the distance is not known (V10.14 read one word that, on the hardware, did not move):
+ * twelve readings of a packet, each of its four words as V10.14's level ((w & 63) + (w >> 8 & 63)), its low byte / 2, its
+ * high byte / 2; on each link the one whose range grew the widest is used (another must pass it by 6 to take over: no
+ * flicker; the level starts again then), until FAR or NEAR is stored (bp.lock: the points belong to that reading) */
+BTAPP_FN static uint32_t bt_prox_rd(const uint16_t *q, uint32_t c)
+{
+    uint32_t w = q[c / 3u];
+    return c % 3u == 0u ? (w & 63u) + (w >> 8 & 63u) : c % 3u == 1u ? (w & 255u) >> 1 : w >> 9;   /* (0..127) */
+}
+BTAPP_FN static void bt_prox_feed(const uint16_t *w, uint32_t n, uint32_t conn, uint32_t now)   /* n packets of 4 */
+{
+    uint16_t v[16];
+    uint32_t i, c, best;
+    n = n > 16u ? 16u : n;
+    if (!conn)
+        bp.seen = 0;
+    for (i = 0; conn && i < n; i++) {
+        best = bp.src % 12u;
+        for (c = 0; c < 12u; c++) {
+            uint32_t x = bt_prox_rd(&w[4u * i], c);
+            if (!bp.seen || x < bp.mn[c]) bp.mn[c] = (uint8_t)x;
+            if (!bp.seen || x > bp.mx[c]) bp.mx[c] = (uint8_t)x;
+            if (!bp.lock && bp.mx[c] - bp.mn[c] > bp.mx[best] - bp.mn[best] + 6)
+                best = c;
+        }
+        bp.seen = 1;
+        if (best != bp.src) {                           /* (another reading: its own level from here) */
+            bp.src = (uint8_t)best;
+            bp.have = bp.wn = 0;
+        }
+        c = bt_prox_rd(&w[4u * i], bp.src);
+        c = c > 126u ? 126u : c;                        /* (as bt_prox_step reads it: two halves of 0..63) */
+        v[i] = (uint16_t)(c / 2u | (c - c / 2u) << 8);
+        for (c = 0; c < 4u; c++)
+            bp.w4[c] = w[4u * i + c];
+    }
+    bt_prox_step(v, conn ? n : 0u, conn, now);
+    if (n && conn)
+        bp.raw = bp.w4[bp.src / 3u];
+}
 BTAPP_FN static void bt_prox_tick(void)
 {
-    uint16_t w[16];
+    uint16_t w[64];
     uint32_t n = bt_hw_rssi(w, &bp.rd);
-    bt_prox_step(w, n, bt_get() && (bt_hw_status() & 1u), fm1_ms);
+    bt_prox_feed(w, n, bt_get() && (bt_hw_status() & 1u), fm1_ms);
 }
 static uint32_t bt_prox_ok(void) { return bt_up == BT_RUN && bt_get(); }   /* (the PROX page opens: ui_menu.c) */
 static void bt_tick(void)                               /* main loop: the saved ON, once the music is stopped */

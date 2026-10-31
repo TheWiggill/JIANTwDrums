@@ -409,9 +409,18 @@ BTAPP_FN static void bt_prox_panel(const aafont_t *fx, const aafont_t *fm, const
         str_cpy(b + str_len(b), BP_S[10], 10);
         for (k = 0; k < 4u; k++)
             b[str_len(b) + 1u] = 0, b[str_len(b)] = "0123456789ABCDEF"[bp.raw >> (12u - 4u * k) & 15u];
+        b[str_len(b) + 3u] = 0;                         /* (V10.18) the reading used: "R" its word, its kind */
+        k = str_len(b);
+        b[k] = ' '; b[k + 1u] = (char)('0' + bp.src / 3u); b[k + 2u] = "WLH"[bp.src % 3u];
     } else
         str_cpy(b, BP_S[2], sizeof b);
     cv_text(10, 64 - AF_S_CAP_Y, fs, b, T_TEXT);
+    if (bp.conn && bp.have) {                           /* (V10.18) the four words, to read off the screen */
+        for (k = 0; k < 16u; k++)
+            b[k + k / 4u] = "0123456789ABCDEF"[bp.w4[k / 4u] >> (12u - 4u * (k & 3u)) & 15u];
+        b[4] = b[9] = b[14] = ' '; b[19] = 0;
+        cv_text_r(228, 44 - AF_X_CAP_Y, fx, b, T_DIM, T_SURF);
+    }
     if (BT_CAL[0] != BT_CAL[1]) {
         str_cpy(b, BP_S[11], sizeof b);
         fmt_fix(b + str_len(b), BT_CAL[0] * 5, 1);
@@ -434,10 +443,11 @@ BTAPP_FN static void bt_prox_input(uint32_t up, uint32_t dn)
             return;
         }
         BT_CAL[up] = (uint8_t)clamp((bp.lvl + 64) >> 7, 0, 252);
+        bp.lock = 1;                                    /* (V10.18) the reading the points belong to: kept */
         ui_message(BP_S[7u + up]);
     }
 }
-static uint32_t bt_prox_sig(void) { return ui.menu == 3 ? (uint32_t)mod_prox * 31u + bp.raw * 977u + bp.conn * 5u + BT_CAL[0] * 3u + BT_CAL[1] * 7u : 0u; }
+static uint32_t bt_prox_sig(void) { return ui.menu == 3 ? (uint32_t)mod_prox * 31u + bp.raw * 977u + bp.w4[0] * 13u + bp.w4[1] * 17u + bp.w4[2] * 19u + bp.w4[3] * 23u + bp.src * 29u + bp.conn * 5u + BT_CAL[0] * 3u + BT_CAL[1] * 7u : 0u; }
 
 static void confirm_open(uint32_t kind, uint32_t trk);   /* (0.6.58) INIT SYSTEM: ui_input.c */
 static void draw_menu(void)
