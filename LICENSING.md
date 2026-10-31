@@ -19,7 +19,7 @@ Every file in this tree that carries an `SPDX-License-Identifier: GPL-3.0-only` 
   (by JIANT's author, under GPL-3.0-only like the rest of JIANT)
 
 One source file is a port and keeps the licence of its original: `firmware/src/fm6_core.c`
-(msfa, Apache-2.0). The firmware built with it is GPL-3.0-only as a whole. (The PHYS engine, ported
+(msfa, Apache-2.0). The Bluetooth files (below, "Radio") keep their own headers too. The firmware built with it is GPL-3.0-only as a whole. (The PHYS engine, ported
 from DaisySP and Rings, MIT, was removed in FELUCCA TONIC.)
 
 You may use, study, change and share Felucca under the GPL. If you distribute Felucca, or
@@ -51,6 +51,10 @@ All by Hügelton Instruments (Leo Kuroshita), in this tree:
 | The CMU Pronouncing Dictionary (cmudict 0.7b, <https://github.com/cmusphinx/cmudict>) by Carnegie Mellon University: VOICE's English words (JIANT 0.8.5), a subset of ~2100 common words with their pronunciations, packed into the firmware at build time (`tools/gen_lyrics.py`) | BSD-2-Clause | `tools/lyrics/en_dict.txt` (the notice in its header), `LICENSES/BSD-2-Clause-CMUdict.txt` |
 | X0X by charlesvestal (<https://github.com/charlesvestal/fm1-x0x>), a Felucca fork: the design of the browser emulator (the worklet, the device clock driven by its audio, the exports); its files credit it in their headers | GPL-3.0 | `web/emu/` |
 | DotGothic16 font by The DotGothic16 Project Authors (<https://github.com/fontworks-fonts/DotGothic16>): the browser emulator's knob labels, served with its page (cut to printable ASCII; the font declares no Reserved Font Name) | SIL OFL 1.1 | `web/emu/fonts/DotGothic16-subset.woff`, `LICENSES/OFL-DotGothic16.txt` (also `web/emu/fonts/OFL.txt`) |
+| Optimist's Bluetooth LE stack by Henri David (hdavid, <https://github.com/w0ts/optimist>), the hardware-tested copy in fm1-base by Charles Vestal (<https://github.com/charlesvestal/fm1-base>, `bt/ble` at 4039a8b, with its UBSan fix): JIANT's Bluetooth (V10.12), unchanged; used under the GPL-3.0-only option of its dual licence, headers kept | GPL-3.0-only OR MPL-2.0 | `firmware/bt/ble/`, `LICENSES/MPL-2.0.txt` |
+| Melodee by Kerem Kilic (Ellic Studio, <https://github.com/keremimo/melodee>, 1.6.0-rc.7, 022bab7): the radio drivers as Melodee carries them (Optimist's, with Melodee's iterative start-up replay and pool placement), and the model of the integration (the radio started on demand with the audio quiet, IRQ 45 / 29 at priority 2 below the audio, the live calibration's constants); `hal/fm1_power.h` (V10.11) | GPL-3.0-only | `firmware/hal/fm1_ble.h`, `firmware/hal/fm1_ble_rf.h` (JIANT: one include renamed), `firmware/hal/fm1_power.h` |
+| The radio's own calibration, JieLi's (the AC79 SDK's `wl_rf_common.a`) rewritten in C by Charles Vestal for felucca-bsp (<https://github.com/jmarianski/felucca-bsp>, `chip/`, b0b2428) | Apache-2.0 | `firmware/hal/fm1_rf_cal.h`, `LICENSES/Apache-2.0.txt` |
+| The radio's start-up values captured from M-VAVE's V15 (published under Apache-2.0 in fm1_open) and JieLi's SDK, as Optimist and felucca-bsp carry them | Apache-2.0 | `firmware/hal/ble_rf_tables_v15.h`, `LICENSES/Apache-2.0.txt` |
 | JieLi AC79 SDK by JieLi Technology: three of its files go into every `.fwsc` package (below); none are in this tree | Apache-2.0 | `LICENSES/Apache-2.0.txt` |
 
 On the device, HOME held > ABOUT opens the information screen; turning PRESETS scrolls on into
@@ -99,4 +103,9 @@ by those owners.
 
 ## Radio
 
-Felucca never enables the Bluetooth / Wi-Fi radio of the hardware.
+Felucca never enables the Bluetooth / Wi-Fi radio of the hardware. JIANT FM (V10.12) does, only when MENU > SYSTEM >
+BLUETOOTH is ON (the default is OFF): a Bluetooth LE MIDI peripheral on Optimist's own stack, no JieLi library. Its
+code is a segment of its own at flash 0xEA000 (`firmware/bt/`), linked with the app; the package carries it as a third
+entry, `bt.bin`. The stack's files are offered by their author under GPL-3.0-only OR MPL-2.0; JIANT, and every package
+built from it, is GPL-3.0-only as a whole (the Apache-2.0 radio files above are one-way compatible with it, as
+`fm6_core.c`).

@@ -72,10 +72,16 @@ static volatile uint8_t fm1_other_live;      /* core 1 started and not held (hal
 /* Not static: .noinit holds whatever the last run (or power-on) left, and a
  * file-local object would let the compiler assume its zero initial value and
  * fold the magic check away. */
+#ifdef FM1_IRQ_EXTERN                        /* (V10.12) a second unit (firmware/bt/bt_seg.c): the app's record */
+extern fm1_crash_t fm1_crash;
+#else
 fm1_crash_t fm1_crash __attribute__((section(".noinit")));
+#endif
 
 extern const char fm1_fatal_stubs[];
+#ifndef FM1_IRQ_EXTERN
 static void fm1_fault(const fm1_crash_t *c);   /* application: report, then reset */
+#endif
 
 static void fm1_irq_init(void)
 {
@@ -156,6 +162,7 @@ static int fm1_core1_fault_c(const uint32_t *f)   /* 1: core 1's, core 0 resumes
  * f[0..15] r0..r15, f[16] reti, f[17] rete, f[18] retx, f[19] stub+6,
  * f[20] psr, f[21] icfg, f[22] usp, f[23] ssp, f[24] sp, f[25] interrupted rets.
  * Returns only after a fault of the second core, to resume core 0 (0.6.71) */
+#ifndef FM1_IRQ_EXTERN                        /* (V10.12: the app's alone, not the Bluetooth segment's) */
 void fm1_fault_c(uint32_t *f)
 {
     static volatile uint32_t in_fault;
@@ -208,3 +215,4 @@ void fm1_fault_c(uint32_t *f)
     for (;;)
         ;
 }
+#endif

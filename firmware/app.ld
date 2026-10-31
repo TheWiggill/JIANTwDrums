@@ -27,9 +27,17 @@ MEMORY
                                                            * buffers moved to LOWBUF): the delay's, the reverbs' and the
                                                            * chorus's block code in RAM, out of the I-cache the engines share) */
     NOINIT (rw)  : ORIGIN = 0x01C7C000, LENGTH = 0x3D50
+    BTSEG  (rx)  : ORIGIN = 0x020E6000, LENGTH = 0x12000  /* (V10.12) flash 0xEA000..0xFBFFF (hal/fm1_flash.h FL_EXT_*): the
+                                                           * Bluetooth segment, read in place through the plain XIP window */
 }
 SECTIONS
 {
+    /* (V10.12) the Bluetooth segment (firmware/bt/bt_seg.c, its own unit): its header first (bt_seg.c bt_head, filled by
+     * tools/build.py), then its code and constants, outside the app slot; written by the update loader from the
+     * package's bt.bin (firmware/loader/ldr_core.c), checked by the app before any call (src/bt_hw.c). First here so
+     * that no rule below takes its sections; its zeroed RAM goes to the pool (below), its RAM code (.ram_text) with
+     * the app's. No initialised data (tools/build.py) */
+    .bt : { _bt_start = .; KEEP(*(.bt_head)) *bt_seg.o(.text .text.* .rodata .rodata.*) . = ALIGN(4); _bt_end = .; } > BTSEG
     /* (0.9.9-snd3) the code in tools/audio_layout.txt's order, each run of the sound at its recorded address (tools/build.py
      * writes build/layout.ld: the UI cannot move the sound; "cannot move location counter backwards" = the code before a
      * run grew: FELUCCA_REPIN=1), the tables (the sound's first), the merged constants (their small tables, then the
@@ -55,14 +63,17 @@ SECTIONS
     _hot_load = LOADADDR(.hot_text);
     .data : { . = ALIGN(4); _data_start = .; *(.data*) *(.sdata*) . = ALIGN(4); _data_end = .; } > RAM AT > XIP
     _data_load = LOADADDR(.data);
-    .bss (NOLOAD) : { _bss_start = .; *(.bss*) *(.sbss*) *(COMMON) . = ALIGN(4); _bss_end = .; } > RAM
-    .pool (NOLOAD) : { _pool_start = .; *(.pool*) . = ALIGN(4); _pool_end = .; } > POOL
+    /* (V10.12) the Bluetooth segment's RAM in the pool, but its baseband block (ble_hw_wl82.c bb, 1508 B, read and
+     * written by the radio's DMA) here, in the RAM every DMA reaches */
+    .bss (NOLOAD) : { _bss_start = .; *(EXCLUDE_FILE(*bt_seg.o) .bss*) *(EXCLUDE_FILE(*bt_seg.o) .sbss*)
+                      *(EXCLUDE_FILE(*bt_seg.o) COMMON) *bt_seg.o(.bss.bb) . = ALIGN(4); _bss_end = .; } > RAM
+    .pool (NOLOAD) : { _pool_start = .; *(.pool*) *bt_seg.o(.bss* .sbss* COMMON) . = ALIGN(4); _pool_end = .; } > POOL
     /* (JIANT 0.6.71) the second core's stacks (hal/fm1_multicore.h): 6 KiB for the render, 1 KiB for an exception */
     .c1_stacks (NOLOAD) : { . = ALIGN(32); _c1_stack_lo = .; . += 7168; _c1_stack_hi = .; } > POOL
     _c1_ustack_top = _c1_stack_lo + 6144;
     _c1_sstack_top = _c1_stack_hi;
     .lowbuf (NOLOAD) : { _low_start = .; *(.lowbuf*) . = ALIGN(4); _low_end = .; } > LOWBUF
-    .noinit (NOLOAD) : { *(.noinit*) } > NOINIT
+    .noinit (NOLOAD) : { *(.noinit) *(.noinit.*) } > NOINIT   /* (V10.12: .noinit.* after: none of the others moves) */
     _guard0 = 0x01C76000; _ustack_lo = 0x01C76100; _ustack_top = 0x01C7A000;
     _guard1 = 0x01C7A000; _sstack_lo = 0x01C7A100; _sstack_top = 0x01C7C000;
     /DISCARD/ : { *(.comment) *(.note*) }

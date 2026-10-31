@@ -8,7 +8,7 @@
  * value (MI_VALUES: the rows before them hold one). 1.0.5: in four tabs (MI_TAB). */
 enum { MI_COLOR, MI_SKIN, MI_SCOPE, MI_STYLE, MI_LARGE, MI_ANIM, MI_LEDS, MI_SCROFF, MI_HOLD, MI_ACCEL, MI_LATCH, MI_BPMLOCK, MI_SCLLED, MI_MIDIOUT,
        MI_MIDIMAP, MI_LEARN, MI_LOWCUT, MI_USB,
-       MI_CLICK, MI_CLKLVL, MI_COUNTIN, MI_TRACKS, MI_LOAD, MI_SERIAL, MI_RESTORE, MI_CPU, MI_CLOCK, MI_PANEL, MI_INIT, MI_ABOUT, MI_COUNT };   /* (1.1: the
+       MI_CLICK, MI_CLKLVL, MI_COUNTIN, MI_TRACKS, MI_LOAD, MI_SERIAL, MI_RESTORE, MI_CPU, MI_CLOCK, MI_BT, MI_PANEL, MI_INIT, MI_ABOUT, MI_COUNT };   /* (1.1: the
                                                                                              * metronome's rows in AUDIO; 1.2: RESTORE LAST in
                                                                                              * SYSTEM, SCALE LEDS in CONTROL; 0.9.9-stab: CPU
                                                                                              * CLOCK in SYSTEM) */
@@ -17,7 +17,7 @@ static const char *const MI_NAME[MI_COUNT] = {"COLOR", "SKIN", "SCOPE", "STYLE",
                                               "SCALE LEDS", "MIDI OUT", "MIDI MAP", "LEARN",
                                               "SPEAKER EQ", "USB LEVEL", "CLICK", "CLICK LEVEL", "COUNT-IN", "TRACKS", "LOAD",
                                               "USB",
-                                              "RESTORE LAST", "CPU CORES", "CPU CLOCK", "CALIBRATION", "INIT SYSTEM", "ABOUT"};
+                                              "RESTORE LAST", "CPU CORES", "CPU CLOCK", "BLUETOOTH", "CALIBRATION", "INIT SYSTEM", "ABOUT"};
 /* 1.0.5: the MENU's tabs (ui_menu.c: ALGORITHM steps between them, PRESETS among one tab's rows; the editor gets a
  * row's tab after its MENU_DESC reply). A tab's rows follow each other in MI order (tests/ui_test.c checks it); at
  * most MTAB_ROWS each (the page does not scroll: ui_menu.c fits them). A new row joins a tab here, a new tab is
@@ -41,6 +41,7 @@ static const uint8_t MI_TAB[MI_COUNT] = {
                                                                              * SYSTEM's, whose tile holds seven rows) */
     MTAB_SYSTEM, MTAB_SYSTEM, MTAB_SYSTEM, MTAB_SYSTEM,                     /* USB SERIAL, RESTORE LAST, CPU CORES (p1,
                                                                              * main 0.9.12), CPU CLOCK (0.9.9-stab) */
+    MTAB_SYSTEM,                                                            /* BLUETOOTH (V10.12, bt.c) */
     MTAB_SYSTEM,                                                            /* CALIBRATION */
     MTAB_SYSTEM, MTAB_SYSTEM,                                               /* INIT SYSTEM (0.6.58), ABOUT */
 };
@@ -123,6 +124,7 @@ static const char *const MIDIOUT_N[4] = {"KEYS", "CLOCK", "ALL", "OFF"};
  * core (main.c cpu_clock, hal/fm1_clk320.h: curist's, MIT); from the next power-on (a soft reset keeps the PLL).
  * (p1, main 0.9.12) CPU CORES 2 / 1 beside it, the byte (cpu_cfg) and the last crash: cpu_safe.c */
 #include "cpu_safe.c"
+#include "bt.c"                                /* (V10.12) MENU > SYSTEM > BLUETOOTH */
 /* MENU > USB SERIAL (#67). The serial console is a developer tool (README: FELUCCA_CDC). ON (the default) presents it,
  * the descriptors byte for byte as before; OFF re-enumerates as audio + MIDI only, device class 0 (the bytes of a
  * FELUCCA_CDC=0 build): macOS 13-15 then attach their USB audio driver (with the console Apple's CDC composite driver
@@ -184,6 +186,7 @@ static uint32_t menu_get(uint32_t row)
     case MI_LEARN: return ml.on & 3u;
     case MI_CPU: return cpu_get(0);
     case MI_CLOCK: return cpu_get(1);
+    case MI_BT: return bt_get();
     case MI_LEDS:
         while (i + 1u < LEDS_COUNT && LEDS_MENU[i] != settings_leds)
             i++;
@@ -214,6 +217,7 @@ static const char *menu_vname(uint32_t row, uint32_t v)
     case MI_LEARN: return MLON_N[v & 3u];
     case MI_CPU: return CPU_N[0][v & 1u];
     case MI_CLOCK: return CPU_N[1][v & 1u];
+    case MI_BT: return bt_vname(v);
     case MI_SCROFF: return SCROFF_N[v % NELEM(SCROFF_N)];
     case MI_LEDS: return LEDS_NAME[LEDS_MENU[v % LEDS_COUNT]];
     }
@@ -263,6 +267,7 @@ static void menu_put(uint32_t row, uint32_t v)
     case MI_LEARN: ml_set(v); break;                   /* (p1: armed, or cleared, at the MENU's close; not saved) */
     case MI_CPU: cpu_put(0, v & 1u); break;            /* (p1: at the next power-on, main.c) */
     case MI_CLOCK: cpu_put(1, v & 1u); break;          /* (0.9.9-stab: at the next power-on, main.c cpu_clock) */
+    case MI_BT: bt_put(v & 1u); break;                 /* (V10.12: at once, bt.c) */
     }
 }
 /* the menu's step, any of KNOB 1..4 or OCT+ (s > 0) / OCT- (s < 0): the next / previous value, stopping at the ends;

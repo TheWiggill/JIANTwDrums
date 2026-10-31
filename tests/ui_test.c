@@ -2437,9 +2437,9 @@ static int test_menu_tabs(void)
     }
     for (i = 0; i < MI_COUNT; i++) ok &= MI_TAB[i] < MTAB_COUNT;
     ui_prefs = 0;
-    bad += check("MENU tabs: DISPLAY CONTROL AUDIO SYSTEM (8 8 7 7 rows: 0.8.9 SKIN, 0.9.7 SCOPE, 0.9.9-stab CPU CLOCK, p1 CPU CORES, MIDI MAP, LEARN, LOAD in AUDIO), 1..8 each in a run, their rows and values fit the lens's panel",
+    bad += check("MENU tabs: DISPLAY CONTROL AUDIO SYSTEM (8 8 7 8 rows: 0.8.9 SKIN, 0.9.7 SCOPE, 0.9.9-stab CPU CLOCK, p1 CPU CORES, MIDI MAP, LEARN, LOAD in AUDIO; V10.12 BLUETOOTH), 1..8 each in a run, their rows and values fit the lens's panel",
                  ok && MTAB_COUNT == 4u && str_eq(MTAB_NAME[0], "DISPLAY") && mtab_rows(MTAB_DISPLAY) == 8u &&
-                 mtab_rows(MTAB_CONTROL) == 8u && mtab_rows(MTAB_AUDIO) == 7u && mtab_rows(MTAB_SYSTEM) == 7u);   /* (0.6.58: INIT SYSTEM;
+                 mtab_rows(MTAB_CONTROL) == 8u && mtab_rows(MTAB_AUDIO) == 7u && mtab_rows(MTAB_SYSTEM) == 8u);   /* (0.6.58: INIT SYSTEM;
                                                                          * 0.6.72: MIDI OUT in CONTROL; 0.9.9-stab: CPU CLOCK in SYSTEM) */
 
     ui_power_on();
@@ -2599,9 +2599,9 @@ static int test_menu_tabs(void)
     hold(B_HOME);
     frame();
     ok = ui.menu == 1 && ui.mlv == 1u && lz_on() && lz_fam() == LZ_MENU && lz_tabs() == 4u && lz_tab_lit(0) &&
-         lz_crumb_is("MENU \xB7 DISPLAY \xB7 COLOR") && lz_count_is("1/30");
+         lz_crumb_is("MENU \xB7 DISPLAY \xB7 COLOR") && lz_count_is("1/31");
     turn(EN_SELECT, 1); frame();
-    ok &= ui.mlv == 1u && lz_tab_lit(0) && lz_crumb_is("MENU \xB7 DISPLAY \xB7 SKIN") && lz_count_is("2/30");
+    ok &= ui.mlv == 1u && lz_tab_lit(0) && lz_crumb_is("MENU \xB7 DISPLAY \xB7 SKIN") && lz_count_is("2/31");
     turn(EN_ALGO, 1); frame();
     ok &= menu_tab() == MTAB_CONTROL && lz_tab_lit(1) && lz_crumb_is("MENU \xB7 CONTROL \xB7 HOLD");
     turn(EN_SELECT, 2); frame();
@@ -2610,7 +2610,40 @@ static int test_menu_tabs(void)
     ok &= (fx_latch & 1u) != 0u;
     turn(EN_K3, -1); frame();
     menu_close();
-    bad += check("0.9.2 MENU: four tabs (the row's lit), MENU . TAB . ROW and n/30 (0.9.7: SCOPE; 0.9.9-stab: CPU CLOCK; p1: CPU CORES, MIDI MAP, LEARN); ALGORITHM the tab, any knob the value", ok && MI_COUNT == 30u);
+    bad += check("0.9.2 MENU: four tabs (the row's lit), MENU . TAB . ROW and n/31 (0.9.7: SCOPE; 0.9.9-stab: CPU CLOCK; p1: CPU CORES, MIDI MAP, LEARN; V10.12: BLUETOOTH); ALGORITHM the tab, any knob the value", ok && MI_COUNT == 31u);
+
+    /* (V10.12) MENU > SYSTEM > BLUETOOTH: OFF by default (no mark: older settings), refused while playing, ON kept in
+     * TRIO's retired favourites row with its mark; here (no radio, no segment) ON reads NO SEG; OFF again; the boot
+     * guard: a reset during the start turns it OFF */
+    ui_power_on();
+    memset(&favorites.factory[6][24], 0, 8);
+    bt_up = 0;
+    ok = MI_TAB[MI_BT] == MTAB_SYSTEM && MI_BT < MI_VALUES && str_eq(MI_NAME[MI_BT], "BLUETOOTH") && menu_get(MI_BT) == 0u &&
+         str_eq(menu_vname(MI_BT, 0), "OFF") && menu_n(MI_BT) == 2u;
+    song.playing = 1;
+    menu_put(MI_BT, 1u);
+    ok &= menu_get(MI_BT) == 0u && msg_is("STOP FIRST");
+    song.playing = 0;
+    menu_put(MI_BT, 1u);
+    ok &= menu_get(MI_BT) == 1u && favorites.factory[6][24] == BT_MARK && (favorites.factory[6][25] & 1u) &&
+          str_eq(menu_vname(MI_BT, 1), "NO SEG") && bt_crumb == 0u;
+    menu_put(MI_BT, 0u);
+    ok &= menu_get(MI_BT) == 0u && str_eq(menu_vname(MI_BT, 0), "OFF");
+    menu_put(MI_BT, 1u);
+    bt_crumb = BT_CR_START;                         /* (as a hang in the radio's start leaves it) */
+    bt_boot(1);
+    ok &= menu_get(MI_BT) == 0u && bt_crumb == 0u;
+    menu_put(MI_BT, 1u);
+    bt_crumb = BT_CR_RUN;                           /* running, then a clean power-on: kept ON */
+    bt_boot(1);
+    ok &= menu_get(MI_BT) == 1u;
+    bt_crumb = BT_CR_RUN;                           /* running, then a crash or a hang: OFF */
+    bt_boot(0);
+    ok &= menu_get(MI_BT) == 0u;
+    memset(&favorites.factory[6][24], 0, 8);
+    bt_up = 0;
+    bad += check("V10.12 MENU > SYSTEM > BLUETOOTH: OFF by default, STOP FIRST while playing, ON saved with its mark (NO SEG "
+                 "without the segment), OFF; the boot guard after a reset in the start or a crash while it ran", ok);
     return bad;
 }
 

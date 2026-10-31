@@ -269,7 +269,8 @@ def layout_read():
 def layout_record(mapt, syms, reach):
     """tools/audio_layout.txt from a link in the compiler's order"""
     ins = map_inputs(mapt)
-    text = [(a, n, o) for n, a, sz, o in ins if n.startswith(".text.") and n != ".text.crt0" and APP_XIP <= a < 0x02100000]
+    text = [(a, n, o) for n, a, sz, o in ins if n.startswith(".text.") and n != ".text.crt0" and APP_XIP <= a < 0x02100000
+            and not o.endswith("bt_seg.o")]     # (V10.12: the Bluetooth segment is not in the image)
     rodata = [(a, sz) for n, a, sz, o in ins if (n == ".rodata" or n.startswith(".rodata.cst")) and o.endswith("felucca.o")]
     lines, prev = [], False
     for a, n, o in text:
@@ -360,7 +361,7 @@ def build_app():
     flags = [*CFLAGS, "-Ifirmware/hal", "-Ifirmware/src", "-Ibuild/gen"]
     for flag in ("FELUCCA_FLASH", "FELUCCA_OTA", "FELUCCA_OTA_DRYRUN", "FELUCCA_OTA_RAMONLY", "FELUCCA_CDC",
                  "FELUCCA_UART", "FELUCCA_UAC", "FELUCCA_UAC_TONE", "FELUCCA_UAC_48K", "FELUCCA_ICONS", "FELUCCA_SLICE", "FELUCCA_FM4",
-                 "FELUCCA_CDC_DEFAULT"):
+                 "FELUCCA_CDC_DEFAULT", "FELUCCA_BT"):
         v = os.environ.get(flag)    # unset: the default in firmware/src/felucca.c
         if v in ("0", "1"):
             flags.append(f"-D{flag}={v}")
@@ -381,6 +382,9 @@ def build_app():
     tc_all(("cc", "-c", FW / "crt0.S", "-o", OUT / "crt0.o"),
            ("cc", "-c", FW / "hal" / "fm1_vec.S", "-o", OUT / "fm1_vec.o"),
            ("cc", "-c", FW / "hal" / "fm1_isr.S", "-o", OUT / "fm1_isr.o"),
+           # (V10.12) the Bluetooth segment, a unit of its own at -Os (app.ld BTSEG: flash 0xEA000, outside the slot)
+           ("cc", *CFLAGS, "-fdata-sections", "-Wno-undefined-internal", "-Ifirmware/hal", "-Ifirmware/bt/ble", "-c",
+            FW / "bt" / "bt_seg.c", "-o", OUT / "bt_seg.o"),
            cmain)
     if size:
         subprocess.run([sys.executable, SRC / "tools" / "size_fns.py", OUT / "felucca.ll", OUT / "felucca_size.ll"],
@@ -397,7 +401,7 @@ def build_app():
         else:
             tc("cc", *cf, "-c", OUT / "felucca_size.ll", "-o", OUT / "felucca.o")
     elf = OUT / "felucca.elf"
-    objs = (OUT / "crt0.o", OUT / "fm1_vec.o", OUT / "fm1_isr.o", OUT / "felucca.o")
+    objs = (OUT / "crt0.o", OUT / "fm1_vec.o", OUT / "fm1_isr.o", OUT / "felucca.o", OUT / "bt_seg.o")
 
     def link(probe=False):
         """probe (0.9.9-gen1): the holes measured with the code moved past the sound (LATE_SRC) before the UI's tables
@@ -472,9 +476,10 @@ def build_app():
                              "after a change to the sound itself): " + "; ".join(moved[:6]) + (" ..." if len(moved) > 6 else ""))
         if new:
             print(f"  note  sound functions not in the layout (placed after the tables; FELUCCA_REPIN=1): {sorted(new)[:6]}")
-    for sect in ("text.bin", "data.bin", "ramtext.bin", "c1text.bin", "hottext.bin"):
+    for sect in ("text.bin", "data.bin", "ramtext.bin", "c1text.bin", "hottext.bin", "bt.bin"):
         (OUT / sect).unlink(missing_ok=True)
-    *_, syms, dis, rt = tc_all(("common/bin/objcopy", "-O", "binary", "-j", ".text", elf, OUT / "text.bin"),
+    *_, syms, dis, rt = tc_all(("common/bin/objcopy", "-O", "binary", "-j", ".bt", elf, OUT / "bt.bin"),
+                               ("common/bin/objcopy", "-O", "binary", "-j", ".text", elf, OUT / "text.bin"),
                                ("common/bin/objcopy", "-O", "binary", "-j", ".data", elf, OUT / "data.bin"),
                                ("common/bin/objcopy", "-O", "binary", "-j", ".ram_text", elf, OUT / "ramtext.bin"),
                                ("common/bin/objcopy", "-O", "binary", "-j", ".c1_text", elf, OUT / "c1text.bin"),
@@ -501,8 +506,40 @@ def build_app():
             img += b"\xff" * (load - APP_XIP - len(img))
             img += blob
     img += b"\xff" * (-len(img) % 4)
+    bt_segment(img, symv)
     (OUT / "felucca.bin").write_bytes(img)
     return bytes(img), syms, dis, rt
+
+
+# (V10.12) the Bluetooth segment (firmware/bt/bt_seg.c, app.ld BTSEG): what the update loader writes at 0xEA000
+BT_BASE, BT_END, BT_HEAD, BT_MAGIC, BT_WANT = 0xEA000, 0xFC000, 32, 0x3154424A, 0x544E5742
+
+
+def bt_segment(img, symv):
+    """build/bt.bin = the header (magic, payload length, CRC-32) + the payload as linked; the same length and CRC-32
+    patched into the app's bt_want (src/bt_hw.c), so the app calls only the segment of its own build"""
+    import zlib
+    seg = bytearray((OUT / "bt.bin").read_bytes())
+    if len(seg) <= BT_HEAD or struct.unpack_from("<I", seg)[0] != BT_MAGIC:
+        raise SystemExit("bt: the segment's header (bt_seg.c bt_head) is not first in it")
+    if symv("_bt_start") != fm1pkg_make.FM1_XIP(BT_BASE) or len(seg) > BT_END - BT_BASE:
+        raise SystemExit(f"bt: the segment at {symv('_bt_start'):#x}, {len(seg)} B: not at flash {BT_BASE:#x} or too big")
+    hdr = tc("common/bin/objdump", "-h", OUT / "bt_seg.o")
+    for ln in hdr.splitlines():                 # its RAM is zeroed (pool / .bss): an initialised object would cost the
+        p = ln.split()                          # app's flash for its load image
+        if len(p) > 3 and p[1].startswith((".data", ".sdata")) and int(p[2], 16):
+            raise SystemExit(f"bt: initialised data in the segment ({p[1]}): make it const or zero")
+    payload = bytes(seg[BT_HEAD:])
+    crc = zlib.crc32(payload) & 0xFFFFFFFF
+    struct.pack_into("<II", seg, 4, len(payload), crc)
+    at = symv("bt_want") - APP_XIP
+    if struct.unpack_from("<I", img, at)[0] != BT_WANT:
+        raise SystemExit("bt_want: no BWNT marker in the image")
+    struct.pack_into("<II", img, at + 4, len(payload), crc)
+    fm1pkg_make.bt_check(bytes(seg))
+    (OUT / "bt.bin").write_bytes(seg)
+    print(f"bt: segment {len(seg)} B at {BT_BASE:#x} ({-(-len(seg) // 4096)} of {(BT_END - BT_BASE) // 4096} sectors), "
+          f"crc {crc:08x} -> build/bt.bin")
 
 
 # (0.9.9-stab) felucca-bsp docs/CPU.md: on the AC79 a 32 x 32 -> 64-bit multiply inlined beside loads (most of all 16-bit
@@ -580,6 +617,9 @@ def check(img, syms, dis, rt):
         errors.append(f"_start is not at {APP_XIP:#x}")
     if img[:4] != bytes.fromhex("04818000"):
         errors.append(f"image starts with {img[:4].hex()}, not the entry stub")
+    if not re.search(r"^[0-9a-f]+ .*\s\.ram_text\s.*\sfm1_rf_burst_run$", syms, re.M):
+        errors.append("bt: the radio's crystal ramp (hal/fm1_ble_rf.h fm1_rf_burst_run) is not in .ram_text: a flash "
+                      "fetch in it hangs the FM-1 (Melodee's finding)")
     rt_calls = [ln for ln in rt.splitlines() if re.search(r"\bcall\b", ln)]
     if rt_calls:                    # RAM code runs with the flash off: no calls into XIP
         errors.append(f".ram_text contains calls: {rt_calls[:3]}")
@@ -720,7 +760,7 @@ def main():
         print("  FAIL ", e)
     if errors:
         raise SystemExit("build: checks failed")
-    pkg = fm1pkg_make.ufw(fm1pkg_make.flash_image(img, fm1pkg_make.KEY), ota, PRODUCT)
+    pkg = fm1pkg_make.ufw(fm1pkg_make.flash_image(img, fm1pkg_make.KEY), ota, PRODUCT, (OUT / "bt.bin").read_bytes())
     (OUT / name).write_bytes(pkg)
     print(f"app      {OUT / 'felucca.bin'}  {len(img)} B")
     print(f"loader   {LDR / 'ota.bin'}  {len(ota)} B")

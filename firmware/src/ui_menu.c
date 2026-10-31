@@ -43,6 +43,10 @@ static const menu_credit_t MENU_CREDITS[] = {
     {"https://github.com/keremimo/melodee", MC_URL},
     {"https://github.com/charlesvestal/fm1-x0x", MC_URL},
     {"", MC_TEXT},
+    {"BLUETOOTH", MC_TITLE},                 /* (V10.12) firmware/bt: the stack, the radio drivers */
+    {"Optimist BLE stack, Henri David: GPL-3.0 / MPL-2.0; radio: Melodee, felucca-bsp, JieLi: Apache-2.0", MC_TEXT},
+    {"https://github.com/w0ts/optimist", MC_URL},
+    {"", MC_TEXT},
     {"TESTING, CPU", MC_TITLE},              /* (JIANT 0.6.79) on a real FM-1: the load, the dual core, the RAM code */
     {"praztalfractal", MC_TEXT},
     {"https://github.com/gospodindilly-ops", MC_URL},
@@ -265,7 +269,7 @@ static const char *menu_short(uint32_t row)          /* a card's label: the row'
 {
     static const struct { uint8_t row; char s[9]; } SH[] = {
         {MI_SCROFF, "SCR OFF"}, {MI_ACCEL, "ACCEL"}, {MI_SCLLED, "SCL LEDS"}, {MI_LOWCUT, "SPK EQ"}, {MI_USB, "USB LVL"},
-        {MI_CLKLVL, "CLICK LV"}, {MI_RESTORE, "RESTORE"}, {MI_CPU, "CORES"}, {MI_CLOCK, "CPU MHZ"}, {MI_PANEL, "CALIBR"}, {MI_INIT, "INIT SYS"}};
+        {MI_CLKLVL, "CLICK LV"}, {MI_RESTORE, "RESTORE"}, {MI_CPU, "CORES"}, {MI_CLOCK, "CPU MHZ"}, {MI_BT, "BT"}, {MI_PANEL, "CALIBR"}, {MI_INIT, "INIT SYS"}};
     uint32_t k;
     for (k = 0; k < NELEM(SH); k++)
         if (SH[k].row == row)
@@ -381,7 +385,7 @@ static void draw_menu(void)
     uint32_t sig;
     sig = ui.menu * 7u + ui.menu_sel * 131u + settings.palette * 1009u + settings.lowcut * 7919u + settings_hold * 3511u +
           settings_leds * 6151u + ui_prefs * 4099u + ui_style * 257u + ui_skin * 1543u + song.rec * 65537u + song.sel * 13u +
-          ui_rec_prefs * 92821u + ui_scr * 131071u + ui.mlv * 0x9E3779B1u +   /* (#157: SCREEN OFF's value redraws its row) */
+          ui_rec_prefs * 92821u + ui_scr * 131071u + ui.mlv * 0x9E3779B1u + bt_hw_status() * 40961u + bt_up * 77u +   /* (#157: SCREEN OFF's value redraws its row) */
           (ui.menu == 2 ? ui.menu_scroll * 48611u : 0u) +
           (ui.menu == 2 ? (song.cpu_q8 >> 3) * 7741u + load_diag.peak * 3329u + load_diag.late * 1931u +
                           load_diag.shed * 2671u + (audio_halves / 64u) * 4657u : 0u);   /* (0.6.19) ABOUT's AUDIO LOAD: live (NOW in ~3 % steps) */

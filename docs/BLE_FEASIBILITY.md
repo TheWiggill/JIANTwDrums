@@ -354,3 +354,27 @@ the scanner (`BLE_CENTRAL=3`) later for scan-mode proximity and connecting out.
 7. A raw-RSSI log over the console at fixed distances and with a hand on/off the antenna (monotonicity, noise,
    per-channel spread).
 8. Only then, the filter and mod source.
+
+## 7. As built: stage 2 step 3 (V10.12, branch codex/add15-ble)
+
+Route C2, peripheral only, MIDI not routed yet.
+
+- **Segment.** `firmware/bt/bt_seg.c` is a unit of its own (Optimist's stack from fm1-base `bt/ble`, Melodee's
+  `hal/fm1_ble.h` / `fm1_ble_rf.h`, felucca-bsp's `fm1_rf_cal.h` / `ble_rf_tables_v15.h`). `app.ld` links it at XIP
+  0x020E6000 = flash 0xEA000 (`BTSEG`, 72 KiB): a 32-byte header (`JBT1`, payload length, CRC-32), then its code and
+  constants (≈ 27.3 KB, 7 sectors). Its RAM is in the pool, its 1,508 B baseband block in `.bss` (low RAM, which every
+  DMA reaches), its ramp burst (36 B) in `.ram_text` (build check). No initialised data (build check).
+- **App side.** `src/bt.c` (MENU > SYSTEM > BLUETOOTH, the settings bytes, the boot guard) and `src/bt_hw.c` (the
+  segment check, the start with the interrupts off and the audio buffer silent). `tools/build.py` writes the segment's
+  length and CRC-32 into the app's `bt_want`; the app calls nothing in the segment unless the header and the CRC-32 of
+  the payload as read through XIP match. `fl_plain_window_init` is set before the first read (JIANT never set it before).
+  The PC guard's window reaches `_bt_end`.
+- **Install.** The package gets a third UFW entry, `bt.bin` (type 200), after `ota.bin`. JIANT's update loader checks
+  it with the rest before erasing anything (entry CRC16, header magic, per-sector CRC16) and writes it after the app
+  area, sector by sector with verify; the last sector's tail is 0xFF. A package without it leaves the region alone.
+  The record sweep already skips 0xEA000–0xFBFFF. `tests/ldr_test.c` covers it.
+- **Start.** IRQ 45 / 29 at priority 2, `fm1_rf_cal_on` with the SDK board constants for 106–108 (187 measured), then
+  `ble_init` and advertising as "JIANT FM-1" with the BLE-MIDI service UUID. Only while stopped; OFF stops advertising
+  and closes a link (the radio stays set up until power-off).
+- **Boot guard.** `bt_crumb` (`.noinit.zbt`, after every other `.noinit`): set for the start, `RUN` after it. A reset
+  during the start, or a crash / watchdog reset while it ran, turns BLUETOOTH OFF at the next power-on and says so.

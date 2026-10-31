@@ -358,6 +358,7 @@ static void fm1_main(void)
     scrn.idle = fm1_ms;                        /* (MENU > SCREEN OFF: from here) */
     if (said)                                  /* (p1) cpu_boot */
         cpu_off("2 CORES OFF AFTER A CRASH");
+    bt_boot(boot_clean);                       /* (V10.12) BLUETOOTH's boot guard (bt.c) */
 
     for (;;) {
         uint32_t m = fm1_ms;
@@ -438,6 +439,7 @@ static void fm1_main(void)
         felucca_dbg.stage = 1;
         ui_input();
         settings_poll();                              /* queued settings save: only while stopped */
+        bt_tick();                                    /* (V10.12) BLUETOOTH ON saved: the radio, once stopped (bt.c) */
         autosave_poll();                              /* (1.2) the music, stopped and idle: project.c */
         song_poll();                                  /* the song: the next section staged, the music back after it */
         felucca_dbg.stage = 2;
