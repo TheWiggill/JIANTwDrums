@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.19", items: [
+    ["La página PROX se actualiza apenas llega una lectura (podía quedar en NOT CONNECTED estando conectado) y muestra la conexión: L1 / L0, los paquetes que leyó PROX / los paquetes buenos recibidos.", "The PROX page updates as soon as a reading arrives (it could stay on NOT CONNECTED while connected) and shows the link: L1 / L0, the packets PROX read / the good packets received."]]},
   {v: "V10.18", items: [
     ["PROX se mueve: el FM-1 lee los cuatro registros de señal (RSSI) de cada paquete Bluetooth y usa el que cambia con la distancia. La página PROX muestra los cuatro y cuál usa; al guardar FAR o NEAR, esa elección queda fija.", "PROX moves: the FM-1 reads all four signal (RSSI) registers of each Bluetooth packet and uses the one that changes with distance. The PROX page shows the four and which one it uses; storing FAR or NEAR keeps that choice."]]},
   {v: "V10.17", items: [
