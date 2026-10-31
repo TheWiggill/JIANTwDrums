@@ -320,6 +320,11 @@ static void fm1_main(void)
     fm1_input_init();
     fm1_adc_init();
     panel_init();
+#if FELUCCA_BT
+    ly_en_ok = (uint8_t)bt_hw_seg();                    /* (V10.15) the segment checked (the plain XIP window set: its
+                                                         * interrupts-off moment under the splash) before sing_init reads
+                                                         * VOICE's English dictionary there (sing.c) */
+#endif
     felucca_init();
     master_boot();
     kb_boot_hold = 1;                         /* #137: no notes from the keys before the UI (seq.c keyboard_block) */

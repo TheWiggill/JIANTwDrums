@@ -436,3 +436,18 @@ PROX, the proximity source.
   function 2.2 KB) of V10.12's. A REPIN also records the sound's tables ('r') after the UI's have left `.rodata`.
 - **Tests.** `tests/ui_test.c` (level, page, FAR / NEAR, map, clamps, outlier, gap, disconnect), `tests/mod_test.c`
   (PROX on CUT), `tests/ui_render.c` (menu_prox, menu_prox_off).
+
+## 10. V10.15: VOICE's English dictionary in the segment
+
+- `LY_EN_DICT` (13,346 B) and `LY_EN_IDX` (524 B) carry `LY_DICT_SEC` (`tools/gen_lyrics.py`; `sing.c` defines it as
+  `.btapp.rodata` in the firmware): they live in the segment, inside its CRC-32.
+- Read only in `sing.c sy_en_find` (and `ly_at`, which only it calls): the main loop (`sing_init` at power-on, a TEXT
+  lyric's `lyr_set`) and, for a word not resolved there, the audio (either core). Those are plain XIP data reads of the
+  segment as of the app's flash: a flash write holds the interrupts and parks core 1 for both alike.
+- The segment is now checked (the plain window set, the CRC-32 of its 47 KB) in `main.c fm1_main` before `felucca_init`
+  (its `sing_init` resolves the generator's English words), under the splash; `ly_en_ok` is set from it. Before that
+  nothing reads the dictionary.
+- Without the segment (NO SEG, `ly_en_ok` 0) `sy_en_find` returns at once: every English word is read by
+  `sy_en_rules`' letter rules (as a word the dictionary lacks: "love" |l o uh v instead of |l ah v), the generator's
+  too; VOICE sings on. `tests/voice_test.c` checks it for all 2,095 words.
+- App 567,760 B (16,576 B free), segment 47,128 B (12 of 18 sectors). Repinned with `FELUCCA_REPIN=keep`.

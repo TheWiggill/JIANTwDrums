@@ -24,9 +24,10 @@ static int bt_seg_ok(void)
 
 /* (V10.13) the segment installed is this build's: checked once (the flash there changes only with an update, then a
  * reset), the plain window set first (flash from 0x93000 up read as it is through XIP, as the SDK's VM set-up; JIANT
- * reads nothing there through XIP otherwise: the segment is written plain). At power-on (bt.c bt_boot, after the
- * splash, the music stopped: the window's set-up has the interrupts off a moment), before anything reads it (MENU > ABOUT's
- * texts, bt.c BTAPP_RO) or calls it */
+ * reads nothing there through XIP otherwise: the segment is written plain). At power-on (V10.15: main.c fm1_main,
+ * before felucca_init, under the splash: the window's set-up has the interrupts off a moment; V10.13 bt.c bt_boot, after
+ * it, finds it done), before anything reads it (VOICE's English dictionary, MENU > ABOUT's texts: bt.c BTAPP_RO) or calls
+ * it */
 static uint8_t bt_seg_st;                              /* 0 not checked, 1 this build's, 2 not */
 static int bt_hw_seg(void)
 {

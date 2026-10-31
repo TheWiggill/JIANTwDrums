@@ -437,8 +437,10 @@ def main():
     assert len(blob) < 65536
     L.append(f"#define LY_EN_N {len(words)}u")
     L.append(f"#define LY_END {LY_END}u")
-    L.append(f"static const uint8_t LY_EN_DICT[{len(blob)}] = {{\n    {c_bytes(blob)}}};")
-    L.append(f"static const uint16_t LY_EN_IDX[{len(idx)}] = {{\n    {c_bytes(idx)}}};")
+    # (JIANT V10.15) the dictionary and its index where the includer puts them (sing.c LY_DICT_SEC: the Bluetooth segment)
+    L.append("#ifndef LY_DICT_SEC\n#define LY_DICT_SEC\n#endif")
+    L.append(f"static const uint8_t LY_EN_DICT[{len(blob)}] LY_DICT_SEC = {{\n    {c_bytes(blob)}}};")
+    L.append(f"static const uint16_t LY_EN_IDX[{len(idx)}] LY_DICT_SEC = {{\n    {c_bytes(idx)}}};")
     L.append(f"#define LY_EN_BLK {EN_BLK}u")
     heads = words[::EN_BLK]                          # LY_EN_LET[c]: the first block whose first word starts at or after c
     let = [sum(1 for h in heads if h[0] < chr(97 + c)) for c in range(27)]

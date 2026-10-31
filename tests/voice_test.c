@@ -440,6 +440,35 @@ static void check_reading(void)
                  (unsigned)LY_EN_N, b);
         check(what, ok);
     }
+    {   /* (V10.15) the dictionary in the Bluetooth segment: without it (ly_en_ok 0, NO SEG) nothing of it is read (its
+         * bytes poisoned here: a read would change the words), every English word by the letter rules, each with a
+         * syllable; the generator's words too (sing_init again), and singing goes on; with it back, as before */
+        static uint8_t keep[sizeof LY_EN_DICT];
+        uint8_t ph[SW_MAX], ph2[SW_MAX];
+        char rb[160];
+        uint32_t nw, n, ns, n2, ns2, rules = 0;
+        ok = 1;
+        ly_en_ok = 0;
+        for (nw = 0; nw < LY_EN_N; nw++) {
+            const char *rw = LY_EN_REF_W[nw];
+            uint32_t wl = (uint32_t)strlen(rw);
+            ok &= sy_en_find(rw, wl, ph) == 0;
+            n = sy_word(LG_EN, rw, wl, ph, &ns);
+            n2 = sy_en_rules(rw, wl, (uint8_t *)rb, (uint8_t *)rb + 64);
+            n2 = sy_syl((uint8_t *)rb, (uint8_t *)rb + 64, n2, ph2, &ns2);
+            rules += n == n2 && ns == ns2 && !memcmp(ph, ph2, n);
+        }
+        sing_init();
+        ok &= rules == LY_EN_N && lyb_ok;
+        g2p_str(LG_EN, "love", rb, sizeof rb);
+        ly_en_ok = 1;
+        sing_init();
+        g2p_str(LG_EN, "love", b, sizeof b);
+        printf("voice:   without the segment: love %s (with it %s); %u of %u words as the rules read them\n", rb, b,
+               (unsigned)rules, (unsigned)LY_EN_N);
+        check("V10.15 English without the Bluetooth segment: the dictionary never read, every word by the letter rules, "
+              "the generator's too; with it back as before", ok && strcmp(rb, b) && sy_en_find("love", 4, ph) > 0);
+    }
     {   /* the banks: every word's syllables as gen_lyrics.py counted them (the generator fits phrases by them) */
         static const char *const LN[4] = {"", "ES", "EN", "JA"};
         uint32_t bad_w = 0, tot = 0;
