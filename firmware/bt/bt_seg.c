@@ -144,6 +144,8 @@ uint32_t bt_seg_status(void)
     return (uint32_t)ble_connected() | (uint32_t)ble_midi_ready() << 1 | (uint32_t)bs_conns << 8;
 }
 
+/* (V10.19) PROX's diagnostics: [15:0] the packets the RSSI hook saw, [31:16] the good packets the link received */
+uint32_t bt_seg_rxdiag(void) { return (bs_rw & 0xFFFFu) | (uint32_t)(ble_hw_stat.rx & 0xFFFFu) << 16; }
 /* (V10.14) the RSSI words since *rd (the newest 16 packets at most: a main loop held up by a flash write loses the
  * older); (V10.18) four words a packet, w[4 * i .. 4 * i + 3] */
 uint32_t bt_seg_rssi(uint16_t *w, uint32_t *rd)

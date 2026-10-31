@@ -415,6 +415,15 @@ BTAPP_FN static void bt_prox_panel(const aafont_t *fx, const aafont_t *fm, const
     } else
         str_cpy(b, BP_S[2], sizeof b);
     cv_text(10, 64 - AF_S_CAP_Y, fs, b, T_TEXT);
+    {                                                   /* (V10.19) the link as seen: the radio's link, the RSSI hook's
+                                                         * packets, the good packets received (16 bits each) */
+        uint32_t d = bt_hw_rxdiag();
+        str_cpy(b, bt_hw_status() & 1u ? "L1 " : "L0 ", sizeof b);
+        fmt_int(b + str_len(b), (int32_t)(d & 0xFFFFu));
+        str_cpy(b + str_len(b), "/", 2);
+        fmt_int(b + str_len(b), (int32_t)(d >> 16));
+        cv_text_r(228, 64 - AF_X_CAP_Y, fx, b, T_DIM, T_SURF);
+    }
     if (bp.conn && bp.have) {                           /* (V10.18) the four words, to read off the screen */
         for (k = 0; k < 16u; k++)
             b[k + k / 4u] = "0123456789ABCDEF"[bp.w4[k / 4u] >> (12u - 4u * (k & 3u)) & 15u];
@@ -447,7 +456,7 @@ BTAPP_FN static void bt_prox_input(uint32_t up, uint32_t dn)
         ui_message(BP_S[7u + up]);
     }
 }
-static uint32_t bt_prox_sig(void) { return ui.menu == 3 ? (uint32_t)mod_prox * 31u + bp.raw * 977u + bp.w4[0] * 13u + bp.w4[1] * 17u + bp.w4[2] * 19u + bp.w4[3] * 23u + bp.src * 29u + bp.conn * 5u + BT_CAL[0] * 3u + BT_CAL[1] * 7u : 0u; }
+static uint32_t bt_prox_sig(void) { return ui.menu == 3 ? (uint32_t)mod_prox * 31u + bp.raw * 977u + bp.w4[0] * 13u + bp.w4[1] * 17u + bp.w4[2] * 19u + bp.w4[3] * 23u + bp.src * 29u + bp.have * 37u + bp.seen * 41u + (bt_hw_rxdiag() >> 4) * 43u + bp.conn * 5u + BT_CAL[0] * 3u + BT_CAL[1] * 7u : 0u; }
 
 static void confirm_open(uint32_t kind, uint32_t trk);   /* (0.6.58) INIT SYSTEM: ui_input.c */
 static void draw_menu(void)
