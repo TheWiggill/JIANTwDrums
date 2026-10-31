@@ -628,6 +628,15 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.16", items: [
+    ["SEQ › EUCLID: VARY varía mucho más. Con VARY arriba de 0 el patrón son cuatro vueltas (A A' A'' B), cada una distinta, la última la que más; HITS sigue exacto en cada vuelta y la melodía le contesta a su propio motivo.", "SEQ › EUCLID: VARY varies much more. Above 0 the pattern is four turns (A A' A'' B), each different, the last the most; HITS stays exact in each turn and a melody answers its own motif."],
+    ["SEQ › MUTATE (después de MODES): EVERY (OFF, 1–16 compases), AMOUNT, MODE (ORBIT, DRIFT, PULSE), WHAT (GROOVE, RHYTHM, FEEL, ALL). Muta el patrón de EUCLID en el compás mientras suena; OCT+ muta ya, OCT− vuelve al ancla.", "SEQ › MUTATE (after MODES): EVERY (OFF, 1–16 bars), AMOUNT, MODE (ORBIT, DRIFT, PULSE), WHAT (GROOVE, RHYTHM, FEEL, ALL). It mutates the EUCLID pattern on the bar while playing; OCT+ mutates now, OCT− returns to the anchor."]]},
+  {v: "V10.15", items: [
+    ["El diccionario de inglés de VOICE pasa al área de Bluetooth del flash (14 KB libres para la app).", "VOICE's English dictionary moves into the Bluetooth area of the flash (14 KB freed for the app)."]]},
+  {v: "V10.14", items: [
+    ["PROX: fuente de modulación por la cercanía del celular conectado por Bluetooth. MENU › SYSTEM › BLUETOOTH (conectado) › OCT+ abre PROX: OCT− guarda FAR, OCT+ NEAR; después elegí PROX como SRC en MOD.", "PROX: a modulation source from how close the Bluetooth-connected phone is. MENU › SYSTEM › BLUETOOTH (connected) › OCT+ opens PROX: OCT− stores FAR, OCT+ NEAR; then pick PROX as a MOD SRC."]]},
+  {v: "V10.13", items: [
+    ["Bluetooth MIDI de ida y vuelta: una app conectada toca el FM-1 como por USB (notas, CC, PC, bend, clock con CLK USB) y lo que deja salir MIDI OUT llega a la app.", "Bluetooth MIDI both ways: a connected app plays the FM-1 as over USB (notes, CC, PC, bend, clock with CLK USB) and what MIDI OUT lets out reaches the app."]]},
   {v: "V10.12", items: [
     ["Beta de la radio: MENU › SYSTEM › BLUETOOTH (apagado por defecto). Con la música parada, ON calibra la radio y el FM-1 aparece como 'JIANT FM-1' en Bluetooth MIDI. Todavía sin MIDI: es la prueba de la radio.", "Radio beta: MENU › SYSTEM › BLUETOOTH (off by default). With the music stopped, ON calibrates the radio and the FM-1 shows up as 'JIANT FM-1' over Bluetooth MIDI. No MIDI through it yet: this tests the radio."]]},
   {v: "V10.11", items: [

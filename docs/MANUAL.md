@@ -479,6 +479,7 @@ them page by page, a **SEQ** tap jumps to the next group.
 | TRACK | TRACK | PITCH | CHANCE | HUMAN | REC Q |
 | EUCLID | EUCLID (V10.6) | HITS (DRUM-X LANE ALL: DENSITY, V10.7) | STEPS (2–64) | ROTATE | LANE (DRUM-X: ALL, BD … CB) · VARY (melodic) |
 | EUCLID | MODES (V10.6) | ACCENT · MOTION | GHOST · HARMONY | RATCHET · OCTAVE | VARY · SLIDE |
+| EUCLID | MUTATE (V10.16) | EVERY (OFF, 1–16 bars) | AMOUNT | MODE (ORBIT DRIFT PULSE) | WHAT (GROOVE RHYTHM FEEL ALL) |
 | BAR | BAR (0.9.2) | BAR (the bar you edit) | LEN | — | — |
 | BAR | STEP (melodic: piano roll) | STEP (all 64, bar after bar) | NOTE | TIME (REST ← TIE ← NOTE → 2 ST … 16 ST: the note's length in steps; REST clears the step) | VEL (V10.8, was FLAG: 1–127, then ACC / SLD / A+S) |
 | BAR | STEP (DRUM: grid) | STEP | LANE | HIT | ACC |
@@ -995,7 +996,7 @@ AUTO LIST**, eleven pages: EUCLID and MODES, under the tab **EUCLID** (**EUCL**)
 | --- | --- | --- |
 | **PATTERN** | PATTERN · STRETCH · PLAYHEADS | (0.9.17) The roll, as every SEQ page. **PATTERN** draws the notes as long as **GATE** plays them and the odd steps late by **SWING**; steps past **LEN** are dark (in the strip, the bars past it). **PLAYHEADS** draws its extra heads over the roll as lines while they play, each as hot as its number (the head you edit 3 px wide). |
 | **TRACK** | TRACK | **TRACK** outlines where **PITCH** moves the notes (in grey, over the notes as written). |
-| **EUCLID** (V10.6) | EUCLID · MODES | A ring of the pattern's steps with the playhead; DRUM-X the eight lanes as rows, melodic the key and a small roll (see [EUCLID and MODES](#euclid-and-modes-v106)). |
+| **EUCLID** (V10.6) | EUCLID · MODES · MUTATE (V10.16) | A ring of the pattern's steps with the playhead; DRUM-X the eight lanes as rows, melodic the key and a small roll (see [EUCLID and MODES](#euclid-and-modes-v106)). |
 | **BAR** | STEP · NOTE | STEP's KNOB 1 walks **all 64 steps**, crossing into the next bar by itself (0.9.18: a fast turn several at a time, KNOB SPEEDUP; the BAR page with its bar knob is gone, LEN is PATTERN's); NOTE's note in focus orange. |
 | **STEP** | COMP · COMP 2 | (0.9.18) The step the component goes on framed violet with a tab at its foot (KNOB 1, at once); an orange bar over each step with the same component, a thin line over a step with another; a JUMP's step framed orange. |
 | **AUTO** | AUTOMATION · AUTO LIST | A mark under each step with a record (a lock orange, automation white); on AUTO LIST the record picked has its step framed violet, the cards giving its row, step, parameter and value. |
@@ -1241,9 +1242,14 @@ Melodic (any other track):
   **GHOST** (soft hits between), **RATCHET** (some hits x2 / x4), **VARY**. Melodic: **MOTION** (how far the melody
   moves: 0 a pedal note, higher bigger leaps), **HARMONY** (chords of the scale on the strong beats), **OCTAVE**
   (octave jumps), **SLIDE** (slides).
-- **VARY** loosens the even grid: some hits move a step (towards the offbeat, more in the second half, so it answers
-  the first); on a melodic track, notes held over the gap after them. (V10.7: VARY only moves hits, it no longer adds a
-  pickup or leaves a hit out, so **HITS is exactly the number of hits / notes that sound**: HITS 3, three hits.)
+- **VARY** loosens the even grid: some hits move one to three steps (towards the offbeat, more in the second half, so
+  it answers the first); on a melodic track, notes held over the gap after them. (V10.7: VARY only moves hits, it no
+  longer adds a pickup or leaves a hit out, so **HITS is exactly the number of hits / notes that sound**: HITS 3, three
+  hits.)
+- **VARY in turns** (V10.16): with VARY above 0 the pattern is **four turns** of the cycle (STEPS 16: 64 steps; as
+  many as fit in 64), each varied anew, **A A' A'' B**: the first close to the even grid, the middle ones by VARY, the
+  last the most (on DRUM-X its end gets rolls on the snare and hats). On a melodic track the later turns answer the
+  first one's motif: some notes kept, some new, by VARY. HITS stays exact in every turn. VARY 0: one turn, as before.
 - **A melodic track's notes**: inside the track's **SCL** (ROOT / SCALE) when it is set (the screen says **SCL**);
   else in the key the other tracks' notes fit best (**FROM T*n***); else a new scale and root (**NEW KEY**). The melody
   keeps the register the track had at the first turn (an empty track: around C4).
@@ -1256,6 +1262,33 @@ Melodic (any other track):
   from. MODES shows the same pattern, so you see each amount change it.
 - The EUCLID and MODES settings live in RAM for the session; the pattern itself is saved with the project like any
   pattern.
+
+### MUTATE (V10.16)
+
+The third page under the **EUCL** tab (EUCLID · MODES · **MUTATE**): it changes the EUCLID pattern by itself while it
+plays, on the bar, around what you dialled (the **anchor**). It brings back what MUTATE did before V10.6, but inside
+EUCLID: the pattern is always a EUCLID one, in the key, HITS exact.
+
+| KNOB 1 | KNOB 2 | KNOB 3 | KNOB 4 |
+| --- | --- | --- | --- |
+| **EVERY** OFF · 1 · 2 · 4 · 8 · 16 BARS | **AMOUNT** 0–100 (default 50) | **MODE** ORBIT · DRIFT · PULSE | **WHAT** GROOVE · RHYTHM · FEEL · ALL |
+
+- **EVERY**: how often it mutates, in bars, while playing. The new pattern starts on the next bar (it is written in the
+  bar's last beat). Not while a song plays (SONG mode, ARRANGE / TIMELINE PLAY).
+- **AMOUNT**: how far each mutation goes.
+- **MODE**: **ORBIT** each mutation from the anchor (it wanders and comes back); **DRIFT** each from the last one (it
+  walks away; OCT− brings it back); **PULSE** a mutation and the anchor by turns (call and answer).
+- **WHAT**: **GROOVE** a new variation (where the hits fall, the notes) only; **RHYTHM** also HITS (DENSITY on ALL)
+  and ROTATE; **FEEL** also the four MODES and VARY; **ALL** everything.
+- **The anchor** is what you dial: turning any EUCLID or MODES knob, OCT+ / OCT− on those pages, or turning EVERY on
+  sets it.
+- **On MUTATE**: **OCT+** mutates now (stopped too), **OCT−** goes back to the anchor.
+- DRUM-X: with a LANE picked only that lane mutates, the others stay; with ALL the whole kit.
+- The ring's corner shows **MUT *n***: the bars to the next mutation. Mutations make no UNDO points; GLO + G4 undoes
+  the last knob gesture.
+
+**MUTATE in one minute**: make a pattern on EUCLID, SELECT to MUTATE, KNOB 1 to 2 BARS, press PLAY. Turn AMOUNT, try
+the MODEs; OCT− when you want the original back.
 
 ### Parameter locks
 

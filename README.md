@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.12).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.16).
 
 ## Reporting a crash
 
@@ -412,11 +412,42 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   KNOB 3 ROTATE. Pick a lane (BD SD CP CH OH TM RS CB) to change that sound alone. MODES: ACCENT, GHOST, RATCHET, VARY.
 - **Melodic**: KNOB 1 HITS (exactly that many notes), STEPS, ROTATE, KNOB 4 VARY; the notes stay in the SCL key, or in
   the key the other tracks play (else a new one). MODES: MOTION, HARMONY, OCTAVE, SLIDE.
+- **VARY** (V10.16): above 0 the pattern is four turns of the cycle, A A' A'' B, each varied anew (HITS exact in
+  each); a melody answers its own motif.
+- **SEQ › MUTATE** (V10.16, the page after MODES): EVERY (OFF, 1–16 bars), AMOUNT, MODE (ORBIT round the anchor,
+  DRIFT walking on, PULSE mutation and anchor by turns), WHAT (GROOVE, RHYTHM, FEEL, ALL). It mutates on the bar while
+  playing; OCT+ mutates now, OCT− returns to the anchor (what you dialled).
 - **OCT+** a new variation, **OCT−** the one before; **GLO + G4** (or REC held alone and let go) undoes.
 - In one minute: [the manual](docs/MANUAL.md#euclid-and-modes-v106) ·
   [el manual](docs/MANUAL.es.md#euclid-y-modes-v106).
 
 ## Changelog
+
+### V10.16 (beta)
+- **SEQ › EUCLID's VARY varies much more**: with VARY above 0 the pattern is **four turns** of the cycle (STEPS 16:
+  64 steps, as many as fit), **A A' A'' B**: the first close to the grid, the last the most, with rolls at the end on
+  DRUM-X. Hits move one to three steps; HITS stays exact in every turn. A melody's later turns answer the first one's
+  motif (some notes kept, some new). VARY 0: one turn, as before.
+- **SEQ › MUTATE** (EUCLID · MODES · MUTATE): mutations of the EUCLID pattern on the bar, while playing, around the
+  **anchor** (what you dial). KNOB 1 **EVERY** OFF / 1 / 2 / 4 / 8 / 16 bars, KNOB 2 **AMOUNT**, KNOB 3 **MODE**
+  ORBIT (from the anchor) / DRIFT (from the last one) / PULSE (mutation and anchor by turns), KNOB 4 **WHAT** GROOVE
+  (a new variation) / RHYTHM (+ HITS or DENSITY, ROTATE) / FEEL (+ the MODES and VARY) / ALL. On MUTATE, OCT+ mutates
+  now, OCT− goes back to the anchor. A DRUM-X lane picked mutates alone. Not while a song plays; no UNDO points.
+
+### V10.15 (beta)
+- VOICE's English dictionary moved into the Bluetooth area of the flash (14 KB freed in the app for what comes next).
+  Without that area (a broken install) English words are read by the letter rules.
+
+### V10.14 (beta)
+- **PROX**, a modulation source from Bluetooth: how close the connected phone is (its signal strength, filtered).
+  MENU › SYSTEM › BLUETOOTH (ON, connected) › OCT+ opens the PROX page: a meter, OCT− stores FAR, OCT+ NEAR. Then
+  pick **PROX** as a MOD slot's SRC (any destination). It fades to 0 when the phone disconnects.
+
+### V10.13 (beta)
+- **Bluetooth MIDI in and out**: what a connected app sends plays the FM-1 as USB-MIDI does (notes, CC, program change,
+  bend, clock with CLK USB, MIDI LEARN and MAP); what MENU › MIDI OUT lets out also goes to the app. No SysEx (the
+  editor and updates stay on USB).
+- ABOUT's credits and licences moved into the Bluetooth area (flash for the app).
 
 ### V10.12 (beta: the first radio test)
 - **MENU › SYSTEM › BLUETOOTH** (OFF by default): ON, with the music stopped, calibrates the radio by itself and
