@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.17).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.18).
 
 ## Reporting a crash
 
@@ -422,6 +422,11 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   [el manual](docs/MANUAL.es.md#euclid-y-modes-v106).
 
 ## Changelog
+
+### V10.18 (beta)
+- **PROX moves**: the FM-1 now reads all four signal-strength (RSSI) registers of each Bluetooth packet and uses the
+  one that changes with distance (V10.14 read one that, on the hardware, did not move). The PROX page shows the four
+  raw words and which one it uses; once FAR or NEAR is stored that choice stays.
 
 ### V10.17 (beta)
 - **SAVE › SECTIONS: ERASE** (KNOB 2): pick a section with KNOB 1, KNOB 2 right, OCT+ asks **ERASE SECT B?**, OCT+

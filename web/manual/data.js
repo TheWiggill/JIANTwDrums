@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.18", items: [
+    ["PROX se mueve: el FM-1 lee los cuatro registros de señal (RSSI) de cada paquete Bluetooth y usa el que cambia con la distancia. La página PROX muestra los cuatro y cuál usa; al guardar FAR o NEAR, esa elección queda fija.", "PROX moves: the FM-1 reads all four signal (RSSI) registers of each Bluetooth packet and uses the one that changes with distance. The PROX page shows the four and which one it uses; storing FAR or NEAR keeps that choice."]]},
   {v: "V10.17", items: [
     ["SAVE › SECTIONS: ERASE en KNOB 2. Elegí la sección con KNOB 1, KNOB 2 a la derecha, OCT+ pregunta ERASE SECT B?, OCT+ la borra: queda EMPTY (también en el flash). La música que suena queda; solo parado.", "SAVE › SECTIONS: ERASE on KNOB 2. Pick the section with KNOB 1, KNOB 2 right, OCT+ asks ERASE SECT B?, OCT+ erases it: EMPTY again (flash too). The music playing stays; stopped only."]]},
   {v: "V10.16", items: [
