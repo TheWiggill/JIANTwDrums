@@ -408,3 +408,31 @@ BLE-MIDI both ways.
   tabs (step 3 made SYSTEM eight rows; `ui_render` lint): the tile shows seven.
 - **Tests.** `tests/ble_midi_test.c` (fm1-base's codec test), `tests/bt_midi_test.c` (packets as apps send them into
   the ring, the out ring and its packets), `tests/ui_test.c` (ABOUT's lines).
+
+## 9. As built: stage 2 step 6 (V10.14)
+
+PROX, the proximity source.
+
+- **Tap.** `ble_hw_wl82.c hw_rx_service` (the only change to the stack: a hook, `BLE_HW_RX_RSSI`) hands the RSSI word
+  of every CRC-good packet on the link (`CB->rssi[2 + buffer]`: which of RSSI2 / RSSI3 belongs to which buffer is still
+  unverified) to `bt_seg.c bs_rssi`, a 16-word ring; the app reads it with `bt_seg_rssi` (the newest 16 at most).
+- **Filter** (`src/bt.c bt_prox_step`, main loop, in the segment): level = (w & 63) + (w >> 8 & 63) (0..126, the stack's
+  stand-in metric, larger taken as weaker: the gain table is unknown), median of the last five, one pole over ~6
+  packets (~50-70 ms). No packets (flash writes): held. No central or BLUETOOTH OFF: eases to 0 (31/32 every 10 ms,
+  ~0.3 s); never started: 0.
+- **Calibration.** Two points, FAR and NEAR, the level x 2 in `favorites.factory[6][22]` / `[23]` (TRIO's retired row,
+  always 0 before: equal = not calibrated, PROX reads 0). PROX = (level - FAR) / (NEAR - FAR), clamped 0..1, either
+  direction.
+- **Source.** `mod.c MS_PROX` (15, after NOISE; unipolar, 0..32767, `mod_prox`), "PROX" in `N_MSRC` (every SRC list,
+  the MOD page's net) and the web editor. `mod_tsrc` changed: the sound's code repinned.
+- **UI.** MENU > SYSTEM > BLUETOOTH ON with the radio running: OCT+ (breathing) opens the PROX page in the menu's panel
+  (`ui.menu` 3; `ui_menu.c bt_prox_panel`, in the segment): a meter, PROX in %, LEVEL and the raw word (hex), FAR / NEAR;
+  OCT- stores FAR (the hand away), OCT+ NEAR (the hand on the back, top left, over the antenna); SELECT / ALGORITHM back,
+  HOME closes the menu (and saves).
+- **Flash.** MENU > ABOUT's AUDIO LOAD block also moved to the segment (`about_load`). App 581,616 B (2,720 B free),
+  RAM unchanged, pool spare 9,536 B (-32: the RSSI ring), segment 33,260 B (9 sectors).
+- **Layout.** `tools/build.py` `FELUCCA_REPIN=keep` records the addresses anew in the order recorded before (=1 takes
+  the compiler's order, which here moved the engines' code by up to 37 KB); the sound's code is within ~0.7 KB (one
+  function 2.2 KB) of V10.12's. A REPIN also records the sound's tables ('r') after the UI's have left `.rodata`.
+- **Tests.** `tests/ui_test.c` (level, page, FAR / NEAR, map, clamps, outlier, gap, disconnect), `tests/mod_test.c`
+  (PROX on CUT), `tests/ui_render.c` (menu_prox, menu_prox_off).

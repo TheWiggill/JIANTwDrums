@@ -2659,6 +2659,78 @@ static int test_menu_tabs(void)
               menu_lines(ABOUT_CREDITS, 0, 0) > 46 * 18 && menu_scroll_max() > 60 * 18;
     }
     bad += check("V10.13 ABOUT: THE PROJECT, CREDITS and LICENSES as lines of the Bluetooth segment (kind, text), all read", ok);
+
+    /* (V10.14) PROX: the RSSI words as a level (median of five, one pole), 0 until both points are stored; the page
+     * (BLUETOOTH ON with the radio running: OCT+), OCT- FAR, OCT+ NEAR, the map between them clamped; an outlier
+     * ignored; no packets: held; the central gone: back to 0 slowly; SELECT back to the rows */
+    {
+#define LV(x) (uint16_t)(((x) / 2u) | ((x) - (x) / 2u) << 8)
+        uint16_t w[40];
+        uint32_t k, t = 100000u;
+        int32_t before;
+        ui_power_on();
+        memset(&favorites.factory[6][22], 0, 10);
+        memset(&bp, 0, sizeof bp);
+        mod_prox = 0;
+        ok = MS_PROX == 15 && MS_N == 16 && str_eq(N_MSRC[MS_PROX], "PROX") && !MS_BIPOLAR(MS_PROX);
+        for (k = 0; k < 40u; k++)
+            w[k] = LV(80u);
+        bt_prox_step(w, 8, 1, t);
+        ok &= mod_prox == 0 && bp.have && bp.lvl == 80 << 8 && bp.raw == LV(80u);   /* (not calibrated) */
+        ui.menu = 1;
+        ui.menu_sel = MI_BT;
+        press(B_OCTUP);
+        ok &= ui.menu == 1u;                               /* (OFF: OCT+ turns it on: NO SEG here, no page) */
+        bt_set(1);
+        bt_up = BT_RUN;
+        ui.menu = 1;
+        ui.menu_sel = MI_BT;
+        ok &= (oct_leds() & OCT_BREATH) != 0u;
+        press(B_OCTUP);
+        ok &= ui.menu == 3u && menu_get(MI_BT) == 1u;
+        press(B_OCTDN);                                    /* FAR: the hand away, level 80 */
+        ok &= ui.menu == 3u && favorites.factory[6][22] == 160u && msg_is("PROX FAR SET") && menu_get(MI_BT) == 1u;
+        for (k = 0; k < 40u; k++)
+            w[k] = LV(40u);
+        bt_prox_step(w, 40, 1, t += 400u);
+        press(B_OCTUP);                                    /* NEAR: the hand on the antenna, level 40 */
+        bt_prox_step(w, 0, 1, t += 10u);
+        ok &= favorites.factory[6][23] == 80u && msg_is("PROX NEAR SET") && mod_prox > 32600;
+        for (k = 0; k < 40u; k++)
+            w[k] = LV(60u);
+        bt_prox_step(w, 40, 1, t += 400u);
+        ok &= mod_prox > 16200 && mod_prox < 16600;        /* (half way) */
+        w[0] = LV(0u);
+        before = mod_prox;
+        bt_prox_step(w, 1, 1, t += 10u);
+        ok &= mod_prox > before - 50 && mod_prox < before + 50;   /* (one packet far off: the median keeps it) */
+        before = mod_prox;
+        bt_prox_step(w, 0, 1, t += 500u);
+        ok &= mod_prox == before;                          /* (no packets: held) */
+        for (k = 0; k < 40u; k++)
+            w[k] = LV(100u);
+        bt_prox_step(w, 40, 1, t += 400u);
+        ok &= mod_prox == 0;                               /* (farther than FAR: clamped) */
+        for (k = 0; k < 40u; k++)
+            w[k] = LV(50u);
+        bt_prox_step(w, 40, 1, t += 400u);
+        before = mod_prox;
+        bt_prox_step(w, 0, 0, t += 100u);                  /* the central gone */
+        ok &= before > 20000 && mod_prox < before && mod_prox > before / 2 && !bp.have;
+        for (k = 0; k < 30u; k++)
+            bt_prox_step(w, 0, 0, t += 100u);
+        ok &= mod_prox == 0;
+        turn(EN_SELECT, 1);
+        ok &= ui.menu == 1u;
+        menu_close();
+        memset(&favorites.factory[6][22], 0, 10);
+        memset(&bp, 0, sizeof bp);
+        bt_up = 0;
+        mod_prox = 0;
+#undef LV
+    }
+    bad += check("V10.14 PROX: the RSSI level, its page (OCT+ on BLUETOOTH ON), FAR / NEAR stored, mapped and clamped, an outlier "
+                 "and a gap held, back to 0 without a central", ok);
     return bad;
 }
 

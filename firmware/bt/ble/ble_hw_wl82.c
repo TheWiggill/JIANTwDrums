@@ -942,6 +942,11 @@ static void hw_rx_service(void)
             BLE_DG(ble_dg.rxc_tog_at++);
         drv.rx_next ^= 1u;
         drv.rx_seen = drv.rx_any = 1;
+#ifdef BLE_HW_RX_RSSI
+        if ((st & 0xFu) == 1u)                             /* (JIANT V10.14) a good packet's RSSI word (HW §3 0x138:
+                                                            * RSSI2 / RSSI3 by the buffer, unverified) */
+            BLE_HW_RX_RSSI(CB->rssi[2u + b]);
+#endif
         if (!hwd.first_rx) {                               /* (diagnostics) the first packet of this connection */
             hwd.first_rx = 1;
             BLE_DG(ble_dg.first_rx_us = (fm1_ticks() - hwd.conn_t0) / FM1_TICKS_PER_US);

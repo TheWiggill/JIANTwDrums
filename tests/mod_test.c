@@ -666,7 +666,15 @@ static void test_jiant_078(void)
     fresh(ea, 0);
     trk[0].p[P_M1SRC] = MS_NOISE; trk[0].p[P_M1DST] = MD_CUT; trk[0].p[P_M1AMT] = 40;
     h = phrase();
-    check("0.7.8: the NOISE source moves the filter (its own sound)", h != a0 && MS_NOISE == 14 && MS_N == 15);
+    check("0.7.8: the NOISE source moves the filter (its own sound)", h != a0 && MS_NOISE == 14 && MS_N == 16);
+    fresh(ea, 0);
+    trk[0].p[P_M1SRC] = MS_PROX; trk[0].p[P_M1DST] = MD_CUT; trk[0].p[P_M1AMT] = 40;
+    mod_prox = 0;
+    h = phrase();
+    mod_prox = 32767;
+    check("V10.14: PROX on CUT: 1 (a hand on the antenna) sounds other than 0 (Bluetooth off, no central)",
+          phrase() != h && MS_PROX == 15);
+    mod_prox = 0;
 }
 
 /* (JIANT) the new sound: DIST TYPE (each type its own sound, SOFT as before), the modulation sequence (STEP), the

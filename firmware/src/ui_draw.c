@@ -243,7 +243,7 @@ static uint16_t head_title(char *b)
                                          pg->fam == FAM_GLO || pg->fam == FAM_SAVE);
     if (ui.menu) {                                      /* (0.8.5) the menu: "MENU . DISPLAY", "ABOUT / CREDITS" */
         str_cpy(b, ui.menu == 2 ? "ABOUT / CREDITS" : "MENU \xB7 ", 40);
-        if (ui.menu == 1)
+        if ((ui.menu | 2u) == 3u)
             str_cpy(b + str_len(b), MTAB_NAME[MI_TAB[ui.menu_sel % MI_COUNT]], 16);
         return T_MID;
     }

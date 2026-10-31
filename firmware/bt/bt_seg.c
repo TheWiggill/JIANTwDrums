@@ -20,6 +20,7 @@
  *                        audio buffer silent, the second core parked
  *   bt_seg_enable(on)    advertising on again / off (and any link closed); the radio stays set up until power-off
  *   bt_seg_status()      bit 0 a central connected, bit 1 its MIDI notifications on, [15:8] connections since start
+ *   bt_seg_rssi(w, rd)   (V10.14) the RSSI words of the good packets received since the last call (PROX)
  * (V10.13) MIDI both ways (bt_midi.h): what a central writes, decoded by the stack (ble_midi.c), goes into the app's MIDI
  * input ring as USB's does (bt_midi_accept, then the app's bt_midi_rx: src/bt.c); MIDI OUT's copy (the app's bt_oq, filled
  * by the audio interrupt while a central listens) goes out in the notifications the stack packs each connection event
@@ -40,6 +41,17 @@
 #include "fm1_time.h"
 #include "fm1_irq.h"
 #include "fm1_guard.h"
+/* (V10.14) PROX: the RSSI word of every good packet on the link (ble_hw_wl82.c hw_rx_service, the RX interrupt: one a
+ * connection event, 89..133 a second), kept in a ring the app reads (bt_seg_rssi; src/bt.c filters it) */
+static volatile uint16_t bs_rq[16];
+static volatile uint32_t bs_rw;
+static void bs_rssi(uint16_t w)
+{
+    bs_rq[bs_rw & 15u] = w;
+    RING_PUBLISH();
+    bs_rw++;
+}
+#define BLE_HW_RX_RSSI(w) bs_rssi(w)
 #include "ble/ble_stack.c"
 
 /* the segment's header, first in it (app.ld .bt_head): magic, payload length, CRC-32 of the payload (zlib), filled by
@@ -124,4 +136,17 @@ void bt_seg_enable(int on)
 uint32_t bt_seg_status(void)
 {
     return (uint32_t)ble_connected() | (uint32_t)ble_midi_ready() << 1 | (uint32_t)bs_conns << 8;
+}
+
+/* (V10.14) the RSSI words since *rd (the newest 16 at most: a main loop held up by a flash write loses the older) */
+uint32_t bt_seg_rssi(uint16_t *w, uint32_t *rd)
+{
+    uint32_t e = bs_rw, n = e - *rd, i;
+    RING_PUBLISH();
+    if (n > 16u)
+        n = 16u;
+    for (i = 0; i < n; i++)
+        w[i] = bs_rq[(e - n + i) & 15u];
+    *rd = e;
+    return n;
 }

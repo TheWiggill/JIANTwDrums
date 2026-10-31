@@ -92,7 +92,9 @@ static uint32_t oct_leds(void)
     if (layer_set_open())                               /* a SET layer: OCT± do nothing (TONIC: no put back); */
         return ui.layer == LAYER_FX ? 1u : 0u;          /* FX LATCH: OCT- all off, lit */
     if (ui.menu && !ui.confirm)
-        return ui.menu >= 2u ? 1u :                    /* (ABOUT: OCT- back, lit) */
+        return ui.menu == 3u || (ui.menu_sel == MI_BT && bt_prox_ok()) ? (ui.menu == 3u ? OCT_BREATH_DN : 1u) | OCT_BREATH :
+               ui.menu == 2u ? 1u :                    /* (ABOUT: OCT- back, lit; V10.14 PROX's page: OCT- FAR, OCT+ NEAR;
+                                                        * BLUETOOTH ON: OCT- OFF lit, OCT+ opens PROX) */
                ui.menu_sel >= MI_VALUES ? OCT_BREATH :  /* CALIBRATION / ABOUT: OCT+ opens */
                (menu_step(ui.menu_sel, -1) != menu_get(ui.menu_sel) ? OCT_BREATH_DN : 0u) |   /* a value: each */
                (menu_step(ui.menu_sel, 1) != menu_get(ui.menu_sel) ? OCT_BREATH : 0u);         /* way it can go */

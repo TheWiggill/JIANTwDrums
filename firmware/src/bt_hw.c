@@ -9,6 +9,7 @@ extern const volatile uint32_t _bt_start[];            /* (app.ld: the segment's
 int bt_seg_start(const uint8_t addr[6]);
 void bt_seg_enable(int on);
 uint32_t bt_seg_status(void);
+uint32_t bt_seg_rssi(uint16_t *w, uint32_t *rd);
 /* build.py finds this by name and writes the segment's payload length and CRC-32 into the image (a section of its own,
  * after the code: in .rodata it would move the sound's tables, tools/audio_layout.txt 'r' rows) */
 __attribute__((used, section(".rodata.btwant"))) static const volatile uint32_t bt_want[3] = {0x544E5742u, 0u, 0u};   /* BWNT */
@@ -67,3 +68,4 @@ static int bt_hw_start(uint8_t addr[6])
 }
 static void bt_hw_enable(int on) { bt_seg_enable(on); }
 static uint32_t bt_hw_status(void) { return bt_up == BT_RUN ? bt_seg_status() : 0u; }
+static uint32_t bt_hw_rssi(uint16_t *w, uint32_t *rd) { return bt_up == BT_RUN ? bt_seg_rssi(w, rd) : 0u; }

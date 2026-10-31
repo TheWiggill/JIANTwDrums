@@ -179,6 +179,48 @@ static __attribute__((noinline)) int32_t about_cpu(int32_t y, int draw)
     y = menu_text(crash_log_get(b) ? b : "NONE", y, T_TEXT, draw);
     return y;
 }
+/* (0.6.17) the audio's load since power-on (voice.c load_diag): to tell what happened when it clicked. (V10.13) In the
+ * segment (bt.c BTAPP_FN): without it ABOUT goes on with the CPU lines */
+BTAPP_FN static int32_t about_load(int32_t y, int draw)
+{
+    char b[40], n[12];
+    y = menu_text("AUDIO LOAD", y, T_THEME, draw);
+    str_cpy(b, "NOW ", sizeof b); fmt_int(n, (int32_t)((song.cpu_q8 * 100u) >> 8)); str_cpy(b + str_len(b), n, 8);
+    str_cpy(b + str_len(b), "%  PEAK ", 10); fmt_int(n, (int32_t)load_diag.peak); str_cpy(b + str_len(b), n, 8);
+    str_cpy(b + str_len(b), "%", 2);
+    y = menu_text(b, y, T_TEXT, draw);
+    str_cpy(b, "LATE ", sizeof b); fmt_int(n, (int32_t)load_diag.late); str_cpy(b + str_len(b), n, 12);
+    str_cpy(b + str_len(b), "  SHED ", 8); fmt_int(n, (int32_t)load_diag.shed); str_cpy(b + str_len(b), n, 12);
+    y = menu_text(b, y, T_TEXT, draw);
+    y = menu_text(cpu_status(), y, T_TEXT, draw);   /* (the second core: fx.c; p1: MENU > CPU CORES, cpu_safe.c) */
+    /* Existing per-block scheduler timings, read while main is running:
+     * audio IRQ dispatches and joins core 1 before returning to this UI.
+     * These elapsed times overlap across cores; do not add them as load. */
+    {
+        uint32_t k;
+        char d[96];
+        str_cpy(d, "VOICES ", sizeof d); fmt_int(n, voices_busy()); str_cpy(d+str_len(d), n, 12);
+        str_cpy(d+str_len(d), " CAP ", 6); fmt_int(n, voice_cap()); str_cpy(d+str_len(d), n, 12);
+        y = menu_text(d, y, T_TEXT, draw);
+        str_cpy(d, "ALLOC CUT ", sizeof d); fmt_int(n, voice_kills-voice_trims-shed_count); str_cpy(d+str_len(d), n, 12);
+        str_cpy(d+str_len(d), " TRIM ", 7); fmt_int(n, voice_trims); str_cpy(d+str_len(d), n, 12);
+        y = menu_text(d, y, T_TEXT, draw);
+        str_cpy(d, "FX ", sizeof d); fmt_int(n, mc_fx_tk/24u); str_cpy(d+str_len(d), n, 12);
+        str_cpy(d+str_len(d), " us/block", 10);
+        y = menu_text(d, y, T_TEXT, draw);
+        for (k=0; k<trk_live && k<NTRK; k++) {
+            uint32_t v, live=0;
+            for (v=0; v<NVOICE; v++) live += trk[k].v[v].active;
+            str_cpy(d, "T", sizeof d); fmt_int(n, k+1); str_cpy(d+str_len(d), n, 12);
+            str_cpy(d+str_len(d), " ", 2); str_cpy(d+str_len(d), ENGINES[trk[k].engine]->name, 20);
+            str_cpy(d+str_len(d), " V", 3); fmt_int(n, live); str_cpy(d+str_len(d), n, 12);
+            str_cpy(d+str_len(d), " ", 2); fmt_int(n, mc_tk[k]/24u); str_cpy(d+str_len(d), n, 12);
+            str_cpy(d+str_len(d), " us", 4);
+            y = menu_text(d, y, T_TEXT, draw);
+        }
+    }
+    return y;
+}
 static int32_t menu_document(int32_t y, int draw)
 {
     if (draw) {
@@ -195,48 +237,10 @@ static int32_t menu_document(int32_t y, int draw)
         draw_about_qr(158, y + 122);
     }
     y = menu_lines(ABOUT_PROJECT, y + 216, draw);
-    y -= 216;
-    {   /* (0.6.17) the audio's load since power-on (voice.c load_diag): to tell what happened when it clicked */
-        char b[40], n[12];
-        y = menu_text("AUDIO LOAD", y + 216, T_THEME, draw);
-        str_cpy(b, "NOW ", sizeof b); fmt_int(n, (int32_t)((song.cpu_q8 * 100u) >> 8)); str_cpy(b + str_len(b), n, 8);
-        str_cpy(b + str_len(b), "%  PEAK ", 10); fmt_int(n, (int32_t)load_diag.peak); str_cpy(b + str_len(b), n, 8);
-        str_cpy(b + str_len(b), "%", 2);
-        y = menu_text(b, y, T_TEXT, draw);
-        str_cpy(b, "LATE ", sizeof b); fmt_int(n, (int32_t)load_diag.late); str_cpy(b + str_len(b), n, 12);
-        str_cpy(b + str_len(b), "  SHED ", 8); fmt_int(n, (int32_t)load_diag.shed); str_cpy(b + str_len(b), n, 12);
-        y = menu_text(b, y, T_TEXT, draw);
-        y = menu_text(cpu_status(), y, T_TEXT, draw);   /* (the second core: fx.c; p1: MENU > CPU CORES, cpu_safe.c) */
-        /* Existing per-block scheduler timings, read while main is running:
-         * audio IRQ dispatches and joins core 1 before returning to this UI.
-         * These elapsed times overlap across cores; do not add them as load. */
-        {
-            uint32_t k;
-            char d[96];
-            str_cpy(d, "VOICES ", sizeof d); fmt_int(n, voices_busy()); str_cpy(d+str_len(d), n, 12);
-            str_cpy(d+str_len(d), " CAP ", 6); fmt_int(n, voice_cap()); str_cpy(d+str_len(d), n, 12);
-            y = menu_text(d, y, T_TEXT, draw);
-            str_cpy(d, "ALLOC CUT ", sizeof d); fmt_int(n, voice_kills-voice_trims-shed_count); str_cpy(d+str_len(d), n, 12);
-            str_cpy(d+str_len(d), " TRIM ", 7); fmt_int(n, voice_trims); str_cpy(d+str_len(d), n, 12);
-            y = menu_text(d, y, T_TEXT, draw);
-            str_cpy(d, "FX ", sizeof d); fmt_int(n, mc_fx_tk/24u); str_cpy(d+str_len(d), n, 12);
-            str_cpy(d+str_len(d), " us/block", 10);
-            y = menu_text(d, y, T_TEXT, draw);
-            for (k=0; k<trk_live && k<NTRK; k++) {
-                uint32_t v, live=0;
-                for (v=0; v<NVOICE; v++) live += trk[k].v[v].active;
-                str_cpy(d, "T", sizeof d); fmt_int(n, k+1); str_cpy(d+str_len(d), n, 12);
-                str_cpy(d+str_len(d), " ", 2); str_cpy(d+str_len(d), ENGINES[trk[k].engine]->name, 20);
-                str_cpy(d+str_len(d), " V", 3); fmt_int(n, live); str_cpy(d+str_len(d), n, 12);
-                str_cpy(d+str_len(d), " ", 2); fmt_int(n, mc_tk[k]/24u); str_cpy(d+str_len(d), n, 12);
-                str_cpy(d+str_len(d), " us", 4);
-                y = menu_text(d, y, T_TEXT, draw);
-            }
-        }
-        y = about_cpu(y, draw);                     /* (p1: out of line, menu_document's room is pinned) */
-        y = y - 216 + 8;
-    }
-    y = menu_lines(ABOUT_CREDITS, y + 216, draw);
+    if (bt_hw_seg())                                    /* (V10.13: in the segment) */
+        y = about_load(y, draw);
+    y = about_cpu(y, draw);                             /* (p1: out of line, menu_document's room is pinned) */
+    y = menu_lines(ABOUT_CREDITS, y + 8, draw);
     return y + 4;
 }
 static int32_t menu_scroll_max(void)
@@ -378,13 +382,70 @@ static void menu_panel(void)
         }
     }
 }
+/* (V10.14) MENU > SYSTEM > BLUETOOTH, OCT+ while ON and running (ui.menu 3): PROX's page in the panel, its texts and
+ * code in the segment (bt.c BTAPP_*; it opens only with the radio running: the segment checked). A meter of PROX, the
+ * level and the last RSSI word (hex), the two points; OCT- stores FAR (the hand away), OCT+ NEAR (the hand on the back
+ * over the antenna, top left); SELECT or ALGORITHM back to the rows, HOME closes the menu (saved there, menu_close) */
+static const char BP_S[][28] BTAPP_RO = {"BLUETOOTH \xB7 PROX", "SELECT: BACK", "NOT CONNECTED", "NOT CALIBRATED",
+                                          "OCT-  FAR: THE HAND AWAY", "OCT+  NEAR: THE HAND ON THE", "BACK, TOP LEFT (ANTENNA)",
+                                          "PROX FAR SET", "PROX NEAR SET", "LEVEL ", "   RAW ", "FAR ", "   NEAR ", "%"};
+BTAPP_FN static void bt_prox_panel(const aafont_t *fx, const aafont_t *fm, const aafont_t *fs)   /* (the fonts
+                                                                                                  * from the app: V10.14) */
+{
+    char b[40];
+    uint32_t k;
+    int32_t p = mod_prox;
+    cv_text(10, 6 - AF_X_CAP_Y, fx, BP_S[0], T_THEME);
+    cv_text_r(228, 6 - AF_X_CAP_Y, fx, BP_S[1], T_DIM, T_SURF);
+    cv_rect(10, 18, 220, 14, T_RAISE);
+    if (p * 220 / 32767)
+        cv_rect(10, 18, p * 220 / 32767, 14, T_ACCENT);
+    fmt_int(b, p * 100 / 32767);
+    str_cpy(b + str_len(b), BP_S[13], 2);
+    cv_text(10, 40 - AF_M_CAP_Y, fm, b, T_TEXT);
+    if (bp.conn && bp.have) {
+        str_cpy(b, BP_S[9], sizeof b);
+        fmt_fix(b + str_len(b), bp.lvl * 10 / 256, 1);
+        str_cpy(b + str_len(b), BP_S[10], 10);
+        for (k = 0; k < 4u; k++)
+            b[str_len(b) + 1u] = 0, b[str_len(b)] = "0123456789ABCDEF"[bp.raw >> (12u - 4u * k) & 15u];
+    } else
+        str_cpy(b, BP_S[2], sizeof b);
+    cv_text(10, 64 - AF_S_CAP_Y, fs, b, T_TEXT);
+    if (BT_CAL[0] != BT_CAL[1]) {
+        str_cpy(b, BP_S[11], sizeof b);
+        fmt_fix(b + str_len(b), BT_CAL[0] * 5, 1);
+        str_cpy(b + str_len(b), BP_S[12], 10);
+        fmt_fix(b + str_len(b), BT_CAL[1] * 5, 1);
+    } else
+        str_cpy(b, BP_S[3], sizeof b);
+    cv_text(10, 82 - AF_S_CAP_Y, fs, b, T_MID);
+    for (k = 0; k < 3u; k++)
+        cv_text(10, 98 + 10 * (int32_t)k - AF_X_CAP_Y, fx, BP_S[4u + k], T_DIM);
+}
+BTAPP_FN static void bt_prox_input(uint32_t up, uint32_t dn)
+{
+    if (panel_enc(EN_SELECT) || panel_enc(EN_ALGO)) {
+        ui.menu = 1;
+        ui.force = 1;
+    } else if (up || dn) {
+        if (!bp.conn || !bp.have) {
+            ui_message(BP_S[2]);
+            return;
+        }
+        BT_CAL[up] = (uint8_t)clamp((bp.lvl + 64) >> 7, 0, 252);
+        ui_message(BP_S[7u + up]);
+    }
+}
+static uint32_t bt_prox_sig(void) { return ui.menu == 3 ? (uint32_t)mod_prox * 31u + bp.raw * 977u + bp.conn * 5u + BT_CAL[0] * 3u + BT_CAL[1] * 7u : 0u; }
+
 static void confirm_open(uint32_t kind, uint32_t trk);   /* (0.6.58) INIT SYSTEM: ui_input.c */
 static void draw_menu(void)
 {
     uint32_t sig;
     sig = ui.menu * 7u + ui.menu_sel * 131u + settings.palette * 1009u + settings.lowcut * 7919u + settings_hold * 3511u +
           settings_leds * 6151u + ui_prefs * 4099u + ui_style * 257u + ui_skin * 1543u + song.rec * 65537u + song.sel * 13u +
-          ui_rec_prefs * 92821u + ui_scr * 131071u + ui.mlv * 0x9E3779B1u + bt_hw_status() * 40961u + bt_up * 77u +   /* (#157: SCREEN OFF's value redraws its row) */
+          ui_rec_prefs * 92821u + ui_scr * 131071u + ui.mlv * 0x9E3779B1u + bt_hw_status() * 40961u + bt_up * 77u + bt_prox_sig() +   /* (#157: SCREEN OFF's value redraws its row) */
           (ui.menu == 2 ? ui.menu_scroll * 48611u : 0u) +
           (ui.menu == 2 ? (song.cpu_q8 >> 3) * 7741u + load_diag.peak * 3329u + load_diag.late * 1931u +
                           load_diag.shed * 2671u + (audio_halves / 64u) * 4657u : 0u);   /* (0.6.19) ABOUT's AUDIO LOAD: live (NOW in ~3 % steps) */
@@ -392,7 +453,7 @@ static void draw_menu(void)
     if (!ui.force && sig == ui.menu_sig)
         return;
     ui.menu_sig = sig;
-    if (ui.menu >= 2) {
+    if (ui.menu == 2) {
         uint32_t pass;
         int32_t scroll = ui.menu_scroll, max = menu_scroll_max();
         int32_t thumb = MENU_DOC_H * MENU_DOC_H / (max + MENU_DOC_H);
@@ -433,7 +494,10 @@ static void draw_menu(void)
     cv_begin(240, LZ_GRAPH_H, T_BG);
     cv_rect(4, 0, 232, LZ_GRAPH_H, T_SURF);
     cv_bg = T_SURF;
-    menu_panel();
+    if (ui.menu == 3)
+        bt_prox_panel(&AF_X, &AF_M, &AF_S);            /* (V10.14) */
+    else
+        menu_panel();
     cv_blit(0, LZ_GRAPH_Y);
     draw_foot();
 }
@@ -467,7 +531,15 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
 {
     int32_t s;
     uint32_t k, up = (oct >> 1) & 1u, dn = oct & 1u;
-    if (ui.menu >= 2) {                                /* ABOUT: SELECT scrolls (bounded), OCT- back to the tabs */
+    if (ui.menu == 3) {                                /* (V10.14) PROX's page (only opened with the radio running) */
+        if (bt_up == BT_RUN)
+            bt_prox_input(up, dn);
+        else
+            ui.menu = 1;
+        enc_drop();
+        return;
+    }
+    if (ui.menu == 2) {                                /* ABOUT: SELECT scrolls (bounded), OCT- back to the tabs */
         if (dn)
             ui.menu = 1, ui.force = 1;
         else if ((s = panel_enc(EN_SELECT)) != 0)
@@ -482,7 +554,10 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         menu_tab_go(s);
     for (s = 0, k = 0; k < 4u; k++)                    /* KNOB 1..4, any of them */
         s += panel_enc(EN_K1 + k);
-    if (ui.menu_sel < MI_VALUES) {
+    if (ui.menu_sel == MI_BT && up && bt_prox_ok()) {  /* (V10.14) BLUETOOTH ON: OCT+ opens PROX's page */
+        ui.menu = 3;
+        ui.force = 1;
+    } else if (ui.menu_sel < MI_VALUES) {
         /* a step (OCT+ the next value, OCT- the previous); COLOR previews the palette, STYLE is drawn so from the next
          * frame (FX LATCH: the latched effects are off while the menu is up) */
         s += (int32_t)up - (int32_t)dn;

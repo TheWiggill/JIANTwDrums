@@ -672,10 +672,10 @@ static uint32_t lens_level(void)                        /* SEQ: the level the pa
     return g == GR_PATS || g == GR_SONG ? LV_PAT : g == GR_CHANCE ? LV_STEP : nav_lv();
 }
 static int home_lz(void) { return (ui.home && !ui.menu && !dlg_on()) || gen_on(); }   /* (GEN: HOME's) */
-static uint32_t lz_on(void) { return ((lens_on() || save_on() || fx_on() || pd_on() || home_lz()) && !ui.layer && !name_on()) || ui.menu == 1u || (ui.layer && !ui.menu); }
+static uint32_t lz_on(void) { return ((lens_on() || save_on() || fx_on() || pd_on() || home_lz()) && !ui.layer && !name_on()) || (ui.menu | 2u) == 3u || (ui.layer && !ui.menu); }
 static uint32_t lz_fam(void)                            /* which lens */
 {
-    if (ui.menu == 1u)                                  /* (0.8.5) the menu (ui_menu.c) */
+    if ((ui.menu | 2u) == 3u)                           /* (0.8.5) the menu (ui_menu.c; V10.14: 3 PROX) */
         return LZ_MENU;
     if (ui.layer)                                       /* .. a layer held: MAP . KNOBS . STATE (ui_layer.c) */
         return LZ_LAYER;

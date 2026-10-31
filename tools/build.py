@@ -215,6 +215,7 @@ def hot_sections(ir):
 # every audio function ('a') and constant table ('r') is checked at its address. Code the UI loses leaves a hole before
 # the next run: build.py fills it with the UI's constant tables ('n': fonts, icons, ...; moved out of .rodata into
 # .rodata.n.<name>), so the image shrinks while the sound stays where it was. FELUCCA_REPIN=1 records the layout anew
+# (FELUCCA_REPIN=keep: in the order recorded before, V10.14)
 # (after a change to the sound's code, which moves what follows it in its run)
 LAYOUT = SRC / "tools" / "audio_layout.txt"
 LAYOUT_LD = OUT / "layout.ld"
@@ -448,16 +449,23 @@ def build_app():
         link()
     else:
         reach = size_fns.isr_reach((OUT / "felucca_size.ll").read_text(), True)
-        if os.environ.get("FELUCCA_REPIN") == "1" or not LAYOUT.exists():
+        repin = os.environ.get("FELUCCA_REPIN")
+        if repin in ("1", "keep") or not LAYOUT.exists():
+            # (V10.14) FELUCCA_REPIN=keep: the code in the order recorded before (new functions after it), only the
+            # addresses recorded anew: the sound moves by what grew before it, not by the compiler's new order (=1: the
+            # compiler's order, which a change elsewhere can reshuffle by tens of KB)
+            keep = [n for _, f, n in layout_read() if f in "@a-"] if repin == "keep" and LAYOUT.exists() else []
             compile_hot([])
-            LAYOUT_LD.write_text("*(.text*)\n")
+            LAYOUT_LD.write_text("".join(f"*(.text.{n})\n" for n in keep) + "*(.text*)\n")
             mapt, syms = link()
             layout_record(mapt, syms, reach)
             rows = layout_read()          # (the merged constants' place once the UI's tables have left .rodata)
             compile_hot(rows)
             layout_ld(rows)
             symt = sym_table(link(probe=True)[1])   # (p1) the UI's tables not yet in the holes: in the larger region
-            layout_write([f"{(symt[n] - APP_XIP) if f == 'c' else o:06x} {f} {n}" for o, f, n in rows])
+            # (V10.14) the sound's tables ('r') too, as they sit once the UI's have left .rodata: the compiler's order
+            # may put a UI table ('n') before one of them (V10.14: HALO_X / HALO_Y before FM1_KEYMAP), which then moved
+            layout_write([f"{(symt[n] - APP_XIP) if f in 'cr' and n in symt else o:06x} {f} {n}" for o, f, n in rows])
         rows = layout_read()
         aligns = compile_hot(rows)
         layout_ld(rows)
