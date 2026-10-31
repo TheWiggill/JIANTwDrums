@@ -463,8 +463,9 @@ static void hint_tick(void)
     else if (k == HK_PUNCH)
         ui_message("REC + PLAY, HOLD FX + A KEY");      /* (0.6.99) the lane's recording */
     else {                                              /* (V10.6) HK_EUCLID */
-        ui_message("TURN A KNOB: A PATTERN");
-        str_cpy(ui.msg2, "OCT+ NEW  OCT- BEFORE", sizeof ui.msg2);
+        int mu = cur_page()->id[0] == ID_MU0;           /* (V10.16) MUTATE's keys */
+        ui_message(mu ? "EVERY: MUTATE ON THE BAR" : "TURN A KNOB: A PATTERN");
+        str_cpy(ui.msg2, mu ? "OCT+ MUTATE  OCT- ANCHOR" : "OCT+ NEW  OCT- BEFORE", sizeof ui.msg2);
     }
     ui.hint_pg = (uint8_t)at;                           /* (0.9.0: this page's only) */
 }

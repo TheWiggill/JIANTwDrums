@@ -64,7 +64,7 @@ enum { LV_PAT, LV_BAR, LV_STEP, LV_N };                 /* SEQ's pictures: the b
  * PLAYHEADS . STRETCH . COMP (COMP 2 after it, by SELECT as before) . AUTO (AUTOMATION, AUTO LIST). BAR and NOTE stay pages
  * (code puts them) but out of the chain, until the step held opens its own (the mock-up's slice 5) */
 static const nv_t CE_SEQ[] = {NV("STEP", 0, 0, LV_BAR), NV("PATTERN", "LENGTH", 1, LV_PAT), NV("TRACK", 0, 1, LV_PAT),
-                              NV("EUCLID", 0, 2, LV_PAT), NV("MODES", 0, 2, LV_PAT),
+                              NV("EUCLID", 0, 2, LV_PAT), NV("MODES", 0, 2, LV_PAT), NV("MUTATE", 0, 2, LV_PAT),
                               NV("PLAYHEADS", 0, 3, LV_PAT), NV("STRETCH", 0, 4, LV_PAT),
                               NV("COMP", 0, 5, LV_STEP), NV("COMP 2", 0, 5, LV_STEP), NV("AUTOMATION", 0, 6, LV_BAR),
                               NV("AUTO LIST", 0, 6, LV_BAR)};

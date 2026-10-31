@@ -690,6 +690,108 @@ static uint32_t lane_steps(const track_t *t, uint32_t l)   /* bit i: lane l stri
     return m;
 }
 static void go_title(const char *title);
+/* (V10.16) EUCLID's VARY in turns (A A' A'' B, each cycle moved anew, HITS exact in each) and SEQ > MUTATE (on the bar,
+ * ORBIT round the anchor, DRIFT on, PULSE by turns; OCT+ a mutation now, OCT- back to the anchor) */
+static uint32_t eu_cyc_sig(const track_t *t, uint32_t c, uint32_t n, uint32_t lane)
+{
+    uint32_t i, h = 2166136261u;
+    for (i = 0; i < n; i++) {
+        const step_t *s = &t->step[c * n + i];
+        h = (h ^ (lane < NLANE ? (step_lanes(s) >> lane) & 1u : s->time == ST_NOTE ? s->note[0] : 0u)) * 16777619u;
+    }
+    return h;
+}
+static uint32_t mel_sig(const track_t *t)               /* (the notes and times: a TIE keeps its old bytes) */
+{
+    return eu_cyc_sig(t, 0, 16, NLANE) ^ eu_cyc_sig(t, 1, 16, NLANE) * 3u ^ eu_cyc_sig(t, 2, 16, NLANE) * 5u ^
+           eu_cyc_sig(t, 3, 16, NLANE) * 7u;
+}
+static int test_eumutate(void)
+{
+    int bad = 0, ok;
+    uint32_t i, c, n, s0, diff;
+    track_t *d = &trk[0], *m = &trk[1];
+    ui_power_on();
+    set_engine_of(d, ENGI_DRUM); set_engine_of(m, ENGI_ANALOG);
+    memset(eu, 0, sizeof eu);
+    song.sel = 0; frame();
+    go_title("EUCLID"); frame();
+    eu_put(EK_HITS, 6); frame();                         /* a kit, VARY 30 (its default) */
+    ok = d->p[P_SLEN] == 64;
+    for (c = diff = 0; c < 4u; c++) {
+        for (i = n = 0; i < 16u; i++) n += (step_lanes(&d->step[c * 16u + i]) >> DV_KICK) & 1u;
+        ok &= n == eu[0].l[DV_KICK].h;                   /* (HITS exact in each turn) */
+    }
+    eu_put(EK_M0 + 3u, 90); frame();                     /* MODES' VARY up */
+    s0 = eu_cyc_sig(d, 0, 16, DV_HATC);
+    for (c = 1, diff = 0; c < 4u; c++) diff += eu_cyc_sig(d, c, 16, DV_HATC) != s0;
+    ok &= diff >= 2u;
+    eu_put(EK_M0 + 3u, 0); frame();
+    ok &= d->p[P_SLEN] == 16;                            /* (VARY 0: one turn, as before) */
+    bad += check("V10.16 VARY on a kit: four turns (64 steps), each moved anew (HITS exact in each); VARY 0 one turn", ok);
+    song.sel = 1; frame();
+    m->p[P_SCALE] = 2; m->p[P_ROOT] = 0;
+    go_title("EUCLID"); frame();
+    eu_put(EK_K4, 80); frame();                          /* the melody's VARY */
+    ok = m->p[P_SLEN] == 64;
+    s0 = eu_cyc_sig(m, 0, 16, NLANE);
+    for (c = 1, diff = 0; c < 4u; c++) diff += eu_cyc_sig(m, c, 16, NLANE) != s0;
+    ok &= diff >= 2u;
+    for (i = n = c = 0; i < 64u; i++)
+        if (m->step[i].time == ST_NOTE && m->step[i].n) { n++; c += (SCALE_MASK[2] >> (m->step[i].note[0] % 12u)) & 1u; }
+    ok &= n == 4u * eu[1].l[0].h && c == n;
+    bad += check("V10.16 VARY on a melody: four turns, the motif answered (notes in the key, HITS in each turn)", ok);
+    go_title("MUTATE"); frame();
+    ok = str_eq(cur_page()->title, "MUTATE") && cur_page()->graph == GR_EUCLID;
+    {
+        int16_t *v; const param_desc_t *pd = page_desc(cur_page(), 0, &v);
+        ok &= pd && str_eq(pd->label, "EVERY") && *v == 0;
+        pd = page_desc(cur_page(), 2, &v);
+        ok &= pd && str_eq(pd->label, "MODE") && pd->fmt == F_ENUM && str_eq(pd->names[*v], "ORBIT");
+    }
+    {   /* EVERY 1 BAR, playing: the bar's last beat mutates (no UNDO point); stopped nothing */
+        uint8_t anc[EU_ZN];
+        uint32_t sig = mel_sig(m);
+        turn(EN_K1, 1); frame();
+        ok &= eu[1].mu[0] == 1u;
+        memcpy(anc, eu_z[1], EU_ZN);
+        eu_put(EK_U0 + 1u, 100); eu_put(EK_U0 + 3u, 3);   /* AMOUNT 100, WHAT ALL */
+        song.playing = 0; eu_tick();
+        ok &= mel_sig(m) == sig;
+        song.playing = 1; bar_n = 0; beat_n = 3; beat_pos = beat_samples() - 1u;
+        undo_ok = 0; fm1_ms += 5000u;
+        eu_tick();
+        ok &= mel_sig(m) != sig && !undo_ok;
+        sig = mel_sig(m);
+        eu_tick();                                       /* (once a bar) */
+        ok &= mel_sig(m) == sig;
+        bar_n = 1; eu_tick();
+        ok &= mel_sig(m) != sig && !memcmp(anc, eu_z[1], EU_ZN);   /* (ORBIT: the anchor stays) */
+        song.playing = 0; beat_n = 0;
+        press(B_OCTDN); frame();                         /* OCT-: back to the anchor */
+        ok &= !memcmp((uint8_t *)&eu[1] + EU_Z0, anc, EU_ZN) && msg_is("ANCHOR");
+        sig = mel_sig(m);
+        press(B_OCTUP); frame();                         /* OCT+: a mutation now, stopped too */
+        ok &= mel_sig(m) != sig && msg_is("MUTATED");
+        bad += check("V10.16 MUTATE: EVERY on the bar's last beat while playing (none stopped, once a bar, no UNDO point); OCT- the anchor, OCT+ now", ok);
+        eu_put(EK_U0 + 2u, 2);                           /* PULSE: the anchor every second time */
+        press(B_OCTDN); frame();
+        sig = mel_sig(m);
+        eu[1].flip = 0;
+        press(B_OCTUP); frame(); ok = mel_sig(m) != sig;
+        press(B_OCTUP); frame(); ok &= mel_sig(m) == sig;
+        eu_put(EK_U0 + 2u, 1);                           /* DRIFT: from where it is (AMOUNT 100: HITS or ROTATE move) */
+        press(B_OCTUP); frame(); press(B_OCTUP); frame(); press(B_OCTUP); frame();
+        ok &= memcmp((uint8_t *)&eu[1] + EU_Z0, anc, EU_ZN) != 0 && !memcmp(anc, eu_z[1], EU_ZN);
+        bad += check("V10.16 MUTATE's MODE: PULSE the anchor by turns, DRIFT walks on (the anchor kept)", ok);
+        chain.running = 1; song.playing = 1; bar_n = 3; beat_n = 3;
+        sig = mel_sig(m); eu_tick(); ok = mel_sig(m) == sig;
+        chain.running = 0; song.playing = 0; beat_n = 0;
+        bad += check("V10.16 MUTATE: not while a song's chain plays", ok);
+    }
+    memset(eu, 0, sizeof eu);
+    return bad;
+}
 static int test_mutate(void)
 {   /* (V10.6) SEQ > EUCLID / MODES (ui_euclid.c), MUTATE's place */
     int bad = 0, ok;
@@ -699,6 +801,7 @@ static int test_mutate(void)
     d = &trk[0]; m = &trk[1];
     set_engine_of(d, ENGI_DRUM); set_engine_of(m, ENGI_ANALOG);
     memset(eu, 0, sizeof eu);
+    eu_of(0)->m[3] = 0; eu_of(1)->vary = 0;              /* (V10.16: VARY off, one turn: the tests below as they were) */
     song.sel = 0; frame();
     go_title("EUCLID"); frame();
     ok = cur_page()->graph == GR_EUCLID && str_eq(PAGES[ui.page].title, "EUCLID");
@@ -7207,8 +7310,8 @@ static int test_save_lens(void)
  * layer and the dice on every page. (Was 0.8.3's LENTE: SELECT PATTERN <-> BAR <-> STEP, PRESETS the bar / step) */
 static int test_lente(void)
 {
-    static const char *const CH[11] = {"STEP", "LENGTH", "TRACK", "EUCLID", "MODES", "PLAYHEADS", "STRETCH", "COMP",
-                                       "COMP 2", "AUTOMATION", "AUTO LIST"};
+    static const char *const CH[12] = {"STEP", "LENGTH", "TRACK", "EUCLID", "MODES", "MUTATE", "PLAYHEADS", "STRETCH",
+                                       "COMP", "COMP 2", "AUTOMATION", "AUTO LIST"};
     static const char *const TP[6] = {"LENGTH", "EUCLID", "PLAYHEADS", "STRETCH", "COMP", "AUTOMATION"};
     int bad = 0, ok;
     uint32_t q, sig;
@@ -7216,35 +7319,35 @@ static int test_lente(void)
     TSEL->p[P_SLEN] = 64;
     open_family(FAM_SEQ); frame();
     ok = str_eq(cur_page()->title, "STEP") && lens_level() == LV_BAR && roll_view(cur_page()) && lz_tabs() == 7u &&
-         lz_tab_lit(0) && lz_crumb_is("SEQ \xB7 STEP \xB7 STEP") && lz_count_is("1/11");
+         lz_tab_lit(0) && lz_crumb_is("SEQ \xB7 STEP \xB7 STEP") && lz_count_is("1/12");
     turn(EN_SELECT, -1); frames(32);
-    ok &= str_eq(cur_page()->title, "STEP") && lz_count_is("1/11");                /* (the first: no wrap) */
+    ok &= str_eq(cur_page()->title, "STEP") && lz_count_is("1/12");                /* (the first: no wrap) */
     turn(EN_SELECT, 1); frames(32);
-    ok &= str_eq(cur_page()->title, "PATTERN") && seq_roll_view(cur_page()) && lz_tab_lit(1) && lz_count_is("2/11") &&
+    ok &= str_eq(cur_page()->title, "PATTERN") && seq_roll_view(cur_page()) && lz_tab_lit(1) && lz_count_is("2/12") &&
           lz_crumb_is("SEQ \xB7 LENGTH \xB7 LENGTH");                              /* (PATTERN, named LENGTH) */
     turn(EN_SELECT, 1); frames(32);
-    ok &= str_eq(cur_page()->title, "TRACK") && lz_tab_lit(1) && lz_count_is("3/11") &&
+    ok &= str_eq(cur_page()->title, "TRACK") && lz_tab_lit(1) && lz_count_is("3/12") &&
           lz_crumb_is("SEQ \xB7 LENGTH \xB7 TRACK");                               /* (TRACK under the LEN tab) */
-    turn(EN_SELECT, 5); frames(32);
-    ok &= str_eq(cur_page()->title, "COMP") && seq_roll_view(cur_page()) && lz_tab_lit(5) && lz_count_is("8/11") &&
+    turn(EN_SELECT, 6); frames(32);
+    ok &= str_eq(cur_page()->title, "COMP") && seq_roll_view(cur_page()) && lz_tab_lit(5) && lz_count_is("9/12") &&
           lz_crumb_is("SEQ \xB7 COMP \xB7 COMP");
     turn(EN_SELECT, 1); frames(32);
-    ok &= str_eq(cur_page()->title, "COMP 2") && lz_tab_lit(5) && lz_count_is("9/11");
-    bad += check("seq2 SEQ: enters at STEP (1/11, seven tabs); LENGTH the roll (seq2b), TRACK under its tab, COMP the roll, COMP 2 after it", ok);
-    bad += check("seq2 SEQ: one chain of 11 by SELECT (no wrap); a SEQ tap the next tab's first, round",
-                 chain_walk(B_SEQ, CH, 11, TP, 6));
+    ok &= str_eq(cur_page()->title, "COMP 2") && lz_tab_lit(5) && lz_count_is("10/12");
+    bad += check("seq2 SEQ: enters at STEP (1/12, seven tabs); LENGTH the roll (seq2b), TRACK under its tab, COMP the roll, COMP 2 after it", ok);
+    bad += check("seq2 SEQ: one chain of 12 by SELECT (no wrap); a SEQ tap the next tab's first, round",
+                 chain_walk(B_SEQ, CH, 12, TP, 6));
     {   /* (0.9.9-seq2b) every page of the chain the same picture: the bars' strip, the roll with its keys */
-        static const char *const TI[11] = {"STEP", "PATTERN", "TRACK", "EUCLID", "MODES", "PLAYHEADS", "STRETCH", "COMP",
-                                           "COMP 2", "AUTOMATION", "AUTO LIST"};
+        static const char *const TI[12] = {"STEP", "PATTERN", "TRACK", "EUCLID", "MODES", "MUTATE", "PLAYHEADS", "STRETCH",
+                                           "COMP", "COMP 2", "AUTOMATION", "AUTO LIST"};
         ui_power_on(); TSEL->p[P_SLEN] = 64;
         open_family(FAM_SEQ); frame();
         ok = 1;
-        for (q = 0; q < 11u; q++) {
+        for (q = 0; q < 12u; q++) {
             go_title(TI[q]); frame();
             memset(host_screen, 0, sizeof host_screen); ui.force = 1; ui_draw();
             ok &= str_eq(cur_page()->title, TI[q]) && seq_roll_view(cur_page()) && lens_strip() &&
                   key_px(PR_ROWS / 2, 6) != T_SURF && key_px(PR_ROWS / 2, 6) != 0u ||
-                  (cur_page()->graph == GR_EUCLID && !seq_roll_view(cur_page()));   /* (V10.6: EUCLID / MODES their ring) */
+                  (cur_page()->graph == GR_EUCLID && !seq_roll_view(cur_page()));   /* (V10.6: EUCLID / MODES / MUTATE their ring) */
         }
         bad += check("seq2b SEQ: every page of the chain draws the roll, its keys and the bars' strip (its knobs its own)", ok);
     }
@@ -7337,7 +7440,7 @@ static int test_lente(void)
     go_title("BAR"); frames(32);
     turn(EN_K1, 1);
     ok &= ui.bank == 1u;
-    turn(EN_SELECT, 6); frames(32);                                               /* (from BAR, LENGTH's place: COMP) */
+    turn(EN_SELECT, 7); frames(32);                                               /* (from BAR, LENGTH's place: COMP; V10.16: past MUTATE) */
     ok &= seq_roll_view(cur_page()) && lens_level() == LV_STEP;
     bad += check("  DRUM: STEP is the grid (its keys); LENGTH the grid (seq2b), BAR (by code) KNOB 1 the bar; COMP the grid", ok);
     return bad;
@@ -11933,14 +12036,14 @@ static int test_toasts(void)
     bad += check("  NOTICE blacks out no more than its box (its tabs, its card, its breadcrumb): the page round it, back whole", ok);
     /* hints: walking SEQ's chain with SELECT (TRACK > EUCLID > PLAYHEADS) says nothing; dwelt on, MUTATE's; at most HINT_MAX */
     ui_power_on(); go_title("TRACK"); frames(400);
-    for (seen = passed = 0, k = 0; k < 3u; k++) {
+    for (seen = passed = 0, k = 0; k < 4u; k++) {
         turn(EN_SELECT, 1); passed |= str_eq(cur_page()->title, "EUCLID");
         for (n = 0; n < 12u; n++) { frame(); seen |= msg_is("TURN A KNOB: A PATTERN") || msg_is("OCT+ NEW  OCT- BEFORE"); }
     }
     for (n = 0; n < 200u; n++) { frame(); seen |= ui.msg_t && ui.msg[0]; }
     bad += check("0.9.5 a page's hint: none while SELECT walks past it (TRACK > EUCLID > PLAYHEADS), nor carried onto the next",
                  passed && str_eq(cur_page()->title, "PLAYHEADS") && !seen);
-    turn(EN_SELECT, -2);                                /* back to EUCLID (past MODES): stay */
+    turn(EN_SELECT, -3);                                /* back to EUCLID (past MUTATE, MODES): stay */
     ok = str_eq(cur_page()->title, "EUCLID");
     frames(HINT_DWELL_MS - 160u);
     ok &= !ui.msg_t;
@@ -12404,7 +12507,7 @@ static void tk_start(uint32_t from)                     /* 0 home, 1 seq, 2 fxdl
 }
 static int test_nav_tasks(void)
 {
-    static const uint8_t WANT[14] = {4, 3, 5, 6, 34, 10, 9, 2, 3, 1, 3, 8, 17, 4};   /* (V10.1: SAVE composes first, 106 -> 108) */   /* (seq2: task 5 by STEP's KNOB 1, no BAR;
+    static const uint8_t WANT[14] = {4, 3, 5, 6, 34, 10, 9, 2, 3, 1, 3, 8, 18, 4};   /* (V10.1: SAVE composes first, 106 -> 108) */   /* (seq2: task 5 by STEP's KNOB 1, no BAR;
                                                          * task 11 TRACK under LEN's tab; task 13 eight detents (seq2c:
                                                          * MUTATE 2); was 73) */
     uint32_t got[14], t, tot = 0;
@@ -12475,7 +12578,7 @@ static int test_nav_tasks(void)
               ok = song.sel == 3u && str_eq(cur_page()->title, "SOUND 2") && c == 1u && dv[DXP_DECAY] != d0; }
             break;
         case 12:                                        /* COMP 2 of step 9 */
-            tk_start(1); tk_go(EN_K1, 8); tk_go(EN_SELECT, 8); tk_val(EN_K1, 1);   /* (seq2c: eight detents to COMP 2;
+            tk_start(1); tk_go(EN_K1, 8); tk_go(EN_SELECT, 9); tk_val(EN_K1, 1);   /* (seq2c: eight detents to COMP 2, V10.16 nine;
                                                          * seq2d: the step picked on STEP, KNOB 1 its ACTION) */
             ok = str_eq(cur_page()->title, "COMP 2") && ui.cursor == 8u && TSEL->step[8].comp2 != 0u;
             break;
@@ -12493,7 +12596,7 @@ static int test_nav_tasks(void)
     }
     printf("ui:   the race: %u %u %u %u %u %u %u %u %u %u %u %u %u %u = %u actions (0.9.1: 75)\n", got[0], got[1], got[2], got[3],
            got[4], got[5], got[6], got[7], got[8], got[9], got[10], got[11], got[12], got[13], tot);
-    bad += check("0.9.2 the mock-up's 14 tasks on the panel: each goal reached in its PROPOSED actions (seq2c: 106, was 73)", okall && tot == 109u);   /* (V10.8: an accent past VEL 127: +1) */
+    bad += check("0.9.2 the mock-up's 14 tasks on the panel: each goal reached in its PROPOSED actions (seq2c: 106, was 73)", okall && tot == 110u);   /* (V10.8: an accent past VEL 127: +1; V10.16 MUTATE in SEQ's chain: +1) */
     ui_power_on();
     return bad;
 }
@@ -12856,6 +12959,7 @@ int main(void)
     bad += test_init_system();
     bad += test_transitions();
     bad += test_mutate();
+    bad += test_eumutate();
     bad += test_morph();
     bad += test_morph_click();
     bad += test_lfo_sync();

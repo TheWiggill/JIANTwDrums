@@ -250,6 +250,7 @@ static const param_desc_t CLEN_DESC = {"C.LEN", F_ENUM, 0, 64, 0, N_CLEN, 0};   
 static const param_desc_t DXIMG_DESC = {"IMAGE", F_INT, 0, 127, 0, 0, 0};       /* (0.6.48) P_DXIMG */
 /* (V10.6) SEQ > EUCLID / MODES' knobs (ui_euclid.c: ids ID_EU0 + EK_*, the views of the selected track's settings) */
 #define ID_EU0 0xF0u
+#define ID_MU0 0xE4u                                    /* (V10.16) SEQ > MUTATE's four (EK_U0 + 0..3) */
 static const param_desc_t *eu_desc(uint32_t k, int16_t **valp);
 static const char *const N_CHRD[] = {"OFF", "TRIAD", "7TH", "ADD9", "SUS2", "SUS4", "MAJ", "MIN", "7", "MAJ7", "MIN7",
                                      "POWER", 0};
@@ -710,6 +711,8 @@ static const page_t PAGES[] = {
     {"RIELES", FAM_GLO, SC_GLOBAL, GR_LIVE, {0xFF, 0xFF, 0xFF, 0xFF}},   /* .. the six sequences as rails, four knobs */
     {"TIMELINE", FAM_SAVE, SC_GLOBAL, GR_SONG, {0xFF, 0xFF, 0xFF, 0xFF}},   /* (add15) the song as lanes (was ARRANGE 2): a row's tracks, the section each
                                                          * plays from (song_chain.c row_src; ui_input.c song_trk_knob) */
+    {"MUTATE", FAM_SEQ, SC_TRACK, GR_EUCLID, {ID_MU0, ID_MU0 + 1u, ID_MU0 + 2u, ID_MU0 + 3u}},   /* (V10.16) EUCLID's
+                                                         * mutations on the bar: EVERY AMOUNT MODE WHAT */
 };
 #define BAR_PAGE(pg) ((pg)->graph == GR_STEPS && (pg)->id[0] == 0xFFu)
 #define NPAGES (sizeof(PAGES) / sizeof(PAGES[0]))
@@ -785,6 +788,8 @@ static const param_desc_t *page_desc(const page_t *pg, uint32_t slot, int16_t **
         id += ms_ui_step & 15u;
     if (id >= ID_EU0 && id < ID_EU0 + 8u)            /* (V10.6) EUCLID's and MODES' views (ui_euclid.c eu_put) */
         return eu_desc(id - ID_EU0, valp);
+    if (id >= ID_MU0 && id < ID_MU0 + 4u)            /* (V10.16) MUTATE's */
+        return eu_desc(id - ID_MU0 + 8u, valp);
     *valp = &TSEL->p[id];
     if (id == P_APRATE && TSEL->p[P_APSYNC])         /* (0.6.9) AUTO PAN on the tempo: a division */
         return &AP_BEAT;

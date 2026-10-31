@@ -2154,6 +2154,7 @@ static void ui_input_frame(void);
 static void ui_input(void)
 {
     ui_input_frame();
+    eu_tick();                                          /* (V10.16) EUCLID's MUTATE, on the bar */
     scale_link();                                       /* (JIANT 0.4) one scale for every melodic track (after the
                                                          * frame's edits) */
 }
@@ -2585,7 +2586,8 @@ static void ui_input_frame(void)
             if (live_page())                            /* (p2) LIVE: OCT- RETURN / held BYPASS, OCT+ COMMIT */
                 break;                                  /* (ui_live.c live_frame) */
             if (!ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_EUCLID) {   /* (V10.6) EUCLID / MODES: */
-                eu_oct(b == B_OCTUP);                    /* OCT+ a new variation, OCT- the one before */
+                eu_oct(b == B_OCTUP, cur_page()->id[0] == ID_MU0);   /* OCT+ a new variation, OCT- the one before;
+                                                         * (V10.16) MUTATE: a mutation now, back to the anchor */
                 break;
             }
             if ((fm1_in.buttons & both) == both)
