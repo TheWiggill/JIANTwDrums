@@ -20,7 +20,11 @@
  *                        audio buffer silent, the second core parked
  *   bt_seg_enable(on)    advertising on again / off (and any link closed); the radio stays set up until power-off
  *   bt_seg_status()      bit 0 a central connected, bit 1 its MIDI notifications on, [15:8] connections since start
- * MIDI is not routed yet (the next step): what a central sends is dropped, nothing is sent.
+ * (V10.13) MIDI both ways (bt_midi.h): what a central writes, decoded by the stack (ble_midi.c), goes into the app's MIDI
+ * input ring as USB's does (bt_midi_accept, then the app's bt_midi_rx: src/bt.c); MIDI OUT's copy (the app's bt_oq, filled
+ * by the audio interrupt while a central listens) goes out in the notifications the stack packs each connection event
+ * (ble_att.c att_midi_out), stamped with this segment's millisecond count. Received timestamps are not used (the
+ * messages play as they come). The app's functions and data it reaches (bt_midi_rx, bt_oq) are its own or in RAM.
  *
  * Everything here is in the segment (code, constants) or in the pool (its zeroed RAM, app.ld); .ram_text (the radio
  * ramp's burst, fm1_ble_rf.h) goes with the app's RAM code. No initialised data (tools/build.py refuses it). */
@@ -45,22 +49,42 @@ __attribute__((section(".bt_head"), used)) const uint32_t bt_head[8] = {BT_SEG_M
 
 static uint8_t bs_conns, bs_linked;
 
+#include "bt_midi.h"
+extern struct bt_oq bt_oq;                     /* (src/usb.c: MIDI OUT's copy) */
+void bt_midi_rx(uint32_t pkt);                 /* (src/bt.c: into the MIDI input ring) */
+
+static uint32_t bs_t, bs_ms, bs_frac;          /* milliseconds from TIMER4's ticks (24 a microsecond) */
+static uint32_t bs_now(void)
+{
+    uint32_t t = fm1_ticks(), d = t - bs_t + bs_frac;
+    bs_t = t;
+    bs_ms += d / 24000u;
+    bs_frac = d % 24000u;
+    return bs_ms;
+}
 BLE_API int ble_app_midi_peek(uint32_t *pkt, uint32_t *t_ms)
 {
-    (void)pkt, (void)t_ms;
-    return 0;                                  /* (nothing to send yet) */
+    if (!bt_oq_peek(&bt_oq, pkt))
+        return 0;
+    *t_ms = bs_now();
+    return 1;
 }
-BLE_API void ble_app_midi_pop(void) {}
+BLE_API void ble_app_midi_pop(void) { bt_oq_pop(&bt_oq); }
 BLE_API void ble_app_midi_in(uint32_t pkt, uint16_t ts, uint16_t last_ts)
 {
-    (void)pkt, (void)ts, (void)last_ts;        /* (not routed yet) */
+    (void)ts, (void)last_ts;                   /* (played as it comes) */
+    if ((pkt = bt_midi_accept(pkt)) != 0u)
+        bt_midi_rx(pkt);
 }
 BLE_API void ble_app_state(void)
 {
-    uint8_t c = (uint8_t)ble_connected();
+    uint8_t c = (uint8_t)ble_connected(), on = (uint8_t)ble_midi_ready();
     if (c && !bs_linked && bs_conns < 255u)
         bs_conns++;
     bs_linked = c;
+    if (on && !bt_oq.on)
+        bt_oq.r = bt_oq.w;                     /* (a new listener: nothing stale) */
+    bt_oq.on = on;
 }
 
 /* the SDK board's values for the three constant records (crystal load, PA bias, Wi-Fi per-rate gains: zero keeps the
@@ -93,7 +117,7 @@ void bt_seg_enable(int on)
     fm1_ble_step(on ? FM1_BLE_STEP_ENABLE : FM1_BLE_STEP_SET_OFF);
     ble_enable(on);
     if (!on)
-        bs_linked = 0;
+        bs_linked = bt_oq.on = 0;
     fm1_ble_irqs_hold(0);
 }
 

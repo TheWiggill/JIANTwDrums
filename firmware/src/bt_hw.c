@@ -21,6 +21,21 @@ static int bt_seg_ok(void)
            st_crc32((const uint8_t *)(uintptr_t)_bt_start + 32u, len) == bt_want[2];
 }
 
+/* (V10.13) the segment installed is this build's: checked once (the flash there changes only with an update, then a
+ * reset), the plain window set first (flash from 0x93000 up read as it is through XIP, as the SDK's VM set-up; JIANT
+ * reads nothing there through XIP otherwise: the segment is written plain). At power-on (bt.c bt_boot, after the
+ * splash, the music stopped: the window's set-up has the interrupts off a moment), before anything reads it (MENU > ABOUT's
+ * texts, bt.c BTAPP_RO) or calls it */
+static uint8_t bt_seg_st;                              /* 0 not checked, 1 this build's, 2 not */
+static int bt_hw_seg(void)
+{
+    if (!bt_seg_st) {
+        fl_plain_window_init();
+        bt_seg_st = bt_seg_ok() ? 1u : 2u;
+    }
+    return bt_seg_st == 1u;
+}
+
 /* the first ON: the interrupts off (the second core parked out of any job: FL_PARK), the audio buffer silent (the DMA
  * keeps playing it), the radio's start-up and calibration in the segment, then the interrupts back (the audio takes
  * up where it was; the late halves are its overload path's) */
@@ -28,10 +43,7 @@ static int bt_hw_start(uint8_t addr[6])
 {
     uint32_t f, i, z = 0;
     int rc;
-    fl_plain_window_init();                            /* flash from 0x93000 up read as it is through XIP (as the SDK's
-                                                        * VM set-up; JIANT reads nothing there through XIP otherwise):
-                                                        * the segment is written plain */
-    if (!bt_seg_ok())
+    if (!bt_hw_seg())
         return 2;
     for (i = 0; i < 6u; i++)
         z |= addr[i];

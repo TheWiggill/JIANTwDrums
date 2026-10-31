@@ -378,3 +378,33 @@ Route C2, peripheral only, MIDI not routed yet.
   and closes a link (the radio stays set up until power-off).
 - **Boot guard.** `bt_crumb` (`.noinit.zbt`, after every other `.noinit`): set for the start, `RUN` after it. A reset
   during the start, or a crash / watchdog reset while it ran, turns BLUETOOTH OFF at the next power-on and says so.
+
+## 8. As built: stage 2 step 5 (V10.13)
+
+BLE-MIDI both ways.
+
+- **In.** The stack decodes each write to the MIDI characteristic (`ble_midi.c`: running status, several messages a
+  packet, real time anywhere, SysEx over packets). `bt_seg.c ble_app_midi_in` keeps what USB's `midi_in_event` keeps
+  (`firmware/bt/bt_midi.h bt_midi_accept`: channel messages, F8 FA FB FC; SysEx and the other system messages dropped:
+  the editor and the updater stay on USB) and calls the app's `bt_midi_rx` (`src/bt.c`), which puts it into the one MIDI
+  input ring (`usb.c midi_enqueue`, source 1 = USB) with the interrupts off: the BLE interrupts (priority 2) are
+  preempted by TIMER5, the ring's other producer (USB, TRS), and core 1 takes no interrupt. The audio interrupt drains it
+  as before, so notes, CC, PC, bend, aftertouch, CLK USB (the clock and START / CONTINUE / STOP), LEARN, ROUT and MIDI MAP
+  treat Bluetooth as USB. A full ring is USB's overflow (every note let go). Received timestamps are not used. No change
+  to the sound's code for this.
+- **Out.** `usb.c midi_out_event` (the audio interrupt, every message MENU > CONTROL > MIDI OUT lets out: KEYS / CLOCK /
+  ALL / OFF) also puts it into `bt_oq` (64 entries) while a central has the MIDI notifications on (`bt_oq.on`, set by
+  `ble_app_state`; a new listener starts empty). The stack drains it each connection event (`ble_att.c att_midi_out`:
+  BLE-MIDI packets of MTU - 3 octets, header and timestamps, running status), stamped with the segment's own millisecond
+  count (TIMER4). Nobody listening, a full ring: dropped. The sound's code moved by 64 B (`tools/audio_layout.txt`
+  repinned).
+- **Flash.** The app had 128 B free. The app's own cold constants can now live in the segment: `BTAPP_RO` / `BTAPP_FN`
+  (`src/bt.c`, `app.ld` `.btapp.*` after the segment's code, inside its CRC-32). MENU > ABOUT's THE PROJECT, CREDITS and
+  LICENSES texts moved there (`ui_menu.c ABOUT_PROJECT`, `ABOUT_CREDITS`: kind octet + text lines). The segment is
+  checked once at power-on (`bt_boot`, after the splash: the plain XIP window set, the header and the CRC-32); without it
+  (NO SEG) ABOUT shows its header, AUDIO LOAD and the crash lines, no credits. `bt_midi_rx` lives there too (only the
+  segment calls it). App 582,140 B (2,196 B free), RAM +284 B (`bt_oq`), segment 30,660 B (8 sectors).
+- **MENU tiles.** SYSTEM's eighth row (ABOUT) does not fit a bottom tile of the overview drawn while sliding between
+  tabs (step 3 made SYSTEM eight rows; `ui_render` lint): the tile shows seven.
+- **Tests.** `tests/ble_midi_test.c` (fm1-base's codec test), `tests/bt_midi_test.c` (packets as apps send them into
+  the ring, the out ring and its packets), `tests/ui_test.c` (ABOUT's lines).

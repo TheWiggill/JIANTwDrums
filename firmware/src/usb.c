@@ -267,6 +267,10 @@ static int midi_enqueue(uint32_t pkt, uint32_t source)
     return 1;
 }
 
+#if FELUCCA_BT
+#include "../bt/bt_midi.h"
+struct bt_oq bt_oq;                                     /* (V10.13) MIDI OUT over Bluetooth too (bt_seg.c takes it) */
+#endif
 static void midi_out_event(uint32_t pkt)            /* from the audio ISR */
 {
     if (usb.config && mo_w - mo_r < MQ) {
@@ -274,6 +278,9 @@ static void midi_out_event(uint32_t pkt)            /* from the audio ISR */
         RING_PUBLISH();
         mo_w++;
     }
+#if FELUCCA_BT
+    bt_oq_put(&bt_oq, pkt);                             /* (V10.13: while a central listens; else nothing) */
+#endif
 }
 
 /* ------------------------------------------------------- descriptors --- */

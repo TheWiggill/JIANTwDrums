@@ -2644,6 +2644,21 @@ static int test_menu_tabs(void)
     bt_up = 0;
     bad += check("V10.12 MENU > SYSTEM > BLUETOOTH: OFF by default, STOP FIRST while playing, ON saved with its mark (NO SEG "
                  "without the segment), OFF; the boot guard after a reset in the start or a crash while it ran", ok);
+
+    /* (V10.13) ABOUT's texts kept in the segment (ui_menu.c ABOUT_PROJECT, ABOUT_CREDITS): each line a kind octet
+     * (1..12) and a text, the list ended; every credit and the licences there (the host: all in one image) */
+    {
+        const char *const L[2] = {ABOUT_PROJECT, ABOUT_CREDITS};
+        uint32_t k, n = 0;
+        const char *s;
+        ok = 1;
+        for (k = 0; k < 2u; k++)
+            for (s = L[k]; *s; s += str_len(s) + 1u, n++)
+                ok &= (uint8_t)*s >= 1u && (uint8_t)*s <= 12u && s[1];
+        ok &= n == 52u && str_eq(ABOUT_CREDITS + 1, "CREDITS") && str_eq(ABOUT_PROJECT + 1, "THE PROJECT") &&
+              menu_lines(ABOUT_CREDITS, 0, 0) > 46 * 18 && menu_scroll_max() > 60 * 18;
+    }
+    bad += check("V10.13 ABOUT: THE PROJECT, CREDITS and LICENSES as lines of the Bluetooth segment (kind, text), all read", ok);
     return bad;
 }
 

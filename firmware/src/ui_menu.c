@@ -29,57 +29,66 @@ static void draw_about_qr(int32_t x, int32_t y)
 
 /* All notices are in flash. Wrap at the font's actual width, without dropping URL
  * characters; the same layout computes the scroll limit and draws clipped bands.
- * Mixed case here (long text); S throughout, the title in L. */
+ * Mixed case here (long text); S throughout, the title in L.
+ * (V10.13) THE PROJECT, CREDITS and LICENSES are texts in the Bluetooth segment (bt.c BTAPP_RO: the app slot is full),
+ * read once it is this build's (bt_hw_seg); without it ABOUT shows the rest. Each line: a kind octet (1 + colour (0
+ * text, 1 theme, 2 mid) + 3 x the gap before it / 4 px), its text, a zero; a zero ends the list. The URLs without
+ * "https://" (as they were shown) */
 #define MENU_DOC_H 196                                /* the document: screen rows 24..220 */
-enum { MC_TEXT, MC_TITLE, MC_URL };
-typedef struct { const char *text; uint8_t kind; } menu_credit_t;
-static const menu_credit_t MENU_CREDITS[] = {
-    {"SOUNDS + FONTS", MC_TITLE},
-    {"CrispyZebra (PHASE waveforms), the DRUM voices, the Sample Pack: GPL-3.0", MC_TEXT},
-    {"Fukiai icon font: MIT", MC_TEXT},
-    {"", MC_TEXT},
-    {"DUAL CORE", MC_TITLE},                 /* (JIANT 0.6.71) hal/fm1_multicore.h */
-    {"Melodee (keremimo), fm1-x0x (Charles Vestal): GPL-3.0", MC_TEXT},
-    {"https://github.com/keremimo/melodee", MC_URL},
-    {"https://github.com/charlesvestal/fm1-x0x", MC_URL},
-    {"", MC_TEXT},
-    {"BLUETOOTH", MC_TITLE},                 /* (V10.12) firmware/bt: the stack, the radio drivers */
-    {"Optimist BLE stack, Henri David: GPL-3.0 / MPL-2.0; radio: Melodee, felucca-bsp, JieLi: Apache-2.0", MC_TEXT},
-    {"https://github.com/w0ts/optimist", MC_URL},
-    {"", MC_TEXT},
-    {"TESTING, CPU", MC_TITLE},              /* (JIANT 0.6.79) on a real FM-1: the load, the dual core, the RAM code */
-    {"praztalfractal", MC_TEXT},
-    {"https://github.com/gospodindilly-ops", MC_URL},
-    {"", MC_TEXT},
-    {"KLATTSCH", MC_TITLE},
-    {"Tony Gies / MIT", MC_TEXT},
-    {"https://github.com/tgies/klattsch", MC_URL},
-    {"", MC_TEXT},
-    {"DEXED + MSFA", MC_TITLE},
-    {"Pascal Gauthier, Google Inc.", MC_TEXT},
-    {"msfa: Apache-2.0, Dexed: GPL-3.0", MC_TEXT},
-    {"https://github.com/asb2m10/dexed", MC_URL},
-    {"", MC_TEXT},
-    {"INTER TIGHT", MC_TITLE},
-    {"The Inter Project Authors", MC_TEXT},
-    {"SIL Open Font License 1.1", MC_TEXT},
-    {"https://github.com/rsms/inter-tight", MC_URL},
-    {"", MC_TEXT},
-    {"VSCO-2 CE + VCSL", MC_TITLE},
-    {"Versilian Studios / CC0 1.0", MC_TEXT},
-    {"https://github.com/sgossner/VSCO-2-CE", MC_URL},
-    {"https://github.com/sgossner/VCSL", MC_URL},
-    {"", MC_TEXT},
-    {"VOICE", MC_TITLE},
-    {"Dennis H. Klatt (1980)", MC_TEXT},
-    {"https://doi.org/10.1121/1.383940", MC_URL},
-    {"Hillenbrand, Getty, Clark and Wheeler (1995)", MC_TEXT},
-    {"https://doi.org/10.1121/1.411872", MC_URL},
-    {"", MC_TEXT},
-    {"CMU DICT", MC_TITLE},                  /* (JIANT 0.8.5) VOICE's English words (sing.c) */
-    {"Carnegie Mellon University / BSD-2-Clause", MC_TEXT},
-    {"https://github.com/cmusphinx/cmudict", MC_URL},
-};
+static const char ABOUT_PROJECT[] BTAPP_RO =
+    "\002THE PROJECT\0"
+    "\001Made in Argentina by Juan Jiant, visual artist and musician, a dad of two: an independent project, free for everyone.\0"
+    "\004Manual, emulator, installer, editor:\0"
+    "\003juanjiant-bit.github.io/JIANT\0"
+    "\003Videos: youtube.com/@JUANJIANT\0"
+    "\004Support the work:\0"
+    "\003ko-fi.com/juanjiant\0"
+    "\003cafecito.app/juanjiant (Argentina)\0"
+    "\004Free software, GPL-3.0-only: the full notices and the sources it builds on travel with the source.\0";
+static const char ABOUT_CREDITS[] BTAPP_RO =
+    "\002CREDITS\0"
+    "\010SOUNDS + FONTS\0"
+    "\001CrispyZebra (PHASE waveforms), the DRUM voices, the Sample Pack: GPL-3.0\0"
+    "\001Fukiai icon font: MIT\0"
+    "\010DUAL CORE\0"                                /* (JIANT 0.6.71) hal/fm1_multicore.h */
+    "\001Melodee (keremimo), fm1-x0x (Charles Vestal): GPL-3.0\0"
+    "\003github.com/keremimo/melodee\0"
+    "\003github.com/charlesvestal/fm1-x0x\0"
+    "\010BLUETOOTH\0"                                /* (V10.12) firmware/bt: the stack, the radio drivers */
+    "\001Optimist BLE stack, Henri David: GPL-3.0 / MPL-2.0; radio: Melodee, felucca-bsp, JieLi: Apache-2.0\0"
+    "\003github.com/w0ts/optimist\0"
+    "\010TESTING, CPU\0"                             /* (JIANT 0.6.79) on a real FM-1: the load, the dual core, the RAM code */
+    "\001praztalfractal\0"
+    "\003github.com/gospodindilly-ops\0"
+    "\010KLATTSCH\0"
+    "\001Tony Gies / MIT\0"
+    "\003github.com/tgies/klattsch\0"
+    "\010DEXED + MSFA\0"
+    "\001Pascal Gauthier, Google Inc.\0"
+    "\001msfa: Apache-2.0, Dexed: GPL-3.0\0"
+    "\003github.com/asb2m10/dexed\0"
+    "\010INTER TIGHT\0"
+    "\001The Inter Project Authors\0"
+    "\001SIL Open Font License 1.1\0"
+    "\003github.com/rsms/inter-tight\0"
+    "\010VSCO-2 CE + VCSL\0"
+    "\001Versilian Studios / CC0 1.0\0"
+    "\003github.com/sgossner/VSCO-2-CE\0"
+    "\003github.com/sgossner/VCSL\0"
+    "\010VOICE\0"
+    "\001Dennis H. Klatt (1980)\0"
+    "\003doi.org/10.1121/1.383940\0"
+    "\001Hillenbrand, Getty, Clark and Wheeler (1995)\0"
+    "\003doi.org/10.1121/1.411872\0"
+    "\010CMU DICT\0"                                 /* (JIANT 0.8.5) VOICE's English words (sing.c) */
+    "\001Carnegie Mellon University / BSD-2-Clause\0"
+    "\003github.com/cmusphinx/cmudict\0"
+    "\013LICENSES + SOURCE\0"
+    "\001DRUM + own samples: GPL-3.0-only\0"
+    "\001Fonts and icons: their licences travel with the source and the release files.\0"
+    "\001NO WARRANTY\0"
+    "\007Full notices in source:\0"
+    "\003github.com/juanjiant-bit/JIANT\0";
 
 static int32_t menu_text(const char *s, int32_t y, uint16_t col, int draw)
 {
@@ -108,6 +117,17 @@ static int32_t menu_text(const char *s, int32_t y, uint16_t col, int draw)
         y += 18;
         s += take;
         while (*s == ' ') s++;
+    }
+    return y;
+}
+
+static int32_t menu_lines(const char *s, int32_t y, int draw)   /* (V10.13) ABOUT_PROJECT, ABOUT_CREDITS */
+{
+    if (!bt_hw_seg())
+        return y;
+    for (; *s; s += str_len(s) + 1u) {
+        uint32_t k = (uint8_t)*s - 1u, c = k % 3u;
+        y = menu_text(s + 1, y + 4 * (int32_t)(k / 3u), c == 1u ? T_THEME : c == 2u ? T_MID : T_TEXT, draw);
     }
     return y;
 }
@@ -161,7 +181,6 @@ static __attribute__((noinline)) int32_t about_cpu(int32_t y, int draw)
 }
 static int32_t menu_document(int32_t y, int draw)
 {
-    uint32_t i;
     if (draw) {
         cv_text(6, y + 2, &AF_L, "JIANT FM", T_THEME);
         cv_text(6, y + 38, &AF_S, "Firmware for the MVAVE FM-1", T_TEXT);
@@ -175,15 +194,7 @@ static int32_t menu_document(int32_t y, int draw)
         cv_text(6, y + 174, &AF_S, "/JIANT", T_MID);
         draw_about_qr(158, y + 122);
     }
-    y = menu_text("THE PROJECT", y + 216, T_THEME, draw);
-    y = menu_text("Made in Argentina by Juan Jiant, visual artist and musician, a dad of two: an independent project, free for everyone.", y, T_TEXT, draw);
-    y = menu_text("Manual, emulator, installer, editor:", y + 4, T_TEXT, draw);
-    y = menu_text("juanjiant-bit.github.io/JIANT", y, T_MID, draw);
-    y = menu_text("Videos: youtube.com/@JUANJIANT", y, T_MID, draw);
-    y = menu_text("Support the work:", y + 4, T_TEXT, draw);
-    y = menu_text("ko-fi.com/juanjiant", y, T_MID, draw);
-    y = menu_text("cafecito.app/juanjiant (Argentina)", y, T_MID, draw);
-    y = menu_text("Free software, GPL-3.0-only: the full notices and the sources it builds on travel with the source.", y + 4, T_TEXT, draw);
+    y = menu_lines(ABOUT_PROJECT, y + 216, draw);
     y -= 216;
     {   /* (0.6.17) the audio's load since power-on (voice.c load_diag): to tell what happened when it clicked */
         char b[40], n[12];
@@ -225,22 +236,7 @@ static int32_t menu_document(int32_t y, int draw)
         y = about_cpu(y, draw);                     /* (p1: out of line, menu_document's room is pinned) */
         y = y - 216 + 8;
     }
-    y = menu_text("CREDITS", y + 216, T_THEME, draw) + 8;
-    for (i = 0; i < NELEM(MENU_CREDITS); i++) {
-        const menu_credit_t *c = &MENU_CREDITS[i];
-        const char *text = c->text;
-        /* Display host/path once; the full source URL stays in the flash table. */
-        if (c->kind == MC_URL && str_len(text) >= 8u && !memcmp(text, "https://", 8))
-            text += 8;
-        if (!text[0]) y += 8;
-        else y = menu_text(text, y, c->kind == MC_TITLE ? T_THEME : c->kind == MC_URL ? T_MID : T_TEXT, draw);
-    }
-    y = menu_text("LICENSES + SOURCE", y + 12, T_THEME, draw);
-    y = menu_text("DRUM + own samples: GPL-3.0-only", y, T_TEXT, draw);
-    y = menu_text("Fonts and icons: their licences travel with the source and the release files.", y, T_TEXT, draw);
-    y = menu_text("NO WARRANTY", y, T_TEXT, draw);
-    y = menu_text("Full notices in source:", y + 8, T_TEXT, draw);
-    y = menu_text("github.com/juanjiant-bit/JIANT", y, T_MID, draw);
+    y = menu_lines(ABOUT_CREDITS, y + 216, draw);
     return y + 4;
 }
 static int32_t menu_scroll_max(void)
@@ -319,6 +315,9 @@ static void menu_panel(void)
                 uint32_t row = mtab_first(k) + r;
                 int32_t ry = y + 15 + (int32_t)r * (mtab_rows(k) > 6u ? 7 : 8);   /* (0.9.7: DISPLAY's eight 7 apart; p1: seven too, a bottom tile's) */
                 uint16_t bg = lz_tile_bg();
+                if (ry + 7 > y + h)                    /* (V10.13) a bottom tile holds seven: SYSTEM's eighth (ABOUT)
+                                                        * left out (the tiles only show in the slide between tabs) */
+                    break;
                 menu_val(row, v);
                 cv_clip_text(x + 5, ry - AF_X_CAP_Y, &AF_X, menu_short(row), T_DIM, bg, 64);
                 cv_text_r(x + 110, ry - AF_X_CAP_Y, &AF_X, v, k == t ? T_TEXT : T_DIM, bg);

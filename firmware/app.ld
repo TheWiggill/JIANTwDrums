@@ -36,8 +36,10 @@ SECTIONS
      * tools/build.py), then its code and constants, outside the app slot; written by the update loader from the
      * package's bt.bin (firmware/loader/ldr_core.c), checked by the app before any call (src/bt_hw.c). First here so
      * that no rule below takes its sections; its zeroed RAM goes to the pool (below), its RAM code (.ram_text) with
-     * the app's. No initialised data (tools/build.py) */
-    .bt : { _bt_start = .; KEEP(*(.bt_head)) *bt_seg.o(.text .text.* .rodata .rodata.*) . = ALIGN(4); _bt_end = .; } > BTSEG
+     * the app's. No initialised data (tools/build.py). (V10.13) then the app's own code and constants kept there (src/bt.c
+     * BTAPP_FN / BTAPP_RO: cold, read only once the segment checked) */
+    .bt : { _bt_start = .; KEEP(*(.bt_head)) *bt_seg.o(.text .text.* .rodata .rodata.*)
+          *(.btapp.text) *(.btapp.rodata) . = ALIGN(4); _bt_end = .; } > BTSEG
     /* (0.9.9-snd3) the code in tools/audio_layout.txt's order, each run of the sound at its recorded address (tools/build.py
      * writes build/layout.ld: the UI cannot move the sound; "cannot move location counter backwards" = the code before a
      * run grew: FELUCCA_REPIN=1), the tables (the sound's first), the merged constants (their small tables, then the

@@ -1,8 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Juan Ignacio Antonucci (Juan Jiant) */
 /* (V10.12) MENU > SYSTEM > BLUETOOTH OFF / ON: Bluetooth LE MIDI, as a peripheral that advertises "JIANT FM-1" with the
- * BLE-MIDI service (phones and computers list it as a MIDI device); docs/BLE_FEASIBILITY.md stage 2. MIDI is not routed
- * yet: a central can connect, nothing is played or sent.
+ * BLE-MIDI service (phones and computers list it as a MIDI device); docs/BLE_FEASIBILITY.md stage 2. MIDI goes
+ * (V10.13) both ways: what a central sends plays as USB-MIDI does (notes, CC, PC, bend, the clock and START / STOP,
+ * no SysEx); MIDI OUT's messages (MENU > CONTROL > MIDI OUT: KEYS CLOCK ALL OFF) go to it too while it listens.
  *   OFF (the default)  the radio is never started
  *   ON                 started at once if the music is stopped (else "STOP FIRST", the row stays OFF), or at power-on
  *                      when ON was saved; the sound is quiet for the start (~0.3 s: the interrupts off while the radio
@@ -29,10 +30,34 @@ static uint32_t bt_crumb __attribute__((section(".noinit.zbt")));   /* (after ev
 static int bt_hw_start(uint8_t addr[6]);                /* bt_hw.c: 0 started, 1 the radio's start-up failed, 2 no segment */
 static void bt_hw_enable(int on);
 static uint32_t bt_hw_status(void);
+static int bt_hw_seg(void);                             /* bt_hw.c: 1 the segment installed is this build's (checked once) */
+/* (V10.13) code and constants of the app's own that live in the segment (app.ld .bt: flash 0xEA000, outside the full
+ * app slot), cold and never needed by the sound: read or called only once bt_hw_seg() said the segment is this build's
+ * (its CRC-32 covers them), or from the segment itself; without it they are missing (MENU > ABOUT's credits), never
+ * read */
+#define BTAPP_RO __attribute__((section(".btapp.rodata"), used))
+#define BTAPP_FN __attribute__((section(".btapp.text"), used, noinline))
 #else
 static int bt_hw_start(uint8_t addr[6]) { (void)addr; return 2; }   /* (the host, the emulator: no radio) */
 static void bt_hw_enable(int on) { (void)on; }
 static uint32_t bt_hw_status(void) { return 0; }
+static int bt_hw_seg(void) { return 1; }                /* (the host: everything in the one image) */
+#define BTAPP_RO
+#define BTAPP_FN
+#endif
+#if FELUCCA_BT
+/* (V10.13) a BLE-MIDI message received (bt_seg.c ble_app_midi_in: channel messages, the clock, START CONTINUE STOP) into
+ * the MIDI input ring as USB's (source 1: CLK USB follows its clock; LEARN, ROUT, MIDI MAP alike). The BLE interrupts
+ * (priority 2) are preempted by TIMER5, the ring's other producer (USB, TRS): the interrupts off around it (core 1 takes
+ * none). In the segment: only its interrupts call it */
+BTAPP_FN void bt_midi_rx(uint32_t pkt)
+{
+    uint32_t ie = fm1_icfg() & 0x200u;
+    fm1_irq_off();
+    midi_enqueue(pkt, 1u);                              /* (full: midi_in_overflow, every note let go, as USB / TRS) */
+    if (ie)
+        fm1_irq_on();
+}
 #endif
 static uint32_t bt_get(void) { return BT_ROW[0] == BT_MARK && (BT_ROW[1] & 1u); }
 static void bt_set(uint32_t on)
@@ -97,6 +122,9 @@ static const char *bt_vname(uint32_t v)
  * starts from bt_tick */
 static void bt_boot(uint32_t clean)
 {
+    bt_hw_seg();                                        /* (V10.13) the segment checked here, the music stopped: the plain
+                                                         * window's set-up has the interrupts off a moment (ABOUT's texts
+                                                         * there) */
     if (bt_crumb == BT_CR_START || (bt_crumb == BT_CR_RUN && !clean)) {
         if (bt_get()) {
             bt_set(0);
