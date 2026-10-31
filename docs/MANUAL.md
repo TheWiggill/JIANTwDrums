@@ -455,7 +455,7 @@ the bars with KNOB 1 the bar and KNOB 2 LEN.
 | --- | --- | --- | --- | --- |
 | PRESETS | No. (the sound) | ENG (the engine) | FAV (mark a favourite) | LIST (ALL / FAV / a sound type: BASS LEAD PAD KEYS PLUCK BELL VOX DRUM FX, 0.9.12) |
 | USER | SLOT (U01–U32) | LOAD (action) | ERASE (action) | SAVE (action) |
-| PROJECTS / SECTIONS (the PROJECT page) | PROJECT (1–8; on SECTIONS: SECT A–D) | SECT (A–D; on SECTIONS: the section's NAME) | LOAD (action) | SAVE (action) |
+| PROJECTS / SECTIONS (the PROJECT page) | PROJECT (1–8; on SECTIONS: SECT A–D) | SECT (A–D; on SECTIONS: ERASE, V10.17) | LOAD (action) | SAVE (action) |
 | ARRANGE | ROW ("2/6") | SECT (on END: STOP / x2–x8 / LOOP) | BARS | SCENE |
 | TOOLS | any knob picks from the list: CLEAR SEQ, INIT SOUND, DELETE ROW, CLEAR SONG, NEW PROJECT, CPU TEST | | | |
 
@@ -2136,7 +2136,7 @@ switched each level's two sets).
 
 | Group | Pages | What the screen shows | Knobs |
 | --- | --- | --- | --- |
-| **SONG** | TIMELINE · SECTIONS | TIMELINE: the song as lanes (see [7](#7-arrange-songs-sections-and-scenes)). / The project's four sections large, the song as a strip. | ROW, LANE, SECT or FROM, BARS or VAR / SECT, NAME (shown; SAVE + C5 renames), LOAD, SAVE |
+| **SONG** | TIMELINE · SECTIONS | TIMELINE: the song as lanes (see [7](#7-arrange-songs-sections-and-scenes)). / The project's four sections large, the song as a strip. | ROW, LANE, SECT or FROM, BARS or VAR / SECT, ERASE (V10.17), LOAD, SAVE |
 | **PROJECT** | PROJECTS · ARRANGE · TOOLS | The eight projects as tiles: the number, the name (its section A's), the four sections A–D as chips (stored: in the section's colour; empty: dark); the project open tinted and framed violet, its section picked framed white. / ARRANGE's rows as chips. / The six tools as a list. | PROJECT, SECT, LOAD, SAVE / ROW, SECT, BARS, SCENE (OCT+ adds a row, OCT− deletes the one picked) / the tool |
 | **SOUND** | USER · PRESETS | The track's being (its engine's creature, alive with its sound), the track and its sound under it; at the right the 32 user slots (a stored one: its engine's creature small and its name) or the factory sounds. | SLOT, LOAD, ERASE, SAVE / No., ENG, FAV, LIST |
 
@@ -2158,7 +2158,7 @@ switched each level's two sets).
    does **not** change the music you're playing — it only chooses where to save. (It switches projects, so do this
    stopped.)
 4. On **SECTIONS**, **KNOB 1**: the section A–D, drawn large with its name (or USED / EMPTY) and **NOW** on
-   the one the music came from; KNOB 2's card shows its name.
+   the one the music came from (its name on the big card).
 5. **KNOB 4** to the right: SAVE is picked ([OCT+]). Press **OCT+**.
 6. If the section already holds something: **OVERWRITE PROJECT A?** (with its name). OCT+ YES.
 7. The **NAME** screen opens with a name ready. Edit it or not, then **OCT+** writes. **OCT−** cancels and writes
@@ -2166,6 +2166,14 @@ switched each level's two sets).
 8. The screen says **SAVED**.
 
 A section stores the music **including the tempo and global effects**. The **project's name** is its section A's name.
+
+### To erase a section (V10.17)
+
+1. Stop the music. **SAVE › SECTIONS**, **KNOB 1** to the section.
+2. **KNOB 2** to the right: **ERASE** is picked. Press **OCT+**: **ERASE SECT B?** (with its name).
+3. **OCT+** erases it (**OCT−** cancels): the section is **EMPTY** again, in flash too (its chip goes dark on
+   PROJECTS). The music you are hearing stays as it is; ARRANGE / TIMELINE rows that play that section keep playing
+   the music as it is until you store something there again.
 
 ### To load a section
 

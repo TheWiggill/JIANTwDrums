@@ -468,7 +468,7 @@ violeta, con el nombre violeta, y dice **OCT+**; apretá OCT+ para ejecutarla.
 | --- | --- | --- | --- | --- |
 | PRESETS | No. (el sonido) | ENG (el motor) | FAV (marcar como favorito) | LIST (ALL / FAV / un tipo de sonido: BASS LEAD PAD KEYS PLUCK BELL VOX DRUM FX, 0.9.12) |
 | USER | SLOT (U01–U32) | LOAD (acción) | ERASE (acción) | SAVE (acción) |
-| PROJECTS / SECTIONS (la página PROJECT) | PROJECT (1–8; en SECTIONS: SECT A–D) | SECT (A–D; en SECTIONS: el NAME de la sección) | LOAD (acción) | SAVE (acción) |
+| PROJECTS / SECTIONS (la página PROJECT) | PROJECT (1–8; en SECTIONS: SECT A–D) | SECT (A–D; en SECTIONS: ERASE, V10.17) | LOAD (acción) | SAVE (acción) |
 | ARRANGE | ROW ("2/6") | SECT (en END: STOP / x2–x8 / LOOP) | BARS | SCENE |
 | TOOLS | cualquier perilla elige de la lista: CLEAR SEQ, INIT SOUND, DELETE ROW, CLEAR SONG, NEW PROJECT, CPU TEST | | | |
 
@@ -2265,7 +2265,7 @@ perillas, OCT+, los diálogos y la pantalla NAME son los de siempre (hasta la 0.
 
 | Grupo | Páginas | Qué muestra la pantalla | Perillas |
 | --- | --- | --- | --- |
-| **SONG** | TIMELINE · SECTIONS | TIMELINE: el tema en carriles (ver [7](#7-arrange-canciones-secciones-y-escenas)). / Las cuatro secciones del proyecto en grande, el tema como una tira. | ROW, LANE, SECT o FROM, BARS o VAR / SECT, NAME (se muestra; SAVE + C5 lo renombra), LOAD, SAVE |
+| **SONG** | TIMELINE · SECTIONS | TIMELINE: el tema en carriles (ver [7](#7-arrange-canciones-secciones-y-escenas)). / Las cuatro secciones del proyecto en grande, el tema como una tira. | ROW, LANE, SECT o FROM, BARS o VAR / SECT, ERASE (V10.17), LOAD, SAVE |
 | **PROJECT** | PROJECTS · ARRANGE · TOOLS | Los ocho proyectos como fichas: el número, el nombre (el de su sección A), sus cuatro secciones A–D como chips (guardadas: en el color de la sección; vacías: oscuras); el proyecto abierto teñido y enmarcado en violeta, su sección elegida enmarcada en blanco. / Las filas de ARRANGE como fichas. / Las seis herramientas en lista. | PROJECT, SECT, LOAD, SAVE / ROW, SECT, BARS, SCENE (OCT+ agrega una fila, OCT− borra la elegida) / la herramienta |
 | **SOUND** | USER · PRESETS | El ser de la pista (la criatura de su motor, viva con su sonido), la pista y su sonido debajo; a la derecha los 32 lugares de usuario (uno guardado: la criatura de su motor en chiquito y su nombre) o los sonidos de fábrica. | SLOT, LOAD, ERASE, SAVE / No., ENG, FAV, LIST |
 
@@ -2287,7 +2287,7 @@ perillas, OCT+, los diálogos y la pantalla NAME son los de siempre (hasta la 0.
    **no** cambia la música que estás tocando — solo elige dónde guardar. (Cambia de proyecto, así que hacelo con el
    transporte parado.)
 4. En **SECTIONS**, **KNOB 1**: la sección A–D, dibujada en grande con su nombre (o USED / EMPTY) y **NOW**
-   en la sección de la que vino la música; la tarjeta de KNOB 2 muestra su nombre.
+   en la sección de la que vino la música (su nombre en la tarjeta grande).
 5. **KNOB 4** a la derecha: SAVE queda elegido ([OCT+]). Apretá **OCT+**.
 6. Si la sección ya tiene algo: **OVERWRITE PROJECT A?** (con su nombre). OCT+ YES.
 7. Se abre la pantalla **NAME** con un nombre listo. Editalo o no, y después **OCT+** escribe. **OCT−** cancela y no
@@ -2296,6 +2296,14 @@ perillas, OCT+, los diálogos y la pantalla NAME son los de siempre (hasta la 0.
 
 Una sección guarda la música **incluyendo el tempo y los efectos globales**. El **nombre del proyecto** es el nombre
 de su sección A.
+
+### Para borrar una sección (V10.17)
+
+1. Pará la música. **SAVE › SECTIONS**, **KNOB 1** en la sección.
+2. **KNOB 2** a la derecha: queda elegido **ERASE**. Apretá **OCT+**: **ERASE SECT B?** (con su nombre).
+3. **OCT+** la borra (**OCT−** cancela): la sección vuelve a estar **EMPTY**, también en el flash (su ficha se apaga
+   en PROJECTS). La música que estás escuchando queda como está; las filas de ARRANGE / TIMELINE que tocan esa
+   sección siguen con la música como está hasta que guardes algo ahí de nuevo.
 
 ### Para cargar una sección
 

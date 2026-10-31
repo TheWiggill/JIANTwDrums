@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.17", items: [
+    ["SAVE › SECTIONS: ERASE en KNOB 2. Elegí la sección con KNOB 1, KNOB 2 a la derecha, OCT+ pregunta ERASE SECT B?, OCT+ la borra: queda EMPTY (también en el flash). La música que suena queda; solo parado.", "SAVE › SECTIONS: ERASE on KNOB 2. Pick the section with KNOB 1, KNOB 2 right, OCT+ asks ERASE SECT B?, OCT+ erases it: EMPTY again (flash too). The music playing stays; stopped only."]]},
   {v: "V10.16", items: [
     ["SEQ › EUCLID: VARY varía mucho más. Con VARY arriba de 0 el patrón son cuatro vueltas (A A' A'' B), cada una distinta, la última la que más; HITS sigue exacto en cada vuelta y la melodía le contesta a su propio motivo.", "SEQ › EUCLID: VARY varies much more. Above 0 the pattern is four turns (A A' A'' B), each different, the last the most; HITS stays exact in each turn and a melody answers its own motif."],
     ["SEQ › MUTATE (después de MODES): EVERY (OFF, 1–16 compases), AMOUNT, MODE (ORBIT, DRIFT, PULSE), WHAT (GROOVE, RHYTHM, FEEL, ALL). Muta el patrón de EUCLID en el compás mientras suena; OCT+ muta ya, OCT− vuelve al ancla.", "SEQ › MUTATE (after MODES): EVERY (OFF, 1–16 bars), AMOUNT, MODE (ORBIT, DRIFT, PULSE), WHAT (GROOVE, RHYTHM, FEEL, ALL). It mutates the EUCLID pattern on the bar while playing; OCT+ mutates now, OCT− returns to the anchor."]]},

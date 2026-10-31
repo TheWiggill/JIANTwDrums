@@ -275,7 +275,7 @@ def controls():
         ('GLO · SAVE', HEAT[6], [('MANO', 'RATE LOOP THIN DJ FILT (the keys: live modifiers)'), ('RIELES', 'PISTAS RATE CORTE DENS'),
                                  ('MIXER', 'LEVEL PAN REV DJ FILT'), ('GLOBAL', 'BPM SWING CLOCK TUNE'),
                                  ('SYSTEM', 'TRACKS LOAD ROUTE CPU'), ('PRESETS', 'No. ENG FAV LIST'),
-                                 ('USER', 'SLOT LOAD ERASE SAVE'), ('PROJECTS', 'PROJECT SECT LOAD SAVE'), ('SECTIONS', 'SECT NAME LOAD SAVE'), ('ARRANGE', 'ROW SECT BARS SCENE (OCT+ adds a row, OCT− deletes the one picked)'), ('TIMELINE', 'ROW LANE · SEC: SECT BARS · T1–T6: FROM VAR'),
+                                 ('USER', 'SLOT LOAD ERASE SAVE'), ('PROJECTS', 'PROJECT SECT LOAD SAVE'), ('SECTIONS', 'SECT ERASE LOAD SAVE'), ('ARRANGE', 'ROW SECT BARS SCENE (OCT+ adds a row, OCT− deletes the one picked)'), ('TIMELINE', 'ROW LANE · SEC: SECT BARS · T1–T6: FROM VAR'),
                                  ('TOOLS', 'CLEAR SEQ · INIT SOUND · DEL ROW · CLEAR SONG · NEW PROJECT · CPU TEST: K1 picks, OCT+')]),
     ]
 
