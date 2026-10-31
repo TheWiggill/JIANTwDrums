@@ -12,6 +12,7 @@ material in it:
              cfg_tool.bin and eq_cfg_hw.bin, the region descriptors, SFC-encrypted
              with the chip key
   ota.bin    Felucca's own update loader (firmware/loader)
+  bt.bin     (V10.12, optional) the Bluetooth segment, written by that loader at 0xEA000
 
 The layout values (offsets, flags, descriptor addresses, header fields) are
 facts of the FM-1 flash layout and the SDK file formats.
@@ -20,7 +21,7 @@ The three SDK files (uboot.boot, cfg_tool.bin, eq_cfg_hw.bin) are Apache-2.0, no
 ship LICENSES/Apache-2.0.txt with every package (LICENSING.md; make_site.py and
 build.py --release do).
 
-  fm1pkg_make.py APP.bin OTA.bin OUT.fwsc [--product FM-1_9XY] [--key 0x980F]
+  fm1pkg_make.py APP.bin OTA.bin OUT.fwsc [--product FM-1_9XY] [--key 0x980F] [--bt bt.bin]
 """
 import argparse
 import os
@@ -162,8 +163,35 @@ def flash_image(app, key):
     return bytes(f)
 
 
-def ufw(flash, ota, product):
+# (V10.12) the Bluetooth segment (firmware/bt/bt_seg.c): a third entry, "bt.bin", after ota.bin (whatever reads the first
+# two finds them where they were). Felucca's update loader (firmware/loader/ldr_core.c) writes it at flash 0xEA000
+# (FL_EXT_LO, plain: the XIP window from 0x93000 up is unencrypted) after the app area; the app checks it before use
+BT_TYPE = 200
+BT_BASE, BT_END, BT_MAGIC = 0xEA000, 0xFC000, 0x3154424A
+
+
+def FM1_XIP(off):
+    return 0x02000000 + off - 0x4000
+
+
+def bt_check(bt):
+    """the segment as the loader writes it: its header, its size, and no 4K-256 slot that reads as an update record"""
+    if len(bt) <= 32 or struct.unpack_from("<I", bt)[0] != BT_MAGIC or len(bt) > BT_END - BT_BASE:
+        raise SystemExit(f"bt.bin: {len(bt)} B, not a segment for [{BT_BASE:#x}, {BT_END:#x})")
+    if struct.unpack_from("<I", bt, 4)[0] != len(bt) - 32:
+        raise SystemExit("bt.bin: the header's length is not the payload's")
+    f = bt + b"\xFF" * (-len(bt) % 0x1000)
+    for s in range(0x1000, len(f) + 1, 0x1000):
+        r = f[s - 0x100:s - 0x100 + 80]
+        if r[6] == 0x41 and r[7] == 0x54 and (r[0] | r[1]) and struct.unpack_from("<H", r)[0] == crc16(r[2:80]):
+            raise SystemExit(f"bt.bin has an update-record look-alike at {BT_BASE + s - 0x100:#x}")
+
+
+def ufw(flash, ota, product, bt=None):
     files = [(0, "flash.bin", flash), (100, "ota.bin", ota)]
+    if bt:
+        bt_check(bt)
+        files.append((BT_TYPE, "bt.bin", bt))
     off, ents, data = 0x400, [], bytearray()
     for i, (typ, name, d) in enumerate(files):
         off = (off + 0xFF) & ~0xFF
@@ -210,10 +238,11 @@ def main():
     ap.add_argument("--product", default="FM-1_900")
     ap.add_argument("--key", type=lambda s: int(s, 0), default=KEY)
     ap.add_argument("--sdk", type=Path, help="JieLi AC79 SDK checkout (default: $AC79_SDK)")
+    ap.add_argument("--bt", type=Path, help="the Bluetooth segment (build/bt.bin), a third entry")
     a = ap.parse_args()
     global SDK
     SDK = a.sdk
-    pkg = ufw(flash_image(a.app.read_bytes(), a.key), a.ota.read_bytes(), a.product)
+    pkg = ufw(flash_image(a.app.read_bytes(), a.key), a.ota.read_bytes(), a.product, a.bt.read_bytes() if a.bt else None)
     a.out.write_bytes(pkg)
     print(f"package {a.out}: {len(pkg)} B, identity {a.product}, chip key {a.key:#06x}")
 

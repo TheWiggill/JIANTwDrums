@@ -16,6 +16,10 @@
  *      sectors that are already equal, and verifies each one; a sector that
  *      comes in different from the checked pass is read again, never written;
  *      the flash head (SPL, isd_config) is never written;
+ *   3b. (V10.12) with a "bt.bin" entry (type 200, tools/fm1pkg_make.py): the Bluetooth segment, checked in 2b
+ *      as a whole (its entry's CRC16, its header) and by sector like the app area, written the same way at
+ *      [0xEA000, 0xEA000 + its length) (plain: the XIP window from 0x93000 up is unencrypted), the last sector's
+ *      tail 0xFF; a package without one leaves the region as it is (the app then finds no segment of its build);
  *   4. asks 0xF0000000 ("success"), then invalidates the update record (RAM
  *      and flash: 4K boundary - 256 between 0x93000 and 0xFC000, outside
  *      Felucca's store, where only user data lives) so the SPL boots the new
@@ -36,6 +40,11 @@
 #define LDR_DATA_HI 0xE0000u                    /* bytes (the store) the host writes */
 #define LDR_NSEC ((LDR_APP_HI - LDR_APP_LO) >> 12)
 #define LDR_FL_MAX 0x100000u                    /* flash.bin: at most the 1 MiB part */
+#define LDR_BT_LO 0xEA000u                      /* (V10.12) the Bluetooth segment (hal/fm1_flash.h FL_EXT_*) */
+#define LDR_BT_HI 0xFC000u
+#define LDR_BT_TYPE 200u                        /* its UFW entry, "bt.bin" */
+#define LDR_BT_MAGIC 0x3154424Au                /* "JBT1": its header's first word (firmware/bt/bt_seg.c bt_head) */
+#define LDR_BT_NSEC ((LDR_BT_HI - LDR_BT_LO) >> 12)
 
 static int ldr_fread(uint32_t off, void *p, uint32_t n);
 static int ldr_erase(uint32_t off);
@@ -105,20 +114,92 @@ static int ldr_check(uint32_t fl_off, uint32_t fl_size, uint32_t want, uint16_t 
     return crc == want ? 0 : -12;
 }
 
+/* (V10.12) 2b for the Bluetooth segment: [off, off + len) of the package, its CRC16 the entry's (want), its header's
+ * magic; sc gets each sector's CRC16 with the last one's tail 0xFF, as it is written */
+static int ldr_check_bt(uint32_t off, uint32_t len, uint32_t want, uint16_t *sc, uint8_t *b)
+{
+    uint32_t i, n, crc = 0;
+    for (i = 0; i < len; i += n) {
+        n = len - i > 512u ? 512u : len - i;
+        if (ota_read(off + i, b, n))
+            return -7;
+        if (!i && ota_rd32(b) != LDR_BT_MAGIC)
+            return -15;                                  /* not a segment */
+        crc = ota_crc16(b, n, crc);
+        sc[i >> 12] = (uint16_t)ota_crc16(b, n, (i & 0xFFFu) ? sc[i >> 12] : 0u);
+    }
+    for (i = 0; i < 512u; i++)
+        b[i] = 0xFFu;
+    for (i = len; i & 0xFFFu; i += n) {                  /* the last sector's tail as written: 0xFF */
+        n = 512u - (i & 511u);
+        sc[i >> 12] = (uint16_t)ota_crc16(b, n, sc[i >> 12]);
+    }
+    return crc == want ? 0 : -16;
+}
+
+/* 3. one sector: [src, src + n) of the package (n <= 4 KiB, the rest 0xFF) as checked in 2b (want), else read again;
+ * written at dst unless it is there already, and verified */
+static int ldr_sector(uint32_t dst, uint32_t src, uint32_t n, uint32_t want, uint8_t *sec, uint8_t *cur)
+{
+    uint32_t again, k;
+    for (again = 0;; again++) {                          /* as checked in 2b, else read it again */
+        for (k = 0; k < 0x1000u; k += 512u) {
+            uint32_t m = k >= n ? 0u : n - k > 512u ? 512u : n - k, j;
+            if (m && ota_read(src + k, sec + k, m))
+                return -7;
+            for (j = m; j < 512u; j++)
+                sec[k + j] = 0xFFu;
+        }
+        if (ota_crc16(sec, 0x1000u, 0) == want)
+            break;
+        if (again == 2u)
+            return -13;
+    }
+    if (ldr_fread(dst, cur, 0x1000u))
+        return -8;
+    if (!ota_memeq(sec, cur, 0x1000u)) {
+        uint32_t tries;
+        for (tries = 0; tries < 2u; tries++) {
+            if (ldr_erase(dst))
+                return -9;
+            for (k = 0; k < 0x1000u; k += 256u)
+                if (ldr_prog(dst + k, sec + k, 256))
+                    return -10;
+            if (ldr_fread(dst, cur, 0x1000u))
+                return -8;
+            if (ota_memeq(sec, cur, 0x1000u))
+                break;
+        }
+        if (tries == 2u)
+            return -11;                                  /* verify failed twice */
+    }
+    return 0;
+}
+
 static int ldr_session(void)
 {
     static uint8_t hdr[0x400], sec[0x1000], cur[0x1000];
-    static uint16_t sc[LDR_NSEC];
+    static uint16_t sc[LDR_NSEC], bsc[LDR_BT_NSEC];
     uint32_t i, k, fl_off, fl_size, ota_off, ota_len, key, s, want = ~0u, done = 0;   /* (no CRC16: no flash.bin entry) */
+    uint32_t bt_off = 0, bt_len = 0, bt_want = 0;
     int rc;
     /* 1. UFW header + entry list (ota.c; it leaves the entries decoded in hdr) */
     if ((rc = ota_ufw(hdr, &fl_off, &fl_size, &ota_off, &ota_len)) != 0)
         return rc;
     if (!fl_off || fl_size < LDR_APP_HI || fl_size > LDR_FL_MAX)
         return -3;
-    for (i = 0; i < ota_rd16(hdr + 8); i++)
-        if (ota_rd16(hdr + 0x40 + i * 0x50u) == 0)
-            want = ota_rd16(hdr + 0x40 + i * 0x50u + 4u);   /* flash.bin's data CRC16 */
+    for (i = 0; i < ota_rd16(hdr + 8); i++) {
+        const uint8_t *e = hdr + 0x40 + i * 0x50u;
+        if (ota_rd16(e) == 0)
+            want = ota_rd16(e + 4u);                     /* flash.bin's data CRC16 */
+        if (ota_rd16(e) == LDR_BT_TYPE && ota_memeq(e + 0x40, (const uint8_t *)"bt.bin", 7)) {
+            bt_off = ota_rd32(e + 8);                    /* (V10.12) the Bluetooth segment */
+            bt_len = ota_rd32(e + 12);
+            bt_want = ota_rd16(e + 4u);
+        }
+    }
+    if (bt_off && (bt_len <= 32u || bt_len > LDR_BT_HI - LDR_BT_LO))
+        return -14;
     /* 2. the package's app area must decrypt with this chip's key */
     if ((rc = ldr_chip_key(&key)) != 0)
         return -40 + rc;
@@ -130,38 +211,22 @@ static int ldr_session(void)
     /* 2b. the whole package first: nothing is erased for a damaged one */
     if ((rc = ldr_check(fl_off, fl_size, want, sc, sec)) != 0)
         return rc;
+    if (bt_off && (rc = ldr_check_bt(bt_off, bt_len, bt_want, bsc, sec)) != 0)
+        return rc;
     /* 3. app area, sector by sector */
     for (s = LDR_APP_LO; s < LDR_APP_HI; s += 0x1000u) {
-        uint32_t again;
-        for (again = 0;; again++) {                      /* as checked in 2b, else read it again */
-            for (k = 0; k < 0x1000u; k += 512u)
-                if (ota_read(fl_off + s + k, sec + k, 512))
-                    return -7;
-            if (ota_crc16(sec, 0x1000u, 0) == sc[(s - LDR_APP_LO) >> 12])
-                break;
-            if (again == 2u)
-                return -13;
-        }
-        if (ldr_fread(s, cur, 0x1000u))
-            return -8;
-        if (!ota_memeq(sec, cur, 0x1000u)) {
-            uint32_t tries;
-            for (tries = 0; tries < 2u; tries++) {
-                if (ldr_erase(s))
-                    return -9;
-                for (k = 0; k < 0x1000u; k += 256u)
-                    if (ldr_prog(s + k, sec + k, 256))
-                        return -10;
-                if (ldr_fread(s, cur, 0x1000u))
-                    return -8;
-                if (ota_memeq(sec, cur, 0x1000u))
-                    break;
-            }
-            if (tries == 2u)
-                return -11;                              /* verify failed twice */
-        }
+        if ((rc = ldr_sector(s, fl_off + s, 0x1000u, sc[(s - LDR_APP_LO) >> 12], sec, cur)) != 0)
+            return rc;
         done += 0x1000u;
-        ldr_progress(done, LDR_APP_HI - LDR_APP_LO);
+        ldr_progress(done, LDR_APP_HI - LDR_APP_LO + ((bt_len + 0xFFFu) & ~0xFFFu));
+    }
+    /* 3b. (V10.12) the Bluetooth segment, after the app (a segment that does not match the app is never called) */
+    for (k = 0; bt_off && k < bt_len; k += 0x1000u) {
+        if ((rc = ldr_sector(LDR_BT_LO + k, bt_off + k, bt_len - k > 0x1000u ? 0x1000u : bt_len - k, bsc[k >> 12], sec,
+                             cur)) != 0)
+            return rc;
+        done += 0x1000u;
+        ldr_progress(done, LDR_APP_HI - LDR_APP_LO + ((bt_len + 0xFFFu) & ~0xFFFu));
     }
     /* 4. finish: the host confirms, the record goes, the SPL boots the app */
     for (i = 0; i < 4u; i++)

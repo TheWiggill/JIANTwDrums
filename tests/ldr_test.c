@@ -96,7 +96,8 @@ static int ldr_prog(uint32_t off, const void *p, uint32_t n)
     const uint8_t *s = p;
     uint32_t i;
     if ((off < 0x4000u || off + n > 0x93000u) &&
-        !(off >= 0xE8000u && off + n <= 0xE8F00u)) bad_range++;   /* (V10.10: the stock VM sector put back but its record) */
+        !(off >= 0xE8000u && off + n <= 0xE8F00u) &&            /* (V10.10: the stock VM sector put back but its record) */
+        !(off >= 0xEA000u && off + n <= 0xFC000u)) bad_range++;  /* (V10.12: the Bluetooth segment) */
     if (((off & 0xFFu) + n) > 256u) bad_range++;
     for (i = 0; i < n; i++) nor[off + i] &= s[i];
     return 0;
@@ -137,6 +138,23 @@ static uint32_t flash_off(const uint8_t *lg)        /* flash.bin offset in the l
     return 0;
 }
 
+/* (V10.12) the "bt.bin" entry (type 200): its offset in the logical image and its length, 0 if none */
+static uint32_t bt_entry(const uint8_t *lg, uint32_t *len)
+{
+    uint8_t h[0x400];
+    uint32_t i, n;
+    memcpy(h, lg, sizeof h);
+    ota_jl_enc(h, 0x40);
+    n = ota_rd16(h + 8);
+    *len = 0;
+    for (i = 0; i < n; i++) {
+        uint8_t *e = h + 0x40 + i * 0x50u;
+        ota_jl_enc(e, 0x50);
+        if (ota_rd16(e) == 200 && !memcmp(e + 0x40, "bt.bin", 7)) { *len = ota_rd32(e + 12); return ota_rd32(e + 8); }
+    }
+    return 0;
+}
+
 static int check(const char *what, int ok) { printf("%-56s %s\n", what, ok ? "ok" : "FAIL"); return ok ? 0 : 1; }
 
 /* the installed app area, decrypted with the chip key: app.bin's slot size and CRC, where the region ends */
@@ -172,13 +190,15 @@ int main(int argc, char **argv)
     size_t olen;
     static uint8_t user[0x1000], store[0x100000 - 0x93000];
     uint8_t *old, head[0x4000];
-    uint32_t ofo, nfo, i;
+    uint32_t ofo, nfo, i, bto, btl;
     int bad = 0, rc;
     if (argc < 3) { printf("usage: ldr_test OLD.fwsc NEW.fwsc [APP_SLOT]\n"); return 2; }
     old = load_logical(argv[1], &olen);
     logical = load_logical(argv[2], &logical_len);
     ofo = flash_off(old);
     nfo = flash_off(logical);
+    bto = bt_entry(logical, &btl);
+    printf("  new package: %s\n", bto ? "a Bluetooth segment (bt.bin)" : "no Bluetooth segment");
     /* device: OLD installed, plus a valid update record at 0xE4F00 (Felucca's step 1) and 0xE8F00 (the stock
      * firmware's, a first install from it); user sample data in Felucca's store that looks like a record */
     memset(nor, 0xFF, sizeof nor);
@@ -198,6 +218,18 @@ int main(int argc, char **argv)
         memset(store + 0xE4000 - 0x93000, 0xFF, 0x1000);   /* what the install may change: the two record sectors */
         memset(store + 0xE8F00 - 0x93000, 0xFF, 0x100);   /* (V10.10: the stock VM sector kept but its record's 256 B:
                                                          * the radio's RF trims and BT address) */
+        if (bto) {                                      /* (V10.12) the segment, its last sector's tail 0xFF */
+            memset(store + 0xEA000 - 0x93000, 0xFF, (btl + 0xFFFu) & ~0xFFFu);
+            memcpy(store + 0xEA000 - 0x93000, logical + bto, btl);
+        }
+    }
+    if (bto) {                                          /* a damaged segment: refused before anything is erased */
+        logical[bto + btl / 2u] ^= 0x01;
+        erases = 0;
+        rc = ldr_session();
+        bad += check("damaged Bluetooth segment (bt.bin CRC) refused, nothing erased", rc == -16 && erases == 0);
+        logical[bto + btl / 2u] ^= 0x01;
+        requests = 0;
     }
     /* a damaged package (one byte deep in the app area): refused before anything is erased */
     {
@@ -224,7 +256,11 @@ int main(int argc, char **argv)
                  record_cleared && nor[0xE4F06] == 0xFF && nor[0xE8F06] == 0xFF);
     bad += check("user data in Felucca's store that looks like a record is kept", !memcmp(nor + 0xA0000, user, sizeof user));
     bad += check("no write outside the allowed windows", bad_range == 0);
-    bad += check("[0x93000, 1 MiB) byte-identical but the record sectors (0xE8000's: only its record, the VM kept)", !memcmp(nor + 0x93000, store, sizeof store));
+    bad += check("[0x93000, 1 MiB) byte-identical but the record sectors (0xE8000's: only its record, the VM kept)"
+                 , !memcmp(nor + 0x93000, store, sizeof store));
+    if (bto)
+        bad += check("Bluetooth segment at 0xEA000 == the package's bt.bin, then 0xFF to its sector's end",
+                     !memcmp(nor + 0xEA000, logical + bto, btl) && nor[0xEA000 + ((btl + 0xFFFu) & ~0xFFFu) - 1u] == 0xFF);
     bad += app_area(argc > 3 ? (uint32_t)strtoul(argv[3], NULL, 0) : 0u);
     /* same package again: nothing to erase */
     erases = 0; requests = 0;
