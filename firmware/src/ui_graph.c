@@ -289,8 +289,8 @@ static void graph_morph(const track_t *t)
         n0 = N_RWAVE[a0]; n1 = N_RWAVE[a1];
     } else {
         if (p[P_E0] >= 4) {                             /* (0.6.81) PWM SYNC RING SAW3: the WAVE, what MORPH moves */
-            static const char *const WHAT[4] = {"PWM  WIDTH", "SYNC  RATIO", "RING  RATIO", "SAW3  SPREAD"};
-            str_cpy(b, WHAT[(p[P_E0] - 4) & 3], sizeof b);
+            static const char *const WHAT[5] = {"PWM  WIDTH", "SYNC  RATIO", "RING  RATIO", "SAW3  SPREAD", "PLS3  WIDTH"};
+            str_cpy(b, WHAT[clamp(p[P_E0] - 4, 0, 4)], sizeof b);
             cv_rect(PANEL_X0, 46, PANEL_W, 1, T_RAISE);
             for (i = 0; i <= 110u; i++) {
                 int32_t x = PANEL_X0 + (int32_t)i * 2, y = 46 - (int32_t)((i * 34u * (uint32_t)p[P_MORPH]) / (110u * 127u)) + 17;

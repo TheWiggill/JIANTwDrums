@@ -2775,7 +2775,7 @@ static int test_menu_tabs(void)
         memset(&favorites.factory[6][22], 0, 10);
         memset(&bp, 0, sizeof bp);
         mod_prox = 0;
-        ok = MS_PROX == 15 && MS_N == 16 && str_eq(N_MSRC[MS_PROX], "PROX") && !MS_BIPOLAR(MS_PROX);
+        ok = MS_PROX == 15 && MS_N == 17 && str_eq(N_MSRC[MS_PROX], "PROX") && !MS_BIPOLAR(MS_PROX);
         for (k = 0; k < 40u; k++)
             w[k] = LV(80u);
         bt_prox_step(w, 8, 1, t);
@@ -4493,7 +4493,7 @@ static int test_quick_layers(void)
             go_home(); frames(8);
             btn_down(B_ENV); frame(); turn(EN_SELECT, 1); frame();   /* (0.9.2: into ENV, its page left, then the chain) */
             ok = str_eq(cur_page()->title, "ENV DEST") && !ui.confirm;
-            turn(EN_SELECT, 1); frame();
+            turn(EN_SELECT, 2); frame();                 /* (V10.22: past ENV 2) */
             ok &= str_eq(cur_page()->title, "STAGE");
             btn_up(B_ENV); frame(); turn(EN_SELECT, -1); frame();   /* (the same turn, the button let go first) */
             ok &= str_eq(cur_page()->title, "STAGE") && !ui.layer;
@@ -5350,6 +5350,52 @@ static int test_step_rec(void)
         for (b2 = 0; b2 < NVOICE; b2++) later += t->v[b2].active && t->v[b2].gate;
         ok = first == 1u && later == 3u;
         bad += check("STRUM, playing back: the step's chord comes in one note after another (1, then all 3)", ok);
+        {   /* (V10.22, a tester: strums recorded an octave low played back an octave higher) OCT -1, STRUM, VOICINGs:
+             * the notes played back are the notes heard when recorded */
+            uint32_t vo, okv = 1;
+            for (vo = 0; vo < 16u; vo++) {
+                uint8_t live[8], back[8];
+                t->p[P_QUANT] = (int16_t)(vo / 4u);
+                uint32_t nl = 0, nb = 0, q, v;
+                t->p[P_CVOI] = (int16_t)(vo % 4u);
+                song.octave = -1;
+                song.rec = 1;
+                for (i = 0; i < NSTEP; i++) step_clear(&t->step[i]);
+                while (t->seq_idx != 1u) events_block(CTL);
+                key_down(kr);
+                for (b2 = 0; b2 < 200u; b2++) events_block(CTL);
+                for (v = 0; v < NVOICE; v++) if (t->v[v].active && t->v[v].gate && nl < 8u) live[nl++] = t->v[v].note;
+                key_up(kr); events_block(CTL); frame();
+                song.rec = 0;
+                for (i = 0; i < NSTEP && !t->step[i].n; i++) ;
+                while (t->seq_idx == i) events_block(CTL);
+                while (t->seq_idx != i) events_block(CTL);
+                while (t->seq_idx == i) {                  /* (the most notes gated at once in the step) */
+                    uint32_t c2 = 0;
+                    uint8_t cur[8];
+                    events_block(CTL);
+                    for (v = 0; v < NVOICE; v++) if (t->v[v].active && t->v[v].gate && c2 < 8u) cur[c2++] = t->v[v].note;
+                    if (c2 > nb) { nb = c2; memcpy(back, cur, c2); }
+                }
+                okv &= nl == nb && nl >= 2u;
+                for (q = 0; q < nl; q++) {
+                    uint32_t f = 0;
+                    for (v = 0; v < nb; v++) f |= back[v] == live[q];
+                    okv &= f != 0u;
+                }
+                if (!(nl == nb && nl >= 2u) || !okv) {
+                    printf("  step %u n %u: %u %u %u %u  playing %d idx %u\n", i, i < NSTEP ? t->step[i].n : 0u, t->step[i % NSTEP].note[0], t->step[i % NSTEP].note[1], t->step[i % NSTEP].note[2], t->step[i % NSTEP].note[3], song.playing, t->seq_idx);
+                    printf("  VOICING %u: live", vo);
+                    for (q = 0; q < nl; q++) printf(" %u", live[q]);
+                    printf(" / back");
+                    for (q = 0; q < nb; q++) printf(" %u", back[q]);
+                    printf("\n");
+                }
+            }
+            song.octave = 0;
+            t->p[P_CVOI] = 0; t->p[P_QUANT] = 0;
+            bad += check("V10.22 STRUM at OCT -1, every VOICING: the chord played back is the chord heard recording it", okv);
+        }
         t->p[P_CSTR] = 0;
         song.rec = 1;
     }
@@ -11727,9 +11773,12 @@ static int test_lz_env(void)
     ui_power_on(); frame();
     press(B_ENV); frame();
     ok = pd_on() && lz_fam() == LZ_ENV && pd_level() == 1u && str_eq(cur_page()->title, "ENV") && lz_tab_lit(1) &&
-         lz_crumb_is("ENV \xB7 ENV \xB7 ENV") && lz_count_is("3/5");
+         lz_crumb_is("ENV \xB7 ENV \xB7 ENV") && lz_count_is("3/6");
     turn(EN_SELECT, 1); frame();
-    ok &= str_eq(cur_page()->title, "ENV DEST") && lz_crumb_is("ENV \xB7 ENV \xB7 ENV DEST") && lz_count_is("4/5");
+    ok &= str_eq(cur_page()->title, "ENV DEST") && lz_crumb_is("ENV \xB7 ENV \xB7 ENV DEST") && lz_count_is("4/6");
+    turn(EN_SELECT, 1); frame();
+    ok &= str_eq(cur_page()->title, "ENV 2") && lz_crumb_is("ENV \xB7 ENV \xB7 ENV 2") && lz_count_is("5/6");   /* (V10.22) */
+    turn(EN_SELECT, -1); frame();
     turn(EN_SELECT, -3); frame();
     ok &= pd_level() == 0u && lz_tab_lit(0) && str_eq(cur_page()->title, "ENV") && lz_crumb_is("ENV \xB7 TRACKS \xB7 TRACKS");
     turn(EN_SELECT, 1); frame();

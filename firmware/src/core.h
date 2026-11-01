@@ -128,6 +128,12 @@ enum {                          /* per-track parameters */
                                          * every project and preset before it); seq.c trk_chance; DIGITAL's OP1 DEC slot */
 /* (V10.6: MUTATE retired; its slots stay the sequencer's, unused) (JIANT 0.6.43) MUTATE (project.c mutate_poll), in DIGITAL's OP1 REL / OP2 slots (0, every project and preset before it:
  * OFF, 0 %, ORBIT): SOUND and PATTERN every OFF / 1 / 2 / 4 / 8 / 16 / 32 bars, AMOUNT, MODE ORBIT / DRIFT */
+/* (V10.22) MUTATE's slots now ENV 2's (ENV > ENV 2: ATK DEC SUS REL, a MOD source, mod.c MS_ENV2): read only through
+ * a MOD slot with SRC ENV2 (none in any project or preset before it), so the values an old project kept there change nothing */
+#define P_E2ATK P_FM1_REL
+#define P_E2DEC P_FM2_ATK
+#define P_E2SUS P_FM2_DEC
+#define P_E2REL P_FM2_REL
 #define P_MSND P_FM1_REL
 #define P_MPAT P_FM2_ATK
 #define P_MAMT P_FM2_DEC
@@ -355,7 +361,8 @@ typedef struct {
      * (0: none; CTL + 1: the next block's first), pn_*: the start as asked (voice_start's arguments and what it reads
      * of the track at the time) */
     uint8_t sub, pn_flags, pn_note, pn_vel;
-    uint8_t pn_mvel, pn_glide, pn_tch, pn_pad;
+    uint8_t pn_mvel, pn_glide, pn_tch, env2_st;   /* (V10.22) env2_st: ENV 2's stage (0 off, 1 attack, 2 decay /
+                                  * sustain, 3 release; was padding) */
     int8_t pn_henv, pn_dpit;
     int16_t pn_mrnd, pn_dbend;
     uint16_t pn_dbt, pn_fin;
@@ -363,6 +370,7 @@ typedef struct {
     int32_t pn_fine, pn_pcur, pn_gstep;   /* PN_GLIDE: where the glide sets out from, its step (seq.c chord_glide) */
     uint32_t pn_phr, pn_age;
     uint32_t pn_rnd;             /* the note's random draw (VOICE's RAND vowel: core.h vs_rnd), made at the event */
+    int32_t env2;                /* (V10.22) ENV 2, Q24 (voice.c env2_tick; a MOD source, mod.c MS_ENV2) */
 } voice_t;
 #define PN_START 1u              /* pn_flags: a start (else a release) */
 #define PN_OLD 2u                /* .. of a voice sounding: its note rendered up to the sample */
@@ -376,6 +384,7 @@ typedef struct {                 /* per-voice control-rate modulation, computed 
     int32_t cutoff;              /* 0..127 << 8 */
     int32_t shape;               /* 0..127 << 8 */
     int32_t envq15;              /* env value (for engines that use it as a mod source) */
+    int32_t env2q15;             /* (V10.22) ENV 2 (mod.c MS_ENV2) */
     int32_t fine;                /* the residual below 1/16 semitone in inc: unison detune, TUNE, bend (1/4096) */
 } vmod_t;
 
@@ -767,6 +776,7 @@ typedef struct track {
     uint8_t m_vel, m_key, m_vi;  /* the latest note-on: velocity, note, voice index (per-block destinations) */
     int16_t m_rnd;               /* .. its RAND */
     int32_t m_env;               /* the amp envelope of voice m_vi, last block (Q15) */
+    int32_t m_env2;              /* (V10.22) .. its ENV 2 (Q15) */
     /* the punch-in MIDI effects (pfx.c), the ISR's: what acts on this track this block, never saved */
     int8_t trn;                  /* ARP TRNS (seq.c): the semitones the keys set (from C4), on the steps' notes */
     uint8_t pfx;                 /* PFX_* */

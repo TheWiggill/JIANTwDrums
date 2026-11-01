@@ -6,14 +6,15 @@
  * lead's sweep), RING (osc 1's saw times osc 2's sine at that ratio: bells, metal), SAW3 (three saws, osc 2 DTN cents up,
  * osc 3 down: TRIO's fat stack). MIX: osc 1 against the other(s) as before. INT (0.4, once KTR): osc 2 INT semitones
  * from osc 1, as a classic two-oscillator synth (fifths, octaves; SAW3: its osc 2). */
-static const char *const N_ANALOG_WAVE[] = {"SAW", "SQR", "TRI", "SIN", "PWM", "SYNC", "RING", "SAW3"};
-enum { AW_SYNC = 5, AW_RING, AW_SAW3 };
+static const char *const N_ANALOG_WAVE[] = {"SAW", "SQR", "TRI", "SIN", "PWM", "SYNC", "RING", "SAW3", "PLS3"};
+enum { AW_SYNC = 5, AW_RING, AW_SAW3, AW_PLS3 };   /* (V10.22) PLS3: three pulses as SAW3's saws, SHAPE (and MORPH) their width */
 /* (JIANT 0.5) FILTER TYPE (P_FTYPE): LP as before (analog_render's loop); HP BP from the same state-variable filter
  * (analog_ext's loop, every WAVE); COMB the filter open, the part's sum through a feedback comb tuned to the newest
  * note and CUT (+-32 semitones about it), RES its feedback (voice.c track_comb).
  * (0.9.9-snd1) COMB- the same comb with its feedback negative: odd harmonics, hollow (its line half as long: the note
  * where COMB's is). FT_POST(ft): a TYPE the part's (voice.c tf_run), every engine's own filter open under it */
-enum { FT_LP, FT_HP, FT_BP, FT_COMB, FT_COMBN, FT_MS20, FT_N };   /* (snd1: MS20, voice.c tf_ms20) */
+enum { FT_LP, FT_HP, FT_BP, FT_COMB, FT_COMBN, FT_MS20, FT_LP24, FT_N };   /* (snd1: MS20, voice.c tf_ms20; V10.22: LP24,
+                                                         * voice.c tf_lp24) */
 #define FT_IS_COMB(ft) ((ft) == FT_COMB || (ft) == FT_COMBN)
 #define FT_POST(ft) ((ft) >= FT_COMB)
 /* the TYPE stored, in range (was & 3: a value past the last read as another TYPE) */
@@ -109,7 +110,7 @@ static __attribute__((noinline)) void analog_morph(track_t *t, voice_t *v, int32
 /* PWM's width: SHAPE as before, (0.6.81) MORPH narrowing it further (toward ~4 %) */
 static uint32_t an_pw(const track_t *t, const vmod_t *m)
 {
-    int32_t q = (m->shape - (64 << 8)) + (t->p[P_E0] == 4 ? t->mo_cur * 2 : 0);
+    int32_t q = (m->shape - (64 << 8)) + (t->p[P_E0] == 4 || t->p[P_E0] == AW_PLS3 ? t->mo_cur * 2 : 0);
     return 0x80000000u + (uint32_t)(clamp(q, -16384, 65000) << 15);
 }
 
@@ -128,13 +129,13 @@ static __attribute__((noinline)) void analog_ext(track_t *t, voice_t *v, int32_t
     tsvf_coef(&flt, cut, p[P_E5]);
     r = 16u + (uint32_t)det + (wave != AW_SAW3 ? (uint32_t)(mx * 64 / (127 << 8)) : 0u);   /* SYNC / RING: osc 2 at r / 16
                                                          * of osc 1 (1 .. 8.9; 0.6.81: MORPH up to 4 more) */
-    inc2 = wave == AW_SAW3 ? cents_inc(m->pitch16 + p[P_E7] * 16, det, 0) : (inc1 >> 4) * r;   /* (SAW3: osc 2 at INT) */
-    if (wave != AW_SAW3 && p[P_E7]) {                   /* (JIANT 0.5) SYNC / RING: INT moves osc 2 too, semitones */
+    inc2 = wave >= AW_SAW3 ? cents_inc(m->pitch16 + p[P_E7] * 16, det, 0) : (inc1 >> 4) * r;   /* (SAW3, PLS3: osc 2 at INT) */
+    if (wave < AW_SAW3 && p[P_E7]) {                   /* (JIANT 0.5) SYNC / RING: INT moves osc 2 too, semitones */
         inc2 = (cents_inc(m->pitch16 + p[P_E7] * 16, 0, 0) >> 4) * r;
         r = inc1 >> 8 ? (inc2 / (inc1 >> 8)) >> 4 : r; /* (its ratio to osc 1, x16: the restart below) */
         if (r < 1u) r = 1u;
     }
-    inc3 = wave == AW_SAW3 ? cents_inc(m->pitch16, -det, 0) : 0u;
+    inc3 = wave >= AW_SAW3 ? cents_inc(m->pitch16, -det, 0) : 0u;
     if (wave < AW_SYNC)                                 /* (JIANT 0.5: HP BP COMB) the plain WAVEs: osc 2 as analog_render */
         inc2 = det || p[P_E7] ? cents_inc(m->pitch16 + p[P_E7] * 16, det, 0) : inc1;
     for (i = 0; i < n; i++) {
@@ -149,6 +150,10 @@ static __attribute__((noinline)) void analog_ext(track_t *t, voice_t *v, int32_t
             }
         } else if (wave == AW_SAW3) {
             b = (osc_saw(ph1, inc2) + osc_saw(ph2, inc3)) >> 1;
+            ph2 += inc3;
+        } else if (wave == AW_PLS3) {                   /* (V10.22) three pulses, SHAPE their width */
+            a = osc_pulse(ph0, inc1, pw);
+            b = (osc_pulse(ph1, inc2, pw) + osc_pulse(ph2, inc3, pw)) >> 1;
             ph2 += inc3;
         } else if (wave == AW_SYNC) {
             b = osc_saw(ph1, inc2);
@@ -290,7 +295,7 @@ static const engine_t ENG_ANALOG = {
     .name = "ANALOG",
     .page_title = {"OSC", "FLT"},
     .edit = {
-        {"WAVE", F_ENUM, 0, 7, 0, N_ANALOG_WAVE, 0},
+        {"WAVE", F_ENUM, 0, 8, 0, N_ANALOG_WAVE, 0},
         {"DETUNE", F_INT, 0, 127, 10, 0, "ct"},
         {"MIX", F_PCT, 0, 127, 64, 0, 0},
         {"NOISE", F_PCT, 0, 127, 0, 0, 0},

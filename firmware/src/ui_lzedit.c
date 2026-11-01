@@ -105,6 +105,8 @@ static int32_t ed_resp(uint32_t ty, int32_t x, int32_t xc, int32_t res)
         return 62 - (int32_t)(((ty == 4u ? -1 : 1) * og_cos((uint32_t)x * (uint32_t)(4096 + xc * 160)) * (8 + pk / 2)) >> 15);
     if (ty == 5u)                                       /* (snd1) MS20: a low-pass, its peak higher */
         bump += bump / 2;
+    if (ty == 6u)                                       /* (V10.22) LP24: twice as steep */
+        return clamp(62 + (d > 0 ? 4 * d : 0) - bump, 8, 104);
     y = ty == 0u || ty == 5u ? (d > 0 ? 2 * d : 0) : ty == 1u ? (d < 0 ? 2 * a : 0) : 2 * a / 3;   /* LP HP BP */
     return clamp(62 + y - bump - (ty == 2u ? pk / 3 : 0), 8, 104);
 }

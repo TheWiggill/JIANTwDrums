@@ -194,6 +194,39 @@ static __attribute__((noinline)) void tf_ms20(uint32_t ti, int32_t *out, uint32_
     ms_s[ti][2] = bp;
     tf_ms[ti] = 1;
 }
+/* (V10.22) TYPE LP24 (a tester: "a 24 dB/oct ladder filter"): two of the SVF's low-passes in a row, 4 poles, the first
+ * plain (damping 2), RES on the second (its peak, the ladder's), a soft knee after it; CUT, LFO / ENV DEST FILTER as the
+ * SVF's; on ANALOG and LOFI the part's at their CUT RES (their own filter open), as MS20 */
+static uint8_t tf_l24[NTRK];                    /* LP24 ran the last block (its state live) */
+static int32_t l24_s[NTRK][4];                  /* .. its two stages' ic1 ic2 */
+static __attribute__((noinline)) void tf_lp24(uint32_t ti, int32_t *out, uint32_t n, int32_t cut, int32_t res)
+{
+    int32_t a1 = l24_s[ti][0], a2 = l24_s[ti][1], b1 = l24_s[ti][2], b2 = l24_s[ti][3];
+    uint32_t i;
+    tsvf_t c1, c2;
+    if (!tf_l24[ti]) {                                  /* in: from rest at the input (no step) */
+        a1 = b1 = 0;
+        a2 = b2 = out[0];
+    }
+    tsvf_coef_k(&c1, cut, 8192);
+    tsvf_coef(&c2, cut, clamp(res, 0, 127));
+    for (i = 0; i < n; i++) {
+        int32_t v3 = out[i] - a2, v1 = (c1.a1 * a1 + c1.a2 * v3) >> 13, v2 = a2 + ((c1.a2 * a1 + c1.a3 * v3) >> 13);
+        a1 = clamp(2 * v1 - a1, -150000, 150000);
+        a2 = clamp(2 * v2 - a2, -150000, 150000);
+        v3 = v2 - b2;
+        v1 = (c2.a1 * b1 + c2.a2 * v3) >> 13;
+        v2 = b2 + ((c2.a2 * b1 + c2.a3 * v3) >> 13);
+        b1 = clamp(2 * v1 - b1, -150000, 150000);
+        b2 = clamp(2 * v2 - b2, -150000, 150000);
+        out[i] = soft_knee(v2, 30000);
+    }
+    l24_s[ti][0] = a1;
+    l24_s[ti][1] = a2;
+    l24_s[ti][2] = b1;
+    l24_s[ti][3] = b2;
+    tf_l24[ti] = 1;
+}
 static uint8_t tf_xb[NTRK], tf_fo[NTRK];        /* (0.6.81) a TYPE's crossfade: its blocks left, the TYPE from (TF_DRY:
                                                  * no filter) */
 #define TF_XB (256u / CTL)                      /* (~5 ms: one block's fade between two filters was a tick) */
@@ -220,7 +253,7 @@ static __attribute__((noinline)) void tf_run(track_t *t, int32_t *out, uint32_t 
         tf_cmb[ti] = 1;
         return;
     }
-    if (own && ft != FT_MS20)
+    if (own && ft != FT_MS20 && ft != FT_LP24)
         return;
     if (t->engine == ENGI_DRUM)
         envq = (uint16_t)drum_env(t) + 1;                   /* (gen6d: the kit's ENV, its voices held at full) */
@@ -237,6 +270,10 @@ static __attribute__((noinline)) void tf_run(track_t *t, int32_t *out, uint32_t 
     cut += ((mulq15(t->lfo_val, t->lfo_fade) * p[P_LD_FLT]) >> 7) + ((envq * p[P_ED_FLT]) >> 7);
     if (ft == FT_MS20) {
         tf_ms20(ti, out, n, cut, cres);
+        return;
+    }
+    if (ft == FT_LP24) {                                /* (V10.22) */
+        tf_lp24(ti, out, n, cut, cres);
         return;
     }
     {
@@ -299,6 +336,7 @@ static __attribute__((noinline)) void track_filter(track_t *t, int32_t *out, uin
         tf_run(t, out, n, ft, TF_DRY, 0, 0, own, ccut, cres);
         tf_cmb[ti] = FT_IS_COMB(ft);
         tf_ms[ti] = ft == FT_MS20;
+        tf_l24[ti] = ft == FT_LP24;
         return;
     }
     if (n > CTL)
@@ -320,6 +358,7 @@ static __attribute__((noinline)) void track_filter(track_t *t, int32_t *out, uin
     if (!--tf_xb[ti]) {
         tf_cmb[ti] = FT_IS_COMB(ft);
         tf_ms[ti] = ft == FT_MS20;
+        tf_l24[ti] = ft == FT_LP24;
     }
 }
 
@@ -855,6 +894,7 @@ static void voice_start(track_t *t, voice_t *v, uint32_t note, uint32_t vel, int
     v->gate = 1;
     v->active = 1;
     v->stage = 1;
+    v->env2_st = 1;                                     /* (V10.22) ENV 2 from where it is */
     v->age = age;
     if (e == &ENG_FORMANT)
         glide_from(v);
@@ -1308,6 +1348,38 @@ static void trk_fade_out(track_t *t)
     }
 }
 
+/* (V10.22, a tester: "an ENV2 that can be configured and routed like the LFO") ENV 2: a second ADSR beside the
+ * amplitude's, only a MOD source (SRC ENV2, any DEST, AMT): ATK DEC SUS REL on ENV > ENV 2 (core.h P_E2*), the same
+ * curves as ENV's; restarted from where it is at each note, released with the key (the gate), 0 with the voice. Q15 */
+static int32_t env2_tick(const int16_t *p, voice_t *v)
+{
+    int32_t sus = (int32_t)clamp(p[P_E2SUS], 0, 127) << 17;
+    if (!v->active)
+        v->env2_st = 0;
+    else if (!v->gate && v->env2_st && v->env2_st < 3u)
+        v->env2_st = 3;
+    switch (v->env2_st) {
+    case 1:
+        v->env2 += (int32_t)ENV_LIN[clamp(p[P_E2ATK], 0, 127)];
+        if (v->env2 >= (1 << 24)) {
+            v->env2 = 1 << 24;
+            v->env2_st = 2;
+        }
+        break;
+    case 2:
+        v->env2 += mulq16(sus - v->env2, ENV_EXP[clamp(p[P_E2DEC], 0, 127)]);
+        break;
+    case 3:
+        v->env2 -= mulq16(v->env2, ENV_EXP[clamp(p[P_E2REL], 0, 127)]);
+        if (v->env2 < (1 << 12))
+            v->env2_st = 0;
+        break;
+    default:
+        v->env2 = 0;
+        break;
+    }
+    return v->env2 >> 9;
+}
 /* one control tick (CTL samples) of the amplitude envelope; returns Q15 (the tables ENV_LIN / ENV_EXP are per CTL:
  * tools/gen_tables.py) */
 static int32_t env_tick(track_t *t, voice_t *v)
@@ -1437,6 +1509,7 @@ static uint32_t voice_block(track_t *t, const engine_t *e, voice_t *v, int32_t *
     {
         env = hold ? v->env >> 9 : env_tick(t, v);      /* (hold: a note let go inside the block, up to its sample: the
                                                          * envelope where it was, the release's first tick from there) */
+        m.env2q15 = hold ? v->env2 >> 9 : env2_tick(p, v);   /* (V10.22) ENV 2 */
         if (e->ownenv && v->active) {               /* the engine's envelopes (FM6): they end the voice */
             if (e->done(t, v)) {
                 v->active = v->gate = 0;

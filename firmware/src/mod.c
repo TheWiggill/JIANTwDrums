@@ -36,7 +36,8 @@
  * presets read and write t->p from the main loop, which the ISR preempts; TIMER5 only fills the MIDI rings),
  * and the engines read t->p as before. An engine reads its parameters in note_on (events_block) unmodulated.
  * Nothing active (every slot with SRC, DST or AMT at 0): no work, and the sound is bit-identical. */
-enum { MS_OFF, MS_LFO, MS_ENV, MS_VEL, MS_KEY, MS_RAND, MS_MODW, MS_AT, MS_EXPR, MS_M1, MS_STEP = MS_M1 + 4, MS_NOISE, MS_PROX, MS_N };
+enum { MS_OFF, MS_LFO, MS_ENV, MS_VEL, MS_KEY, MS_RAND, MS_MODW, MS_AT, MS_EXPR, MS_M1, MS_STEP = MS_M1 + 4, MS_NOISE, MS_PROX, MS_ENV2,
+       MS_N };   /* (V10.22) ENV2: ENV > ENV 2, per voice */
 static volatile int16_t mod_prox;   /* (V10.14) PROX, the Bluetooth proximity: 0..32767 (bt.c bt_prox_step, the main loop; 0
                                      * with Bluetooth off or no central connected) */
 static uint32_t div_samples(uint32_t div);   /* fx.c */
@@ -64,7 +65,7 @@ static uint8_t macro_v[4];       /* (JIANT) the macros M1..M4, 0..127: the proje
 _Static_assert(NELEM(N_MSRC) == MS_N && NELEM(N_MDST) == MD_N, "N_MSRC / N_MDST == MS_* / MD_*");
 _Static_assert(P_M2SRC == P_M1SRC + 3 && P_M4AMT == P_M1SRC + 11 && P_M4AMT + 1 == P_FM1_ATK, "matrix slots: 3 ids each");
 #define NMSLOT 4u
-#define MS_VOICE(s) ((s) >= MS_ENV && (s) <= MS_RAND)             /* a value per voice */
+#define MS_VOICE(s) (((s) >= MS_ENV && (s) <= MS_RAND) || (s) == MS_ENV2)   /* a value per voice */
 #define MS_BIPOLAR(s) ((s) == MS_LFO || (s) == MS_KEY || (s) == MS_RAND || (s) == MS_NOISE)
 
 /* the track parameter of a per-block destination */
@@ -123,6 +124,8 @@ static int32_t mod_tsrc(const track_t *t, uint32_t s, int32_t lfo)
         return lfo;
     case MS_ENV:
         return t->m_env;
+    case MS_ENV2:
+        return t->m_env2;
     case MS_VEL:
         return t->m_vel * 258;
     case MS_KEY:
@@ -297,11 +300,13 @@ static __attribute__((noinline)) void mod_voice(track_t *t, voice_t *v, vmod_t *
     mod_t *const mp = &MOD;                          /* (0.6.71) this core's */
     int32_t pit = mp->pit, cut = mp->cut, shp = mp->shp, gain = mp->gain, env = m->envq15;
     uint32_t k;
-    if (v == &t->v[t->m_vi])
+    if (v == &t->v[t->m_vi]) {
         t->m_env = env;                                 /* ENV of the latest note, for per-block destinations */
+        t->m_env2 = m->env2q15;                         /* (V10.22) and its ENV 2 */
+    }
     for (k = 0; k < mp->nv; k++) {
         uint32_t s = mp->vsrc[k];
-        int32_t x = s == MS_ENV ? env : s == MS_VEL ? v->mvel * 258 : s == MS_KEY ? mod_key(v->note) : v->mrnd;
+        int32_t x = s == MS_ENV ? env : s == MS_ENV2 ? m->env2q15 : s == MS_VEL ? v->mvel * 258 : s == MS_KEY ? mod_key(v->note) : v->mrnd;
         mod_voice_add(s, mp->vdst[k], x, mp->vamt[k], &pit, &cut, &shp, &gain);
     }
     if (pit) {

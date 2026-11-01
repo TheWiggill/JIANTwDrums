@@ -153,7 +153,7 @@ static void save(const char *dir, const char *name, uint32_t n)
     fclose(f);
 }
 
-static const char *const TN[] = {"LP", "HP", "BP", "COMB", "COMB-", "MS20"};
+static const char *const TN[] = {"LP", "HP", "BP", "COMB", "COMB-", "MS20", "LP24"};   /* (V10.22: LP24) */
 #define NT ((int)(sizeof TN / sizeof TN[0]))
 static int sw_from, sw_to;
 static void sweep(track_t *t, uint32_t k)

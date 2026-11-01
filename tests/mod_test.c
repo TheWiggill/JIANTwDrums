@@ -666,7 +666,7 @@ static void test_jiant_078(void)
     fresh(ea, 0);
     trk[0].p[P_M1SRC] = MS_NOISE; trk[0].p[P_M1DST] = MD_CUT; trk[0].p[P_M1AMT] = 40;
     h = phrase();
-    check("0.7.8: the NOISE source moves the filter (its own sound)", h != a0 && MS_NOISE == 14 && MS_N == 16);
+    check("0.7.8: the NOISE source moves the filter (its own sound)", h != a0 && MS_NOISE == 14 && MS_N == 17);
     fresh(ea, 0);
     trk[0].p[P_M1SRC] = MS_PROX; trk[0].p[P_M1DST] = MD_CUT; trk[0].p[P_M1AMT] = 40;
     mod_prox = 0;
@@ -675,6 +675,32 @@ static void test_jiant_078(void)
     check("V10.14: PROX on CUT: 1 (a hand on the antenna) sounds other than 0 (Bluetooth off, no central)",
           phrase() != h && MS_PROX == 15);
     mod_prox = 0;
+    {   /* (V10.22) ENV 2: SRC ENV2 on CUT sounds its own; its ADSR shapes it (a slow ATK other than a fast one); the
+         * envelope rises with a note and falls after it */
+        uint64_t hf, hs;
+        uint32_t b;
+        int32_t up, top = 0, down;
+        fresh(ea, 0);
+        trk[0].p[P_M1SRC] = MS_ENV2; trk[0].p[P_M1DST] = MD_CUT; trk[0].p[P_M1AMT] = 60;
+        trk[0].p[P_E2ATK] = 0; trk[0].p[P_E2DEC] = 60; trk[0].p[P_E2SUS] = 30; trk[0].p[P_E2REL] = 40;
+        hf = phrase();
+        fresh(ea, 0);
+        trk[0].p[P_M1SRC] = MS_ENV2; trk[0].p[P_M1DST] = MD_CUT; trk[0].p[P_M1AMT] = 60;
+        trk[0].p[P_E2ATK] = 100; trk[0].p[P_E2DEC] = 60; trk[0].p[P_E2SUS] = 30; trk[0].p[P_E2REL] = 40;
+        hs = phrase();
+        check("V10.22: ENV2 on CUT sounds its own, its ATK shapes it", hf != a0 && hs != hf && MS_ENV2 == 16 && MS_N == 17);
+        fresh(ea, 0);
+        trk[0].p[P_M1SRC] = MS_ENV2; trk[0].p[P_M1DST] = MD_CUT; trk[0].p[P_M1AMT] = 60;
+        trk[0].p[P_E2ATK] = 40; trk[0].p[P_E2DEC] = 60; trk[0].p[P_E2SUS] = 64; trk[0].p[P_E2REL] = 40;
+        trk_note_on(&trk[0], 60, 100);
+        blocks(2);
+        up = trk[0].m_env2;
+        for (b = 0; b < FS / 4u / CTL; b++) { blocks(1); if (trk[0].m_env2 > top) top = trk[0].m_env2; }
+        trk_note_off(&trk[0], 60);
+        blocks(FS / 2u / CTL);
+        down = trk[0].m_env2;
+        check("V10.22: ENV2 rises with the note, to the top, then down after it", up < top && top > 30000 && down < top / 4);
+    }
 }
 
 /* (JIANT) the new sound: DIST TYPE (each type its own sound, SOFT as before), the modulation sequence (STEP), the
