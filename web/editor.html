@@ -1,7 +1,6 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: GPL-3.0-only
-     Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
-     Portions Copyright (C) 2026 Juan Ignacio Antonucci (Juan Jiant) -->
+     Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments -->
 <!-- Felucca web editor. One file, no libraries. Protocol: EDITOR_PROTOCOL.md.
      Add ?mock=1 to the URL to use a built-in simulated device. -->
 <html lang="ja">
@@ -142,15 +141,11 @@
   #sysinfo th { padding-right: 16px; }
   [hidden] { display: none !important; }
 </style>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Michroma&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Instrument+Sans:wght@400;500;600&amp;family=Noto+Sans+JP:wght@400;500&amp;display=swap">
-<style id="jiant-brand">/*JIANT_UI*/</style>
 </head>
-<body class="jiant-editor">
+<body>
 <main>
   <button class="lang" id="lang"></button>
-  <h1 class="jiant-wordmark"><a href="https://juanjiant-bit.github.io/JIANT/" aria-label="JIANT FM home">JIANT<span class="fm">FM</span></a><span class="jiant-tool">EDITOR</span></h1>
+  <h1>JIANT Editor</h1>
   <p class="dim"><a href="../installer/" style="color:inherit" data-t="installer"></a></p>
   <!-- always visible: connection, version, sync mode, the tabs and (Sound / Sequencer / Tracks) the track selector -->
   <header class="top">
@@ -161,10 +156,6 @@
       <span id="mock" class="dim" hidden data-t="mock"></span>
     </div>
     <div id="status"></div>
-    <details id="midiports"><summary data-t="midiPorts"></summary><p id="midiportcounts" class="dim"></p><p class="dim" data-t="midiPortHelp"></p><p class="bar">
-      <label><span data-t="midiInput"></span> <select id="midiinput"><option value="">Auto</option></select></label>
-      <label><span data-t="midiOutput"></span> <select id="midioutput"><option value="">Auto</option></select></label>
-    </p></details>
     <nav class="tabs" id="tabs" role="tablist">
       <button role="tab" data-tab="sound" data-t="sound" data-ic="symbol_audio"></button>
       <button role="tab" data-tab="fm6" data-t="tabFm6" data-ic="ui_knob"></button>
@@ -357,8 +348,7 @@ const CMD = { INFO: 1, GET: 2, SET: 3, DUMP: 4, DESC: 5, STEP_GET: 6, STEP_SET: 
   UI_STATE: 34, UI_SET: 35, UI_PALETTES: 36, FAV_GET: 37, FAV_SET: 38, LYRIC: 39,
   MOTION: 64, BACKUP_LIST: 65, BACKUP_GET: 66, BACKUP_PUT: 67,
   FM6_GET: 68, FM6_PUT: 69, FM6_LIST: 70, FM6_ERASE: 71,
-  FM6B_BEGIN: 74, FM6B_WRITE: 75, FM6B_END: 76, FM6B_LIST: 77,   /* (JIANT 0.6.11, Felucca 1.4.1) FM6's voice bank */
-};
+  FM6B_BEGIN: 74, FM6B_WRITE: 75, FM6B_END: 76, FM6B_LIST: 77 };   /* (JIANT 0.6.11, Felucca 1.4.1) FM6's voice bank */
 /* frames the device sends on its own (while WATCH is on); never replies */
 const PUSH = new Set([CMD.CHANGED, CMD.RELOAD, CMD.STEP_CHANGED, CMD.TRACK_CHANGED]);
 /* user preset bank: name 1..12 printable ASCII, a 16-step pattern of (note, flags 1 acc 2 slide 4 tie) */
@@ -782,45 +772,6 @@ class Link {
   }
 }
 
-/* the names an FM-1 shows under (the installer's fm1ota.js PORT_RE: JIANT, Felucca, Skiff, the stock firmware's, the
-   USB composite's, and the generic names Windows gives a USB MIDI device whose name it cached or never read) */
-const editorPort = (p) => /felucca|jiant|skiff|fm[ _-]*1|m[ _-]*vave|cuvave|composite|sinco|usb[ _-]*midi|usb audio/i.test(p.name || "") && p.state !== "disconnected";
-/* (2026-10-30) never asked: software ports and other makers' synths a user is likely to have plugged in */
-const notEditorPort = (p) => /wavetable|iac driver|midi through|loopmidi|loopbe|virtual|rtpmidi|network|bluetooth/i.test(p.name || "");
-let seenPorts = "";
-async function openEditorMidi(access, hooks = {}, selected = {}) {
-  const live = (ports) => [...ports.values()].filter(p => p.state !== "disconnected");
-  const select = (ports, id) => live(ports).filter(p => id ? p.id === id : editorPort(p));
-  let inputs = select(access.inputs, selected.input), outputs = select(access.outputs, selected.output);
-  seenPorts = [...new Set([...live(access.inputs), ...live(access.outputs)].map(p => p.name || p.id))].join(", ");
-  /* none under a name we know: every other port is asked (INFO, then the reply's "JIANT" / "FELUCCA" decides): a host
-     that shows the FM-1 under a name of its own still finds it */
-  if ((!inputs.length || !outputs.length) && !selected.input && !selected.output) {
-    inputs = live(access.inputs).filter(p => !notEditorPort(p));
-    outputs = live(access.outputs).filter(p => !notEditorPort(p));
-  }
-  if (!inputs.length || !outputs.length) throw new Error("no MIDI ports");
-  const pairs = inputs.flatMap(input => outputs.map(output => ({ input, output,
-    score: (input.name === output.name ? 2 : 0) + (input.manufacturer && input.manufacturer === output.manufacturer ? 1 : 0) })));
-  pairs.sort((a,b) => b.score-a.score);
-  let last;
-  for (const {input, output} of pairs) {
-    const link = new Link(d => output.send(d), { ...hooks, timeout: 600 });
-    try {
-      if (input.open) await input.open();
-      if (output.open) await output.open();
-      input.onmidimessage = e => link.receive(e.data);
-      const info = parse[CMD.INFO](await link.request(req.info(), { timeout: 800, retries: 2, quiet: true }));
-      if (!/^(?:JIANT|FELUCCA)\b/i.test(info.version || "")) throw new Error("Not a JIANT editor device");
-      return {input, output, link, info};
-    } catch (e) {
-      last = e; link.close(); input.onmidimessage = null;
-      await Promise.allSettled([input.close?.(), output.close?.()]);
-    }
-  }
-  throw last;
-}
-
 /* ------------------------------------------------------------- formatting --- */
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const noteName = (n) => NOTE_NAMES[n % 12] + (Math.floor(n / 12) - 1);   /* 60 = C4 */
@@ -854,7 +805,7 @@ function fmtValue(d, v) {
       return [(ms10 / 10000).toFixed(2), "s"];
     }
     case F.LFOHZ: {
-      if (v < 0) return [["4BAR", "2BAR", "1BAR", "1/2", "1/4", "1/8D", "1/4T", "1/8", "1/8T", "1/16", "1/16T", "1/32", "8BAR", "16BAR"][(-v - 1) % 14], ""];   /* (0.6.51) in time; V10.27: 8BAR 16BAR */
+      if (v < 0) return [["4BAR", "2BAR", "1BAR", "1/2", "1/4", "1/8D", "1/4T", "1/8", "1/8T", "1/16", "1/16T", "1/32"][(-v - 1) % 12], ""];   /* (0.6.51) in time */
       const h = 0.05 * Math.pow(800, (v & 127) / 127); return [h < 10 ? h.toFixed(2) : h.toFixed(1), "Hz"];
     }
     case F.CUTOFF: { const h = 30 * Math.pow(16000 / 30, (v & 127) / 127); return h < 1000 ? [String(Math.round(h)), "Hz"] : [(h / 1000).toFixed(1), "kHz"]; }
@@ -1561,13 +1512,13 @@ function makeMockDevice(opt = {}) {
   const NONOFF = ["OFF", "ON"], NDIV = ["1/4", "1/8", "1/16", "1/32", "8T", "16T", "1/2", "1/1", "2BAR", "4BAR"], NGO = ["--", "GO"], NDASH = ["--"];
   const D = (label, fmt, min, max, def, names = null, unit = "") => ({ label, fmt, min, max, def, names, unit });
   const E = (label, names, def) => D(label, F.ENUM, 0, names.length - 1, def, names);
-  const MSRC = ["OFF", "LFO", "ENV", "VEL", "KEY", "RAND", "MODW", "AT", "EXPR", "M1", "M2", "M3", "M4", "STEP", "NOISE", "PROX", "ENV2"];   /* (V10.14 PROX, V10.22 ENV2) */
+  const MSRC = ["OFF", "LFO", "ENV", "VEL", "KEY", "RAND", "MODW", "AT", "EXPR", "M1", "M2", "M3", "M4", "STEP", "NOISE", "PROX"];
   const MDST = ["OFF", "PITCH", "CUT", "SHP", "AMP", "PAN", "DIST", "CHO", "DLY", "REV", "RATE", "VIB", "E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "CLIP", "PNCH", "D.TIM", "D.FB", "D.TON", "D.MIX", "R.SIZ", "R.DMP", "C.RAT", "C.DEP"];
   const TP = [
     D("LEVEL", F.DB, 0, 127, 104),
     D("ATK", F.TIME, 0, 127, 10), D("DEC", F.TIME, 0, 127, 70), D("SUS", F.PCT, 0, 127, 90), D("REL", F.TIME, 0, 127, 60),
     D("FILTER", F.BIPCT, -64, 63, 0), D("PITCH", F.BIPCT, -64, 63, 0), D("SHAPE", F.BIPCT, -64, 63, 0), E("LOOP", ["OFF", "ON"], 0),   /* (JIANT 0.4: P_ED_FX is the ENV LOOP) */
-    D("RATE", F.LFOHZ, -14, 127, 60), E("WAVE", ["SIN", "TRI", "SAW", "SQR", "S&H"], 0), D("PHASE", F.INT, -1, 127, 0), D("FADE", F.TIME, 0, 127, 0),   /* (0.6.51) RATE < 0 in time, PHASE -1 FREE (0.9.18: shown as MODE TRIG / FREE, lfoModeRows) */
+    D("RATE", F.LFOHZ, -12, 127, 60), E("WAVE", ["SIN", "TRI", "SAW", "SQR", "S&H"], 0), D("PHASE", F.INT, -1, 127, 0), D("FADE", F.TIME, 0, 127, 0),   /* (0.6.51) RATE < 0 in time, PHASE -1 FREE (0.9.18: shown as MODE TRIG / FREE, lfoModeRows) */
     D("PITCH", F.BIPCT, -64, 63, 0), D("FILTER", F.BIPCT, -64, 63, 0), D("SHAPE", F.BIPCT, -64, 63, 0), D("AMP", F.PCT, 0, 127, 0),
     E("MODE", ["OFF", "UP", "DN", "UPDN", "RND", "ORD", "REPEAT", "DNUP", "UP+8", "CONV", "DIVG", "PINKY", "THUMB", "WALK", "CHORD", "TRNS"], 0), E("RATE", NDIV, 2), D("OCT", F.INT, 1, 4, 1), D("GATE", F.PCT, 1, 127, 64),
     D("SWING", F.PCT, 0, 100, 0), D("PROB", F.PCT, 0, 127, 127), E("HOLD", NONOFF, 0), E("ORDER", ["NOTE", "PLAY"], 0),
@@ -1612,7 +1563,7 @@ function makeMockDevice(opt = {}) {
   const P = (name, e, env = [10, 70, 90, 60], mono = 0, pat = 0, xp = 0) => ({ name, e, env, mono, pat, xp });   /* xp (0.8.5):
      VOICE's LANG | LYRIC << 2 */
   const ENG = [
-    { name: "ANALOG", titles: ["OSC", "FLT"], edit: [E("WAVE", ["SAW", "SQR", "TRI", "SIN", "PWM", "SYNC", "RING", "SAW3", "PLS3"], 0), D("DETUNE", F.INT, 0, 127, 10, null, "ct"), D("MIX", F.PCT, 0, 127, 64),
+    { name: "ANALOG", titles: ["OSC", "FLT"], edit: [E("WAVE", ["SAW", "SQR", "TRI", "SIN", "PWM", "SYNC", "RING", "SAW3"], 0), D("DETUNE", F.INT, 0, 127, 10, null, "ct"), D("MIX", F.PCT, 0, 127, 64),
         D("NOISE", F.PCT, 0, 127, 0), D("CUT", F.CUTOFF, 0, 127, 90), D("RES", F.PCT, 0, 127, 30), D("DRIVE", F.PCT, 0, 127, 0), D("INT", F.SEMI, -24, 24, 0)],   /* (JIANT 0.4: INT, osc 2's interval, was KTR) */
       presets: [P("SAW LEAD", [0, 12, 64, 0, 90, 30, 10, 12], [4, 70, 100, 50], 1, 4), P("SOFT PAD", [0, 20, 64, 4, 60, 10, 0, 0], [80, 90, 110, 95], 0, 5),
         P("SQR BASS", [1, 0, 0, 0, 50, 70, 40, 0], [0, 60, 40, 30], 1, 2), P("PWM STR", [4, 8, 40, 0, 75, 20, 0, 0], [60, 80, 110, 85], 0, 5),
@@ -1694,8 +1645,7 @@ function makeMockDevice(opt = {}) {
         P("DULCIMER", [3, 92, 100, 20, 26, 36, 60, 0], [0, 64, 127, 108], 0, 5), P("MARIMBA", [4, 56, 40, 64, 72, 80, 70, 0], [0, 64, 127, 96], 0, 5),
         P("PLUCK BASS", [1, 62, 36, 20, 0, 50, 10, 0], [0, 64, 127, 80], 1, 2), P("BOWED", [0, 118, 46, 30, 0, 50, 40, 70], [30, 64, 127, 96], 0, 5),
         P("KS NOISE", [0, 80, 127, 0, 0, 0, 0, 0], [0, 64, 127, 90], 0, 4), P("METAL STR", [0, 100, 120, 10, 112, 0, 0, 0], [0, 64, 127, 104], 0, 3),
-        P("FEEDBACK", [5, 90, 70, 24, 60, 70, 40, 60], [0, 64, 127, 90], 0, 5), P("SHOEGAZE", [5, 110, 50, 30, 55, 100, 90, 70], [0, 64, 127, 112], 0, 5),
-        P("SQUEAL", [5, 80, 96, 16, 70, 110, 12, 30], [0, 64, 127, 80], 0, 4), P("EBOW", [5, 127, 44, 40, 50, 20, 64, 90], [20, 64, 127, 100], 0, 5)] },
+        P("FEEDBACK", [5, 90, 70, 24, 60, 70, 40, 60], [0, 64, 127, 90], 0, 5), P("SHOEGAZE", [5, 110, 50, 30, 55, 100, 90, 70], [0, 64, 127, 112], 0, 5)] },
     /* 9: reserved (PHYS, retired in TONIC: src/engines.c ENG_PHYS_GONE; its sounds load as ANALOG) */
     { name: "-", titles: ["-", "-"], edit: [D("-", F.INT, 0, 127, 0), D("-", F.INT, 0, 127, 0), D("-", F.INT, 0, 127, 0),
         D("-", F.INT, 0, 127, 0), D("-", F.INT, 0, 127, 0), D("-", F.INT, 0, 127, 0), D("-", F.INT, 0, 127, 0), D("-", F.INT, 0, 127, 0)],
@@ -1707,7 +1657,8 @@ function makeMockDevice(opt = {}) {
         P("808 BOOM", [58, 60, 56, 76, 60, 0, 0, 0], [0, 100, 127, 100], 0, 12), P("LOFI DUST", [70, 64, 50, 54, 76, 0, 0, 20], [0, 100, 127, 100], 0, 12),
         P("INDUSTRIAL", [72, 66, 88, 70, 74, 20, 0, 40], [0, 100, 127, 100], 0, 12), P("ACOUSTIC", [56, 64, 58, 62, 64, 0, 0, 0], [0, 100, 127, 100], 0, 12),
         P("DUB ROOTS", [60, 60, 52, 70, 60, 0, 0, 0], [0, 100, 127, 100], 0, 12), P("TECHNO RAW", [66, 64, 80, 62, 66, 10, 0, 30], [0, 100, 127, 100], 0, 12),
-        P("BREAKS", [62, 66, 72, 62, 70, 0, 0, 10], [0, 100, 127, 100], 0, 12)] },
+        P("BREAKS", [62, 66, 72, 62, 70, 0, 0, 10], [0, 100, 127, 100], 0, 12),
+        P("HIP HOP", [58, 62, 56, 64, 66, 0, 0, 18], [0, 100, 127, 100], 0, 14)] },
     { name: "NOISE", titles: ["SRC", "MOVE"], edit: [E("MODE", ["ANLG", "DUST", "LFSR", "META"], 0), D("COLOR", F.PCT, 0, 127, 64),
         D("FREQ", F.CUTOFF, 0, 127, 80), D("PEAK", F.PCT, 0, 127, 30), D("TRK", F.PCT, 0, 127, 64), D("DENSE", F.PCT, 0, 127, 0),
         D("DRIFT", F.PCT, 0, 127, 0), D("CRUSH", F.PCT, 0, 127, 0)],
@@ -1775,6 +1726,7 @@ function makeMockDevice(opt = {}) {
     [[60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75], [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]],
     [[36, 42, 42, 42, 38, 42, 36, 42, 36, 42, 42, 36, 38, 42, 46, 42], [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]],   /* 12 BEAT (DRUM) */
     [[48, 51, 55, 60, 63, 67, 72, 75, 48, 51, 55, 60, 63, 67, 72, 75], [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]],   /* 13 ARP */
+    [[36, 0, 42, 0, 38, 0, 42, 36, 0, 36, 42, 0, 38, 0, 42, 46], [1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0]],   /* 14 BOOM BAP (V10.34) */
   ];
   for (let op = 0; op < 4; op++) TP.push(D("ATK", F.TIME, 0, 127, 0), D("DEC", F.TIME, 0, 127, 0), D("SUS", F.PCT, 0, 127, 127), D("REL", F.TIME, 0, 127, 0), D("LEVEL", F.PCT, 0, 127, 127));
   TP.push(D("ROTATE", F.INT, -32, 32, 0), D("PITCH", F.SEMI, -24, 24, 0));   /* 81, 82: STRETCH's ROTATE, TRACK's PITCH (JIANT; SHIFT until 0.6.91; the chord keys before) */
@@ -1782,7 +1734,7 @@ function makeMockDevice(opt = {}) {
   TP.push(E("TYPE", ["SOFT", "HARD", "FOLD", "CRUSH", "RECT", "AMP"], 0), D("TONE", F.BIPCT, -64, 63, 0),   /* 91, 92: DIST (JIANT, FUNB) */
     D("LEN", F.STEPS, 1, 16, 16), E("DIV", NDIV, 2), D("SLEW", F.PCT, 0, 127, 0));   /* 93..95: the modulation sequence */
   for (let k = 0; k < 16; k++) TP.push(D("LEVEL", F.PCT, 0, 127, 0));                     /* 96..111: its levels */
-  TP.push(E("TYPE", ["LP", "HP", "BP", "COMB", "COMB-", "MS20", "LP24"], 0),                                   /* 112: the FILTER's type (JIANT 0.5) */
+  TP.push(E("TYPE", ["LP", "HP", "BP", "COMB", "COMB-", "MS20"], 0),                                   /* 112: the FILTER's type (JIANT 0.5) */
     D("CUT", F.CUTOFF, 0, 127, 127), D("RES", F.PCT, 0, 127, 0));                       /* 113, 114: the other engines' */
   const P_COUNT = 123, G_COUNT = 72, NSTEP = 64, P_E0 = 115, G_ENGSEL = 20, P_SLCR = 45;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -1866,7 +1818,7 @@ function makeMockDevice(opt = {}) {
   }
   function setEngine(ei) {
     if (ei % ENG.length === 1) { fm4Load(0); return; }   /* DIGITAL (retired): its first preset, as FM6 (ui.c set_engine_of) */
-    if ([4, 9].includes(ei % ENG.length)) ei = 0;       /* PHYS SAMPLE (retired, core.h eng_gone): ANALOG; (snd5) 8 STRING 13 ADD */
+    if ([4, 9].includes(ei % ENG.length)) ei = 0;       /* PHYS SAMPLE (retired, core.h eng_gone): ANALOG; (snd5) 8 13: STRING ADD */
     st.engine = ei % ENG.length;
     for (let i = 0; i < 8; i++) st.p[P_E0 + i] = ENG[st.engine].edit[i].def;
     applyPreset(0);
@@ -2418,7 +2370,7 @@ function enumShown(d) {
 /* the order the device shows its engines in (src/engines.c ENGINE_ORDER): the lists here follow it, the protocol keeps
    the engine numbers. engineOrder(names): the indices of names in that order, "-" (a reserved number) left out; a name
    the list does not know (another firmware) follows in index order */
-const ENGINE_ORDER = ["DRUM", "VOICE", "ANIMAL", "LOFI", "ANALOG", "FM6", "PHASE", "WHEEL", "NOISE", "STRING", "SAMPLE", "DIGITAL"];   /* (0.9.9: DRUM-X, VOICE,
+const ENGINE_ORDER = ["DRUM", "VOICE", "ANIMAL", "LOFI", "ANALOG", "FM6", "PHASE", "WHEEL", "NOISE", "STRING", "ADD", "DIGITAL"];   /* (0.9.9: DRUM-X, VOICE,
    ANIMAL first, as the parts at power-on; DIGITAL, FELUCCA_FM4 builds only, last; was ANALOG FM6 DIGITAL PHASE LOFI VOICE WHEEL NOISE
    DRUM ANIMAL, the order PROGRAM CHANGE still numbers the sounds in: engines.c ENGINE_PC_ORDER) */
 function engineOrder(names) {
@@ -2501,7 +2453,6 @@ const TEXT = {
     fm6Init: "初期音色", fm6Voice: "ボイス", fm6Ops: "オペレーター", fm6Carriers: "キャリア", fm6Feedback: "フィードバック",
     fm6PitchEg: "ピッチ EG", fm6Freq: "周波数",
     fm6Legend: "R1〜R4 / L1〜L4: EG のレートとレベル、BP LD RD LC RC: キーボードレベルスケーリング、RS: レートスケーリング、AMS: LFO 音量変調、KVS: ベロシティ、OL: 出力レベル、MODE: 比率 / 固定、FC FF: 周波数（粗・細）、DET: デチューン（7 が中央）。● はキャリア。",
-    midiPorts: "MIDI ポート（自動接続できない場合）", midiPortHelp: "ブラウザが認識したポートです。入力と出力が両方必要です。空の場合は MIDI ポートが認識されていません。", midiInput: "入力", midiOutput: "出力",
     fm6BankSend: "本体のボイスバンクへ送る (B1–B32)", fm6BankSent: "ボイスバンクを送りました:", fm6BankFail: "ボイスバンクを送れませんでした (rc ", fm6BankNow: "本体のボイスバンク:", fm6BankNone: "なし",
     fm6Pick: "読み込んだファイルの音色（押すと編集へ）:", fm6Picked: "編集中:", fm6Sent: "トラックへ送りました:", fm6Read: "トラックから読みました",
     fm6Loaded: "読み込みました", fm6BadSum: "チェックサム不一致あり",
@@ -2550,9 +2501,9 @@ const TEXT = {
     foot: "Chrome か Edge で使えます。", iconsCredit: "アイコン: Fukiai（MIT）Hügelton Instruments",
     nomidi: "このブラウザでは使えません。Chrome か Edge で開いてください。",
     denied: "MIDI（SysEx）の使用が許可されませんでした。",
-    nodevice: "JIANT が見つかりません。USB で接続して、もう一度押してください。", portsSeen: "見えている MIDI ポート:", portsNone: "MIDI ポートがありません。データ用ケーブルか、MENU > USB が CONSOLE か確認してください",
+    nodevice: "JIANT が見つかりません。USB で接続して、もう一度押してください。",
     connecting: "接続中", reading: "読み込み中 ", steploading: "ステップを読み込み中 ",
-    ready: "接続しました", disconnected: "切断されました", lost: "JIANT が外されました", instbusy: "別のタブでインストーラーが書き込み中です。終わってから接続してください。",
+    ready: "接続しました", disconnected: "切断されました", lost: "JIANT が外されました",
     noreply: "応答がありません", error: "エラー: ", busy: "処理中",
     applying: "書き込み中 ", applied: "読み込みました", badfile: "ファイルを読み込めません: ",
     savedSlot: "保存しました: スロット ", loadedSlot: "読み込みました: スロット ", emptySlot: "空のスロットです: ",
@@ -2605,7 +2556,6 @@ const TEXT = {
     fm6Init: "Init voice", fm6Voice: "Voice", fm6Ops: "Operators", fm6Carriers: "carriers", fm6Feedback: "feedback",
     fm6PitchEg: "Pitch EG", fm6Freq: "Frequency",
     fm6Legend: "R1..R4 / L1..L4: EG rates and levels; BP LD RD LC RC: keyboard level scaling; RS: rate scaling; AMS: LFO amplitude modulation; KVS: velocity; OL: output level; MODE: ratio / fixed; FC FF: coarse / fine frequency; DET: detune (7 = centre). ● = carrier.",
-    midiPorts: "MIDI ports (choose manually if Auto fails)", midiPortHelp: "These are the ports reported by the browser. Both an input and an output are required; empty lists mean the browser is not seeing a MIDI port.", midiInput: "Input", midiOutput: "Output",
     fm6BankSend: "Send to the device's voice bank (B1–B32)", fm6BankSent: "Voice bank sent:", fm6BankFail: "The voice bank was not sent (rc ", fm6BankNow: "The device's voice bank:", fm6BankNone: "none",
     fm6Pick: "Voices of the imported file (click to edit):", fm6Picked: "Editing:", fm6Sent: "Sent to track", fm6Read: "Read from track",
     fm6Loaded: "Loaded", fm6BadSum: "a checksum did not match",
@@ -2654,9 +2604,9 @@ const TEXT = {
     foot: "Works in Chrome or Edge.", iconsCredit: "Icons: Fukiai (MIT), Hügelton Instruments",
     nomidi: "This browser cannot do it. Open the page in Chrome or Edge.",
     denied: "MIDI (SysEx) access was not allowed.",
-    nodevice: "JIANT not found. Connect it by USB and press Connect again.", portsSeen: "MIDI ports seen:", portsNone: "no MIDI port at all: check the cable carries data and MENU > USB is CONSOLE",
+    nodevice: "JIANT not found. Connect it by USB and press Connect again.",
     connecting: "Connecting", reading: "Reading ", steploading: "Reading steps ",
-    ready: "Connected", disconnected: "Disconnected", lost: "JIANT was unplugged", instbusy: "The installer is writing in another tab: connect when it has finished.",
+    ready: "Connected", disconnected: "Disconnected", lost: "JIANT was unplugged",
     noreply: "No reply from the device", error: "Error: ", busy: "Busy",
     applying: "Writing ", applied: "Loaded", badfile: "Cannot read the file: ",
     savedSlot: "Saved to slot ", loadedSlot: "Loaded slot ", emptySlot: "Empty slot: ",
@@ -2866,34 +2816,9 @@ const pById = (label, def) => { const i = dev.pdesc.findIndex((d, k) => d && k <
 const pPan = () => pById("PAN", 39), pMute = () => pById("MUTE", 40);
 
 /* -------------------------------------------------------------- MIDI --- */
-let connecting = false, portsClosing = Promise.resolve();
-const portStates = new Map();
-function renderMidiPorts() {
-  if (!access) return;
-  $("midiportcounts").textContent = `${t("midiInput")}: ${[...access.inputs.values()].filter(p=>p.state!=="disconnected").length} · ${t("midiOutput")}: ${[...access.outputs.values()].filter(p=>p.state!=="disconnected").length}`;
-  for (const [id, ports] of [["midiinput",access.inputs],["midioutput",access.outputs]]) {
-    const box=$(id), value=box.value;
-    box.replaceChildren(el("option",{value:"",text:"Auto (JIANT / FM1)"}), ...[...ports.values()].filter(p=>p.state!=="disconnected").map(p=>el("option",{value:p.id,text:p.name || p.id})));
-    if ([...box.options].some(o=>o.value===value)) box.value=value;
-  }
-}
-/* (0.9.11) the web installer in another tab of this browser (web/index_pkg.html): while it writes, the editor lets the
- * FM-1 go and does not reconnect by itself (the update loader's port is a "JIANT" one too); it says it is here */
-let installerUntil = 0;
-try {
-  const bc = new BroadcastChannel("jiant-midi");
-  bc.onmessage = (e) => {
-    const m = e.data || {};
-    if (m.type === "who") bc.postMessage({ type: "editor", connected: !!dev });
-    if (m.type === "installer") {
-      installerUntil = m.busy ? Date.now() + 60000 : 0;
-      if (m.busy) { wantConnected = false; if (dev) disconnect("instbusy"); }
-    }
-  };
-} catch (_) {}
+let connecting = false;
 async function connect() {
   if (connecting || dev) return;
-  if (Date.now() < installerUntil) { sayK("instbusy"); return; }
   connecting = true;
   let connectedDevice = null;
   wantConnected = true;
@@ -2909,26 +2834,30 @@ async function connect() {
       }
       access.onstatechange = onState;
     }
-    await portsClosing;
-    renderMidiPorts();
-    for (const p of [...access.inputs.values(), ...access.outputs.values()]) portStates.set(p.id, p.state);
-    const opened = await openEditorMidi(access, {
-      onUnknown: f => console.debug("ignored reply", f), onTimeout: () => sayK("noreply"),
-      onPush: f => onPush(f), onGap: () => { rewatch = true; },
-    }, {input: $("midiinput").value, output: $("midioutput").value});
-    dev = { ...opened, pdesc: [], gdesc: [], names: [], dump: null, steps: [], slotUsed: [null, null, null, null],
+    const isF = (p) => /felucca|jiant/i.test(p.name || "") && p.state !== "disconnected";
+    const input = [...access.inputs.values()].find(isF);
+    const output = [...access.outputs.values()].find(isF);
+    if (!input || !output) { sayK("nodevice"); return; }
+    const link = new Link((d) => output.send(d), {
+      timeout: 300,
+      onUnknown: (f) => console.debug("ignored reply", f),
+      onTimeout: () => sayK("noreply"),
+      onPush: (f) => onPush(f),
+      onGap: () => { rewatch = true; },
+    });
+    input.onmidimessage = (e) => link.receive(e.data);
+    if (input.open) await input.open().catch(() => {});
+    dev = { link, input, output, info: null, pdesc: [], gdesc: [], names: [], dump: null, steps: [], slotUsed: [null, null, null, null],
       keys: null, watch: false, bank: null };
     connectedDevice = dev;
     setLabel($("connect"), t("disconnect"));
     await load(connectedDevice);
   } catch (e) {
     console.error(e);
-    if (!connectedDevice || connectedDevice === dev) {
+    if (connectedDevice && connectedDevice === dev) { /* an old connection must not close a replacement */
       const timeout = /^timeout/.test(e.message);
-      if (connectedDevice) disconnect();
-      if (e.message === "no MIDI ports") $("midiports").open = true;
-      const notFound = e.message === "no MIDI ports" || /^Not a JIANT/.test(e.message) || timeout;
-      sayK(notFound ? "nodevice" : "error", notFound ? (seenPorts ? ` (${t("portsSeen")} ${seenPorts})` : ` (${t("portsNone")})`) : e.message);
+      disconnect();
+      sayK(timeout ? "noreply" : "error", timeout ? "" : e.message);
     }
   } finally {
     connecting = false;
@@ -2940,7 +2869,6 @@ function disconnect(reasonKey = "disconnected") {
   if (dev) {
     dev.link.close();
     dev.input.onmidimessage = null;
-    portsClosing = Promise.allSettled([dev.input.close?.(), dev.output.close?.()]);
   }
   dev = null;
   resetBusy();
@@ -2959,12 +2887,7 @@ function disconnect(reasonKey = "disconnected") {
 
 function onState(e) {
   const p = e.port;
-  if (!p) return;
-  const chosen = p.id === $("midiinput").value || p.id === $("midioutput").value || dev && (p.id===dev.input.id || p.id===dev.output.id);
-  if (!chosen && !editorPort({name:p.name,state:"connected"})) return;
-  if (portStates.get(p.id) === p.state) return; /* open/close is not a physical reconnect */
-  portStates.set(p.id, p.state);
-  renderMidiPorts();
+  if (!p || !/felucca|jiant/i.test(p.name || "")) return;
   if (dev && p.state === "disconnected" && (p.id === dev.input.id || p.id === dev.output.id)) {
     disconnect("lost");
   } else if (!dev && wantConnected && p.state === "connected" && p.type === "output") {
@@ -2990,7 +2913,7 @@ async function load(d) {
   const releaseBusy = beginBusy();
   try {
     /* the first frame after opening the port can be lost: a few tries */
-    d.info = d.info || parse[CMD.INFO](await sessionRequest(d, req.info(), { timeout: 800, retries: 3 }));
+    d.info = parse[CMD.INFO](await sessionRequest(d, req.info(), { timeout: 500, retries: 3 }));
     $("version").textContent = d.info.version;
     const total = d.info.pcount + d.info.gcount;
     for (let i = 0; i < d.info.pcount; i++) { sayK("reading", `${i + 1}/${total}`); d.pdesc[i] = await getDescOrNull(0, i, d); }
@@ -4724,6 +4647,3 @@ if (!MOCK && !navigator.requestMIDIAccess) sayK("nomidi");
 </script>
 </body>
 </html>
-
-
-

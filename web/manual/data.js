@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.34", items: [
+    ["Kit HIP HOP en DRUM-X (pedido de un usuario): boom bap, bombo redondo con golpe, redoblante gordo, clap ajustado, hats polvorientos, rim de madera y shaker. Sugiere el patrón nuevo BOOM BAP (SEQ › PATTERNS 14).", "DRUM-X kit HIP HOP (a user's ask): boom bap, a round kick with a knock, a fat snare, a tight clap, dusty hats, a woody rim and a shaker. It suggests the new pattern BOOM BAP (SEQ › PATTERNS 14)."]]},
   {v: "V10.33", items: [
     ["Clock MIDI estable. Salida (MIDI OUT CLOCK / ALL): cada uno de los 24 pulsos por tiempo sale en su momento (USB y Bluetooth), no en ráfagas: el equipo que sigue lee el tempo que pusiste (104 se leía 105,1 y oscilaba). Entrada (CLK USB / TRS / Bluetooth): el tempo se mide sobre dos tiempos y se mantiene en un BPM entero, sin saltar 103 / 105 / 104.", "MIDI clock steady. Out (MIDI OUT CLOCK / ALL): each of the 24 pulses a beat leaves at its own time (USB and Bluetooth), not in bursts: a follower reads the tempo you set (104 read 105.1 and wandered). In (CLK USB / TRS / Bluetooth): the tempo measured over two beats and held as a whole BPM, no 103 / 105 / 104 jumping."]]},
   {v: "V10.32", items: [
