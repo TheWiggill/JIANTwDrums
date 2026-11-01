@@ -153,7 +153,7 @@ static struct {
     uint32_t rd, t;                                     /* the segment's ring read so far; the last 10 ms step */
     int32_t lvl;                                        /* the level, Q8 */
     uint16_t raw;                                       /* the last RSSI word */
-    uint8_t win[5], wn, have, conn;                     /* the median's last five (wn 0..9); a level; a central */
+    uint8_t win[9], wn, have, conn;                     /* the median's last nine (wn 0..17); a level; a central */
     uint16_t w4[4];                                     /* (V10.18) the packet's four RSSI words, last */
     uint8_t mn[12], mx[12], src, lock, seen;            /* (V10.18) each reading's range on this link; the one used; kept
                                                          * (a point stored); a link seen */
@@ -165,22 +165,24 @@ BTAPP_FN static int32_t bt_prox_map(int32_t lvl)
 }
 BTAPP_FN static void bt_prox_step(const uint16_t *w, uint32_t n, uint32_t conn, uint32_t now)
 {
-    uint32_t i, j, k, m[5];
+    uint32_t i, j, k, m[9];
     if (!conn)
         bp.have = bp.wn = 0;
     bp.conn = (uint8_t)conn;
     for (i = 0; conn && i < n; i++) {
         bp.raw = w[i];
-        bp.win[bp.wn % 5u] = (uint8_t)((w[i] & 63u) + (w[i] >> 8 & 63u));
-        bp.wn = (uint8_t)(bp.wn < 9u ? bp.wn + 1u : 5u);
-        k = bp.wn < 5u ? bp.wn : 5u;
+        bp.win[bp.wn % 9u] = (uint8_t)((w[i] & 63u) + (w[i] >> 8 & 63u));
+        bp.wn = (uint8_t)(bp.wn < 17u ? bp.wn + 1u : 9u);
+        k = bp.wn < 9u ? bp.wn : 9u;
         for (j = 0; j < k; j++) {                       /* (sorted in) */
             uint32_t x = bp.win[j], q = j;
             for (; q && m[q - 1u] > x; q--)
                 m[q] = m[q - 1u];
             m[q] = x;
         }
-        bp.lvl = bp.have ? bp.lvl + ((int32_t)(m[k / 2u] << 8) - bp.lvl) / 6 : (int32_t)(m[k / 2u] << 8);
+        bp.lvl = bp.have ? bp.lvl + ((int32_t)(m[k / 2u] << 8) - bp.lvl) / 32 : (int32_t)(m[k / 2u] << 8);   /* (V10.20:
+                                                         * the median of nine, ~32 packets: ~0.3 s; was five, ~6: on
+                                                         * the hardware a random sample and hold, the channels' hops) */
         bp.have = 1;
     }
     if (conn && bp.have) {
@@ -193,10 +195,11 @@ BTAPP_FN static void bt_prox_step(const uint16_t *w, uint32_t n, uint32_t conn, 
     for (; now - bp.t >= 10u; bp.t += 10u)
         mod_prox = (int16_t)(mod_prox - (mod_prox + 31) / 32);
 }
-/* (V10.18) which reading follows the distance is not known (V10.14 read one word that, on the hardware, did not move):
- * twelve readings of a packet, each of its four words as V10.14's level ((w & 63) + (w >> 8 & 63)), its low byte / 2, its
- * high byte / 2; on each link the one whose range grew the widest is used (another must pass it by 6 to take over: no
- * flicker; the level starts again then), until FAR or NEAR is stored (bp.lock: the points belong to that reading) */
+/* (V10.18) twelve readings of a packet: each of its four words as V10.14's level ((w & 63) + (w >> 8 & 63)), its low
+ * byte / 2, its high byte / 2. (V10.20) The one used is fixed again: word 0 (RSSI2 / 3 by the buffer) as the level, the
+ * gain index and the raw value together. V10.18 took the reading whose range grew widest, which on the hardware was a
+ * lone byte jumping at random (the noisiest, not the one that follows the distance); V10.17's still page was only the
+ * redraw (V10.19). The four words stay on the page */
 BTAPP_FN static uint32_t bt_prox_rd(const uint16_t *q, uint32_t c)
 {
     uint32_t w = q[c / 3u];
@@ -210,19 +213,8 @@ BTAPP_FN static void bt_prox_feed(const uint16_t *w, uint32_t n, uint32_t conn, 
     if (!conn)
         bp.seen = 0;
     for (i = 0; conn && i < n; i++) {
-        best = bp.src % 12u;
-        for (c = 0; c < 12u; c++) {
-            uint32_t x = bt_prox_rd(&w[4u * i], c);
-            if (!bp.seen || x < bp.mn[c]) bp.mn[c] = (uint8_t)x;
-            if (!bp.seen || x > bp.mx[c]) bp.mx[c] = (uint8_t)x;
-            if (!bp.lock && bp.mx[c] - bp.mn[c] > bp.mx[best] - bp.mn[best] + 6)
-                best = c;
-        }
+        (void)best;                                     /* (V10.20: the reading fixed, see above) */
         bp.seen = 1;
-        if (best != bp.src) {                           /* (another reading: its own level from here) */
-            bp.src = (uint8_t)best;
-            bp.have = bp.wn = 0;
-        }
         c = bt_prox_rd(&w[4u * i], bp.src);
         c = c > 126u ? 126u : c;                        /* (as bt_prox_step reads it: two halves of 0..63) */
         v[i] = (uint16_t)(c / 2u | (c - c / 2u) << 8);

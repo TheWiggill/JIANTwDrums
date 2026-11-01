@@ -2795,13 +2795,13 @@ static int test_menu_tabs(void)
         ok &= ui.menu == 3u && favorites.factory[6][22] == 160u && msg_is("PROX FAR SET") && menu_get(MI_BT) == 1u;
         for (k = 0; k < 40u; k++)
             w[k] = LV(40u);
-        bt_prox_step(w, 40, 1, t += 400u);
+        { uint32_t r_; for (r_ = 0; r_ < 8u; r_++) bt_prox_step(w, 40, 1, t += 400u); }
         press(B_OCTUP);                                    /* NEAR: the hand on the antenna, level 40 */
         bt_prox_step(w, 0, 1, t += 10u);
         ok &= favorites.factory[6][23] == 80u && msg_is("PROX NEAR SET") && mod_prox > 32600;
         for (k = 0; k < 40u; k++)
             w[k] = LV(60u);
-        bt_prox_step(w, 40, 1, t += 400u);
+        { uint32_t r_; for (r_ = 0; r_ < 8u; r_++) bt_prox_step(w, 40, 1, t += 400u); }
         ok &= mod_prox > 16200 && mod_prox < 16600;        /* (half way) */
         w[0] = LV(0u);
         before = mod_prox;
@@ -2812,11 +2812,11 @@ static int test_menu_tabs(void)
         ok &= mod_prox == before;                          /* (no packets: held) */
         for (k = 0; k < 40u; k++)
             w[k] = LV(100u);
-        bt_prox_step(w, 40, 1, t += 400u);
+        { uint32_t r_; for (r_ = 0; r_ < 8u; r_++) bt_prox_step(w, 40, 1, t += 400u); }
         ok &= mod_prox == 0;                               /* (farther than FAR: clamped) */
         for (k = 0; k < 40u; k++)
             w[k] = LV(50u);
-        bt_prox_step(w, 40, 1, t += 400u);
+        { uint32_t r_; for (r_ = 0; r_ < 8u; r_++) bt_prox_step(w, 40, 1, t += 400u); }
         before = mod_prox;
         bt_prox_step(w, 0, 0, t += 100u);                  /* the central gone */
         ok &= before > 20000 && mod_prox < before && mod_prox > before / 2 && !bp.have;
@@ -2828,24 +2828,22 @@ static int test_menu_tabs(void)
         menu_close();
         memset(&favorites.factory[6][22], 0, 10);
         memset(&bp, 0, sizeof bp);
-        {   /* (V10.18) the reading that moves is found: word 2's high byte here, the others still; the points lock it */
+        {   /* (V10.20) the reading is word 0 as the level, whatever the others do (V10.18's widest range was the noisiest) */
             uint16_t q[64];
-            uint32_t j, ok2;
+            uint32_t j, ok2, r;
             memset(&bp, 0, sizeof bp);
-            for (j = 0; j < 16u; j++) {
-                q[4u * j] = 0x2020; q[4u * j + 1u] = 0x1111;
-                q[4u * j + 2u] = (uint16_t)(((j < 8u ? 40u : 200u) << 8) | 0x55u); q[4u * j + 3u] = 0;
+            for (r = 0; r < 4u; r++) {
+                for (j = 0; j < 16u; j++) {
+                    q[4u * j] = (uint16_t)(20u | 20u << 8);     /* (level 40) */
+                    q[4u * j + 1u] = (uint16_t)(j & 1u ? 0xFFFF : 0); q[4u * j + 2u] = (uint16_t)(j * 4099u); q[4u * j + 3u] = 0;
+                }
+                bt_prox_feed(q, 16, 1, t += 100u);
             }
-            bt_prox_feed(q, 16, 1, t += 100u);
-            ok2 = bp.src == 8u && bp.have && bp.raw == q[60u + 2u];
-            ok2 &= (bp.lvl >> 8) > 80 && (bp.lvl >> 8) <= 100;   /* (200 / 2) */
-            bp.lock = 1;
-            for (j = 0; j < 16u; j++) q[4u * j] = (uint16_t)(j & 1u ? 0x3F3F : 0);   /* (word 0 swings wider: kept) */
-            bt_prox_feed(q, 16, 1, t += 100u);
-            ok2 &= bp.src == 8u;
-            bt_prox_feed(q, 0, 0, t += 100u);              /* (the link gone: its ranges forgotten) */
-            ok2 &= !bp.seen;
-            bad += check("V10.18 PROX: the RSSI reading that follows the distance is found (12 readings), kept once a point is stored", ok2);
+            ok2 = bp.src == 0u && bp.have && (bp.lvl >> 8) == 40 && bp.raw == q[60];
+            q[0] = (uint16_t)(60u | 60u << 8);                  /* (one packet far off: a step of ~1/32 at most) */
+            bt_prox_feed(q, 1, 1, t += 100u);
+            ok2 &= (bp.lvl >> 8) <= 41;
+            bad += check("V10.20 PROX: word 0 as the level, the others ignored; the median of nine and ~32 packets smooth it", ok2);
             memset(&bp, 0, sizeof bp);
         }
         bt_up = 0;

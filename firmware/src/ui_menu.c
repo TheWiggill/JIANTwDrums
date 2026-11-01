@@ -452,7 +452,10 @@ BTAPP_FN static void bt_prox_input(uint32_t up, uint32_t dn)
             return;
         }
         BT_CAL[up] = (uint8_t)clamp((bp.lvl + 64) >> 7, 0, 252);
-        bp.lock = 1;                                    /* (V10.18) the reading the points belong to: kept */
+        if (BT_CAL[0] && BT_CAL[1] && (BT_CAL[0] > BT_CAL[1] ? BT_CAL[0] - BT_CAL[1] : BT_CAL[1] - BT_CAL[0]) < 8u) {
+            ui_message("FAR AND NEAR TOO CLOSE");       /* (V10.20) under 4 levels apart: noise, not distance */
+            return;
+        }
         ui_message(BP_S[7u + up]);
     }
 }
