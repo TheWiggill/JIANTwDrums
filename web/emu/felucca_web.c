@@ -34,6 +34,7 @@
 
 static uint8_t nor[0x100000];            /* the SPI NOR (erased: 0xFF) */
 #define main hostsim_main
+#define HOST_OWN_TICKS 1                    /* (fm1_ticks below) */
 #include "../../tests/hostsim.c"
 #undef main
 
