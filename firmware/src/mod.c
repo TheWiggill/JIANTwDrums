@@ -65,7 +65,8 @@ static uint8_t macro_v[4];       /* (JIANT) the macros M1..M4, 0..127: the proje
 _Static_assert(NELEM(N_MSRC) == MS_N && NELEM(N_MDST) == MD_N, "N_MSRC / N_MDST == MS_* / MD_*");
 _Static_assert(P_M2SRC == P_M1SRC + 3 && P_M4AMT == P_M1SRC + 11 && P_M4AMT + 1 == P_FM1_ATK, "matrix slots: 3 ids each");
 #define NMSLOT 4u
-#define MS_VOICE(s) (((s) >= MS_ENV && (s) <= MS_RAND) || (s) == MS_ENV2)   /* a value per voice */
+#define MS_VMASK ((1u << MS_ENV) | (1u << MS_VEL) | (1u << MS_KEY) | (1u << MS_RAND) | (1u << MS_ENV2))
+#define MS_VOICE(s) ((MS_VMASK >> ((s) & 31u)) & 1u)   /* a value per voice: ENV VEL KEY RAND, (V10.22) ENV2 */
 #define MS_BIPOLAR(s) ((s) == MS_LFO || (s) == MS_KEY || (s) == MS_RAND || (s) == MS_NOISE)
 
 /* the track parameter of a per-block destination */
@@ -124,8 +125,6 @@ static int32_t mod_tsrc(const track_t *t, uint32_t s, int32_t lfo)
         return lfo;
     case MS_ENV:
         return t->m_env;
-    case MS_ENV2:
-        return t->m_env2;
     case MS_VEL:
         return t->m_vel * 258;
     case MS_KEY:
@@ -145,7 +144,7 @@ static int32_t mod_tsrc(const track_t *t, uint32_t s, int32_t lfo)
     case MS_NOISE:                                      /* (0.7.8) a random wander, a new point every ~46 ms, eased */
         return drift_noise((uint32_t)(t - trk) * 7919u + 0x1234u, mns_clk, 6u - (CTL_LOG2 - 5u));
     default:
-        return macro_v[(s - MS_M1) & 3u] * 258;
+        return s == MS_ENV2 ? t->m_env2 : macro_v[(s - MS_M1) & 3u] * 258;   /* (V10.22 ENV2: out of the switch's run) */
     }
 }
 
@@ -304,10 +303,17 @@ static __attribute__((noinline)) void mod_voice(track_t *t, voice_t *v, vmod_t *
         t->m_env = env;                                 /* ENV of the latest note, for per-block destinations */
         t->m_env2 = m->env2q15;                         /* (V10.22) and its ENV 2 */
     }
-    for (k = 0; k < mp->nv; k++) {
-        uint32_t s = mp->vsrc[k];
-        int32_t x = s == MS_ENV ? env : s == MS_ENV2 ? m->env2q15 : s == MS_VEL ? v->mvel * 258 : s == MS_KEY ? mod_key(v->note) : v->mrnd;
-        mod_voice_add(s, mp->vdst[k], x, mp->vamt[k], &pit, &cut, &shp, &gain);
+    {
+        int32_t xv[MS_N];                               /* (V10.22) the per-voice sources by number, read in the loop */
+        xv[MS_ENV] = env;
+        xv[MS_VEL] = v->mvel * 258;
+        xv[MS_KEY] = mod_key(v->note);
+        xv[MS_RAND] = v->mrnd;
+        xv[MS_ENV2] = m->env2q15;
+        for (k = 0; k < mp->nv; k++) {
+            uint32_t s = mp->vsrc[k];
+            mod_voice_add(s, mp->vdst[k], xv[s], mp->vamt[k], &pit, &cut, &shp, &gain);
+        }
     }
     if (pit) {
         m->pitch16 = clamp(m->pitch16 + pit, 0, 2047);

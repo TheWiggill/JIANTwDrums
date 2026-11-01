@@ -700,6 +700,9 @@ static void test_jiant_078(void)
         blocks(FS / 2u / CTL);
         down = trk[0].m_env2;
         check("V10.22: ENV2 rises with the note, to the top, then down after it", up < top && top > 30000 && down < top / 4);
+        check("V10.22: ANALOG WAVE PLS3 sounds its own (not PWM's, not SAW3's), SHAPE's width moves it",
+              phrase_on(ea, P_E0, 8) != phrase_on(ea, P_E0, 4) && phrase_on(ea, P_E0, 8) != phrase_on(ea, P_E0, 7) &&
+              phrase_on(ea, P_E0, 8) != a0);
     }
 }
 
