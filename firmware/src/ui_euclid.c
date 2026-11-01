@@ -14,7 +14,9 @@
 #define EU_M 4u
 typedef struct { uint8_t h, n, r; } eul_t;
 typedef struct { uint8_t on, lane, src, root, ctr, vary; uint16_t mask, prev, seed; uint8_t m[EU_M]; eul_t a, l[NLANE];
-                 uint8_t mu[4], bar, flip; } eu_t;   /* lane 0 ALL (a: DENSITY, STEPS, ROTATE), 1.. a lane; (V10.16) mu: MUTATE's
+                 uint8_t rl; uint16_t rs; uint8_t mu[4], bar, flip, own; uint32_t sg; } eu_t;   /* (V10.28) rl: the recorded
+                                                         * sequence's length, rs: what plays its rhythm (bit l a kit's lane,
+                                                         * bit 0 a melody's), own: it had notes, sg: the steps last seen */   /* lane 0 ALL (a: DENSITY, STEPS, ROTATE), 1.. a lane; (V10.16) mu: MUTATE's
                                                          * EVERY AMOUNT MODE WHAT, bar: the bar it last mutated on, flip: PULSE's */
 #define EU_Z0 __builtin_offsetof(eu_t, vary)                     /* (V10.16) the settings a mutation changes: vary .. l[], the anchor */
 #define EU_ZN (__builtin_offsetof(eu_t, mu) - EU_Z0)
@@ -26,6 +28,10 @@ static const uint8_t EU_MX[4] = {5, 100, 2, 3};          /* (V10.16) MUTATE's se
 static uint16_t eu_zs[NTRK];                            /* (V10.24) the anchor's seed (OCT- returns to it too) */
 static uint8_t eu_za[NTRK][64] __attribute__((section(".pool")));   /* (V10.24) the anchor's steps as generated (a kit: the
                                                          * lanes' bits; a melody: the first note, 0 none), MUTATE's picture */
+/* (V10.28) the sequence the track had (recorded, edited, a song's) when EUCLID came to it: a kit's lanes step by step;
+ * a melody's first note of each step (bit 7: a chord), 1 a held step, 0 none. EUCLID transforms it: its rhythm until
+ * HITS STEPS or ROTATE are turned, its notes always */
+static uint8_t eu_src[NTRK][64] __attribute__((section(".pool")));
 static void eu_anchor(uint32_t k) { memcpy(eu_z[k % NTRK], (uint8_t *)&eu[k % NTRK] + EU_Z0, EU_ZN); eu_zs[k % NTRK] = eu[k % NTRK].seed; }
 static uint32_t eu_val(const track_t *t, const step_t *s) { return drum_track(t) ? step_lanes(s) & 0xFFu : s->time == ST_NOTE && s->n ? s->note[0] : 0u; }
 
@@ -43,28 +49,54 @@ static void eu_kit(eu_t *e)
     static const uint8_t KR[NLANE] = {0, 4, 12, 0, 6, 10, 3, 7};
     uint32_t i, n = e->a.n ? e->a.n : 16u, d = (e->a.h ? e->a.h - 1u : 0u) & 7u, h;
     for (i = 0; i < NLANE; i++) {
-        h = (KT[d][i] * n + 8u) / 16u;
-        e->l[i].h = (uint8_t)(h > n ? n : KT[d][i] && !h ? 1u : h);
+        h = e->a.h ? (KT[d][i] * n + 8u) / 16u : 0u;     /* (V10.28: DENSITY 0, none) */
+        e->l[i].h = (uint8_t)(h > n ? n : KT[d][i] && !h && e->a.h ? 1u : h);
         e->l[i].n = (uint8_t)n;
         e->l[i].r = (uint8_t)(((KR[i] * n + 8u) / 16u + ((0xE1u >> i) & 1u ? e->a.r : 0u)) % n);
     }
 }
 
-/* track k's settings, made the first time (a kit: ALL, DENSITY 4; a melody of five in sixteen) */
+/* (V10.28) the track's steps changed by someone else since EUCLID last wrote them: taken as the sequence to transform
+ * (none when empty or a factory pattern untouched); its HITS / STEPS (a kit: each lane's) set from it */
+static void eu_take(uint32_t k, eu_t *e)
+{
+    const track_t *t = &trk[k];
+    uint32_t i, l, len = (uint32_t)clamp(t->p[P_SLEN], 2, 64), sg = steps_sig(t), dr = drum_track(t) != 0, h = 0, c[NLANE] = {0};
+    if (sg == e->sg) return;
+    e->sg = sg; e->rl = 0; e->rs = 0; e->ctr = 0; e->own = 0;
+    for (i = 0; i < 64u; i++) {
+        const step_t *s = &t->step[i];
+        uint32_t v = 0;
+        if (i < len && !(pat_last[k] && sg == pat_sig[k]))
+            v = dr ? step_lanes(s) & 0xFFu : s->time == ST_NOTE && s->n ? (uint32_t)clamp(s->note[0], 2, 127) | (s->n > 1u ? 0x80u : 0u)
+              : i && s->time == ST_TIE && eu_src[k][i - 1u] ? 1u : 0u;
+        eu_src[k][i] = (uint8_t)v;
+        for (l = 0; dr && l < NLANE; l++) c[l] += (v >> l) & 1u;
+        h += dr ? v != 0u : v > 1u;
+    }
+    if (!h) return;
+    e->rl = (uint8_t)len; e->own = 1;
+    for (l = 0; l < (dr ? NLANE : 1u); l++) {
+        e->l[l].h = (uint8_t)(dr ? c[l] : h); e->l[l].n = (uint8_t)len; e->l[l].r = 0;
+        if (e->l[l].h) e->rs |= (uint16_t)(1u << l);
+    }
+    e->a.n = (uint8_t)len;
+    eu_anchor(k);
+}
+/* track k's settings, made the first time: (V10.28) all at 0 (a kit: DENSITY 0, no lanes; a melody: no HITS), so
+ * EUCLID builds from nothing, or from the sequence the track has (eu_take) */
 static eu_t *eu_of(uint32_t k)
 {
     eu_t *e = &eu[k % NTRK];
     if (!e->on) {
         e->on = 1;
         e->seed = e->prev = (uint16_t)(1u + k * 7u);
-        e->vary = 40;
-        e->a.h = 4; e->a.n = 16;
+        e->a.n = 16; e->l[0].n = 16;
         eu_kit(e);
-        if (drum_track(&trk[k])) { e->m[0] = 40; e->m[3] = 30; }
-        else { e->l[0].h = 5; e->m[0] = 45; e->m[1] = 20; e->m[2] = 10; e->m[3] = 15; }
         e->mu[1] = 50;
         eu_anchor(k);
     }
+    eu_take(k % NTRK, e);
     return e;
 }
 
@@ -73,26 +105,37 @@ static eu_t *eu_of(uint32_t k)
  * moved anew: the first near the grid, the last the most (A A' A'' B) */
 static void eu_vary(uint8_t *on, uint8_t *len, uint32_t n, uint32_t v)
 {
-    uint32_t i, g;
+    uint32_t i, g, keep = eu_s, mv = 0;
+    eu_s ^= v * 2654435761u + 0x9E3779B9u;              /* (V10.28) each value its own moves; the notes' stream as it was */
+    if (!eu_s) eu_s = 1;
     for (i = 1; i < n; i++) {
         if (on[i] != 1u || !eu_ch(v * (i >= n / 2u ? 10u : 6u) / 10u)) continue;
         g = 1u + eu_ch(v / 2u) + eu_ch(v / 4u);          /* a step on (to the offbeat mostly) or back, further the more */
         g = eu_ch((i & 1u) ? 50 : 60) ? i + g : i - g;
-        if (g > 0u && g < n && !on[g]) { on[i] = 0; on[g] = 2; }
+        if (g > 0u && g < n && !on[g]) { on[i] = 0; on[g] = 2; mv++; }
     }
-    for (i = 0; len && i < n; i++) {
+    for (i = 0; v && !mv && i < 2u * n; i++) {          /* (V10.28: VARY on moves one at least) */
+        uint32_t a = 1u + eu_rnd() % (n > 1u ? n - 1u : 1u);
+        g = eu_ch(50) ? a + 1u : a - 1u;
+        if (on[a] == 1u && g > 0u && g < n && !on[g]) { on[a] = 0; on[g] = 2; mv = 1; }
+    }
+    for (i = 0; len && i < n; i++) {                     /* (a recorded hold kept where its note stayed) */
+        if (on[i] == 1u && len[i] > 1u) { for (g = 1; i + g < n && !on[i + g] && g < len[i]; g++) {} len[i] = (uint8_t)g; continue; }
         len[i] = 1;
         if (!on[i]) continue;
         for (g = 1; i + g < n && !on[i + g] && g < 4u; g++) {}
         if (g > 1u && eu_ch(v * 7u / 10u)) len[i] = (uint8_t)(2u + eu_rnd() % (g - 1u));
     }
+    eu_s = keep;
 }
 
-/* (V10.16) VARY's turns: as many cycles of n (up to four, 64 steps) as the pattern holds with VARY on; turn c of nc its
- * amount: the first a third, the last half as much again */
-static uint32_t eu_turns(uint32_t n, uint32_t v) { return !v ? 1u : n * 4u <= 64u ? 4u : n * 2u <= 64u ? 2u : 1u; }
+/* (V10.16) VARY's turns: as many cycles of n (up to four, 64 steps) as the pattern holds; turn c of nc its amount: the
+ * first a third, the last half as much again. (V10.28) VARY in two halves: up to 50 the one cycle moved (0 none, 50
+ * the most), each value its own; above 50 the four turns A A' A'' B, apart the more the higher */
+static uint32_t eu_turns(uint32_t n, uint32_t v) { return v <= 50u ? 1u : n * 4u <= 64u ? 4u : n * 2u <= 64u ? 2u : 1u; }
 static uint32_t eu_vc(uint32_t v, uint32_t c, uint32_t nc)
 {
+    v = v <= 50u ? v * 2u : (v - 50u) * 2u;
     return nc < 2u ? v : !c ? v / 3u : c + 1u == nc ? (v * 3u / 2u > 100u ? 100u : v * 3u / 2u) : v;
 }
 
@@ -107,7 +150,7 @@ static void eu_key(uint32_t k, eu_t *e)
     if (t->p[P_SCALE] > 0) { e->root = (uint8_t)(t->p[P_ROOT] % 12); e->mask = (uint16_t)scale_mask(t); e->src = 0; return; }
     for (j = 0; j < trk_live && j < NTRK; j++) {
         uint32_t n = 0, len = (uint32_t)clamp(trk[j].p[P_SLEN], 1, NSTEP);
-        if (j == k || drum_track(&trk[j])) continue;
+        if ((j == k && !e->own) || drum_track(&trk[j])) continue;   /* (V10.28: its own notes, when it had) */
         for (i = 0; i < len; i++) {
             const step_t *s = &trk[j].step[i];
             if (s->time != ST_NOTE) continue;
@@ -164,16 +207,16 @@ static void eu_drums(track_t *t, eu_t *e, uint32_t only)
     for (l = only ? only - 1u : 0u; l < (only ? only : NLANE); l++) {
         const eul_t *L = &e->l[l];
         eul_t acc = {(uint8_t)(L->h * e->m[0] / 100u + (e->m[0] && L->h ? 1u : 0u)), L->n, (uint8_t)(L->r + 1u)};
-        uint32_t c, nc, v = l ? e->m[3] : e->m[3] / 2u, fill = 0;
+        uint32_t c, nc, v = e->m[3], fill = 0, rs = e->rl && ((e->rs >> l) & 1u);
         if (!L->h || !(n = L->n)) continue;
         nc = (len + n - 1u) / n;
         for (i = 0; i < len; i++) {
             if (!(i % n)) {                              /* (V10.16) each turn of the cycle moved anew */
                 c = i / n;
                 eu_s = e->seed * 2654435761u + l * 97u + c * 7919u + 1u;
-                for (j = 0; j < n; j++) on[j] = (uint8_t)eu_hit(j, L);
-                eu_vary(on, 0, n, eu_vc(v, c, nc));
-                fill = nc > 1u && c + 1u == nc && l ? v / 3u : 0u;   /* (the last turn's end: rolls) */
+                for (j = 0; j < n; j++) on[j] = (uint8_t)(rs ? (eu_src[trk_index(t)][j] >> l) & 1u : eu_hit(j, L));
+                eu_vary(on, 0, n, eu_vc(v, c, nc) >> (l ? 0 : 1));   /* (the kick half as moved) */
+                fill = nc > 1u && c + 1u == nc && l ? eu_vc(v, 1, 1) / 3u : 0u;   /* (the last turn's end: rolls) */
             }
             if (on[i % n]) {
                 grid_hit(t, i, l, 1);
@@ -188,12 +231,23 @@ static void eu_drums(track_t *t, eu_t *e, uint32_t only)
         if ((step_lanes(&t->step[i]) >> 4) & 1u) grid_hit(t, i, 3, 0);
 }
 
+/* (V10.28) note nt moved up k notes of the key */
+static int32_t eu_up(const eu_t *e, int32_t nt, uint32_t k)
+{
+    if (!(e->mask & 0xFFFu)) return nt + (int32_t)k * 2;
+    while (k) { nt++; if ((e->mask >> ((uint32_t)(nt - e->root + 120) % 12u)) & 1u) k--; }
+    return nt;
+}
 static void eu_melody(uint32_t k, track_t *t, eu_t *e)
 {
-    uint8_t on[64], ln[64], pc[12];
+    uint8_t on[64], ln[64], pc[12], sq[64];
     int8_t mem[64] = {0};                                   /* (V10.16) the first turn's degrees, hit by hit: the motif */
-    uint32_t n = e->l[0].n ? e->l[0].n : 16u, i, c, np = 0, g = 0, cy, nc = eu_turns(n, e->vary), o, j, vc;
+    const uint8_t *src = eu_src[k % NTRK];
+    uint32_t rs = e->rl && (e->rs & 1u), ns = 0;
+    uint32_t n = rs ? e->rl : e->l[0].n ? e->l[0].n : 16u, i, c, np = 0, g = 0, cy, nc = eu_turns(n, e->vary), o, j, vc;
     int32_t ctr = 0, base, deg = 0, mo = e->m[0], ha = e->m[1];
+    for (i = 0; e->own && i < 64u; i++)                  /* (V10.28) the recorded notes, in order */
+        if (src[i] > 1u) sq[ns++] = src[i];
     for (i = 0; !e->ctr && i < (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP); i++)   /* the register: the notes it had at the
                                                          * first turn (none: C4), kept */
         if (t->step[i].time == ST_NOTE && t->step[i].n) { ctr += t->step[i].note[0]; g++; }
@@ -210,12 +264,31 @@ static void eu_melody(uint32_t k, track_t *t, eu_t *e)
     for (cy = 0; cy < nc; cy++) {                        /* (V10.16) VARY's turns: A, then the motif answered */
         o = cy * n;
         vc = eu_vc(e->vary, cy, nc);
-        for (i = 0; i < n; i++) on[i] = (uint8_t)eu_hit(i, &e->l[0]);
+        for (i = 0; i < n; i++) {                        /* (V10.28: the recorded rhythm and its holds, or the euclid) */
+            on[i] = (uint8_t)(rs ? src[i] > 1u : eu_hit(i, &e->l[0]));
+            for (ln[i] = 1; rs && on[i] && i + ln[i] < n && src[i + ln[i]] == 1u; ln[i]++) {}
+        }
         eu_vary(on, ln, n, vc);
         for (i = 0, j = 0; i < n; i++) {
             step_t *s = &t->step[o + i];
             int32_t note, sh = 0;
             if (!on[i]) continue;
+            if (ns) {                                    /* (V10.28) the recorded notes: in order, MOTION picks others */
+                int32_t ix = (int32_t)j, sp = 1 + mo * (int32_t)ns / 200;
+                uint32_t v;
+                if (cy && j < 64u && !eu_ch(vc * 6u / 10u)) ix = mem[j];
+                else if (mo && eu_ch((uint32_t)mo)) ix += (int32_t)(eu_rnd() % (uint32_t)(2 * sp + 1)) - sp;
+                if (!cy && j < 64u) mem[j] = (int8_t)ix;
+                j++;
+                v = sq[(uint32_t)(ix % (int32_t)ns + (int32_t)ns) % ns];
+                if (eu_ch(e->m[2] * 6u / 10u)) sh = eu_ch(50) ? 12 : -12;
+                note = clamp((int32_t)(v & 0x7Fu) + sh, 24, 108);
+                s->time = ST_NOTE; s->vel = 100; s->note[0] = (uint8_t)note; s->n = 1;
+                if ((v & 0x80u) || (!(i & 3u) && eu_ch((uint32_t)ha))) {
+                    s->note[s->n++] = (uint8_t)clamp(eu_up(e, note, 2), 24, 108);
+                    if ((v & 0x80u) || ha > 50) s->note[s->n++] = (uint8_t)clamp(eu_up(e, note, 4), 24, 108);
+                }
+            } else {
             if (cy && j < 64u && !eu_ch(vc * 6u / 10u)) deg = mem[j];   /* the motif's note, or a new one */
             else if (i) {
                 int32_t span = mo * 5 / 100, d = span ? (int32_t)(eu_rnd() % (uint32_t)(2 * span + 1)) - span : 0;
@@ -233,6 +306,7 @@ static void eu_melody(uint32_t k, track_t *t, eu_t *e)
             if (!(i & 3u) && eu_ch((uint32_t)ha)) {      /* a chord of the scale on a strong beat */
                 s->note[s->n++] = (uint8_t)clamp(eu_deg(pc, np, base, deg + 2) + sh, 24, 108);
                 if (ha > 50) s->note[s->n++] = (uint8_t)clamp(eu_deg(pc, np, base, deg + 4) + sh, 24, 108);
+            }
             }
             if (eu_ch(e->m[3] * 7u / 10u)) s->flags |= SF_SLIDE;
             for (c = 1; c < ln[i] && i + c < n; c++) {   /* held over the gap */
@@ -254,6 +328,7 @@ static void eu_gen(uint32_t k, uint32_t hand)
     if (drum_track(t)) eu_drums(t, e, e->lane % (NLANE + 1u)); else eu_melody(k, t, e);
     load_end(t);
     pat_sig[k % NTRK] = ~steps_sig(t);                   /* (the user's steps now) */
+    e->sg = steps_sig(t);                                /* (V10.28: its own, not taken again) */
     if (e->seed == eu_zs[k % NTRK] && !memcmp((uint8_t *)e + EU_Z0, eu_z[k % NTRK], EU_ZN)) {   /* (V10.24) the anchor's */
         uint32_t i;
         for (i = 0; i < 64u; i++) eu_za[k % NTRK][i] = (uint8_t)eu_val(t, &t->step[i]);
@@ -277,7 +352,7 @@ static const param_desc_t *eu_desc(uint32_t k, int16_t **valp)
     eul_t *L = al ? &e->a : &e->l[dr ? (e->lane + NLANE) % (NLANE + 1u) : 0];
     k %= EK_N;
     eu_d.fmt = F_INT; eu_d.min = 0; eu_d.def = 0; eu_d.names = 0; eu_d.unit = 0;
-    if (k == EK_HITS && al) { eu_d.label = "DENSITY"; eu_d.min = 1; eu_d.max = 8; eu_v[k] = L->h; }
+    if (k == EK_HITS && al) { eu_d.label = "DENSITY"; eu_d.max = 8; eu_v[k] = L->h; }
     else if (k == EK_HITS) { eu_d.label = "HITS"; eu_d.max = L->n; eu_v[k] = L->h; }
     else if (k == EK_STEPS) { eu_d.label = "STEPS"; eu_d.min = 2; eu_d.max = 64; eu_v[k] = L->n; }
     else if (k == EK_ROT) { eu_d.label = "ROTATE"; eu_d.max = L->n > 1u ? L->n - 1 : 0; eu_v[k] = L->r; }
@@ -307,12 +382,14 @@ static void eu_put(uint32_t k, int32_t v)
         ui.force = 1;
         return;
     }
-    if (k == EK_HITS) L->h = (uint8_t)clamp(v, al, al ? 8 : L->n);
+    if (k == EK_HITS) L->h = (uint8_t)clamp(v, 0, al ? 8 : L->n);
     else if (k == EK_STEPS) { L->n = (uint8_t)clamp(v, 2, 64); if (!al && L->h > L->n) L->h = L->n; if (L->r >= L->n) L->r = 0; }
     else if (k == EK_ROT) L->r = (uint8_t)clamp(v, 0, L->n - 1);
     else if (k == EK_K4) e->vary = (uint8_t)clamp(v, 0, 100);
     else e->m[(k - EK_M0) % EU_M] = (uint8_t)clamp(v, 0, 100);
     if (al && k < EK_K4) eu_kit(e);                      /* (ALL: the kit again, of DENSITY, STEPS, ROTATE) */
+    if (k < EK_K4) e->rs &= (uint16_t)(al ? 0u : ~(1u << (dr ? (e->lane + NLANE) % (NLANE + 1u) : 0u)));   /* (V10.28: the
+                                                         * euclid's rhythm now, the notes still the recorded ones) */
     if (chain_busy()) { ui_message("SONG PLAYS: STOP IT TO EDIT"); return; }
     eu_anchor(song.sel);                                 /* (V10.16) what is dialled: MUTATE's anchor */
     eu_gen(song.sel, 1);
@@ -334,6 +411,7 @@ static void eu_mutate(uint32_t k, eu_t *e)
         if (eu_ch(p)) L->h = (uint8_t)clamp((int32_t)L->h + (eu_ch(50) ? d : -d), al || !dr ? 1 : 0, al ? 8 : L->n);
         if (eu_ch(p)) L->r = (uint8_t)((L->r + eu_rnd() % (1u + p * L->n / 200u)) % L->n);
         if (al) eu_kit(e);
+        e->rs &= (uint16_t)(al ? 0u : ~(1u << (dr ? sl - 1u : 0u)));
     }
     if (w >= 2u)                                         /* FEEL */
         for (i = 0; i <= EU_M; i++) {
@@ -542,7 +620,8 @@ static void graph_euclid(const track_t *t)
             }
         }
         if (t_now != ~0u) cv_rect(x0 + (int32_t)t_now * cw, y0, 1, rh, T_TEXT);
-        if (e->src == 0u) str_cpy(b, "SCL", sizeof b);
+        if (e->own) str_cpy(b, e->rl && (e->rs & 1u) ? "YOUR SEQ" : "YOUR NOTES", sizeof b);
+        else if (e->src == 0u) str_cpy(b, "SCL", sizeof b);
         else if (e->src == 7u) str_cpy(b, "NEW KEY", sizeof b);
         else { str_cpy(b, "FROM T1", sizeof b); b[6] = (char)('0' + e->src); }
         cv_text_in(x0, y0 + rh + 6, w, &AF_X, b, e->src == 7u ? T_ACCENT : T_MID, T_SURF);

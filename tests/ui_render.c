@@ -1266,6 +1266,7 @@ static void setup(int s)
         uint32_t i;
         song.sel = 1; set_engine_of(TSEL, ENGI_ANALOG); TSEL->p[P_SCALE] = 2; TSEL->p[P_ROOT] = 0;
         go_title("MODES");
+        eu_of(1)->l[0].h = 6; eu[1].vary = 30;           /* (V10.28: EUCLID starts at 0) */
         eu_put(EK_M0 + 1u, 60);                          /* HARMONY 60: chords on the strong beats */
         (void)i;
         break;

@@ -716,6 +716,87 @@ static uint32_t mel_sig(const track_t *t)               /* (the notes and times:
     return eu_cyc_sig(t, 0, 16, NLANE) ^ eu_cyc_sig(t, 1, 16, NLANE) * 3u ^ eu_cyc_sig(t, 2, 16, NLANE) * 5u ^
            eu_cyc_sig(t, 3, 16, NLANE) * 7u;
 }
+/* (V10.28: EUCLID starts at 0) the settings these tests were written for: a kit DENSITY 4, a melody 5 hits */
+static void eu_old(uint32_t k, uint32_t vary)
+{
+    eu_t *e = eu_of(k);
+    e->a.h = 4; e->a.n = 16; eu_kit(e);
+    e->own = 0; e->rl = 0; e->rs = 0;
+    if (drum_track(&trk[k])) { e->m[0] = 40; e->m[3] = (uint8_t)vary; }
+    else { e->l[0].h = 5; e->l[0].n = 16; e->vary = (uint8_t)vary; e->m[0] = 45; e->m[1] = 20; e->m[2] = 10; e->m[3] = 15; }
+    eu_anchor(k);
+}
+/* (V10.28) EUCLID at 0 by default; VARY in two halves (up to 50 the cycle moved, each value its own; above 50 the four
+ * turns); a sequence the track has: transformed (its rhythm until HITS is turned, its notes always) */
+static int test_euclid_src(void)
+{
+    int bad = 0, ok;
+    uint32_t i, n, c, v, sg[51], same = 0;
+    track_t *d = &trk[0], *m = &trk[1];
+    static const uint8_t NT[4] = {60, 63, 67, 70};
+    ui_power_on();
+    set_engine_of(d, ENGI_DRUM); set_engine_of(m, ENGI_ANALOG);
+    memset(eu, 0, sizeof eu);
+    for (i = 0; i < NSTEP; i++) { step_clear(&m->step[i]); step_clear(&d->step[i]); }
+    m->p[P_SLEN] = 16; d->p[P_SLEN] = 16;
+    song.sel = 1; frame();
+    go_title("EUCLID"); frame();
+    ok = eu[1].vary == 0u && eu[1].l[0].h == 0u && !eu[1].m[0] && !eu[1].m[1] && !eu[1].m[2] && !eu[1].m[3] && !eu[1].own;
+    ok &= eu_of(0)->a.h == 0u && !eu[0].m[0] && !eu[0].m[3] && !eu[0].l[DV_KICK].h;
+    bad += check("V10.28 EUCLID at 0 by default (no HITS, no DENSITY, MODES and VARY 0)", ok);
+    m->p[P_SCALE] = 2; m->p[P_ROOT] = 0;
+    eu_put(EK_HITS, 6); frame();
+    ok = m->p[P_SLEN] == 16;
+    for (v = 0; v <= 50u; v++) {
+        eu_put(EK_K4, (int32_t)v); frame();
+        ok &= m->p[P_SLEN] == 16;
+        for (i = n = 0; i < 16u; i++) n += m->step[i].time == ST_NOTE && m->step[i].n;
+        ok &= n == 6u;
+        sg[v] = eu_cyc_sig(m, 0, 16, NLANE);
+        if (v) same += sg[v] == sg[v - 1u];
+    }
+    ok &= same <= 3u && sg[50] != sg[0];
+    eu_put(EK_K4, 51); frame();
+    ok &= m->p[P_SLEN] == 64;
+    bad += check("V10.28 VARY up to 50: one cycle (16 steps, the HITS exact), a new one at nearly each value; above 50 the four turns", ok);
+    /* a recorded melody: C Eb G Bb at 0 4 8 12, the G held two steps */
+    for (i = 0; i < NSTEP; i++) step_clear(&m->step[i]);
+    for (i = 0; i < 4u; i++) { step_t *s = &m->step[i * 4u]; s->time = ST_NOTE; s->n = 1; s->vel = 100; s->note[0] = NT[i]; }
+    m->step[9].time = ST_TIE;
+    m->p[P_SLEN] = 16;
+    eu_put(EK_K4, 0); frame();
+    ok = eu[1].own && eu[1].rl == 16u && eu[1].l[0].h == 4u && m->p[P_SLEN] == 16;
+    for (i = 0; i < 4u; i++) ok &= m->step[i * 4u].time == ST_NOTE && m->step[i * 4u].note[0] == NT[i];
+    ok &= m->step[9].time == ST_TIE;
+    bad += check("V10.28 a recorded melody: EUCLID takes it (VARY 0 gives it back as it was, its hold too)", ok);
+    eu_put(EK_K4, 40); frame();
+    for (i = n = c = 0; i < 16u; i++)
+        if (m->step[i].time == ST_NOTE && m->step[i].n) { n++; c += memchr(NT, m->step[i].note[0], 4) != 0; }
+    ok = n == 4u && c == 4u && m->p[P_SLEN] == 16;
+    eu_put(EK_HITS, 7); frame();
+    for (i = n = c = 0; i < 16u; i++)
+        if (m->step[i].time == ST_NOTE && m->step[i].n) { n++; c += memchr(NT, m->step[i].note[0], 4) != 0; }
+    ok &= n == 7u && c == 7u && !(eu[1].rs & 1u) && eu[1].own;
+    eu_put(EK_K4, 80); frame();
+    for (i = n = c = 0; i < 64u; i++)
+        if (m->step[i].time == ST_NOTE && m->step[i].n) { n++; c += memchr(NT, m->step[i].note[0], 4) != 0; }
+    ok &= m->p[P_SLEN] == 64 && n == 28u && c == n;
+    bad += check("V10.28 VARY moves the recorded notes (the same ones); HITS the euclid's rhythm, still its notes; above 50 the turns", ok);
+    /* a recorded kit: BD on 0 8, SD on 4 12 */
+    song.sel = 0; frame();
+    go_title("EUCLID"); frame();
+    for (i = 0; i < 16u; i += 4u) grid_hit(d, i, (i % 8u) ? DV_SNARE : DV_KICK, 1);
+    eu_put(EK_M0 + 3u, 0); frame();
+    ok = eu[0].own && eu[0].l[DV_KICK].h == 2u && eu[0].l[DV_SNARE].h == 2u && !eu[0].l[DV_HATC].h;
+    for (i = n = 0; i < 16u; i++) n += step_lanes(&d->step[i]) != ((i % 4u) ? 0u : 1u << ((i % 8u) ? DV_SNARE : DV_KICK));
+    ok &= n == 0u;
+    eu_put(EK_M0 + 3u, 45); frame();
+    for (i = n = c = 0; i < 16u; i++) { n += (step_lanes(&d->step[i]) & ~((1u << DV_KICK) | (1u << DV_SNARE))) != 0u; c += (step_lanes(&d->step[i]) >> DV_SNARE) & 1u; }
+    ok &= n == 0u && c == 2u && d->p[P_SLEN] == 16;
+    bad += check("V10.28 a recorded kit: its lanes only, VARY moves its hits (as many)", ok);
+    memset(eu, 0, sizeof eu);
+    return bad;
+}
 static int test_eumutate(void)
 {
     int bad = 0, ok;
@@ -724,9 +805,10 @@ static int test_eumutate(void)
     ui_power_on();
     set_engine_of(d, ENGI_DRUM); set_engine_of(m, ENGI_ANALOG);
     memset(eu, 0, sizeof eu);
+    eu_old(0, 65); eu_old(1, 40);
     song.sel = 0; frame();
     go_title("EUCLID"); frame();
-    eu_put(EK_HITS, 6); frame();                         /* a kit, VARY 30 (its default) */
+    eu_put(EK_HITS, 6); frame();                         /* a kit, VARY 65 (V10.28: above 50, the turns) */
     ok = d->p[P_SLEN] == 64;
     for (c = diff = 0; c < 4u; c++) {
         for (i = n = 0; i < 16u; i++) n += (step_lanes(&d->step[c * 16u + i]) >> DV_KICK) & 1u;
@@ -811,7 +893,7 @@ static int test_mutate(void)
     d = &trk[0]; m = &trk[1];
     set_engine_of(d, ENGI_DRUM); set_engine_of(m, ENGI_ANALOG);
     memset(eu, 0, sizeof eu);
-    eu_of(0)->m[3] = 0; eu_of(1)->vary = 0;              /* (V10.16: VARY off, one turn: the tests below as they were) */
+    eu_old(0, 0); eu_old(1, 0);                          /* (V10.16: VARY off, one turn: the tests below as they were) */
     song.sel = 0; frame();
     go_title("EUCLID"); frame();
     ok = cur_page()->graph == GR_EUCLID && str_eq(PAGES[ui.page].title, "EUCLID");
@@ -13223,6 +13305,7 @@ int main(void)
     bad += test_transitions();
     bad += test_mutate();
     bad += test_eumutate();
+    bad += test_euclid_src();
     bad += test_morph();
     bad += test_morph_click();
     bad += test_lfo_sync();

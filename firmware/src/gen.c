@@ -2411,7 +2411,7 @@ static void gen_make(void)
         for (j = 0; j < n; j++)
             motion_set_event(t, j * len / n, P_E0, (int16_t)clamp(base + (j == 0u ? 0 : j == n / 2u ? sw : sw / 2), 0, 127));
     }
-    for (k = 0; k < NTRK; k++) pat_sig[k] = steps_sig(&trk[k]);
+    for (k = 0; k < NTRK; k++) { pat_sig[k] = steps_sig(&trk[k]); pat_last[k] = 0; }   /* (V10.28: a song's, not a pattern's) */
     /* the tempo (the genre's range, the energy in it; always moved), the swing, the space, the master */
     if (!(ui_prefs & PREF_BPM_LOCK)) {                  /* the genre's range, the energy's place in it (from the seed:
                                                          * the same piece, the same tempo) */
