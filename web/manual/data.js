@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.22", items: [
+    ["ENV 2 (ENV › después de ENV DEST): una segunda envolvente por voz, ATK DEC SUS REL, que se rutea como el LFO: SRC ENV2 en un slot de MOD, a cualquier DEST. Filtro LP24 (24 dB/oct) en todos los motores. ANALOG WAVE PLS3: tres pulsos, MORPH el ancho.", "ENV 2 (ENV › after ENV DEST): a second envelope per voice, ATK DEC SUS REL, routed like the LFO: SRC ENV2 on a MOD slot, to any DEST. LP24 filter (24 dB/oct) on every engine. ANALOG WAVE PLS3: three pulses, MORPH the width."]]},
   {v: "V10.21", items: [
     ["SEQ › EUCLID: las filas de lanes tienen el nombre correcto (estaban corridas una) y el círculo muestra un ciclo en la vuelta que suena, con el cursor girando, también con lanes de distinto largo y las vueltas de VARY. La página PROX habla del celular.", "SEQ › EUCLID: the lane rows are named correctly (they were one off) and the ring shows one cycle at the turn playing, its playhead going round, also with lanes of different lengths and VARY's turns. The PROX page speaks of the phone."]]},
   {v: "V10.20 pública", items: [

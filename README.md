@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.20).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.22).
 
 ## Reporting a crash
 
@@ -428,6 +428,13 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.22 (beta)
+- **ENV 2** (ENV › after ENV DEST): a second envelope per voice, ATK DEC SUS REL, routed like the LFO: **SRC ENV2** on
+  a MOD slot, to any DEST.
+- **LP24** filter type: a 24 dB/oct low-pass (two poles in series, RES on the second), on every engine.
+- **ANALOG WAVE PLS3**: three pulse oscillators (2 and 3 detuned each way), MORPH sets the pulse width.
+- Tester report "STRUM drops an octave": not reproduced; a test now covers OCT −1 with STRUM, every VOICING and QUANT.
 
 ### V10.21 (beta)
 - **SEQ › EUCLID**: the lane rows at the right are named correctly (they were one off, so the lane picked looked like

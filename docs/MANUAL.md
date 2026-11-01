@@ -306,7 +306,7 @@ it was in 0.9.1, with its knobs and its picture (the ones 0.8.5's lenses drew).
 | **SEQ** | (V10.6) **STEP**: STEP — **LENGTH**: LENGTH · TRACK — **EUCLID**: EUCLID · MODES — **PLAYHEADS**: PLAYHEADS — **STRETCH**: STRETCH — **COMP**: COMP · COMP 2 — **AUTO**: AUTOMATION · AUTO LIST | 11 |
 | **FX** | **TRACK**: SENDS · DIST · AUTO PAN — **BUSES**: BUSES — **DELAY**: DLY · DLY 2 · DLY 3 — **REVERB**: REVERB · REVERB 2 — **CHORUS**: CHORUS — **SLICER**: SLICER · SL BUS · SL BUS 2 · SL PITCH — **MASTER**: MASTER — **PUNCH**: PUNCH | 16 |
 | **GLO** | **LIVE**: MANO · RIELES — **MIX**: MIXER · SENDS — **GLOBAL**: GLOBAL — **SYSTEM**: SYSTEM | 6 |
-| **ENV** | **TRACKS**: TRACKS · TRACKS DEST — **ENV**: ENV · ENV DEST — **STAGE**: STAGE | 5 |
+| **ENV** | **TRACKS**: TRACKS · TRACKS DEST — **ENV**: ENV · ENV DEST · ENV 2 — **STAGE**: STAGE | 6 |
 | **LFO** | **MOD**: MOD — **LFO**: LFO · LFO DEST — **MSEQ**: MSEQ · MSEQ 2 | 5 |
 | **SCL** | **KEY**: SCL — **CHORD**: CHORD | 2 |
 | **ARP** | **ARP**: ARP · ARP 2 | 2 |
@@ -373,6 +373,7 @@ the bars with KNOB 1 the bar and KNOB 2 LEN.
 | --- | --- | --- | --- | --- |
 | ENV | ATK | DEC | SUS | REL |
 | ENV DEST | FILTER | PITCH | SHAPE | LOOP |
+| ENV 2 (V10.22) | ATK | DEC | SUS | REL |
 | STAGE (0.8.5) | STAGE (ATK DEC SUS REL) | its value | LOOP | — |
 
 **LFO** (per track)
@@ -608,7 +609,8 @@ your user presets show under ALL and FAV. The dice (GEN) uses the types too: a b
 | **DRUM** (DRUM-X) | MORPH, TUNE, TONE, DECAY | NOISE, FM ENV, FOLD, DRIVE | MORPH, TUNE, TONE, DECAY |
 | **ANIMAL** (0.8.3) | MODE, PRESS, CHAOS, SIZE | SWEEP, RATE, GROUP, TEMP | PRESS, SWEEP, RATE, SIZE |
 
-- **ANALOG**: two oscillators. WAVE: SAW, SQR, TRI, SIN, PWM, SYNC, RING, SAW3. **INT** sets oscillator 2's interval
+- **ANALOG**: two oscillators. WAVE: SAW, SQR, TRI, SIN, PWM, SYNC, RING, SAW3, **PLS3** (V10.22: three pulses, oscillator 3 detuned the other way;
+  MORPH sets the pulse width). **INT** sets oscillator 2's interval
   (±24 semitones). Its filter is per voice.
 - **FM6**: a six-operator FM engine (Dexed's msfa), 32 algorithms drawn on screen, four voices per track. The EDIT 1/2
   knobs are macros over the patch. **SLOT**: the factory patches F1–F8, OWN (an edited or imported patch) and B1–B32
@@ -873,7 +875,7 @@ in the sound.
 
 ### FILTER (every engine)
 
-EDIT > **FILTER**: **TYPE** LP, HP, BP or **COMB** (a comb tuned to the note you play; CUT moves it, RES is how much
+EDIT > **FILTER**: **TYPE** LP, HP, BP, **LP24** (V10.22: a 24 dB/oct low-pass, two poles in series, RES on the second) or **COMB** (a comb tuned to the note you play; CUT moves it, RES is how much
 it rings), **CUT**, **RES**, and KNOB 4: on ANALOG its own DRIVE, on every other engine the track's DIST. On ANALOG
 the filter is per voice; on LOFI the filter page drives its per-voice filter; on the others it is a filter on the
 track that follows LFO DEST / ENV DEST FILTER.
@@ -1904,6 +1906,8 @@ curve where the bar would be.
 
 - **ENV DEST**: the envelope to FILTER, PITCH, SHAPE; **LOOP ON**: with the note held, the envelope goes back to the
   attack when it reaches sustain (an ADSR-shaped LFO).
+- **ENV 2** (V10.22, after ENV DEST): a second ADSR per voice that goes nowhere by itself: pick **SRC ENV2** on a MOD
+  slot and send it to any DEST, like the LFO.
 - **LFO**: RATE, WAVE (SIN, TRI, SAW, SQR, S&H), MODE, FADE; **LFO 2**: PHASE. **LFO DEST**: PITCH, FILTER, SHAPE, AMP.
   - **RATE** is free in Hz; turn it left past the slowest and it goes **in time** with the tempo (4BAR, 2BAR, 1BAR, 1/2,
     1/4, 1/8D, 1/4T, 1/8, 1/8T, 1/16, 1/16T, 1/32), locked to the bar while the transport plays (in TRIG, PHASE is its

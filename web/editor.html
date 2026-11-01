@@ -1561,7 +1561,7 @@ function makeMockDevice(opt = {}) {
   const NONOFF = ["OFF", "ON"], NDIV = ["1/4", "1/8", "1/16", "1/32", "8T", "16T", "1/2", "1/1", "2BAR", "4BAR"], NGO = ["--", "GO"], NDASH = ["--"];
   const D = (label, fmt, min, max, def, names = null, unit = "") => ({ label, fmt, min, max, def, names, unit });
   const E = (label, names, def) => D(label, F.ENUM, 0, names.length - 1, def, names);
-  const MSRC = ["OFF", "LFO", "ENV", "VEL", "KEY", "RAND", "MODW", "AT", "EXPR", "M1", "M2", "M3", "M4", "STEP", "NOISE"];
+  const MSRC = ["OFF", "LFO", "ENV", "VEL", "KEY", "RAND", "MODW", "AT", "EXPR", "M1", "M2", "M3", "M4", "STEP", "NOISE", "PROX", "ENV2"];   /* (V10.14 PROX, V10.22 ENV2) */
   const MDST = ["OFF", "PITCH", "CUT", "SHP", "AMP", "PAN", "DIST", "CHO", "DLY", "REV", "RATE", "VIB", "E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "CLIP", "PNCH", "D.TIM", "D.FB", "D.TON", "D.MIX", "R.SIZ", "R.DMP", "C.RAT", "C.DEP"];
   const TP = [
     D("LEVEL", F.DB, 0, 127, 104),
@@ -1612,7 +1612,7 @@ function makeMockDevice(opt = {}) {
   const P = (name, e, env = [10, 70, 90, 60], mono = 0, pat = 0, xp = 0) => ({ name, e, env, mono, pat, xp });   /* xp (0.8.5):
      VOICE's LANG | LYRIC << 2 */
   const ENG = [
-    { name: "ANALOG", titles: ["OSC", "FLT"], edit: [E("WAVE", ["SAW", "SQR", "TRI", "SIN", "PWM", "SYNC", "RING", "SAW3"], 0), D("DETUNE", F.INT, 0, 127, 10, null, "ct"), D("MIX", F.PCT, 0, 127, 64),
+    { name: "ANALOG", titles: ["OSC", "FLT"], edit: [E("WAVE", ["SAW", "SQR", "TRI", "SIN", "PWM", "SYNC", "RING", "SAW3", "PLS3"], 0), D("DETUNE", F.INT, 0, 127, 10, null, "ct"), D("MIX", F.PCT, 0, 127, 64),
         D("NOISE", F.PCT, 0, 127, 0), D("CUT", F.CUTOFF, 0, 127, 90), D("RES", F.PCT, 0, 127, 30), D("DRIVE", F.PCT, 0, 127, 0), D("INT", F.SEMI, -24, 24, 0)],   /* (JIANT 0.4: INT, osc 2's interval, was KTR) */
       presets: [P("SAW LEAD", [0, 12, 64, 0, 90, 30, 10, 12], [4, 70, 100, 50], 1, 4), P("SOFT PAD", [0, 20, 64, 4, 60, 10, 0, 0], [80, 90, 110, 95], 0, 5),
         P("SQR BASS", [1, 0, 0, 0, 50, 70, 40, 0], [0, 60, 40, 30], 1, 2), P("PWM STR", [4, 8, 40, 0, 75, 20, 0, 0], [60, 80, 110, 85], 0, 5),
@@ -1782,7 +1782,7 @@ function makeMockDevice(opt = {}) {
   TP.push(E("TYPE", ["SOFT", "HARD", "FOLD", "CRUSH", "RECT", "AMP"], 0), D("TONE", F.BIPCT, -64, 63, 0),   /* 91, 92: DIST (JIANT, FUNB) */
     D("LEN", F.STEPS, 1, 16, 16), E("DIV", NDIV, 2), D("SLEW", F.PCT, 0, 127, 0));   /* 93..95: the modulation sequence */
   for (let k = 0; k < 16; k++) TP.push(D("LEVEL", F.PCT, 0, 127, 0));                     /* 96..111: its levels */
-  TP.push(E("TYPE", ["LP", "HP", "BP", "COMB", "COMB-", "MS20"], 0),                                   /* 112: the FILTER's type (JIANT 0.5) */
+  TP.push(E("TYPE", ["LP", "HP", "BP", "COMB", "COMB-", "MS20", "LP24"], 0),                                   /* 112: the FILTER's type (JIANT 0.5) */
     D("CUT", F.CUTOFF, 0, 127, 127), D("RES", F.PCT, 0, 127, 0));                       /* 113, 114: the other engines' */
   const P_COUNT = 123, G_COUNT = 72, NSTEP = 64, P_E0 = 115, G_ENGSEL = 20, P_SLCR = 45;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));

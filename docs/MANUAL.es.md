@@ -316,7 +316,7 @@ la misma de la 0.9.1, con sus perillas y su dibujo (los que dibujaban las lentes
 | **SEQ** | (V10.6) **STEP**: STEP — **LENGTH**: LENGTH · TRACK — **EUCLID**: EUCLID · MODES — **PLAYHEADS**: PLAYHEADS — **STRETCH**: STRETCH — **COMP**: COMP · COMP 2 — **AUTO**: AUTOMATION · AUTO LIST | 11 |
 | **FX** | **TRACK**: SENDS · DIST · AUTO PAN — **BUSES**: BUSES — **DELAY**: DLY · DLY 2 · DLY 3 — **REVERB**: REVERB · REVERB 2 — **CHORUS**: CHORUS — **SLICER**: SLICER · SL BUS · SL BUS 2 · SL PITCH — **MASTER**: MASTER — **PUNCH**: PUNCH | 16 |
 | **GLO** | **LIVE**: MANO · RIELES — **MIX**: MIXER · SENDS — **GLOBAL**: GLOBAL — **SYSTEM**: SYSTEM | 6 |
-| **ENV** | **TRACKS**: TRACKS · TRACKS DEST — **ENV**: ENV · ENV DEST — **STAGE**: STAGE | 5 |
+| **ENV** | **TRACKS**: TRACKS · TRACKS DEST — **ENV**: ENV · ENV DEST · ENV 2 — **STAGE**: STAGE | 6 |
 | **LFO** | **MOD**: MOD — **LFO**: LFO · LFO DEST — **MSEQ**: MSEQ · MSEQ 2 | 5 |
 | **SCL** | **KEY**: SCL — **CHORD**: CHORD | 2 |
 | **ARP** | **ARP**: ARP · ARP 2 | 2 |
@@ -386,6 +386,7 @@ violeta, con el nombre violeta, y dice **OCT+**; apretá OCT+ para ejecutarla.
 | --- | --- | --- | --- | --- |
 | ENV | ATK | DEC | SUS | REL |
 | ENV DEST | FILTER | PITCH | SHAPE | LOOP |
+| ENV 2 (V10.22) | ATK | DEC | SUS | REL |
 | STAGE (0.8.5) | STAGE (ATK DEC SUS REL) | su valor | LOOP | — |
 
 **LFO** (por pista)
@@ -629,7 +630,8 @@ click; las notas siguen.
 | **DRUM** (DRUM-X) | MORPH, TUNE, TONE, DECAY | NOISE, FM ENV, FOLD, DRIVE | MORPH, TUNE, TONE, DECAY |
 | **ANIMAL** (0.8.3) | MODE, PRESS, CHAOS, SIZE | SWEEP, RATE, GROUP, TEMP | PRESS, SWEEP, RATE, SIZE |
 
-- **ANALOG**: dos osciladores. WAVE: SAW, SQR, TRI, SIN, PWM, SYNC, RING, SAW3. **INT** fija el intervalo del
+- **ANALOG**: dos osciladores. WAVE: SAW, SQR, TRI, SIN, PWM, SYNC, RING, SAW3, **PLS3** (V10.22: tres pulsos, el oscilador 3 desafinado al revés;
+  MORPH fija el ancho de pulso). **INT** fija el intervalo del
   oscilador 2 (±24 semitonos). Su filtro es por voz.
 - **FM6**: un motor FM de seis operadores (msfa, de Dexed), 32 algoritmos dibujados en pantalla, cuatro voces por
   pista. Las perillas de EDIT 1/2 son macros sobre el patch. **SLOT**: los patches de fábrica F1–F8, OWN (un patch
@@ -913,7 +915,7 @@ su ser; nada en el sonido.
 
 ### FILTER (todos los motores)
 
-EDIT > **FILTER**: **TYPE** LP, HP, BP o **COMB** (un filtro peine afinado a la nota que tocás; CUT lo mueve, RES es
+EDIT > **FILTER**: **TYPE** LP, HP, BP, **LP24** (V10.22: un pasabajos de 24 dB/oct, dos etapas en serie, RES en la segunda) o **COMB** (un filtro peine afinado a la nota que tocás; CUT lo mueve, RES es
 cuánto resuena), **CUT**, **RES**, y KNOB 4: en ANALOG su propio DRIVE, en todos los demás motores el DIST de la
 pista. En ANALOG el filtro es por voz; en LOFI la página de filtro maneja su filtro por voz; en los demás es un filtro
 sobre la pista que sigue a LFO DEST / ENV DEST FILTER.
@@ -2011,6 +2013,8 @@ pequeña curva de respuesta donde iría la barra.
 
 - **ENV DEST**: la envolvente hacia FILTER, PITCH, SHAPE; **LOOP ON**: con la nota mantenida, la envolvente vuelve al
   ataque cuando llega al sustain (un LFO con forma de ADSR).
+- **ENV 2** (V10.22, después de ENV DEST): un segundo ADSR por voz que no va a ningún lado solo: elegí **SRC ENV2** en
+  un slot de MOD y mandalo a cualquier DEST, como el LFO.
 - **LFO**: RATE, WAVE (SIN, TRI, SAW, SQR, S&H), MODE, FADE; **LFO 2**: PHASE. **LFO DEST**: PITCH, FILTER, SHAPE, AMP.
   - **RATE** es libre en Hz; girándolo a la izquierda pasado el más lento queda **a tempo** (4BAR, 2BAR, 1BAR, 1/2,
     1/4, 1/8D, 1/4T, 1/8, 1/8T, 1/16, 1/16T, 1/32), enganchado al compás mientras el transporte toca (en TRIG, PHASE es
