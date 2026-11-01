@@ -64,7 +64,9 @@ BTAPP_FN void bt_midi_rx(uint32_t pkt)
         fm1_irq_on();
 }
 #endif
-static uint32_t bt_get(void) { return BT_ROW[0] == BT_MARK && (BT_ROW[1] & 1u); }
+/* 0 OFF, 1 ON, (V10.35) 2 AIR: [25] bit 0 the radio on, bit 1 AIR (the scanner: no MIDI, every advertisement heard
+ * around feeds PROX) */
+static uint32_t bt_get(void) { return BT_ROW[0] == BT_MARK && (BT_ROW[1] & 1u) ? 1u + (BT_ROW[1] >> 1 & 1u) : 0u; }
 static void bt_set(uint32_t on)
 {
     uint8_t *r = BT_ROW;
@@ -72,13 +74,13 @@ static void bt_set(uint32_t on)
         memset(r, 0, 8);
         r[0] = BT_MARK;
     }
-    r[1] = (uint8_t)((r[1] & ~1u) | (on & 1u));
+    r[1] = (uint8_t)((r[1] & ~3u) | (on ? 1u | (on == 2u) << 1 : 0u));
 }
 static void bt_start(void)
 {
     int rc;
     if (bt_up == BT_RUN) {
-        bt_hw_enable(1);
+        bt_hw_enable((int)bt_get());
         bt_crumb = BT_CR_RUN;
         return;
     }
@@ -87,6 +89,8 @@ static void bt_start(void)
     bt_crumb = BT_CR_START;
     rc = bt_hw_start(BT_ROW + 2);
     bt_crumb = rc ? 0u : BT_CR_RUN;
+    if (!rc && bt_get() == 2u)
+        bt_hw_enable(2);                                /* (V10.35) AIR: the scanner instead of the advertising */
     bt_up = (uint8_t)(rc == 2 ? BT_NOSEG : rc ? BT_FAIL : BT_RUN);
     if (rc == 1) {                                      /* (the start-up returned unfinished: OFF, not again at power-on) */
         bt_set(0);
@@ -116,7 +120,9 @@ static const char *bt_vname(uint32_t v)
         return "OFF";
     if (bt_up != BT_RUN)
         return bt_up == BT_NOSEG ? "NO SEG" : bt_up == BT_FAIL ? "FAILED" : "ON";
-    str_cpy(bt_val, st & 1u ? "CONN" : "ADV", sizeof bt_val);
+    str_cpy(bt_val, v == 2u ? "AIR" : st & 1u ? "CONN" : "ADV", sizeof bt_val);
+    if (v == 2u)
+        return bt_val;
     if (n) {
         str_cpy(bt_val + str_len(bt_val), " ", 2);
         fmt_int(bt_val + str_len(bt_val), (int32_t)n);
@@ -229,7 +235,7 @@ BTAPP_FN static void bt_prox_tick(void)
 {
     uint16_t w[64];
     uint32_t n = bt_hw_rssi(w, &bp.rd);
-    bt_prox_feed(w, n, bt_get() && (bt_hw_status() & 1u), fm1_ms);
+    bt_prox_feed(w, n, bt_get() && (bt_hw_status() & 5u), fm1_ms);   /* (a central's link, or AIR's scan) */
 }
 static uint32_t bt_prox_ok(void) { return bt_up == BT_RUN && bt_get(); }   /* (the PROX page opens: ui_menu.c) */
 static void bt_tick(void)                               /* main loop: the saved ON, once the music is stopped */

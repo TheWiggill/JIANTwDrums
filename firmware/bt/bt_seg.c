@@ -18,8 +18,8 @@
  *   bt_seg_start(addr)   the first ON: the vectors (IRQ 45 / 29 at priority 2, below the audio and TIMER5), the radio's
  *                        start-up and calibration, the stack, advertising. The caller has the interrupts off, the
  *                        audio buffer silent, the second core parked
- *   bt_seg_enable(on)    advertising on again / off (and any link closed); the radio stays set up until power-off
- *   bt_seg_status()      bit 0 a central connected, bit 1 its MIDI notifications on, [15:8] connections since start
+ *   bt_seg_enable(on)    advertising on again / off (and any link closed); (V10.35) 2: AIR, scanning only; the radio stays set up until power-off
+ *   bt_seg_status()      bit 0 a central connected, bit 1 its MIDI notifications on, (V10.35) bit 2 AIR scanning, [15:8] connections since start
  *   bt_seg_rssi(w, rd)   (V10.14) the RSSI words of the good packets received since the last call (PROX)
  * (V10.13) MIDI both ways (bt_midi.h): what a central writes, decoded by the stack (ble_midi.c), goes into the app's MIDI
  * input ring as USB's does (bt_midi_accept, then the app's bt_midi_rx: src/bt.c); MIDI OUT's copy (the app's bt_oq, filled
@@ -39,6 +39,10 @@
 #define BLE_DIAG 0                             /* (no counters, no console: as Melodee) */
 #define FELUCCA_BLE_BOND 1                     /* (V10.32) Just Works pairing with bonding, LL encryption: a central that asks
                                                 * to pair (Windows, some Macs and Androids) pairs, no PIN */
+#define FELUCCA_BLE_CENTRAL 3                  /* (V10.35) AIR: the scanner alone (no connecting out): every advertisement's
+                                                * RSSI to PROX (bs_rssi), nothing listed */
+#define BLE_SCAN_RING 1u                       /* (the list unused: AIR reads bs_rssi) */
+#define BLE_SCAN_ACTIVE 0                      /* (listens only: nothing sent) */
 #define BLE_LTK_DERIVE 1                       /* .. the bond's key made again from EDIV / Rand (ble_smp.c ble_smp_ltk_of):
                                                 * nothing kept, every bonded central back after a power-off */
 #include "fm1_cc.h"
@@ -47,13 +51,13 @@
 #include "fm1_guard.h"
 /* (V10.14) PROX: the RSSI word of every good packet on the link (ble_hw_wl82.c hw_rx_service, the RX interrupt: one a
  * connection event, 89..133 a second), kept in a ring the app reads (bt_seg_rssi; src/bt.c filters it) */
-static volatile uint16_t bs_rq[16][4];
+static volatile uint16_t bs_rq[8][4];        /* (V10.35: 8, was 16: the pool for AIR's scanner) */
 static volatile uint32_t bs_rw;
 /* (V10.18) all four RSSI words of the packet (RSSI2 / RSSI3 by the buffer first, as V10.14 read it, then the other, then
  * RSSI0, RSSI1): which one follows the distance is found by the app (src/bt.c bt_prox_tick) */
 static void bs_rssi(const volatile uint16_t *r, uint32_t b)
 {
-    volatile uint16_t *q = bs_rq[bs_rw & 15u];
+    volatile uint16_t *q = bs_rq[bs_rw & 7u];
     q[0] = r[2u + (b & 1u)];
     q[1] = r[3u - (b & 1u)];
     q[2] = r[0];
@@ -150,15 +154,19 @@ void bt_seg_enable(int on)
 {
     fm1_ble_irqs_hold(1);
     fm1_ble_step(on ? FM1_BLE_STEP_ENABLE : FM1_BLE_STEP_SET_OFF);
-    ble_enable(on);
-    if (!on)
+    if (on != 1)
+        ble_enable(0);                         /* (V10.35) off, or AIR: the advertising / the scan stops first */
+    ble_ll_scan(on == 2);                      /* AIR (2): the scanner, nothing advertised */
+    ble_enable(on != 0);
+    if (on != 1)
         bs_linked = bt_oq.on = 0;
     fm1_ble_irqs_hold(0);
 }
 
 uint32_t bt_seg_status(void)
 {
-    return (uint32_t)ble_connected() | (uint32_t)ble_midi_ready() << 1 | (uint32_t)bs_conns << 8;
+    return (uint32_t)ble_connected() | (uint32_t)ble_midi_ready() << 1 | (uint32_t)ble_ll_scanning() << 2 |
+           (uint32_t)bs_conns << 8;
 }
 
 /* (V10.19) PROX's diagnostics: [15:0] the packets the RSSI hook saw, [31:16] the good packets the link received */
@@ -169,11 +177,11 @@ uint32_t bt_seg_rssi(uint16_t *w, uint32_t *rd)
 {
     uint32_t e = bs_rw, n = e - *rd, i, j;
     RING_PUBLISH();
-    if (n > 16u)
-        n = 16u;
+    if (n > 8u)
+        n = 8u;
     for (i = 0; i < n; i++)
         for (j = 0; j < 4u; j++)
-            w[4u * i + j] = bs_rq[(e - n + i) & 15u][j];
+            w[4u * i + j] = bs_rq[(e - n + i) & 7u][j];
     *rd = e;
     return n;
 }
