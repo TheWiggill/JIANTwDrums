@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.25", items: [
+    ["SEQ › STRETCH › NUDGE en dos modos: OCT− (azul) mueve toda la secuencia de a pasos; OCT+ (rojo) mueve el paso del cursor en microtiming, 1/64 de paso por detent. PRESETS elige el paso.", "SEQ › STRETCH › NUDGE in two modes: OCT− (blue) moves the whole sequence by steps; OCT+ (red) moves the cursor step in micro timing, 1/64 of a step a detent. PRESETS picks the step."]]},
   {v: "V10.24", items: [
     ["SCL › SCENE, el modo multitímbrico: cada pista con un rol (KEEP, CHORD, ARP, BASS, LEAD); con SCENE ON una tecla las toca todas desde esa nota y la tonalidad (el kit sigue con su secuencia). REC graba cada pista con rol en sus pasos.", "SCL › SCENE, the multitimbral mode: each track a role (KEEP, CHORD, ARP, BASS, LEAD); with SCENE ON one key plays them all from that note and the key (the kit keeps its sequence). REC records every role's track into its steps."],
     ["Rediseño: EUCLID con anillos por carril en colores de calor y las vueltas de VARY; MUTATE muestra el ancla y lo que suena, con un arco hasta la próxima mutación; PRESETS en dos columnas (OCT+ se queda con el sonido, OCT− vuelve al anterior); TOOLS por alcance, se ejecuta manteniendo OCT+ un segundo.", "Redesign: EUCLID as rings per lane in heat colours with VARY's turns; MUTATE shows the anchor and what plays, an arc to the next mutation; PRESETS in two columns (OCT+ keeps the sound, OCT− goes back); TOOLS by scope, done by holding OCT+ a second."]]},
