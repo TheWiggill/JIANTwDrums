@@ -470,6 +470,23 @@ static void knob_cap(track_t *t, uint32_t id)
     motion_capture(t, id, t->p[id]);
     ml_knob(t, id);
 }
+/* (V10.23, a tester: "the STRING modes don't take until a knob goes up") STRING's EXCITE into or out of FDBK: EDIT 2's
+ * four knobs change meaning (STRETCH BODY SIZE BOW / GAIN DIST SPEAKR BLOOM), so each side keeps its own four: the
+ * other side's come back as they were left (the first time, their defaults: FDBK's GAIN no longer starts at STRETCH's 0) */
+static void excite_turn(track_t *t, const int16_t *vp, int32_t old)
+{
+    static int16_t side[NTRK][2][4];
+    static uint8_t had[NTRK];
+    uint32_t k = (uint32_t)(t - trk) % NTRK, i, was = old == 5, now = t->p[P_E0] == 5;   /* (eng_string.c SX_FDBK) */
+    if (vp != &t->p[P_E0] || t->eng_req % NENGINES != ENGI_STRING || was == now)
+        return;
+    for (i = 0; i < 4u; i++) {
+        side[k][was][i] = t->p[P_E4 + i];
+        t->p[P_E4 + i] = (had[k] >> now) & 1u ? side[k][now][i] : track_desc(t, P_E4 + i)->def;
+        knob_cap(t, P_E4 + i);
+    }
+    had[k] |= (uint8_t)(1u << was);
+}
 static void tracks_edit(uint32_t slot, int32_t steps)
 {
     track_t *t = TSEL;
@@ -1144,9 +1161,11 @@ static void focus_knob(uint32_t slot, int32_t steps)
         return;
     }
     if (slot == 1u) {
+        int32_t was = TSEL->p[P_E0 + k];
         d = track_desc(TSEL, P_E0 + k);
-        TSEL->p[P_E0 + k] = (int16_t)param_turn(d, TSEL->p[P_E0 + k], accel(EN_K1 + 1u, steps, d->fmt == F_ENUM ? 0 : d->max - d->min));
+        TSEL->p[P_E0 + k] = (int16_t)param_turn(d, was, accel(EN_K1 + 1u, steps, d->fmt == F_ENUM ? 0 : d->max - d->min));
         knob_cap(TSEL, P_E0 + k);
+        excite_turn(TSEL, &TSEL->p[P_E0 + k], was);
         return;
     }
     if (slot == 2u && j < 0) {                          /* (no slot aims at it: a free one, turned up) */
@@ -1406,7 +1425,11 @@ sect:
     if (!d || !vp || d->max == d->min)
         return;
     v = param_turn(d, *vp, accel(EN_K1 + slot, steps, d->fmt == F_ENUM ? 0 : d->max - d->min));
-    *vp = (int16_t)v;
+    {
+        int32_t was = *vp;
+        *vp = (int16_t)v;
+        excite_turn(TSEL, vp, was);
+    }
     if (vp >= eu_v && vp < eu_v + EK_N) {               /* (V10.6) EUCLID / MODES: the setting, the pattern again */
         eu_put((uint32_t)(vp - eu_v), v);
         return;
@@ -2735,8 +2758,10 @@ static void ui_input_frame(void)
         } else if (ui.home) {
             int16_t *vp;
             const param_desc_t *d = home_param(k, &vp);
+            int32_t was = *vp;
             *vp = (int16_t)param_turn(d, *vp, accel(EN_K1 + k, s, d->fmt == F_ENUM ? 0 : d->max - d->min));
             knob_cap(TSEL, (uint32_t)(vp - TSEL->p));
+            excite_turn(TSEL, vp, was);
         } else {
             edit_param(k, s);
         }

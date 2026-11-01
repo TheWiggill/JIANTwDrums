@@ -13019,11 +13019,31 @@ static int test_comp_cards(void)
     return check("COMP / COMP 2 / COMPS: every value of the four cards whole, in the four skins and LARGE", bad == 0 && n > 1000u);
 }
 
+/* (V10.23) STRING's EXCITE into FDBK: EDIT 2's four knobs become the amp's with values heard at once (GAIN was STRETCH's 0:
+ * "the modes don't take until a knob goes up"), and back out STRETCH BODY SIZE BOW as they were left */
+static int test_string_excite(void)
+{
+    int ok;
+    ui_power_on();
+    song.sel = 0;
+    set_engine_of(TSEL, ENGI_STRING);
+    TSEL->p[P_E0] = 4; TSEL->p[P_E4] = 0; TSEL->p[P_E5] = 33; TSEL->p[P_E6] = 44; TSEL->p[P_E7] = 0;
+    go_title("EDIT 1"); frame();
+    turn(EN_K1, 1);
+    ok = TSEL->p[P_E0] == 5 && TSEL->p[P_E4] > 30 && TSEL->p[P_E7] > 0;
+    TSEL->p[P_E4] = 99;
+    turn(EN_K1, -1);
+    ok &= TSEL->p[P_E0] == 4 && TSEL->p[P_E4] == 0 && TSEL->p[P_E5] == 33 && TSEL->p[P_E6] == 44 && TSEL->p[P_E7] == 0;
+    turn(EN_K1, 1);
+    ok &= TSEL->p[P_E4] == 99;
+    return check("STRING EXCITE FDBK: GAIN heard at once, each side's EDIT 2 kept (V10.23)", ok);
+}
 int main(void)
 {
     setvbuf(stdout, NULL, _IONBF, 0);
     int bad = 0;
     bad += test_comp_cards();
+    bad += test_string_excite();
     bad += test_large_face();
     bad += test_lz_home();
     bad += test_lz_edit();

@@ -28,8 +28,8 @@ enum { SX_NOISE, SX_PLUCK, SX_PICK, SX_HAMMER, SX_MALLET, SX_FDBK, SX_N };
  * the feedback grows while the key is held. BRIGHT stays the tone. No memory more: the speaker's tap is the line. */
 static const param_desc_t STR_AMP[5] = {
     {"MOVE", F_PCT, 0, 127, 28, 0, 0},                /* (par12) POS: the guitar swayed before the amp */
-    {"GAIN", F_PCT, 0, 127, 0, 0, 0}, {"DIST", F_PCT, 0, 127, 40, 0, 0},
-    {"SPEAKR", F_PCT, 0, 127, 40, 0, 0}, {"BLOOM", F_PCT, 0, 127, 0, 0, 0}};
+    {"GAIN", F_PCT, 0, 127, 64, 0, 0}, {"DIST", F_PCT, 0, 127, 50, 0, 0},   /* (V10.23: heard at once, as FEEDBACK) */
+    {"SPEAKR", F_PCT, 0, 127, 40, 0, 0}, {"BLOOM", F_PCT, 0, 127, 40, 0, 0}};
 static const param_desc_t *string_desc(const track_t *t, uint32_t k)
 {
     return k >= 3u && t->p[P_E0] == SX_FDBK ? &STR_AMP[k - 3u] : 0;
@@ -227,7 +227,8 @@ static void string_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, cons
                                                          * rides at the clip: -15 dB once bloomed, beside a pluck */
             int32_t c = clamp(((s * fdo) >> 8) + fdo * 3, -32767, 32767);
             c = ((3 * c - ((((c * c) >> 15) * c) >> 15)) >> 1) - fz0;   /* (less the bias's own: no step at the note) */
-            s = (((c * fol) >> 15) * (32 - ((bl * 26) >> 15))) >> 5;
+            s = (c * fol) >> 15;                         /* (V10.23, a tester: "FDBK barely heard": the bloom's
+                                                         * level was taken twice, here and in fol, -15 dB more) */
         }
         dc += ((s << 12) - dc) >> 10;                    /* (the output's DC blocked: ~7 Hz; Q12, what sticks under a
                                                          * quarter of a step: rounded away) */
