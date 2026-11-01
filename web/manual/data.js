@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.23", items: [
+    ["STRING FDBK se escucha: el nivel del BLOOM se aplicaba dos veces (unos −15 dB). Al pasar EXCITE a FDBK suena enseguida: GAIN ya no hereda el 0 de STRETCH; cada modo guarda sus cuatro perillas de EDIT 2.", "STRING FDBK is heard: BLOOM's level was applied twice (about −15 dB). Turning EXCITE to FDBK sounds at once: GAIN no longer inherits STRETCH's 0; each mode keeps its own four EDIT 2 knobs."]]},
   {v: "V10.22", items: [
     ["ENV 2 (ENV › después de ENV DEST): una segunda envolvente por voz, ATK DEC SUS REL, que se rutea como el LFO: SRC ENV2 en un slot de MOD, a cualquier DEST. Filtro LP24 (24 dB/oct) en todos los motores. ANALOG WAVE PLS3: tres pulsos, MORPH el ancho.", "ENV 2 (ENV › after ENV DEST): a second envelope per voice, ATK DEC SUS REL, routed like the LFO: SRC ENV2 on a MOD slot, to any DEST. LP24 filter (24 dB/oct) on every engine. ANALOG WAVE PLS3: three pulses, MORPH the width."]]},
   {v: "V10.21", items: [

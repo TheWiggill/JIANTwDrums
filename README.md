@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.22).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.23).
 
 ## Reporting a crash
 
@@ -428,6 +428,12 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.23 (beta)
+- **STRING FDBK** is heard: the loop took BLOOM's level twice (about −15 dB); now about four times louder.
+- **EXCITE into FDBK** sounds at once: EDIT 2's knobs become GAIN DIST SPEAKR BLOOM, and GAIN used to inherit
+  STRETCH's 0 (so FDBK sounded like PLUCK until GAIN went up). Each side now keeps its own four values; FDBK starts at
+  GAIN 50 %, BLOOM 31 %.
 
 ### V10.22 (beta)
 - **ENV 2** (ENV › after ENV DEST): a second envelope per voice, ATK DEC SUS REL, routed like the LFO: **SRC ENV2** on
