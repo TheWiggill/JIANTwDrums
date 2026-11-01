@@ -249,7 +249,7 @@ def controls():
     b.append(sec('EVERY PAGE · KNOB 1 – 4'))
     fams = [
         ('ENV', HEAT[0], [('ENV', 'ATK DEC SUS REL'), ('ENV DEST', 'FILTER PITCH SHAPE LOOP'), ('STAGE', 'STAGE VALUE LOOP -')]),
-        ('LFO', HEAT[1], [('LFO', 'RATE WAVE PHASE FADE'), ('LFO DEST', 'PITCH FILTER SHAPE AMP'), ('MOD', 'SLOT SRC DEST AMT'),
+        ('LFO', HEAT[1], [('LFO', 'RATE WAVE PHASE FADE'), ('LFO DEST', 'PITCH FILTER SHAPE AMP'), ('MOD', 'SLOT SRC DEST AMT'), ('PROX (BT)', 'SRC PROX: the phone\'s distance · MENU › SYSTEM › BT, OCT+: OCT− FAR, OCT+ NEAR'),
                           ('MSEQ', 'STEP LEVEL LEN SLEW'), ('MSEQ 2', 'DIV - - -')]),
         ('FX', HEAT[5], [('FX', 'DIST CHORUS DLY REV'), ('DIST', 'DIST TYPE TONE -'), ('AUTO PAN', 'DEPTH RATE SYNC WAVE'), ('SLICER', 'MODE PAT RATE DEPTH'),
                          ('SL BUS', 'T1 T2 T3 T4'), ('SL BUS 2', 'T5 T6 FX -'), ('SL PITCH', 'STEP PITCH LEN QUANT'),
