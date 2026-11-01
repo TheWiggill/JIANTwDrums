@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.20 pública", items: [
+    ["El instalador público pasa a V10.20: MIDI por Bluetooth, PROX, VARY en vueltas, SEQ › MUTATE y ERASE de secciones. PROX sigue la distancia del celular (su señal Bluetooth), no la mano.", "The public installer moves to V10.20: Bluetooth MIDI, PROX, VARY in turns, SEQ › MUTATE and section ERASE. PROX follows the phone's distance (its Bluetooth signal), not a hand."]]},
   {v: "V10.20", items: [
     ["PROX suave: una lectura fija de la señal (ganancia y valor juntos), mediana de nueve paquetes y ~0,3 s de suavizado (V10.18 elegía un byte ruidoso: un sample and hold al azar). FAR y NEAR a menos de 4 niveles se rechazan (FAR AND NEAR TOO CLOSE).", "PROX smooth: one fixed signal reading (gain and value together), the median of nine packets and ~0.3 s of smoothing (V10.18 picked a noisy byte: a random sample and hold). FAR and NEAR under 4 levels apart are refused (FAR AND NEAR TOO CLOSE)."]]},
   {v: "V10.19", items: [

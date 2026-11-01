@@ -421,7 +421,17 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
 - In one minute: [the manual](docs/MANUAL.md#euclid-and-modes-v106) ·
   [el manual](docs/MANUAL.es.md#euclid-y-modes-v106).
 
+### Bluetooth
+
+- **MIDI by Bluetooth** (V10.13): MENU › SYSTEM › BT ON, connect from an app (**JIANT FM-1**): notes, CC, clock in;
+  MIDI OUT to the app. **PROX** (V10.14–V10.20): how close the **phone** is, as a modulation source (BT row › OCT+:
+  phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
+
 ## Changelog
+
+### V10.20 — public (2026-11-01)
+- Stable installer: everything from V10.10 to V10.20 (Bluetooth MIDI, PROX, EUCLID VARY turns, SEQ › MUTATE,
+  SAVE › SECTIONS ERASE), tested on hardware. PROX follows the **phone's** distance (its Bluetooth signal), not a hand.
 
 ### V10.20 (beta)
 - **PROX smooth**: one fixed signal reading (the radio's gain and raw value together), the median of nine packets and

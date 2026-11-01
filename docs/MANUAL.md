@@ -2409,6 +2409,20 @@ assumes the FM-1 is 1.6 times heavier than the estimate.
   name, open Audio MIDI Setup > MIDI Studio with the FM-1 unplugged, delete its old entry, and plug it in again. The
   web editor and the installer also accept a device still named "JIANT FM" or "Felucca".
 
+### Bluetooth MIDI and PROX (V10.13–V10.20)
+
+- **Connect**: MENU › SYSTEM › **BT** ON (with the music stopped the first time). The row shows **ADV** (waiting) and
+  **CONN** once an app is connected. Connect from a Bluetooth MIDI app on the phone or computer (it appears as
+  **JIANT FM-1**); keep the app in the foreground, phones cut Bluetooth for apps in the background.
+- **MIDI in**: what the app sends plays the FM-1 exactly as USB-MIDI does (notes, CC, program change, bend, clock with
+  CLK USB, MIDI LEARN and MAP). **MIDI out**: what MENU › MIDI OUT lets out (KEYS / CLOCK / ALL) goes to the app too.
+  No SysEx (the editor and updates stay on USB).
+- **PROX**: a modulation source from **how close the connected phone is** (its Bluetooth signal, filtered). It follows
+  the phone, not a hand. On the BT row (CONN) press **OCT+**: the PROX page. Phone away (a metre or so): **OCT−**
+  (FAR). Phone on the FM-1, top left: **OCT+** (NEAR). Then on a track's MOD page pick **SRC PROX** (e.g. DEST CUT).
+  It fades to 0 when the phone disconnects. The page also shows the link (L1, packets read / received) and the raw
+  signal words.
+
 ### MIDI LEARN (0.9.12)
 
 Any knob of a track's sound to any CC of your controller, on the device (from Felucca 1.5's MIDI LEARN):

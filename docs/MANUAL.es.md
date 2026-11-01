@@ -2557,6 +2557,20 @@ si nunca se midió, supone que el FM-1 es 1,6 veces más pesado que la estimaci�
   entrada vieja y volvé a enchufarlo. El editor web y el instalador aceptan también un equipo que todavía se llame
   "JIANT FM" o "Felucca".
 
+### MIDI por Bluetooth y PROX (V10.13–V10.20)
+
+- **Conectar**: MENU › SYSTEM › **BT** en ON (la primera vez, con la música parada). La fila dice **ADV** (esperando)
+  y **CONN** cuando una app se conecta. Conectate desde una app de MIDI Bluetooth del celular o la compu (aparece como
+  **JIANT FM-1**); dejá la app en primer plano, los celulares cortan el Bluetooth de las apps en segundo plano.
+- **MIDI de entrada**: lo que manda la app toca el FM-1 igual que por USB-MIDI (notas, CC, program change, bend,
+  clock con CLK USB, MIDI LEARN y MAP). **MIDI de salida**: lo que deja salir MENU › MIDI OUT (KEYS / CLOCK / ALL)
+  también va a la app. Sin SysEx (el editor y las actualizaciones siguen por USB).
+- **PROX**: una fuente de modulación según **qué tan cerca está el celular conectado** (su señal Bluetooth,
+  filtrada). Sigue al celular, no a la mano. En la fila BT (CONN) apretá **OCT+**: la página PROX. Celular lejos (a un
+  metro, más o menos): **OCT−** (FAR). Celular apoyado en el FM-1, arriba a la izquierda: **OCT+** (NEAR). Después, en
+  la página MOD de una pista, elegí **SRC PROX** (por ejemplo DEST CUT). Vuelve a 0 cuando el celular se desconecta.
+  La página también muestra la conexión (L1, paquetes leídos / recibidos) y las palabras crudas de la señal.
+
 ### MIDI LEARN (0.9.12)
 
 Cualquier perilla del sonido de una pista a cualquier CC de tu controlador, en el equipo (del MIDI LEARN de Felucca 1.5):
