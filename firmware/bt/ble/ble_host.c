@@ -312,6 +312,12 @@ BLE_API int ble_host_ltk(const uint8_t rand[8], uint16_t ediv, uint8_t ltk[16])
     if (ble_smp_stk(rand, ediv, ltk))           /* a pairing's short-term key first */
         return 1;
 #endif
+#if BLE_LTK_DERIVE
+    if (ediv || !ble_eq(rand, (const uint8_t *)"\0\0\0\0\0\0\0\0", 8)) {   /* (JIANT V10.32: a bond's key, made again) */
+        ble_smp_ltk_of(rand, ediv, ltk);
+        return 1;
+    }
+#endif
     if (!bhs_key.valid || ediv != bhs_key.ediv || !ble_eq(rand, bhs_key.rand, 8))
         return 0;
     ble_cpy(ltk, bhs_key.ltk, 16);

@@ -8,8 +8,8 @@
  * window (hal/fm1_flash.h fl_plain_window_init, set by src/bt_hw.c before the first call). docs/BLE_FEASIBILITY.md
  * route C2.
  *
- * Peripheral only: advertising as "JIANT FM-1" with the BLE-MIDI service (connectable), no scanner, no central, no
- * pairing (BLE_SMP_LEGACY 0: a Pairing Request gets Pairing Not Supported), no encryption. The radio is calibrated by
+ * Peripheral only: advertising as "JIANT FM-1" with the BLE-MIDI service (connectable), no scanner, no central; (V10.32)
+ * Just Works pairing with bonding when a central asks (FELUCCA_BLE_BOND), the link encrypted then (before: Pairing Not Supported). The radio is calibrated by
  * its own measurement at the first start (fm1_rf_cal.h: records 106 / 107 / 108 the SDK board's constants, 187
  * measured, ~160 ms), as Melodee and fm1-base do on units whose stock calibration is gone.
  *
@@ -37,6 +37,10 @@
 #define BLE_NAME_HEX 0                         /* the name as it is (no " XXXX") */
 #define BLE_LL_MAX_OCTETS 27u                  /* stock's PDU size, as Melodee (radio-tested) */
 #define BLE_DIAG 0                             /* (no counters, no console: as Melodee) */
+#define FELUCCA_BLE_BOND 1                     /* (V10.32) Just Works pairing with bonding, LL encryption: a central that asks
+                                                * to pair (Windows, some Macs and Androids) pairs, no PIN */
+#define BLE_LTK_DERIVE 1                       /* .. the bond's key made again from EDIV / Rand (ble_smp.c ble_smp_ltk_of):
+                                                * nothing kept, every bonded central back after a power-off */
 #include "fm1_cc.h"
 #include "fm1_time.h"
 #include "fm1_irq.h"
@@ -88,6 +92,10 @@ BLE_API int ble_app_midi_peek(uint32_t *pkt, uint32_t *t_ms)
     return 1;
 }
 BLE_API void ble_app_midi_pop(void) { bt_oq_pop(&bt_oq); }
+/* (V10.32) bonding: the key is made again from EDIV / Rand (BLE_LTK_DERIVE), the central's identity is not needed (no
+ * central role): nothing to keep */
+BLE_API void ble_app_bond(const uint8_t rand[8], uint16_t ediv, const uint8_t ltk[16]) { (void)rand, (void)ediv, (void)ltk; }
+BLE_API void ble_app_peer_id(const uint8_t irk[16], const uint8_t addr[6], uint8_t addr_rand) { (void)irk, (void)addr, (void)addr_rand; }
 BLE_API void ble_app_midi_in(uint32_t pkt, uint16_t ts, uint16_t last_ts)
 {
     (void)ts, (void)last_ts;                   /* (played as it comes) */

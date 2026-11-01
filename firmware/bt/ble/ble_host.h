@@ -63,6 +63,7 @@ BLE_API void ble_smp_reset(void);
 #if BLE_SMP_LEGACY
 /* the short-term key while a pairing waits for the encryption (EDIV 0, Rand 0): 1 given, 0 none */
 BLE_API int ble_smp_stk(const uint8_t rand[8], uint16_t ediv, uint8_t ltk[16]);
+BLE_API void ble_smp_ltk_of(const uint8_t rand[8], uint16_t ediv, uint8_t ltk[16]);   /* (JIANT V10.32, BLE_LTK_DERIVE) */
 #endif
 
 #endif

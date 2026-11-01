@@ -135,6 +135,12 @@
 #define BLE_SMP_LEGACY 0                 /* LE legacy pairing, Just Works, with bonding (needs BLE_LL_ENC); 0: a Pairing
                                           * Request gets Pairing Failed, Pairing Not Supported */
 #endif
+#ifndef BLE_LTK_DERIVE
+#define BLE_LTK_DERIVE 0                 /* (JIANT V10.32) the bond's LTK made again from EDIV / Rand (ble_smp.c), not kept */
+#endif
+#if BLE_LTK_DERIVE && !BLE_SMP_LEGACY
+#error "BLE_LTK_DERIVE needs BLE_SMP_LEGACY=1"
+#endif
 #ifndef BLE_SMP_SEC_REQ
 #define BLE_SMP_SEC_REQ 0                /* send an SMP Security Request (bonding) when a connection starts, as stock V15
                                           * is reported to; Apple's Accessory Design Guidelines (58.10) advise against */

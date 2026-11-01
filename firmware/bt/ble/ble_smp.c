@@ -163,6 +163,29 @@ static void smp_own_irk(uint8_t irk[16])
     ble_aes128(K, in, irk);
 }
 
+#if BLE_LTK_DERIVE
+/* (JIANT V10.32) our LTK made again, never kept (Core Vol 3 Part H 5.2.2's idea: derived from EDIV / Rand): AES-128 of
+ * Rand | EDIV under ER = AES-128(K, our identity address); EDIV's low nibble the negotiated key size - 1. Every
+ * central that bonded us finds its key after a power-off, with no flash written (Just Works: no MITM either way) */
+BLE_API void ble_smp_ltk_of(const uint8_t rand[8], uint16_t ediv, uint8_t ltk[16])
+{
+    static const uint8_t K[16] = {'J', 'I', 'A', 'N', 'T', ' ', 'L', 'T', 'K', ' ', 'E', 'R', ' ', 'v', '1', 0};
+    uint8_t own[6], peer[6], er[16], in[16];
+    uint32_t ks = (ediv & 15u) + 1u;
+    (void)ble_ll_addrs(own, peer);
+    ble_zero(in, 16);
+    ble_cpy(in, own, 6);
+    ble_aes128(K, in, er);
+    ble_zero(in, 16);
+    ble_cpy(in, rand, 8);
+    in[8] = (uint8_t)ediv;
+    in[9] = (uint8_t)(ediv >> 8);
+    ble_aes128(er, in, ltk);
+    if (ks < 7u) ks = 16u;
+    ble_zero(ltk + ks, 16u - ks);
+}
+#endif
+
 #if BLE_CEN_PAIR
 #include "ble_smp_init.c"                       /* the initiator (the master of the link) */
 #endif
@@ -232,10 +255,15 @@ static void smp_our_keys(void)
     uint8_t e[17], m[11];
     if (bsmp.ours & SMP_KD_ENC) {
         e[0] = SMP_ENC_INFO;
-        ble_hw_rand(e + 1, 16);
-        smp_cut(e + 1);
         m[0] = SMP_MASTER_ID;
         ble_hw_rand(m + 1, 10);                 /* EDIV (2), Rand (8) */
+#if BLE_LTK_DERIVE
+        m[1] = (uint8_t)((m[1] & 0xF0u) | ((bsmp.key_size - 1u) & 15u));   /* (JIANT: the key size in EDIV) */
+        ble_smp_ltk_of(m + 3, ble_rd16(m + 1), e + 1);
+#else
+        ble_hw_rand(e + 1, 16);
+        smp_cut(e + 1);
+#endif
         smp_send(e, 17);
         smp_send(m, 11);
         ble_host_set_key(m + 3, ble_rd16(m + 1), e + 1);

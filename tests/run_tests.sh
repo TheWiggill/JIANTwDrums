@@ -185,6 +185,8 @@ $CC -o "$OUT/midi_uart_test" tests/midi_uart_test.c
 run "TRS MIDI parser" "$OUT/midi_uart_test"
 $CC -o "$OUT/ble_midi_test" tests/ble_midi_test.c
 run "BLE-MIDI packets (the stack's codec, firmware/bt/ble/ble_midi.c)" "$OUT/ble_midi_test"
+$CC -o "$OUT/ble_aes_test" tests/ble_aes_test.c
+run "BLE pairing's crypto (V10.32: AES-128, c1 / s1, the LL's AES-CCM: firmware/bt/ble/ble_aes.c)" "$OUT/ble_aes_test"
 $CC -o "$OUT/bt_midi_test" tests/bt_midi_test.c
 run "BLE-MIDI to and from JIANT's MIDI rings (firmware/bt/bt_midi.h, V10.13)" "$OUT/bt_midi_test"
 
