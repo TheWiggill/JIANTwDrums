@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.19).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.20).
 
 ## Reporting a crash
 
@@ -422,6 +422,11 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   [el manual](docs/MANUAL.es.md#euclid-y-modes-v106).
 
 ## Changelog
+
+### V10.20 (beta)
+- **PROX smooth**: one fixed signal reading (the radio's gain and raw value together), the median of nine packets and
+  ~0.3 s of smoothing (V10.18's "the reading that moves most" picked a noisy byte: a random sample and hold). FAR and
+  NEAR closer than 4 levels are refused (FAR AND NEAR TOO CLOSE).
 
 ### V10.19 (beta)
 - The PROX page redraws as soon as a reading arrives (it could stay on NOT CONNECTED while connected) and shows the

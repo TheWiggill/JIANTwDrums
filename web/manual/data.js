@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.20", items: [
+    ["PROX suave: una lectura fija de la señal (ganancia y valor juntos), mediana de nueve paquetes y ~0,3 s de suavizado (V10.18 elegía un byte ruidoso: un sample and hold al azar). FAR y NEAR a menos de 4 niveles se rechazan (FAR AND NEAR TOO CLOSE).", "PROX smooth: one fixed signal reading (gain and value together), the median of nine packets and ~0.3 s of smoothing (V10.18 picked a noisy byte: a random sample and hold). FAR and NEAR under 4 levels apart are refused (FAR AND NEAR TOO CLOSE)."]]},
   {v: "V10.19", items: [
     ["La página PROX se actualiza apenas llega una lectura (podía quedar en NOT CONNECTED estando conectado) y muestra la conexión: L1 / L0, los paquetes que leyó PROX / los paquetes buenos recibidos.", "The PROX page updates as soon as a reading arrives (it could stay on NOT CONNECTED while connected) and shows the link: L1 / L0, the packets PROX read / the good packets received."]]},
   {v: "V10.18", items: [
