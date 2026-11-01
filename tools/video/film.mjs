@@ -19,7 +19,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const [dir, film, out, list] = process.argv.slice(2);
 const FONTS = path.join(root, "build/video5/fonts");
 const scr = fs.openSync(path.join(dir, "screen.rgb"), "r");
-const ver = /FELUCCA_VERSION "(v[^"]+)"/.exec(fs.readFileSync(path.join(root, "firmware/src/felucca.c"), "utf8"))[1];
+const ver = process.env.FILM_VERSION || /FELUCCA_VERSION "([vV][^"]+)"/.exec(fs.readFileSync(path.join(root, "firmware/src/felucca.c"), "utf8"))[1];   // (V10: "V10.27")
 const exe = process.env.CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 const browser = await chromium.launch({ executablePath: exe }).catch(() => chromium.launch());
 const page = await browser.newPage({ viewport: film.startsWith("story") ? { width: 1080, height: 1920 } : { width: 1920, height: 1080 } });
