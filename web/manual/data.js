@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.21", items: [
+    ["SEQ › EUCLID: las filas de lanes tienen el nombre correcto (estaban corridas una) y el círculo muestra un ciclo en la vuelta que suena, con el cursor girando, también con lanes de distinto largo y las vueltas de VARY. La página PROX habla del celular.", "SEQ › EUCLID: the lane rows are named correctly (they were one off) and the ring shows one cycle at the turn playing, its playhead going round, also with lanes of different lengths and VARY's turns. The PROX page speaks of the phone."]]},
   {v: "V10.20 pública", items: [
     ["El instalador público pasa a V10.20: MIDI por Bluetooth, PROX, VARY en vueltas, SEQ › MUTATE y ERASE de secciones. PROX sigue la distancia del celular (su señal Bluetooth), no la mano.", "The public installer moves to V10.20: Bluetooth MIDI, PROX, VARY in turns, SEQ › MUTATE and section ERASE. PROX follows the phone's distance (its Bluetooth signal), not a hand."]]},
   {v: "V10.20", items: [

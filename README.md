@@ -429,6 +429,12 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
 
 ## Changelog
 
+### V10.21 (beta)
+- **SEQ › EUCLID**: the lane rows at the right are named correctly (they were one off, so the lane picked looked like
+  another); the ring shows one cycle (the lane's, ALL's or the melody's) at the turn playing, its playhead going round,
+  also with lanes of different STEPS and VARY's turns.
+- **PROX page**: the instructions say the phone (FAR: phone away, NEAR: phone on the FM-1, top left).
+
 ### V10.20 — public (2026-11-01)
 - Stable installer: everything from V10.10 to V10.20 (Bluetooth MIDI, PROX, EUCLID VARY turns, SEQ › MUTATE,
   SAVE › SECTIONS ERASE), tested on hardware. PROX follows the **phone's** distance (its Bluetooth signal), not a hand.
