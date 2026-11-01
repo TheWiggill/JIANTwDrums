@@ -35,11 +35,28 @@ static void sc_setup(uint32_t i)                        /* track i set up for it
     else t->p[P_AMODE] = AM_OFF;
     if (r == SC_CHORD) t->p[P_VOICE] = V_POLY;
 }
+/* (V10.26) the roles diced: one track for each of CHORD ARP BASS LEAD at most (never two doing the same, never two
+ * playing chords: the polyphony), the melodic tracks awake only, the rest KEEP; at least two roles */
+static void sc_dice(void)
+{
+    uint32_t i, j, m[NTRK], nm = 0, r[4] = {SC_CHORD, SC_ARP, SC_BASS, SC_LEAD};
+    for (i = 0; i < NTRK; i++) {
+        scn_role[i] = SC_KEEP;
+        if (i < trk_live && !drum_track(&trk[i])) m[nm++] = i;
+    }
+    for (i = nm; i > 1u; i--) { j = rng() % i; uint32_t x = m[i - 1u]; m[i - 1u] = m[j]; m[j] = x; }   /* (the tracks shuffled) */
+    for (i = 4u; i > 1u; i--) { j = rng() % i; uint32_t x = r[i - 1u]; r[i - 1u] = r[j]; r[j] = x; }   /* (the roles too) */
+    j = nm < 4u ? nm : 2u + rng() % 3u;                  /* (2 .. 4 roles, as many tracks as there are) */
+    for (i = 0; i < j && i < nm; i++) { scn_role[m[i]] = (uint8_t)r[i]; sc_setup(m[i]); }
+}
 static void sc_put(uint32_t k, int32_t v)
 {
     uint32_t i, need = 0;
     if (k == 0u) {
         scn_on = (uint8_t)(v != 0);
+        for (i = 0, need = 0; i < NTRK; i++) need |= scn_role[i];
+        if (scn_on && !need) sc_dice();                  /* (all KEEP: a scene diced, so ON plays something) */
+        need = 0;
         for (i = 0; scn_on && i < NTRK; i++) {
             sc_setup(i);
             need |= (uint32_t)(i >= trk_live && scn_role[i] && !drum_track(&trk[i]));
@@ -49,6 +66,13 @@ static void sc_put(uint32_t k, int32_t v)
         sc_trk = (uint8_t)clamp(v, 0, NTRK - 1);
     else if (k == 2u && !drum_track(&trk[sc_trk % NTRK])) {
         scn_role[sc_trk % NTRK] = (uint8_t)clamp(v, 0, SC_N - 1);
+        for (i = 0; v != SC_KEEP && i < NTRK; i++)        /* (V10.26) a role is one track's: another with it goes KEEP */
+            if (i != sc_trk && scn_role[i] == (uint8_t)v) {
+                char b[16] = "T  ROLE TO KEEP";
+                b[1] = (char)('1' + i);
+                scn_role[i] = SC_KEEP;
+                ui_message(b);
+            }
         sc_setup(sc_trk);
     }
     ui.force = 1;
@@ -79,6 +103,6 @@ static void graph_scene(void)
             cv_rect(x + 2 + (r == SC_ARP ? (int32_t)j * 7 : 0), y, r == SC_ARP ? 6 : cw - 10, 3, c);
         }
     }
-    cv_text_in(4, (int32_t)h - 11, 232, &AF_X, scn_on ? "SCENE ON: A KEY PLAYS EVERY ROLE" : "SCENE OFF: KNOB 1 TURNS IT ON",
+    cv_text_in(4, (int32_t)h - 11, 232, &AF_X, scn_on ? "OCT+ DICE  OCT- ALL KEEP" : "SCENE OFF: KNOB 1 TURNS IT ON",
                scn_on ? T_ACCENT : T_DIM, T_SURF);
 }

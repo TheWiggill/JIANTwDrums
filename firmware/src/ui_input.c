@@ -2670,6 +2670,13 @@ static void ui_input_frame(void)
                 br_armed = 0;
                 break;
             }
+            if (!ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_SCENE) {   /* (V10.26) SCENE: OCT+ dices
+                                                         * the roles (each one track's), OCT- all KEEP */
+                if (b == B_OCTUP) sc_dice(); else memset(scn_role, 0, sizeof scn_role);
+                ui_message(b == B_OCTUP ? "SCENE DICED" : "ALL TRACKS KEEP");
+                ui.force = 1;
+                break;
+            }
             if (!ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_SHAPE) {   /* (V10.25) STRETCH: NUDGE's */
                 ndg_step = b == B_OCTUP;                /* mode, OCT- the sequence (blue), OCT+ the step (red) */
                 ui_message(ndg_step ? "NUDGE: THE STEP'S MICRO TIMING" : "NUDGE: THE WHOLE SEQUENCE");

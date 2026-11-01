@@ -373,7 +373,7 @@ static void rec_release(track_t *t, uint32_t note);
  * down, LEAD an octave up; KEEP: the track as it is (its sequence plays on, the keys do not reach it). Armed, REC
  * records every track with a role into its own steps. The roles are the session's (RAM) */
 enum { SC_KEEP, SC_CHORD, SC_ARP, SC_BASS, SC_LEAD, SC_N };
-static uint8_t scn_on, scn_role[NTRK] = {SC_KEEP, SC_LEAD, SC_KEEP, SC_ARP, SC_BASS, SC_CHORD};
+static uint8_t scn_on, scn_role[NTRK];   /* (V10.26: all KEEP until set or diced) */
 static uint32_t scn_keys;                           /* the keys down that play the scene (their key-up too) */
 static int rec_on(const track_t *t)
 {

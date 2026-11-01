@@ -181,7 +181,7 @@ static void ui_power_on(void)
     scn_on = 0; scn_keys = 0;                     /* (V10.25: SCENE off at power-on, its roles the defaults) */
     memset(eu, 0, sizeof eu);                     /* (EUCLID / MUTATE: the session's, none at power-on) */
     ndg_step = 0;
-    { static const uint8_t R0[NTRK] = {SC_KEEP, SC_LEAD, SC_KEEP, SC_ARP, SC_BASS, SC_CHORD}; memcpy(scn_role, R0, sizeof R0); sc_trk = 5; }
+    memset(scn_role, 0, sizeof scn_role); sc_trk = 5;
     memset(&chain, 0, sizeof chain);
     chain_defaults(&chain_config);
     live.mode = 0;                                /* (0.6.81: PLAY the loop, as at power-on; a DICE ALL leaves SONG) */
@@ -13066,6 +13066,21 @@ static int test_scene(void)
     set_engine_of(&trk[0], ENGI_DRUM);
     for (i = 1; i < NTRK; i++) set_engine_of(&trk[i], ENGI_ANALOG);
     for (i = 0; i < 60u; i++) events_block(CTL);        /* (the engines faded in) */
+    {   /* (V10.26) the dice: every role one track's at most, one CHORD at most, the kit KEEP; many throws */
+        uint32_t n, c, r, bad2 = 0;
+        for (n = 0; n < 200u; n++) {
+            sc_dice();
+            for (r = SC_CHORD; r < SC_N; r++) {
+                for (c = 0, i = 0; i < NTRK; i++) c += scn_role[i] == r;
+                bad2 += c > 1u;
+            }
+            bad2 += scn_role[0] != SC_KEEP;
+            for (c = 0, i = 0; i < NTRK; i++) c += scn_role[i] != SC_KEEP;
+            bad2 += c < 2u;
+        }
+        bad += check("SCENE DICE: never two tracks with one role (one CHORD at most), the kit KEEP, two roles at least", !bad2);
+    }
+    {   static const uint8_t R0[NTRK] = {SC_KEEP, SC_LEAD, SC_KEEP, SC_ARP, SC_BASS, SC_CHORD}; memcpy(scn_role, R0, sizeof R0); }
     turn(EN_K1, 1);
     ok = scn_on == 1u;
     turn(EN_K2, -1);                                     /* (T6 -> T5: BASS) */
@@ -13078,6 +13093,8 @@ static int test_scene(void)
     key_up(white(7));
     for (i = 0; i < 4u; i++) events_block(CTL);
     bad += check("SCENE: the key up ends every role", trk_gates(5) == 0u && trk_gates(4) == 0u && trk_gates(1) == 0u && !trk[3].arp_phys);
+    turn(EN_K3, -1);                                     /* (T5 BASS -> ARP: T4's ARP goes KEEP) */
+    bad += check("SCENE: a role another track has: that track KEEP (no two alike)", scn_role[4] == SC_ARP && scn_role[3] == SC_KEEP);
     turn(EN_K1, -1);
     bad += check("SCENE OFF: a key plays the selected track again", !scn_on);
     trks_put(0);

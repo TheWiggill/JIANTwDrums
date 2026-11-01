@@ -586,7 +586,7 @@ static void state(void)                          /* a playing song with steps on
 {
     uint32_t i;
     ui_power_on();
-    ndg_step = 0; scn_on = 0;                     /* (V10.25: the session's NUDGE and SCENE modes off) */
+    ndg_step = 0; scn_on = 0; memset(scn_role, 0, sizeof scn_role);   /* (V10.25: the session's NUDGE and SCENE off) */
     dx_mute_set(0);
     memset(macro_v, 0, sizeof macro_v);
     if (large_on) ui_prefs |= PREF_LARGE;
@@ -1140,6 +1140,7 @@ static void setup(int s)
         break;
     case S_SCENE:                                       /* (V10.25) SCL > SCENE on: the six tracks' roles, a C4 played */
         song.sel = 0; scn_on = 1; sc_trk = 5; last_note = 60;
+        { static const uint8_t R0[NTRK] = {SC_KEEP, SC_LEAD, SC_KEEP, SC_ARP, SC_BASS, SC_CHORD}; memcpy(scn_role, R0, sizeof R0); }
         go_title("SCENE");
         break;
     case S_CHANCE: go_page(GR_CHANCE); step_set_chance(&TSEL->step[0], 65); break;
