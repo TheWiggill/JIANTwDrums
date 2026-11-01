@@ -2471,6 +2471,11 @@ you play reaches all the tracks with a role at once, each in its own way, all fr
   (FAR). Phone on the FM-1, top left: **OCT+** (NEAR). Then on a track's MOD page pick **SRC PROX** (e.g. DEST CUT).
   It fades to 0 when the phone disconnects. The page also shows the link (L1, packets read / received) and the raw
   signal words.
+- **AIR** (V10.35, an experiment): the third value of the BT row. The radio stops advertising (no MIDI) and only
+  **listens** to every Bluetooth device around: phones, watches, headphones, TVs. PROX then follows how strongly they
+  are heard, which a body or a hand near the antenna (top left of the back) shadows, so no phone is needed in your
+  hand. On the BT row (AIR) press **OCT+**, calibrate FAR (away) and NEAR (hand on it) as above. It needs some
+  Bluetooth devices nearby; with none it stays at 0.
 
 ### MIDI LEARN (0.9.12)
 

@@ -2620,6 +2620,11 @@ que tocás llega a la vez a todas las pistas con rol, cada una a su manera, todo
   metro, más o menos): **OCT−** (FAR). Celular apoyado en el FM-1, arriba a la izquierda: **OCT+** (NEAR). Después, en
   la página MOD de una pista, elegí **SRC PROX** (por ejemplo DEST CUT). Vuelve a 0 cuando el celular se desconecta.
   La página también muestra la conexión (L1, paquetes leídos / recibidos) y las palabras crudas de la señal.
+- **AIR** (V10.35, experimental): el tercer valor de la fila BT. La radio deja de anunciarse (sin MIDI) y solo
+  **escucha** a todos los dispositivos Bluetooth de alrededor: celulares, relojes, auriculares, televisores. PROX
+  sigue entonces con qué fuerza se los oye, y un cuerpo o una mano cerca de la antena (atrás, arriba a la izquierda)
+  los tapa: no hace falta tener un celular en la mano. En la fila BT (AIR) apretá **OCT+** y calibrá FAR (lejos) y
+  NEAR (la mano encima) como arriba. Necesita algunos dispositivos Bluetooth cerca; sin ninguno queda en 0.
 
 ### MIDI LEARN (0.9.12)
 

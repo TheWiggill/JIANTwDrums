@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.34).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.35).
 
 ## Reporting a crash
 
@@ -428,6 +428,11 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.35 (beta)
+- **BLUETOOTH AIR** (an experiment): MENU › SYSTEM › BT gets a third value. The radio only listens to the Bluetooth
+  devices around (nothing sent, no MIDI) and PROX follows how strongly they are heard: a hand or a body near the
+  antenna shadows them, no phone in your hand. Calibrate on the PROX page (OCT+ on the BT row) as with a phone.
 
 ### V10.34 (beta)
 - **DRUM-X kit HIP HOP** (a user's ask): boom bap: a round kick with a knock, a fat cracking snare, a tight clap,

@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.35", items: [
+    ["BLUETOOTH AIR (experimental): MENU › SYSTEM › BT tiene un tercer valor. La radio solo escucha los dispositivos Bluetooth de alrededor (no manda nada, sin MIDI) y PROX sigue con qué fuerza se los oye: una mano o el cuerpo cerca de la antena los tapa, sin celular en la mano. Se calibra en la página PROX (OCT+ en la fila BT) como con el celular.", "BLUETOOTH AIR (an experiment): MENU › SYSTEM › BT gets a third value. The radio only listens to the Bluetooth devices around (nothing sent, no MIDI) and PROX follows how strongly they are heard: a hand or a body near the antenna shadows them, no phone in your hand. Calibrate on the PROX page (OCT+ on the BT row) as with a phone."]]},
   {v: "V10.34", items: [
     ["Kit HIP HOP en DRUM-X (pedido de un usuario): boom bap, bombo redondo con golpe, redoblante gordo, clap ajustado, hats polvorientos, rim de madera y shaker. Sugiere el patrón nuevo BOOM BAP (SEQ › PATTERNS 14).", "DRUM-X kit HIP HOP (a user's ask): boom bap, a round kick with a knock, a fat snare, a tight clap, dusty hats, a woody rim and a shaker. It suggests the new pattern BOOM BAP (SEQ › PATTERNS 14)."]]},
   {v: "V10.33", items: [
