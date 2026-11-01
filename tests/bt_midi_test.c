@@ -77,14 +77,14 @@ static void test_out(void)
 {
     uint8_t buf[20];
     struct ble_midi_enc e;
-    uint32_t pkt, i, n, ok;
+    uint32_t pkt, due, i, n, ok;
     memset(&O, 0, sizeof O);
     bt_oq_put(&O, P(9, 0x90, 60, 100));
-    check("out: nothing kept while no central listens", O.w == 0 && !bt_oq_peek(&O, &pkt));
+    check("out: nothing kept while no central listens", O.w == 0 && !bt_oq_peek(&O, &pkt, &due));
     O.on = 1;
     for (i = 0; i < 70u; i++)
         bt_oq_put(&O, P(9, 0x90, i, 1));
-    for (ok = 1, n = 0; bt_oq_peek(&O, &pkt); n++) {
+    for (ok = 1, n = 0; bt_oq_peek(&O, &pkt, &due); n++) {
         ok &= pkt == P(9, 0x90, n, 1);
         bt_oq_pop(&O);
     }
@@ -95,7 +95,7 @@ static void test_out(void)
     bt_oq_put(&O, P(0xF, 0xF8, 0, 0));
     bt_oq_put(&O, P(8, 0x80, 60, 0));
     ble_midi_enc_begin(&e, buf, sizeof buf);
-    while (bt_oq_peek(&O, &pkt) && ble_midi_enc_add(&e, pkt, 1000u))
+    while (bt_oq_peek(&O, &pkt, &due) && ble_midi_enc_add(&e, pkt, 1000u))
         bt_oq_pop(&O);
     {
         static const uint8_t want[] = {0x87, 0xE8, 0x90, 60, 100, 0xE8, 64, 90, 0xE8, 0xF8, 0xE8, 0x80, 60, 0};
@@ -104,9 +104,9 @@ static void test_out(void)
     }
     for (i = 0; i < 12u; i++)
         bt_oq_put(&O, P(0xB, 0xB0, i, i));
-    for (n = 0, ok = 1; bt_oq_peek(&O, &pkt); n++) {
+    for (n = 0, ok = 1; bt_oq_peek(&O, &pkt, &due); n++) {
         ble_midi_enc_begin(&e, buf, sizeof buf);
-        while (bt_oq_peek(&O, &pkt) && ble_midi_enc_add(&e, pkt, 2000u + n))
+        while (bt_oq_peek(&O, &pkt, &due) && ble_midi_enc_add(&e, pkt, 2000u + n))
             bt_oq_pop(&O);
         nring = 0;
         ble_midi_dec_reset(&D);

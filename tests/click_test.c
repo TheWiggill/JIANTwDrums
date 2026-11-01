@@ -12,6 +12,7 @@
  *   build/click_demo/: the click at 120 BPM with a pattern (DAC and USB) */
 #include <sys/stat.h>
 #define main hostsim_main
+#define HOST_OWN_TICKS 1                    /* (fm1_ticks below) */
 #include "hostsim.c"
 #undef main
 

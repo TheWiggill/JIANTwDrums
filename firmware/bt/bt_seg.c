@@ -86,9 +86,18 @@ static uint32_t bs_now(void)
 }
 BLE_API int ble_app_midi_peek(uint32_t *pkt, uint32_t *t_ms)
 {
-    if (!bt_oq_peek(&bt_oq, pkt))
+    uint32_t due, now;
+    if (!bt_oq_peek(&bt_oq, pkt, &due))
         return 0;
-    *t_ms = bs_now();
+    now = bs_now();
+    if (due) {                                 /* (V10.33) a clock pulse: not before its time, stamped with it (the
+                                                * receiver puts the pulses back evenly from the stamps) */
+        int32_t d = (int32_t)(fm1_ticks() - due);
+        if (d < 0)
+            return 0;
+        now -= (uint32_t)d / 24000u;
+    }
+    *t_ms = now;
     return 1;
 }
 BLE_API void ble_app_midi_pop(void) { bt_oq_pop(&bt_oq); }

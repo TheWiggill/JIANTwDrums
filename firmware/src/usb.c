@@ -245,6 +245,11 @@ static volatile uint32_t so_w, so_r;
 #define MQ 64u
 static uint32_t midi_in_q[MQ], midi_out_q[MQ];
 static uint32_t midi_in_ms[MQ];
+#ifndef fm1_ticks
+static uint32_t fm1_ticks(void);                     /* (hal/fm1_time.h; the host tests' own) */
+#endif
+static uint32_t midi_out_due[MQ];                     /* (V10.33) the TIMER4 tick a packet goes at (0: at once): the clock's
+                                                         * pulses at their own time, not the render's (ep1_tx holds them) */
 static uint8_t midi_in_source[MQ];                    /* 1 USB, 2 TRS */
 static volatile uint32_t fm1_ms;                    /* also declared by core.h; parser-only host tests */
 static volatile uint32_t mi_w, mi_r, mo_w, mo_r;
@@ -271,17 +276,19 @@ static int midi_enqueue(uint32_t pkt, uint32_t source)
 #include "../bt/bt_midi.h"
 struct bt_oq bt_oq;                                     /* (V10.13) MIDI OUT over Bluetooth too (bt_seg.c takes it) */
 #endif
-static void midi_out_event(uint32_t pkt)            /* from the audio ISR */
+static void midi_out_event_at(uint32_t pkt, uint32_t due)   /* from the audio ISR; due: fm1_ticks() it goes at, 0 now */
 {
     if (usb.config && mo_w - mo_r < MQ) {
         midi_out_q[mo_w % MQ] = pkt;
+        midi_out_due[mo_w % MQ] = due;
         RING_PUBLISH();
         mo_w++;
     }
 #if FELUCCA_BT
-    bt_oq_put(&bt_oq, pkt);                             /* (V10.13: while a central listens; else nothing) */
+    bt_oq_put_at(&bt_oq, pkt, due);                     /* (V10.13: while a central listens; else nothing) */
 #endif
 }
+static void midi_out_event(uint32_t pkt) { midi_out_event_at(pkt, 0); }
 
 /* ------------------------------------------------------- descriptors --- */
 /* Two functions: audio + MIDI (0 audio control, 1 MIDI streaming, 2 audio streaming with FELUCCA_UAC)
@@ -1143,8 +1150,11 @@ static void ep1_tx(void)
 #else
     while (mo_r != mo_w && n < 64u) {
 #endif
-        uint32_t pkt;
+        uint32_t pkt, due;
         RING_PUBLISH();                                 /* the audio ISR (producer) can preempt us: */
+        due = midi_out_due[mo_r % MQ];                  /* (V10.33) not its time yet: it and what follows wait */
+        if (due && (int32_t)(fm1_ticks() - due) < 0)
+            break;
         pkt = midi_out_q[mo_r % MQ];                    /* slot read strictly between the index checks */
         ep1tx[n] = (uint8_t)pkt;
         ep1tx[n + 1] = (uint8_t)(pkt >> 8);

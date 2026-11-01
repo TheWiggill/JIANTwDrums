@@ -356,9 +356,66 @@ static int cc_map_test(void)
     bad += check("not armed: the CC is the new value, no event", trk[0].p[P_E4] == 77 && motion.count == 1u);
     return bad;
 }
+/* (V10.33) the clock steady: in, a whole BPM held through jitter and Bluetooth's bursts; out, each pulse at its own time */
+static int clock_steady_test(void)
+{
+    int bad = 0, ok = 1;
+    uint32_t i, seed = 12345u, changes = 0, last = 0, ms0 = 5000u;
+    clock_setup(1);
+    clock_packet(1, 0xFA, ms0);
+    for (i = 1; i < 24u * 16u; i++) {               /* 104 BPM, every pulse +-3 ms off */
+        uint32_t t = ms0 + (i * 60000u) / (104u * 24u);
+        seed = seed * 1103515245u + 12345u;
+        t = t + (seed >> 16) % 7u - 3u;
+        clock_packet(1, 0xF8, t);
+        events_block(CTL);
+        if (i >= 48u) { ok &= song.g[G_BPM] == 104; changes += last && song.g[G_BPM] != (int16_t)last; }
+        last = (uint32_t)song.g[G_BPM];
+    }
+    bad += check("V10.33 clock in: 104 BPM with +-3 ms on every pulse reads 104, held (no 103 / 105)", ok && !changes);
+    clock_setup(1);
+    clock_packet(1, 0xFA, ms0);
+    for (i = 1, ok = 1; i < 24u * 16u; i++) {       /* Bluetooth: the pulses arrive in bursts, a connection event (15 ms) */
+        uint32_t t = ms0 + (i * 60000u) / (104u * 24u);
+        clock_packet(1, 0xF8, t - t % 15u + 15u);
+        events_block(CTL);
+        if (i >= 72u) ok &= song.g[G_BPM] == 104;
+    }
+    bad += check("V10.33 clock in: in 15 ms bursts (Bluetooth), still 104", ok);
+    for (i = 24u * 16u, ok = 0; i < 24u * 24u; i++) {   /* the master to 128: followed within a couple of beats */
+        uint32_t t = ms0 + (24u * 16u * 60000u) / (104u * 24u) + ((i - 24u * 16u) * 60000u) / (128u * 24u);
+        clock_packet(1, 0xF8, t);
+        events_block(CTL);
+        if (i >= 24u * 16u + 72u) ok = song.g[G_BPM] == 128;
+    }
+    bad += check("V10.33 clock in: a new tempo (104 -> 128) followed within three beats", ok);
+    {   /* out: MIDI OUT CLOCK at 104, each pulse's tick a 24th of a beat after the one before (to 1/40 ms) */
+        uint32_t n = 0, prev = 0, worst = 0, first = 0, lastd = 0;
+        double want = 24000000.0 * 60.0 / 104.0 / 24.0;
+        midi_test_reset(); song.g[G_CLOCK] = 0; song.g[G_BPM] = 104;
+        mo_lvl = mo_last = MO_CLOCK; usb.config = 1; mo_r = mo_w;
+        for (i = 0; i < 4000u; i++) {
+            host_ticks = (uint32_t)((double)i * CTL * 24000000.0 / FS);
+            events_block(CTL);
+            while (mo_r != mo_w) {
+                uint32_t pkt = midi_out_q[mo_r % MQ], d = midi_out_due[mo_r % MQ];
+                mo_r++;
+                if ((pkt >> 8 & 0xFFu) != 0xF8u) continue;
+                if (n) { uint32_t gap = d - prev, err = (uint32_t)(gap > want ? gap - want : want - gap); worst = err > worst ? err : worst; }
+                else first = d;
+                prev = lastd = d;
+                n++;
+            }
+        }
+        ok = n > 100u && worst <= 600u && fabs((double)(lastd - first) / (n - 1u) - want) < want * 0.0002;
+        printf("   (out: %u pulses, worst gap error %u ticks of %.0f, mean %.1f)\n", n, worst, want, (double)(lastd - first) / (n - 1u));
+        bad += check("V10.33 clock out: 104 BPM, every pulse at its time (within 25 us), the mean exact", ok);
+    }
+    return bad;
+}
 int main(void)
 {
     int bad = controls_test() + sustain_test() + ownership_test() + clock_test(1) + clock_test(2) + clock_arp_and_boundaries() +
-              arp_ext_stop_test() + usb_burst_test() + route_test() + cc_map_test();
+              arp_ext_stop_test() + usb_burst_test() + route_test() + cc_map_test() + clock_steady_test();
     printf("%s\n", bad ? "MIDI CONTROL/CLOCK TEST FAILED" : "MIDI control/clock integration tests passed"); return bad != 0;
 }

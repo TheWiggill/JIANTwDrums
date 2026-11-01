@@ -27,23 +27,27 @@ static inline uint32_t bt_midi_accept(uint32_t pkt)
 #define BT_OQ 64u
 struct bt_oq {
     uint32_t q[BT_OQ];
+    uint32_t due[BT_OQ];                 /* (V10.33) the TIMER4 tick each goes at (0: at once): the clock's pulses */
     volatile uint32_t w, r;
     volatile uint8_t on;                 /* a central listens (its MIDI notifications on): the segment sets it */
 };
-static inline void bt_oq_put(struct bt_oq *o, uint32_t pkt)   /* (full or nobody listening: dropped) */
+static inline void bt_oq_put_at(struct bt_oq *o, uint32_t pkt, uint32_t due)   /* (full or nobody listening: dropped) */
 {
     if (o->on && o->w - o->r < BT_OQ) {
         o->q[o->w % BT_OQ] = pkt;
+        o->due[o->w % BT_OQ] = due;
         RING_PUBLISH();
         o->w++;
     }
 }
-static inline int bt_oq_peek(const struct bt_oq *o, uint32_t *pkt)
+static inline void bt_oq_put(struct bt_oq *o, uint32_t pkt) { bt_oq_put_at(o, pkt, 0); }
+static inline int bt_oq_peek(const struct bt_oq *o, uint32_t *pkt, uint32_t *due)
 {
     if (o->r == o->w)
         return 0;
     RING_PUBLISH();
     *pkt = o->q[o->r % BT_OQ];
+    *due = o->due[o->r % BT_OQ];
     return 1;
 }
 static inline void bt_oq_pop(struct bt_oq *o)

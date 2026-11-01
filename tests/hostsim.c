@@ -22,6 +22,11 @@
 #define memset felucca_memset
 #define memcpy felucca_memcpy
 #define memcmp felucca_memcmp
+#if !defined(HOST_OWN_TICKS) && !defined(fm1_ticks)
+static uint32_t host_tick_dflt;                 /* (V10.33) TIMER4's ticks (the MIDI clock's pulses go at theirs): 0 here; a
+                                                 * test with its own fm1_ticks defines HOST_OWN_TICKS first */
+#define fm1_ticks() (host_tick_dflt)
+#endif
 #include "felucca_tables.h"
 #include "../firmware/src/libc.c"
 #undef memset

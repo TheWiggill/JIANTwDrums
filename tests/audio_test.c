@@ -3,6 +3,7 @@
 /* The real audio ISR with a simulated DMA and clock: overload must free work
  * within one block without cutting another part's lead or bass. */
 #define main hostsim_main
+#define HOST_OWN_TICKS 1                    /* (fm1_ticks below) */
 #include "hostsim.c"
 #undef main
 

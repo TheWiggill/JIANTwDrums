@@ -62,7 +62,7 @@ enum { MO_KEYS, MO_CLOCK, MO_ALL, MO_OFF };
 static volatile uint8_t mo_lvl;                    /* the setting (ui.c sets it every frame) */
 static uint8_t mo_last;                            /* .. as the ISR last saw it */
 static uint8_t mo_out[NTRK][128];                  /* a played note's note sent on, + 1 (0: none) */
-static uint32_t mo_pulse_acc;                      /* (samples towards the next clock) */
+static uint32_t mo_pulse_acc;                      /* (samples x 24 towards the next clock: V10.33, a beat's 24 pulses exact) */
 static void mo_send(uint32_t st, uint32_t d1, uint32_t d2)
 {
     midi_out_event((st >> 4) | st << 8 | d1 << 16 | d2 << 24);
@@ -129,13 +129,17 @@ static __attribute__((noinline)) void mo_block(uint32_t n)   /* events_block: th
         mo_last = mo_lvl;
     }
     if (mo_clock_on()) {                             /* 24 a beat, also while stopped (a follower holds the tempo) */
-        uint32_t len = beat_samples() / 24u;
-        if (len < 64u)
-            len = 64u;
-        mo_pulse_acc += n;
-        while (mo_pulse_acc >= len) {
-            mo_pulse_acc -= len;
-            midi_out_event(0x0Fu | 0xF8u << 8);
+        uint32_t beat = beat_samples(), t0 = fm1_ticks();   /* (V10.33) each pulse at its sample in the block, sent at its
+                                                         * own TIMER4 tick (usb.c ep1_tx, bt_seg.c): steady to the
+                                                         * receiver, not a burst a block (2.9 ms) */
+        if (beat < 64u * 24u)
+            beat = 64u * 24u;
+        mo_pulse_acc += n * 24u;
+        while (mo_pulse_acc >= beat) {
+            uint32_t off;
+            mo_pulse_acc -= beat;
+            off = n - mo_pulse_acc / 24u;
+            midi_out_event_at(0x0Fu | 0xF8u << 8, (t0 + off * 8000000u / ((uint32_t)FS / 3u)) | 1u);
         }
     }
 }

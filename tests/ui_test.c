@@ -38,6 +38,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #define main hostsim_main
+#define HOST_OWN_TICKS 1                    /* (fm1_ticks below) */
 #include "hostsim.c"
 #undef main
 
