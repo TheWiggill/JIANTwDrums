@@ -429,6 +429,11 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
 
 ## Changelog
 
+### V10.35 — public (2026-11-02)
+- Stable installer: everything from V10.27 to V10.35: testers' fixes, EUCLID reversible on your own sequence (VARY in
+  two halves), SCENE saved with the project, Bluetooth MIDI pairing (Just Works), a steady MIDI clock in and out, the
+  DRUM-X kit HIP HOP and the pattern BOOM BAP, BLUETOOTH AIR (an experiment).
+
 ### V10.35 (beta)
 - **BLUETOOTH AIR** (an experiment): MENU › SYSTEM › BT gets a third value. The radio only listens to the Bluetooth
   devices around (nothing sent, no MIDI) and PROX follows how strongly they are heard: a hand or a body near the

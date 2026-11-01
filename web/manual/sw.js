@@ -2,7 +2,7 @@
 // Copyright (C) 2026 Juan Ignacio Antonucci (Juan Jiant)
 // The manual offline: its page, scripts and screens cached (network first for the page and scripts, so a new version
 // shows at once; cache first for the screens). Only the manual's own folder; the emulator needs the network.
-const CACHE = "jiant-manual-v34";
+const CACHE = "jiant-manual-v35";
 const CORE = ["./", "index.html", "manual.js", "data.js", "nav.js"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(CORE)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => {
