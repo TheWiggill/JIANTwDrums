@@ -387,7 +387,7 @@ static void menu_panel(void)
  * level and the last RSSI word (hex), the two points; OCT- stores FAR (the hand away), OCT+ NEAR (the hand on the back
  * over the antenna, top left); SELECT or ALGORITHM back to the rows, HOME closes the menu (saved there, menu_close) */
 static const char BP_S[][28] BTAPP_RO = {"BLUETOOTH \xB7 PROX", "SELECT: BACK", "NOT CONNECTED", "NOT CALIBRATED",
-                                          "OCT-  FAR: THE HAND AWAY", "OCT+  NEAR: THE HAND ON THE", "BACK, TOP LEFT (ANTENNA)",
+                                          "OCT-  FAR: PHONE AWAY", "OCT+  NEAR: PHONE ON THE", "FM-1, TOP LEFT (ANTENNA)",
                                           "PROX FAR SET", "PROX NEAR SET", "LEVEL ", "   RAW ", "FAR ", "   NEAR ", "%"};
 BTAPP_FN static void bt_prox_panel(const aafont_t *fx, const aafont_t *fm, const aafont_t *fs)   /* (the fonts
                                                                                                   * from the app: V10.14) */

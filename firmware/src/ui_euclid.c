@@ -378,19 +378,28 @@ static void graph_euclid(const track_t *t)
     const eu_t *e = eu_of(song.sel);
     uint32_t dr = drum_track(t) != 0, len = (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP), sl = e->lane % (NLANE + 1u), lane = (sl + NLANE) % (NLANE + 1u), i, n;
     int32_t h = (int32_t)graph_h(), cy = h / 2, cx = 64, rad = h / 2 - 12 < 54 ? h / 2 - 12 : 54;
-    uint32_t now = song.playing ? t->seq_idx % len : ~0u;
+    uint32_t now = song.playing ? t->seq_idx % len : ~0u, t_base = 0, t_now = now;
     char b[12];
-    n = dr && sl ? (e->l[lane].n < len ? e->l[lane].n : len) : len;
+    n = dr ? (sl ? e->l[lane].n : e->a.n) : e->l[0].n;   /* (V10.21) the ring: one cycle (the lane's, ALL's STEPS, the
+                                                         * melody's), the turn playing (VARY's turns, a longer pattern) */
+    n = n && n < len ? n : len;
     if (e->mu[0]) {                                      /* (V10.16) MUTATE on: the bars to the next one */
         uint32_t ev = 1u << (e->mu[0] - 1u);
         str_cpy(b, "MUT ", sizeof b);
         fmt_int(b + 4, (int32_t)(song.playing ? ev - bar_n % ev : ev));
         cv_text(2, 2, &AF_X, b, T_ACCENT);
     }
+    {
+        uint32_t base = now != ~0u ? now / n * n : 0u;
+        if (base + n > len) base = len - n;             /* (a lane whose STEPS do not divide the pattern: its last n) */
+        t_base = base;
+        t_now = now;                                     /* (the roll: the whole pattern) */
+        now = now != ~0u ? now - base : ~0u;
+    }
     for (i = 0; i < n; i++) {                            /* the ring */
         uint32_t a = i * 65536u / n + 49152u;
         int32_t x = cx + ((rad * og_cos(a)) >> 15), y = cy + ((rad * og_sin(a)) >> 15), r;
-        const step_t *s = &t->step[i];
+        const step_t *s = &t->step[t_base + i];
         uint32_t hit = dr ? (step_lanes(s) >> lane) & (sl ? 1u : 0xFFu) : s->time == ST_NOTE && s->n;   /* (ALL: any) */
         uint32_t acc = dr ? (step_accents(s) >> lane) & (sl ? 1u : 0xFFu) : 0u, gh = dr && sl && hit && step_lmode(s, lane) == LM_GHOST;
         r = !hit ? 1 : gh ? 2 : acc ? 5 : n > 24u ? 3 : 4;
@@ -407,7 +416,7 @@ static void graph_euclid(const track_t *t)
             uint16_t c = on ? T_TEXT : e->l[i].h ? T_MID : T_DIM;
             if (sl && on) cv_rect(136, y, 98, rh, T_RAISE);
             cv_rect(136, y, 3, rh, on ? T_ACCENT : T_DIM);
-            cv_text(144, y + (rh - 8) / 2, &AF_X, LN[i], c);
+            cv_text(144, y + (rh - 8) / 2, &AF_X, LN[i + 1u], c);   /* (V10.21: the lanes' names; LN[0] is ALL) */
             b[0] = 0; fmt_int(b, e->l[i].h); str_cpy(b + str_len(b), "/", 2); fmt_int(b + str_len(b), e->l[i].n);
             cv_text_r(230, y + (rh - 8) / 2, &AF_X, b, c, sl && on ? T_RAISE : T_SURF);
         }
@@ -441,7 +450,7 @@ static void graph_euclid(const track_t *t)
                 cv_rect(x0 + (int32_t)i * cw, y, (int32_t)g * cw - 1 > 1 ? (int32_t)g * cw - 1 : 1, 3, c ? T_ACCENT : T_THEME);
             }
         }
-        if (now != ~0u) cv_rect(x0 + (int32_t)now * cw, y0, 1, rh, T_TEXT);
+        if (t_now != ~0u) cv_rect(x0 + (int32_t)t_now * cw, y0, 1, rh, T_TEXT);
         if (e->src == 0u) str_cpy(b, "SCL", sizeof b);
         else if (e->src == 7u) str_cpy(b, "NEW KEY", sizeof b);
         else { str_cpy(b, "FROM T1", sizeof b); b[6] = (char)('0' + e->src); }
