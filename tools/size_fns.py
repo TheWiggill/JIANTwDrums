@@ -31,7 +31,13 @@ SIZE_FILES = ["ui.c", "favorites.c", "menu_items.c", "icons.c", "ui_graph.c", "u
               "ui_tools.c", "fm6_vbank.c", "sing.c",
               # (0.9.7) the main-loop functions of the sound files (what the interrupts reach stays -Os, as above): the
               # MASTER pot's boot and poll, FM6's patch store, the kit's names and grids, MOD's names, the PUNCH lane
-              "pfx.c", "master.c", "audio.c", "mod.c", "fx.c", "drumx_voice.c", "eng_drum.c", "eng_fm6.c"]
+              "pfx.c", "master.c", "audio.c", "mod.c", "fx.c", "drumx_voice.c", "eng_drum.c", "eng_fm6.c",
+              # (V10.29) the files added since, and the other engines' main-loop side (as 0.9.7's: what the
+              # interrupts reach keeps -Os): EUCLID, SCENE, LIVE, MIDI LEARN, the song player, PERFORM, PLAYHEADS
+              "ui_euclid.c", "ui_scene.c", "ui_live.c", "seq_live.c", "midi_learn.c", "song_play.c", "perform.c",
+              "fugue.c", "slicer.c", "voice.c", "fm6_core.c", "eng_add.c", "eng_analog.c", "eng_animal.c",
+              "eng_digital.c", "eng_formant.c", "eng_lofi.c", "eng_noise.c", "eng_phase.c", "eng_string.c",
+              "eng_wheel.c", "bt.c", "click.c"]
 ISR_ROOTS = ("fm1_alnk0_irq", "fm1_timer5_irq")      # hal/fm1_isr.S: the audio ISR, the key / LED scan (+ USB poll)
 DEF = re.compile(r"^(?:static|void|int|uint\w*|int\w*|const)\b[^;=(]*?\b([A-Za-z_]\w*)\s*\(", re.M)
 IR_DEF = re.compile(r"^(define [^\n]*?@\"?([\w.]+)\"?\([^\n]*\)(?: unnamed_addr| local_unnamed_addr)?)( #\d+[^\n]*\{)$",
