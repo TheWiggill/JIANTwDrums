@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.29", items: [
+    ["Optimización: más código compilado para ocupar menos (EUCLID, SCENE, LIVE, MIDI LEARN, el reproductor de canciones, los menús y presets de los motores); ~1,8 KB más de flash libre para lo que viene. El sonido no cambia.", "Optimisation: more code built for size (EUCLID, SCENE, LIVE, MIDI LEARN, the song player, the engines' menus and presets); ~1.8 KB more flash free for what comes next. The sound is unchanged."]]},
   {v: "V10.28", items: [
     ["EUCLID arranca todo en 0 (sin HITS, DENSITY 0, MODES y VARY en 0) para armar desde cero. Si la pista ya tiene una secuencia (grabada, editada o del generador), EUCLID la transforma con sus mismas notas (YOUR SEQ / YOUR NOTES). VARY en dos mitades: 0–50 varía el ciclo sin agregar compases, cada valor distinto; 51–100 suma las cuatro partes A A' A'' B.", "EUCLID starts all at 0 (no HITS, DENSITY 0, MODES and VARY 0) to build from nothing. When the track already has a sequence (recorded, edited, a generator song), EUCLID transforms it with its own notes (YOUR SEQ / YOUR NOTES). VARY in two halves: 0–50 varies the cycle without adding bars, every value different; 51–100 adds the four parts A A' A'' B."]]},
   {v: "V10.27", items: [
