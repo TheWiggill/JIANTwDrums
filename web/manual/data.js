@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.33", items: [
+    ["Clock MIDI estable. Salida (MIDI OUT CLOCK / ALL): cada uno de los 24 pulsos por tiempo sale en su momento (USB y Bluetooth), no en ráfagas: el equipo que sigue lee el tempo que pusiste (104 se leía 105,1 y oscilaba). Entrada (CLK USB / TRS / Bluetooth): el tempo se mide sobre dos tiempos y se mantiene en un BPM entero, sin saltar 103 / 105 / 104.", "MIDI clock steady. Out (MIDI OUT CLOCK / ALL): each of the 24 pulses a beat leaves at its own time (USB and Bluetooth), not in bursts: a follower reads the tempo you set (104 read 105.1 and wandered). In (CLK USB / TRS / Bluetooth): the tempo measured over two beats and held as a whole BPM, no 103 / 105 / 104 jumping."]]},
   {v: "V10.32", items: [
     ["MIDI Bluetooth se empareja sin PIN (Just Works) cuando la compu o el teléfono lo piden: Windows y los Mac / Android que antes lo rechazaban ahora conectan. El emparejamiento sobrevive al apagado.", "Bluetooth MIDI pairs with no PIN (Just Works) when the computer or phone asks: Windows and the Macs / Androids that refused before now connect. The pairing survives a power-off."]]},
   {v: "V10.31", items: [
