@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.30", items: [
+    ["Optimización a mano: código de dibujo repetido, en un solo lugar; todas las pantallas idénticas (verificado en 9250 renders). ~0,6 KB más de flash libre (4,4 KB en total).", "Optimisation by hand: repeated drawing code in one place; every screen identical (checked on 9250 renders). ~0.6 KB more flash free (4.4 KB in all)."]]},
   {v: "V10.29", items: [
     ["Optimización: más código compilado para ocupar menos (EUCLID, SCENE, LIVE, MIDI LEARN, el reproductor de canciones, los menús y presets de los motores); ~1,8 KB más de flash libre para lo que viene. El sonido no cambia.", "Optimisation: more code built for size (EUCLID, SCENE, LIVE, MIDI LEARN, the song player, the engines' menus and presets); ~1.8 KB more flash free for what comes next. The sound is unchanged."]]},
   {v: "V10.28", items: [
