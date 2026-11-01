@@ -75,6 +75,7 @@ static void fmt_fix(char *b, int32_t v, int decimals)
 }
 
 static void fmt_int(char *b, int32_t v) { fmt_fix(b, v, 0); }
+static void fmt_frac(char *b, int32_t a, int32_t n) { fmt_int(b, a); b += str_len(b); *b++ = '/'; fmt_int(b, n); }   /* (V10.30) "a/n" */
 
 static uint32_t rng_state = 0x1234567u;
 static uint32_t rng(void)

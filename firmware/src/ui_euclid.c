@@ -584,7 +584,7 @@ static void graph_euclid(const track_t *t)
             if (sl && on) cv_rect(136, y, 98, rh, T_RAISE);
             cv_rect(136, y, 2, rh, sl && on ? T_ACCENT : T_SURF);
             cv_text(144, y + (rh - 8) / 2, &AF_X, LN[i + 1u], c);
-            b[0] = 0; fmt_int(b, e->l[i].h); str_cpy(b + str_len(b), "/", 2); fmt_int(b + str_len(b), e->l[i].n);
+            fmt_frac(b, e->l[i].h, e->l[i].n);
             cv_text_r(230, y + (rh - 8) / 2, &AF_X, b, e->l[i].h ? heat_col(48 + (int32_t)(e->l[i].h * 200u / nn)) : T_DIM, sl && on ? T_RAISE : T_SURF);
         }
         return;

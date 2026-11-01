@@ -1111,9 +1111,7 @@ static int32_t crumb_count(char *b)
     }
     if (n < 2u)
         return 0;
-    fmt_int(b, (int32_t)k + 1);
-    str_cpy(b + str_len(b), "/", 2);
-    fmt_int(b + str_len(b), (int32_t)n);
+    fmt_frac(b, (int32_t)k + 1, (int32_t)n);
     return text_w(&AF_X, b);
 }
 /* (0.9.9-seq2g: the 0.6's footer back, as the owner asked) the 16 steps of the bar the cursor is in, on every page: a step
@@ -1339,6 +1337,14 @@ static __attribute__((noinline)) void comp_columns(void)
         return;
     }
 }
+/* (V10.30, flash) a parameter's card: its value formatted, its gauge (d's ratio of v) */
+static void pf_column(uint32_t c, const char *label, const param_desc_t *d, int32_t v, uint16_t col, uint32_t icon)
+{
+    char val[12];
+    const char *unit;
+    param_format(d, v, val, &unit);
+    draw_column(c, label, val, unit, col, RATIO(d, v), icon);
+}
 static void draw_columns(void)
 {
     uint32_t c;
@@ -1382,8 +1388,7 @@ static void draw_columns(void)
         else {
             const param_desc_t *da = track_desc(TSEL, P_M1AMT + 3u * (uint32_t)j);
             int16_t a = TSEL->p[P_M1AMT + 3u * (uint32_t)j];
-            param_format(da, a, val, &unit);
-            draw_column(3, "AMT", val, unit, a ? VAL(3u) : T_DIM, RATIO(da, a), ICON_NONE);
+            pf_column(3, "AMT", da, a, a ? VAL(3u) : T_DIM, ICON_NONE);
         }
         return;
     }
@@ -1391,11 +1396,9 @@ static void draw_columns(void)
         uint32_t id = P_ATK + (ui.stage & 3u);
         int16_t *vp = &TSEL->p[id];
         hot_gauge_column(0, "STAGE", TP[id].label, (int32_t)(ui.stage & 3u) * 1000 / 3);
-        param_format(&TP[id], *vp, val, &unit);
         card_mot_of(vp);
-        draw_column(1, TP[id].label, val, unit, VAL(1u), RATIO(&TP[id], *vp), ICON_NONE);
-        param_format(&TP[P_ELOOP], TSEL->p[P_ELOOP], val, &unit);
-        draw_column(2, TP[P_ELOOP].label, val, unit, VAL(2u), RATIO(&TP[P_ELOOP], TSEL->p[P_ELOOP]), ICON_NONE);
+        pf_column(1, TP[id].label, &TP[id], *vp, VAL(1u), ICON_NONE);
+        pf_column(2, TP[P_ELOOP].label, &TP[P_ELOOP], TSEL->p[P_ELOOP], VAL(2u), ICON_NONE);
         text_column(3, "", "", T_DIM);
         return;
     }
@@ -1415,9 +1418,7 @@ static void draw_columns(void)
             return;
         }
         s = chain_config.row[row].slot & 3u;
-        fmt_int(val, (int32_t)row + 1);
-        str_cpy(val + str_len(val), "/", 2);
-        fmt_int(val + str_len(val), (int32_t)chain_config.count);
+        fmt_frac(val, (int32_t)row + 1, (int32_t)chain_config.count);
         hot_text_column(0, "ROW", val);
         if (!k) str_cpy(val, "SEC", sizeof val);
         else { val[0] = 'T'; val[1] = (char)('0' + k); val[2] = 0; }
@@ -1453,9 +1454,7 @@ static void draw_columns(void)
         }
         if (row == chain_config.count) str_cpy(val, "ADD", sizeof val);
         else {                                          /* (0.8.5, the mock-up: "2/6") */
-            fmt_int(val, (int32_t)row + 1);
-            str_cpy(val + str_len(val), "/", 2);
-            fmt_int(val + str_len(val), (int32_t)chain_config.count);
+            fmt_frac(val, (int32_t)row + 1, (int32_t)chain_config.count);
         }
         hot_text_column(0, "ROW", val);
         if (used) { val[0] = (char)('A' + chain_config.row[row].slot); val[1] = 0; }
@@ -1527,9 +1526,7 @@ static void draw_columns(void)
         const param_desc_t *d;
         if (r < n) {
             const motion_event_t *e = &motion.event[idx[r]];
-            fmt_int(val, (int32_t)r + 1);
-            str_cpy(val + str_len(val), "/", 4);
-            fmt_int(val + str_len(val), (int32_t)n);
+            fmt_frac(val, (int32_t)r + 1, (int32_t)n);
             step = MOTION_STEP(e);
             id = MOTION_ID(e);
             v = MOTION_VAL(e);
@@ -1592,12 +1589,10 @@ static void draw_columns(void)
         param_format(&TP[P_LEVEL], (int32_t)lvl, val, &unit);   /* (0: OFF) */
         card_mot_of(&TSEL->p[P_LEVEL]);
         draw_column(0, "LEVEL", val, unit, lvl && !t->p[P_MUTE] ? VAL(0u) : T_DIM, (int32_t)lvl * 1000 / 127, ICON_AUTO);
-        param_format(&TP[P_PAN], t->p[P_PAN], val, &unit);
         card_mot_of(&TSEL->p[P_PAN]);
-        draw_column(1, "PAN", val, unit, VAL(1u), RATIO(&TP[P_PAN], t->p[P_PAN]), param_icon(&TP[P_PAN], t->p[P_PAN]));
-        param_format(&TP[P_REV], t->p[P_REV], val, &unit);
+        pf_column(1, "PAN", &TP[P_PAN], t->p[P_PAN], VAL(1u), param_icon(&TP[P_PAN], t->p[P_PAN]));
         card_mot_of(&TSEL->p[P_REV]);
-        draw_column(2, "REV", val, unit, VAL(2u), RATIO(&TP[P_REV], t->p[P_REV]), ICON_AUTO);
+        pf_column(2, "REV", &TP[P_REV], t->p[P_REV], VAL(2u), ICON_AUTO);
         djf_format(song.g[G_DJF], val, &unit);          /* (0.9.1) KNOB 4: the master DJ FILTER (was the track's MUTE) */
         card_mot_next = (uint8_t)motion_djf_any();
         card_curve_next = (int16_t)(song.g[G_DJF] + 256);
@@ -1660,10 +1655,8 @@ static void draw_columns(void)
         fmt_int(val, (int32_t)sl_ui_step + 1);
         draw_column(0, "STEP", val, "/16", sl_ui_step < (uint32_t)song.g[G_SLPLEN] ? VAL(0u) : T_DIM,
                     (int32_t)sl_ui_step * 1000 / 15, ICON_AUTO);
-        param_format(&GP[id], song.g[id], val, &unit);
-        draw_column(1, "PITCH", val, unit, song.g[id] ? VAL(1u) : T_DIM, RATIO(&GP[id], song.g[id]), ICON_AUTO);
-        param_format(&GP[G_SLPLEN], song.g[G_SLPLEN], val, &unit);
-        draw_column(2, "LEN", val, unit, VAL(2u), RATIO(&GP[G_SLPLEN], song.g[G_SLPLEN]), ICON_AUTO);
+        pf_column(1, "PITCH", &GP[id], song.g[id], song.g[id] ? VAL(1u) : T_DIM, ICON_AUTO);
+        pf_column(2, "LEN", &GP[G_SLPLEN], song.g[G_SLPLEN], VAL(2u), ICON_AUTO);
         param_format(&GP[G_SLPQ], song.g[G_SLPQ], val, &unit);
         hot_unit_column(3, "QUANT", val, unit);
         return;
@@ -1674,12 +1667,9 @@ static void draw_columns(void)
         fmt_int(val, (int32_t)ms_ui_step + 1);
         draw_column(0, "STEP", val, "/16", ms_ui_step < (uint32_t)t->p[P_MSLEN] ? VAL(0u) : T_DIM,
                     (int32_t)ms_ui_step * 1000 / 15, ICON_AUTO);
-        param_format(&TP[id], t->p[id], val, &unit);
-        draw_column(1, "LEVEL", val, unit, VAL(1u), RATIO(&TP[id], t->p[id]), ICON_LEVEL);
-        param_format(&TP[P_MSLEN], t->p[P_MSLEN], val, &unit);
-        draw_column(2, "LEN", val, unit, VAL(2u), RATIO(&TP[P_MSLEN], t->p[P_MSLEN]), ICON_AUTO);
-        param_format(&TP[P_MSSLW], t->p[P_MSSLW], val, &unit);
-        draw_column(3, "SLEW", val, unit, t->p[P_MSSLW] ? VAL(3u) : T_DIM, RATIO(&TP[P_MSSLW], t->p[P_MSSLW]), ICON_GLIDE);
+        pf_column(1, "LEVEL", &TP[id], t->p[id], VAL(1u), ICON_LEVEL);
+        pf_column(2, "LEN", &TP[P_MSLEN], t->p[P_MSLEN], VAL(2u), ICON_AUTO);
+        pf_column(3, "SLEW", &TP[P_MSSLW], t->p[P_MSSLW], t->p[P_MSSLW] ? VAL(3u) : T_DIM, ICON_GLIDE);
         return;
     }
     if (fop_page(cur_page()->graph)) {                   /* (0.6.10) FM6: OP, then three of its bytes (ui_fm6op.c) */
@@ -1705,8 +1695,7 @@ static void draw_columns(void)
         draw_column(0, "SLOT", val, "/4", VAL(0u), (int32_t)mod_ui_slot * 1000 / 3, mod_src_icon(MS_OFF));   /* (the mod icon) */
         text_column(1, "SRC", N_MSRC[clamp(s, 0, MS_N - 1)], s ? VAL(1u) : T_DIM);
         text_column(2, "DEST", mod_dst_name(t, d), d ? VAL(2u) : T_DIM);
-        param_format(&TP[id + 2u], a, val, &unit);
-        draw_column(3, "AMT", val, unit, a ? VAL(3u) : T_DIM, RATIO(&TP[id + 2u], a), mod_src_icon(MS_OFF));
+        pf_column(3, "AMT", &TP[id + 2u], a, a ? VAL(3u) : T_DIM, mod_src_icon(MS_OFF));
         return;
     }
     if (cur_page()->graph == GR_ROLL && lock_held()) {   /* a step held: what KNOB 1..4 lock (ui_input.c lock_turn) */

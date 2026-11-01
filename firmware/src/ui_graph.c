@@ -1025,9 +1025,7 @@ static void page_title(char *ti)
     str_cpy(ti, pt ? pt : grid_on() && roll_view(pg) ? "GRID" : nb, 12);
     if (n > 1) {
         str_cpy(ti + str_len(ti), " ", 4);
-        fmt_int(ti + str_len(ti), (int32_t)k);
-        str_cpy(ti + str_len(ti), "/", 4);
-        fmt_int(ti + str_len(ti), (int32_t)n);
+        fmt_frac(ti + str_len(ti), (int32_t)k, (int32_t)n);
     }
     if (roll_view(pg) && !drum_track(t)) {          /* the piano roll: its tinted rows' scale ("C MIN") */
         str_cpy(ti, N_NOTE[(uint32_t)t->p[P_ROOT] % 12u], 4);

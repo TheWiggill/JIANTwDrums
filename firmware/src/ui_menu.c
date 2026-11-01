@@ -282,9 +282,7 @@ static void menu_cards(void)
     char v[16];
     if (ui.mlv == 2u) {
         char k[8];
-        fmt_int(k, (int32_t)(ui.menu_sel - f) + 1);
-        str_cpy(k + str_len(k), "/", 2);
-        fmt_int(k + str_len(k), (int32_t)n);
+        fmt_frac(k, (int32_t)(ui.menu_sel - f) + 1, (int32_t)n);
         gauge_column(0, "TAB", MTAB_NAME[t], T_TEXT, (int32_t)t * 1000 / 3);
         gauge_column(1, "ROW", k, T_TEXT, (int32_t)(ui.menu_sel - f) * 1000 / (int32_t)(n > 1u ? n - 1u : 1u));
         menu_val(ui.menu_sel, v);
@@ -419,9 +417,7 @@ BTAPP_FN static void bt_prox_panel(const aafont_t *fx, const aafont_t *fm, const
                                                          * packets, the good packets received (16 bits each) */
         uint32_t d = bt_hw_rxdiag();
         str_cpy(b, bt_hw_status() & 1u ? "L1 " : "L0 ", sizeof b);
-        fmt_int(b + str_len(b), (int32_t)(d & 0xFFFFu));
-        str_cpy(b + str_len(b), "/", 2);
-        fmt_int(b + str_len(b), (int32_t)(d >> 16));
+        fmt_frac(b + str_len(b), (int32_t)(d & 0xFFFFu), (int32_t)(d >> 16));
         cv_text_r(228, 64 - AF_X_CAP_Y, fx, b, T_DIM, T_SURF);
     }
     if (bp.conn && bp.have) {                           /* (V10.18) the four words, to read off the screen */
