@@ -2584,7 +2584,10 @@ que tocás llega a la vez a todas las pistas con rol, cada una a su manera, todo
 | **LEAD** | la tecla una octava arriba |
 
 - **KNOB 1** SCENE OFF / ON, **KNOB 2** la pista (TRACK), **KNOB 3** su ROLE, **KNOB 4** el tipo de CHORD de esa pista.
-- Por defecto: T1 KEEP (el kit), T2 LEAD, T3 KEEP, T4 ARP, T5 BASS, T6 CHORD. T5 y T6 necesitan **6 TRACKS** (MENU).
+- Al encender SCENE está en OFF y todas las pistas en KEEP (V10.26). **OCT+** en esta página **tira el dado** de los roles:
+  cada rol va a una sola pista, así nunca hay dos pistas haciendo lo mismo ni dos tocando acordes (cuida la polifonía);
+  el kit queda en KEEP. **OCT−** pone todas en KEEP. Si lo prendés sin roles, SCENE tira el dado solo. Darle a una pista
+  (KNOB 3) un rol que ya tiene otra pasa esa otra a KEEP. T5 y T6 necesitan **6 TRACKS** (MENU).
 - Con **REC** armado y sonando: cada pista con rol graba lo que tocó en sus propios pasos (los acordes en un paso, el
   arpegio sus notas), así una toma escribe toda la escena; las pistas en KEEP no se tocan.
 - La página muestra las seis pistas, sus roles y las notas que hizo la última tecla en cada una.

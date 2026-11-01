@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.26 pública", items: [
+    ["El instalador público pasa a V10.26: SCENE, EUCLID / MUTATE / PRESETS / TOOLS rediseñados, el microtiming de NUDGE, ENV 2, LP24, PLS3 y STRING FDBK. SCENE arranca apagado con todas las pistas en KEEP; OCT+ tira el dado de los roles (nunca dos pistas iguales ni dos con acordes).", "The public installer moves to V10.26: SCENE, the redesigned EUCLID / MUTATE / PRESETS / TOOLS, NUDGE's micro timing, ENV 2, LP24, PLS3 and STRING FDBK. SCENE starts OFF with every track KEEP; OCT+ dices the roles (never two tracks alike nor two playing chords)."]]},
   {v: "V10.25", items: [
     ["SEQ › STRETCH › NUDGE en dos modos: OCT− (azul) mueve toda la secuencia de a pasos; OCT+ (rojo) mueve el paso del cursor en microtiming, 1/64 de paso por detent. PRESETS elige el paso.", "SEQ › STRETCH › NUDGE in two modes: OCT− (blue) moves the whole sequence by steps; OCT+ (red) moves the cursor step in micro timing, 1/64 of a step a detent. PRESETS picks the step."]]},
   {v: "V10.24", items: [

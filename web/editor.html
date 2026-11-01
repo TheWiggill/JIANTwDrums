@@ -854,7 +854,7 @@ function fmtValue(d, v) {
       return [(ms10 / 10000).toFixed(2), "s"];
     }
     case F.LFOHZ: {
-      if (v < 0) return [["4BAR", "2BAR", "1BAR", "1/2", "1/4", "1/8D", "1/4T", "1/8", "1/8T", "1/16", "1/16T", "1/32"][(-v - 1) % 12], ""];   /* (0.6.51) in time */
+      if (v < 0) return [["4BAR", "2BAR", "1BAR", "1/2", "1/4", "1/8D", "1/4T", "1/8", "1/8T", "1/16", "1/16T", "1/32", "8BAR", "16BAR"][(-v - 1) % 14], ""];   /* (0.6.51) in time; V10.27: 8BAR 16BAR */
       const h = 0.05 * Math.pow(800, (v & 127) / 127); return [h < 10 ? h.toFixed(2) : h.toFixed(1), "Hz"];
     }
     case F.CUTOFF: { const h = 30 * Math.pow(16000 / 30, (v & 127) / 127); return h < 1000 ? [String(Math.round(h)), "Hz"] : [(h / 1000).toFixed(1), "kHz"]; }
@@ -1567,7 +1567,7 @@ function makeMockDevice(opt = {}) {
     D("LEVEL", F.DB, 0, 127, 104),
     D("ATK", F.TIME, 0, 127, 10), D("DEC", F.TIME, 0, 127, 70), D("SUS", F.PCT, 0, 127, 90), D("REL", F.TIME, 0, 127, 60),
     D("FILTER", F.BIPCT, -64, 63, 0), D("PITCH", F.BIPCT, -64, 63, 0), D("SHAPE", F.BIPCT, -64, 63, 0), E("LOOP", ["OFF", "ON"], 0),   /* (JIANT 0.4: P_ED_FX is the ENV LOOP) */
-    D("RATE", F.LFOHZ, -12, 127, 60), E("WAVE", ["SIN", "TRI", "SAW", "SQR", "S&H"], 0), D("PHASE", F.INT, -1, 127, 0), D("FADE", F.TIME, 0, 127, 0),   /* (0.6.51) RATE < 0 in time, PHASE -1 FREE (0.9.18: shown as MODE TRIG / FREE, lfoModeRows) */
+    D("RATE", F.LFOHZ, -14, 127, 60), E("WAVE", ["SIN", "TRI", "SAW", "SQR", "S&H"], 0), D("PHASE", F.INT, -1, 127, 0), D("FADE", F.TIME, 0, 127, 0),   /* (0.6.51) RATE < 0 in time, PHASE -1 FREE (0.9.18: shown as MODE TRIG / FREE, lfoModeRows) */
     D("PITCH", F.BIPCT, -64, 63, 0), D("FILTER", F.BIPCT, -64, 63, 0), D("SHAPE", F.BIPCT, -64, 63, 0), D("AMP", F.PCT, 0, 127, 0),
     E("MODE", ["OFF", "UP", "DN", "UPDN", "RND", "ORD", "REPEAT", "DNUP", "UP+8", "CONV", "DIVG", "PINKY", "THUMB", "WALK", "CHORD", "TRNS"], 0), E("RATE", NDIV, 2), D("OCT", F.INT, 1, 4, 1), D("GATE", F.PCT, 1, 127, 64),
     D("SWING", F.PCT, 0, 100, 0), D("PROB", F.PCT, 0, 127, 127), E("HOLD", NONOFF, 0), E("ORDER", ["NOTE", "PLAY"], 0),

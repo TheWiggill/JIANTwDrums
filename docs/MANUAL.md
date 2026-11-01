@@ -2436,7 +2436,10 @@ you play reaches all the tracks with a role at once, each in its own way, all fr
 | **LEAD** | the key an octave up |
 
 - **KNOB 1** SCENE OFF / ON, **KNOB 2** the TRACK, **KNOB 3** its ROLE, **KNOB 4** that track's CHORD type.
-- The defaults: T1 KEEP (the kit), T2 LEAD, T3 KEEP, T4 ARP, T5 BASS, T6 CHORD. T5 and T6 need **6 TRACKS** (MENU).
+- At power-on SCENE is OFF and every track KEEP (V10.26). **OCT+** on this page **dices** the roles: each role goes to one
+  track at most, so two tracks never play the same thing and never two play chords (it keeps the polyphony); the kit
+  stays KEEP. **OCT−** sets every track KEEP. Turned ON with no role set, SCENE dices one. Giving a track a role another
+  track has (KNOB 3) sends that other track to KEEP. T5 and T6 need **6 TRACKS** (MENU).
 - **REC** armed and playing: every track with a role records what it played into its own steps (chords into one step,
   the arp its notes), so one take writes the whole scene; the KEEP tracks are untouched.
 - The page shows the six tracks, their roles and the notes the last key made on each.

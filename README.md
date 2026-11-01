@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.25).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.26).
 
 ## Reporting a crash
 
@@ -428,6 +428,15 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.26 — public (2026-11-02)
+- Stable installer: everything from V10.21 to V10.26, tested on hardware: SCENE, the redesigned EUCLID / MUTATE /
+  PRESETS / TOOLS, NUDGE's micro timing, ENV 2, LP24, PLS3, STRING FDBK.
+
+### V10.26 (beta)
+- **SCENE** starts OFF with every track KEEP. **OCT+** dices the roles (each role one track at most: never two tracks
+  doing the same, never two playing chords), **OCT−** all KEEP; turned ON with none set it dices; a role given by hand
+  takes it from the track that had it.
 
 ### V10.25 (beta)
 - **SEQ › STRETCH › NUDGE** in two modes: **OCT−** (blue) moves the whole sequence a step, as before; **OCT+** (red)
