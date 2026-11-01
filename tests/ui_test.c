@@ -9384,7 +9384,7 @@ static int test_drum_kits(void)
     for (i = 0; i < NTRK; i++)                          /* (0.8.1: this track the only DRUM one: the kit is its to load) */
         if (&trk[i] != TSEL && trk[i].eng_req == ENGI_DRUM) set_engine_of(&trk[i], ENGI_ANALOG);
     set_engine(ENGI_DRUM);
-    ok = k909 == 1u && ENG_DRUM.npresets == 9u && DX_NKIT == 9u && TSEL->preset == 0 &&
+    ok = k909 == 1u && ENG_DRUM.npresets == 10u && DX_NKIT == 10u && TSEL->preset == 0 &&
          dx_kit[DV_KICK].a[DXP_PMOD] == DX_KIT_DEF[DV_KICK].a[DXP_PMOD];
     TSEL->preset = (uint8_t)(k909 - 1u);
     turn(EN_PRESET, 1);                                 /* browsing (HOME): 909 CLUB */

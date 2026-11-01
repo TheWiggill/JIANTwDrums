@@ -162,6 +162,9 @@ static const struct {
      * now that the arpeggiator is the track's and a preset no longer switches it on */
     {"ARP", {48, 51, 55, 60, 63, 67, 72, 75, 48, 51, 55, 60, 63, 67, 72, 75},       /* 13 */
      {1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0}},
+    /* (V10.34) boom bap (HIP HOP's): the kick on 1, the "and" of 2 and 3's second 16th, the snare on 2 and 4 */
+    {"BOOM BAP", {36, 0, 42, 0, 38, 0, 42, 36, 0, 36, 42, 0, 38, 0, 42, 46},     /* 14 */
+     {1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0}},
 };
 #undef T_
 #define NPATTERNS (sizeof PATTERNS / sizeof PATTERNS[0])

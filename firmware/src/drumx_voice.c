@@ -560,6 +560,20 @@ static const dx_kit_t DX_KITS[] = {
         },
         {0, 6, 0, 9, 9, 0, 0, 11}, {0, 206, 204, 0, 0, 0, 0, 0},   /* the layers; the sends (bus << 6 | amount) */
     },
+    {   /* HIP HOP (V10.34, a user's ask): boom bap: a round kick with a knock, a fat cracking snare, a tight clap,
+         * dusty hats (band-passed), a low tom, a woody rim, a shaker in the BELL's place */
+        {
+            {DX_MODE(DXW_SINE, DXF_LP, 1), {6, 84, 74, 8, 26}, {10, 112, 90, 16, 62}},   /* KICK */
+            {DX_MODE(DXW_FM, DXF_BP, 1), {38, 34, 62, 106, 82}, {44, 22, 76, 124, 62}},   /* SNARE */
+            {DX_MODE(DXW_SINE, DXF_BP, 0), {58, 0, 42, 127, 76}, {52, 0, 54, 127, 66}},   /* CLAP */
+            {DX_MODE(DXW_METAL, DXF_BP, 0), {98, 0, 12, 96, 84}, {106, 0, 6, 112, 92}},   /* HAT CL */
+            {DX_MODE(DXW_METAL, DXF_BP, 0), {98, 0, 54, 96, 80}, {106, 0, 66, 112, 88}},   /* HAT OP */
+            {DX_MODE(DXW_SINE, DXF_LP, 1), {26, 36, 70, 10, 16}, {32, 56, 80, 20, 36}},   /* TOM */
+            {DX_MODE(DXW_BELL, DXF_HP, 1), {61, 10, 10, 16, 34}, {68, 24, 16, 30, 48}},   /* RIM */
+            {DX_MODE(DXW_METAL, DXF_BP, 0), {84, 0, 20, 110, 70}, {92, 0, 28, 124, 80}},   /* SHAKER */
+        },
+        {0, 8, 0, 8, 8, 0, 4, 6}, {0, 206, 204, 0, 0, 0, 196, 0},   /* the layers; the sends (bus << 6 | amount) */
+    },
 };
 #define DX_NKIT ((uint32_t)(sizeof DX_KITS / sizeof DX_KITS[0]))
 /* a stored kit as the voice takes it: values 0..127, the mode's fields in range (wave 0..3, filter 0..2, snap) */
