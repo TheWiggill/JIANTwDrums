@@ -1314,6 +1314,16 @@ Melódica (cualquier otra pista):
   según VARY, la última la que más (en DRUM-X su final trae redobles en el redoblante y los hats). En una pista
   melódica las vueltas siguientes le contestan al motivo de la primera: algunas notas quedan, otras son nuevas, según
   VARY. HITS sigue exacto en cada vuelta. VARY 0: una sola vuelta, como antes.
+- **VARY en dos mitades** (V10.28): de **0 a 50** varía la secuencia actual **sin agregar compases** (una sola
+  vuelta; cada valor es una variación distinta, 50 la que más se mueve); de **51 a 100** aparecen las **cuatro
+  partes A A' A'' B** y se van separando cada vez más hasta 100.
+- **Todo en 0 por defecto** (V10.28): EUCLID arranca sin HITS (DRUM-X: DENSITY 0), con MODES y VARY en 0, para
+  armar desde cero.
+- **Si la pista ya tiene una secuencia** (grabada, editada o de una canción del generador; no un patrón de fábrica
+  sin tocar), EUCLID **la transforma con las mismas notas**: VARY corre sus golpes y respeta sus notas largas; MOTION
+  cambia el orden de sus notas, OCTAVE las salta de octava. Girar HITS, STEPS o ROTATE pasa al ritmo euclidiano pero
+  sigue usando tus notas (la pantalla dice **YOUR SEQ** / **YOUR NOTES**). En DRUM-X usa solo los carriles que
+  tenía la secuencia.
 - **Las notas de una pista melódica**: dentro del **SCL** de la pista (ROOT / SCALE) si está puesto (la pantalla dice
   **SCL**); si no, en la tonalidad donde mejor entran las notas de las otras pistas (**FROM T*n***); si no, una escala
   y una tónica nuevas (**NEW KEY**). La melodía se queda en el registro que tenía la pista al primer giro (una pista

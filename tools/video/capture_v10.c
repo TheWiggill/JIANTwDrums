@@ -53,38 +53,45 @@ static void put(uint32_t k, uint32_t i, uint32_t n, const uint8_t *notes, uint32
     s->vel = n ? 100 : 0;
     s->comp = s->carg = 0;
 }
-static const uint8_t ROOT_V[4] = {40, 36, 43, 38};
-static const uint8_t CH_V[4][4] = {{52, 55, 59, 64}, {48, 55, 60, 64}, {50, 55, 59, 62}, {50, 54, 57, 62}};
-static const uint8_t ARPV[4][8] = {{64, 67, 71, 76, 71, 67, 71, 74}, {64, 67, 72, 76, 72, 67, 72, 74},
-                                   {62, 67, 71, 74, 71, 67, 71, 74}, {62, 66, 69, 74, 69, 66, 69, 73}};
+/* (V10.28, the user: the old progression too obvious) the harmony by half bars, less expected: Em(add9) two halves,
+ * Fmaj7#11 over the E pedal (the Phrygian flat II), Cmaj7 then Abmaj7 (a chromatic mediant, G the common tone),
+ * Bsus4 resolving to B7b9; the bass syncopated 3+3+2 with a chromatic F into the turn; the arp a three-step cell
+ * against the bar (3 over 4, walking the chord's tones); the lead angular: the b2 sigh, the #11, the Eb of Abmaj7 */
+static const uint8_t PAD_H[8][4] = {{52, 55, 59, 66}, {52, 55, 59, 66}, {53, 57, 64, 71}, {53, 57, 64, 71},
+                                    {48, 55, 59, 64}, {44, 51, 55, 60}, {47, 52, 54, 57}, {47, 51, 57, 60}};
+static const uint8_t BASS_B[4][6] = {{40, 52, 47, 40, 50, 52}, {40, 52, 41, 40, 48, 52}, {43, 55, 50, 44, 51, 56},
+                                     {47, 59, 54, 47, 45, 41}};
 static void section(void)
 {
-    uint32_t b, i;
-    for (b = 0; b < 4u; b++) {
-        for (i = 0; i < 16u; i++) {
-            uint8_t n = (uint8_t)(ROOT_V[b] + (i == 14u ? 12u : 0u));
-            put(T_BASS, b * 16u + i, i % 2u ? 0u : 1u, &n, i % 2u ? ST_REST : ST_NOTE, i == 0u ? SF_ACCENT : 0u);
+    static const uint8_t BP[6] = {0, 3, 6, 8, 11, 14}, AO[5] = {0, 2, 1, 3, 2};
+    static const uint8_t LV[][2] = {{0, 2}, {71, 3}, {78, 3}, {79, 6}, {0, 2},
+                                    {76, 2}, {77, 4}, {71, 6}, {69, 4},
+                                    {67, 4}, {71, 2}, {72, 2}, {75, 6}, {72, 2},
+                                    {76, 4}, {75, 4}, {72, 2}, {71, 4}, {0, 2}};
+    uint32_t b, i, j, p, c = 0;
+    for (b = 0; b < 4u; b++)
+        for (i = 0; i < 16u; i++) {                      /* the bass: 3+3+2 twice, the accent on the one */
+            uint32_t q = b * 16u + i;
+            for (j = 0; j < 6u && BP[j] != i; j++) {}
+            if (j < 6u) put(T_BASS, q, 1, &BASS_B[b][j], ST_NOTE, !i ? SF_ACCENT : 0u);
+            else put(T_BASS, q, 0, 0, ST_REST, 0);
         }
-        for (i = 0; i < 16u; i++) {
-            uint8_t n = ARPV[b][i / 2u];
-            put(T_ARP, b * 16u + i, i % 2u ? 0u : 1u, &n, i % 2u ? ST_REST : ST_NOTE, 0);
-        }
-        for (i = 0; i < 16u; i++)
-            put(T_PAD, b * 16u + i, i ? 0u : 4u, CH_V[b], i ? (i < 15u ? ST_TIE : ST_REST) : ST_NOTE, 0);
-        for (i = 0; i < 16u; i++) {
-            uint8_t v[2] = {(uint8_t)(CH_V[b][2] + 12u), (uint8_t)(CH_V[b][3] + 12u)};
-            put(T_CHOIR, b * 16u + i, i ? 0u : 2u, v, i ? (i < 15u ? ST_TIE : ST_REST) : ST_NOTE, 0);
-        }
+    for (p = 0; p < 64u; p++) {
+        const uint8_t *h = PAD_H[p / 8u];
+        uint32_t chg = !(p % 8u) && (!p || memcmp(h, PAD_H[p / 8u - 1u], 4));
+        uint8_t v[2], a;
+        put(T_PAD, p, chg ? 4u : 0u, h, p == 63u ? ST_REST : chg ? ST_NOTE : ST_TIE, 0);
+        v[0] = (uint8_t)(h[2] + 12u > 80u ? h[2] : h[2] + 12u); v[1] = (uint8_t)(h[3] + 12u > 84u ? h[3] : h[3] + 12u);
+        put(T_CHOIR, p, chg ? 2u : 0u, v, p == 63u ? ST_REST : chg ? ST_NOTE : ST_TIE, 0);
+        if (p % 3u == 2u) { put(T_ARP, p, 0, 0, ST_REST, 0); continue; }   /* (the cell: two notes and a gap) */
+        a = (uint8_t)(h[AO[c % 5u] % 4u] + (AO[c % 5u] == 0u && c % 10u >= 5u ? 24u : 12u));
+        put(T_ARP, p, 1, &a, ST_NOTE, 0);
+        c++;
     }
-    {
-        static const uint8_t LV[][2] = {{71, 6}, {69, 2}, {67, 4}, {66, 4}, {64, 8}, {67, 4}, {64, 4},
-                                        {74, 6}, {71, 2}, {69, 4}, {67, 4}, {66, 12}, {0, 4}};
-        uint32_t j, p = 0;
-        for (j = 0; j < 13u; j++) {
-            uint8_t n = LV[j][0];
-            for (i = 0; i < LV[j][1] && p < 64u; i++, p++)
-                put(T_LEAD, p, n && !i ? 1u : 0u, &n, !n ? ST_REST : i ? ST_TIE : ST_NOTE, 0);
-        }
+    for (j = 0, p = 0; j < sizeof LV / sizeof LV[0]; j++) {
+        uint8_t n = LV[j][0];
+        for (i = 0; i < LV[j][1] && p < 64u; i++, p++)
+            put(T_LEAD, p, n && !i ? 1u : 0u, &n, !n ? ST_REST : i ? ST_TIE : ST_NOTE, 0);
     }
 }
 static step_t keep_steps[NTRK][NSTEP];

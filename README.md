@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.26).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.28).
 
 ## Reporting a crash
 
@@ -428,6 +428,14 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.28 (beta)
+- **EUCLID starts at 0** (no HITS, DENSITY 0, MODES and VARY 0): built from nothing.
+- **A sequence the track already has** (recorded, edited, a generator song) is **transformed with its own notes**:
+  VARY moves its hits and keeps its held notes; HITS / STEPS / ROTATE switch to the euclidean rhythm, still with your
+  notes (**YOUR SEQ** / **YOUR NOTES**). DRUM-X: only the lanes it had.
+- **VARY in two halves**: 0–50 varies the one cycle (no bars added, every value its own variation); 51–100 adds the
+  four parts A A' A'' B, further apart the higher.
 
 ### V10.27 (beta)
 - Testers' fixes: the **CHORD** page on screen no longer changes the next key's chord (with VOICING LEAD a key could

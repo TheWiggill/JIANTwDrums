@@ -1259,6 +1259,15 @@ Melodic (any other track):
   many as fit in 64), each varied anew, **A A' A'' B**: the first close to the even grid, the middle ones by VARY, the
   last the most (on DRUM-X its end gets rolls on the snare and hats). On a melodic track the later turns answer the
   first one's motif: some notes kept, some new, by VARY. HITS stays exact in every turn. VARY 0: one turn, as before.
+- **VARY in two halves** (V10.28): **0 to 50** varies the current sequence **without adding bars** (one turn; each
+  value a different variation, 50 the most moved); **51 to 100** brings in the **four parts A A' A'' B**, further
+  apart the higher.
+- **All at 0 by default** (V10.28): EUCLID starts with no HITS (DRUM-X: DENSITY 0), MODES and VARY at 0, to build
+  from nothing.
+- **When the track already has a sequence** (recorded, edited, or a generator song; not an untouched factory
+  pattern), EUCLID **transforms it with the same notes**: VARY moves its hits and keeps its held notes; MOTION
+  reorders its notes, OCTAVE jumps them. Turning HITS, STEPS or ROTATE switches to the euclidean rhythm but still uses
+  your notes (the screen says **YOUR SEQ** / **YOUR NOTES**). On DRUM-X only the lanes the sequence had.
 - **A melodic track's notes**: inside the track's **SCL** (ROOT / SCALE) when it is set (the screen says **SCL**);
   else in the key the other tracks' notes fit best (**FROM T*n***); else a new scale and root (**NEW KEY**). The melody
   keeps the register the track had at the first turn (an empty track: around C4).
