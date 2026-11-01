@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.30).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.31).
 
 ## Reporting a crash
 
@@ -428,6 +428,13 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.31 (beta)
+- **EUCLID is reversible on your sequence**: it keeps what you had recorded (whole: notes, chords, velocities,
+  components, micro timing) and puts it back when its settings are at rest again (VARY and MODES 0, your own rhythm)
+  or **HITS / DENSITY go to 0** (YOUR SEQUENCE BACK). The whole copy is the last track EUCLID took; for another track
+  taken earlier, its rhythm and notes come back.
+- **SCL › SCENE is saved with the project** (ON and the six roles); an older project loads with SCENE OFF.
 
 ### V10.30 (beta)
 - Optimisation by hand: repeated drawing code in one place; every screen exactly as before (checked on 9250

@@ -1268,6 +1268,10 @@ Melodic (any other track):
   pattern), EUCLID **transforms it with the same notes**: VARY moves its hits and keeps its held notes; MOTION
   reorders its notes, OCTAVE jumps them. Turning HITS, STEPS or ROTATE switches to the euclidean rhythm but still uses
   your notes (the screen says **YOUR SEQ** / **YOUR NOTES**). On DRUM-X only the lanes the sequence had.
+- **EUCLID is reversible** (V10.31): it keeps your whole sequence (notes, chords, velocities, components, micro
+  timing) and gives it back as it was when everything is at rest again (VARY and MODES 0, your own rhythm) or when
+  **HITS / DENSITY go to 0** (YOUR SEQUENCE BACK). The whole copy is the last track EUCLID took; for another track
+  taken earlier, its rhythm and notes come back.
 - **A melodic track's notes**: inside the track's **SCL** (ROOT / SCALE) when it is set (the screen says **SCL**);
   else in the key the other tracks' notes fit best (**FROM T*n***); else a new scale and root (**NEW KEY**). The melody
   keeps the register the track had at the first turn (an empty track: around C4).
