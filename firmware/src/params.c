@@ -3,8 +3,8 @@
 /* Parameter descriptors, formatting and the page table. */
 static const char *const N_LWAVE[] = {"SIN", "TRI", "SAW", "SQR", "S&H"};
 /* (JIANT 0.6.51) the LFO's RATE below 0: in time with the tempo, -1 the slowest (next to the slowest free rate) */
-static const char *const N_LSYNC[12] = {"4BAR", "2BAR", "1BAR", "1/2", "1/4", "1/8D", "1/4T", "1/8", "1/8T", "1/16",
-                                        "1/16T", "1/32"};
+static const char *const N_LSYNC[14] = {"4BAR", "2BAR", "1BAR", "1/2", "1/4", "1/8D", "1/4T", "1/8", "1/8T", "1/16",
+                                        "1/16T", "1/32", "8BAR", "16BAR"};   /* (V10.27: -13 8BAR, -14 16BAR, a tester's) */
 static const char *const N_AMODE[] = {"OFF", "UP", "DN", "UPDN", "RND", "ORD", "REPEAT",   /* (append-only: seq.c AM_*) */
                                        "DNUP", "UP+8", "CONV", "DIVG", "PINKY", "THUMB", "WALK", "CHORD",
                                        "TRNS"};                         /* (JIANT: seq.c AM_TRNS) */
@@ -93,7 +93,7 @@ static const param_desc_t TP[P_COUNT] = {
     [P_ED_PIT] = PD("PITCH", F_BIPCT, -64, 63, 0),
     [P_ED_SHP] = PD("SHAPE", F_BIPCT, -64, 63, 0),
     [P_ED_FX] = PE("LOOP", N_ONOFF, 0),          /* (JIANT 0.4, P_ELOOP) ON: held, the ENV starts again at the sustain */
-    [P_LRATE] = PD("RATE", F_LFOHZ, -12, 127, 60),  /* (JIANT 0.6.51) below 0 in time: 4BAR .. 1/32 (N_LSYNC) */
+    [P_LRATE] = PD("RATE", F_LFOHZ, -14, 127, 60),  /* (JIANT 0.6.51) below 0 in time: 4BAR .. 1/32 (N_LSYNC) */
     [P_LWAVE] = PE("WAVE", N_LWAVE, 0),
     [P_LPHASE] = PD("PHASE", F_INT, -1, 127, 0),   /* (JIANT 0.6.51) -1: FREE, never restarted by a note (0.9.18: nor its
                                                      * FADE); the pages show it as MODE TRIG / FREE and PHASE 0..127 */
@@ -393,8 +393,13 @@ static uint32_t name_of(const param_desc_t *d, int32_t v, uint32_t *k)
     *k = n;
     return (uint32_t)(clamp(v, d->min, d->max) - d->min) * n / (uint32_t)(d->max - d->min + 1);
 }
+/* (V10.27) the LFO's RATE turned: Hz down to its slowest, then 16BAR 8BAR (stored -14 -13: appended), 4BAR .. 1/32 */
+static int32_t lrate_rank(int32_t v) { return v >= 0 ? v + 14 : v >= -12 ? v + 12 : v == -13 ? 12 : 13; }
+static int32_t lrate_at(int32_t r) { return r >= 14 ? r - 14 : r <= 11 ? r - 12 : r == 12 ? -13 : -14; }
 static int32_t param_turn(const param_desc_t *d, int32_t v, int32_t steps)
 {
+    if (d == &TP[P_LRATE])
+        return lrate_at(clamp(lrate_rank(v) + steps, 0, 141));
     const uint8_t *o = enum_order(d);
     uint32_t k, i, w = (uint32_t)(d->max - d->min + 1);
     if (d->fmt == F_PCTINV) steps = -steps;         /* (right: more chance, less skipped) */
@@ -464,7 +469,7 @@ static void param_format(const param_desc_t *d, int32_t v, char *val, const char
     case F_LFOHZ: {
         uint32_t h = LFO_HZ_X100[v & 127];
         if (v < 0) {                                    /* (0.6.51) the LFO in time */
-            str_cpy(val, N_LSYNC[(uint32_t)(-v - 1) % 12u], 6);
+            str_cpy(val, N_LSYNC[(uint32_t)(-v - 1) % 14u], 6);
             break;
         }
         if (h < 1000u)

@@ -147,8 +147,8 @@ int main(void)
         }
         printf("tape:   WOW 0: the period %.3f .. %.3f samples; WOW 100: %.3f .. %.3f (%.1f cents)\n", mn[0], mx[0], mn[1],
                mx[1], 1200 * log2(mx[1] / mn[1]));
-        ck("3. WOW 100: the period swings a few cents (2 .. 30), WOW 0 steady (under 1 cent)",
-           1200 * log2(mx[1] / mn[1]) > 2 && 1200 * log2(mx[1] / mn[1]) < 30 && 1200 * log2(mx[0] / mn[0]) < 1);
+        ck("3. WOW 100: the period swings (V10.27: a warped record, 20 .. 120 cents), WOW 0 steady (under 1 cent)",
+           1200 * log2(mx[1] / mn[1]) > 20 && 1200 * log2(mx[1] / mn[1]) < 120 && 1200 * log2(mx[0] / mn[0]) < 1);
     }
     {
         int32_t d2max = 0, d2tone = 0;
@@ -166,7 +166,7 @@ int main(void)
         }
         printf("tape:   0 -> 100 -> 0 in one block: the second difference at most %d (the tone's own %d)\n", d2max, d2tone);
         ck("   WOW and TAPE turned 0 -> 100 -> 0 in one block: no click (the second difference within 6 x the tone's own: p9b's drive)",
-           d2max <= 6 * d2tone + 8);
+           d2max <= 7 * d2tone + 8);   /* (V10.27: 7 x: the wobble raises the pitch ~50 cents, the curvature with it; no click) */
     }
     /* ---- 4. a project keeps them ---- */
     {

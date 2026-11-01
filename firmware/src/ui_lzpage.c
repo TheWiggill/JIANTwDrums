@@ -308,7 +308,7 @@ static void graph_chord(const track_t *t)
     for (d = 0; d < c; d++) {
         uint8_t nt[8];
         int32_t x = 14 + (int32_t)d * 31;
-        uint32_t n = chord_build(t, 48u + rt + deg[d], nt), k;
+        uint32_t n = chord_peek(t, 48u + rt + deg[d], nt), k;
         cv_rect(x - 2, 18, 27, 100, d == 0u ? T_TINT : T_SURF);
         for (k = 0; k < n && k < 8u; k++)
             cv_rect(x, 112 - clamp((int32_t)nt[k] - 48, 0, 31) * 3, 23, 3, k == 0u ? T_ACCENT : T_THEME);

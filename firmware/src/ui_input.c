@@ -1222,7 +1222,11 @@ static void edit_param(uint32_t slot, int32_t steps)
         fg_set_t *f = &fg_set[song.sel % NTRK][fg_ui % FG_HEADS];
         int32_t d = steps > 0 ? 1 : -1;
         if (slot == 0u) fg_ui = (uint8_t)clamp((int32_t)fg_ui + d, 0, FG_HEADS - 1);
-        else if (slot == 1u) f->rate = (uint8_t)clamp((int32_t)f->rate + d, 0, FG_NRATE - 1);
+        else if (slot == 1u) {                          /* (V10.27: over FG_ORD, 1/16 1/8 after OFF) */
+            uint32_t r;
+            for (r = 0; r < FG_NRATE && FG_ORD[r] != f->rate; r++) {}
+            f->rate = FG_ORD[clamp((int32_t)r + d, 0, FG_NRATE - 1)];
+        }
         else if (slot == 2u) f->dir = (uint8_t)clamp((int32_t)f->dir + d, 0, 3);
         else f->ivl = (int8_t)clamp((int32_t)f->ivl + d, -14, 14);
         return;
@@ -1775,13 +1779,8 @@ static void seq_entry(uint32_t pressed)
         if (kb_sn[k] && kb_trk[k] == ti) {             /* (0.6.83) SCL > CHORD: the chord the key sounds (seq.c key_on), */
             nc = kb_sn[k];                              /* all of it into the step, as live recording does */
             memcpy(cn, kb_snd[k], KB_CH);
-        } else {                                        /* (the key not in yet: built here, LEAD's memory as it was) */
-            uint8_t last[KB_CH], nl = chord_nlast[ti];
-            memcpy(last, chord_last[ti], KB_CH);
-            nc = chord_build(t, note, cn);
-            memcpy(chord_last[ti], last, KB_CH);
-            chord_nlast[ti] = nl;
-        }
+        } else                                          /* (the key not in yet: built here, LEAD's memory untouched) */
+            nc = chord_peek(t, note, cn);
         for (c = 0; c < nc && c < KB_CH; c++)
             ent_note(t, st, cn[c]);
         last_note = (uint8_t)note;

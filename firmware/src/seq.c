@@ -253,9 +253,9 @@ static uint32_t chord_build_mode(const track_t *t, uint32_t root, uint8_t *out, 
     static const int8_t SHP[6][4] = {{0, 4, 7, -1}, {0, 3, 7, -1}, {0, 4, 7, 10}, {0, 4, 7, 11}, {0, 3, 7, 10},
                                      {0, 7, 12, -1}};
     const engine_t *e = ENGINES[eng_idx(t->eng_req)];
-    uint32_t vc = (uint32_t)t->p[P_CVOI], n = 0, i, j, ti = trk_index(t) % NTRK, any = mode & 0x80u;   /* (V10.25 SCENE: */
-    int32_t nt[KB_CH + 1], r = (int32_t)root;                                                      /* any voice) */
-    mode &= 0x7Fu;
+    uint32_t vc = (uint32_t)t->p[P_CVOI], n = 0, i, j, ti = trk_index(t) % NTRK, any = mode & 0x80u, peek = mode & 0x40u;
+    int32_t nt[KB_CH + 1], r = (int32_t)root;           /* (V10.25 SCENE any: any voice; V10.27 peek: the screen's, */
+    mode &= 0x3Fu;                                      /* LEAD's last chord not written: drawing changed the voicing) */
     if (!mode || mode > CD_POW || e->oneshot || (e->keys && e->keys(t, 0) >= 0) || (t->p[P_VOICE] != V_POLY && !any)) {
         out[0] = (uint8_t)root;
         return 1;
@@ -325,6 +325,7 @@ static uint32_t chord_build_mode(const track_t *t, uint32_t root, uint8_t *out, 
     for (i = 0, j = 0; i < n && j < KB_CH; i++)
         if (nt[i] >= 0 && nt[i] <= 127) out[j++] = (uint8_t)nt[i];
     if (!j) out[j++] = (uint8_t)root;
+    if (peek) return j;
     for (i = 0; i < j; i++) chord_last[ti][i] = out[i];
     chord_nlast[ti] = (uint8_t)j;
     return j;
@@ -333,7 +334,15 @@ static uint32_t chord_build(const track_t *t, uint32_t root, uint8_t *out)
 {
     return chord_build_mode(t, root, out, (uint32_t)t->p[P_CHRD]);
 }
-static uint32_t chord_gap(const track_t *t) { return (uint32_t)clamp(t->p[P_CSTR], 0, 127) * (FS / 2000u); }   /* (~0.5 ms a step) */
+static uint32_t chord_peek(const track_t *t, uint32_t root, uint8_t *out)   /* (V10.27) the screen's: no voicing state */
+{
+    return t->p[P_CHRD] ? chord_build_mode(t, root, out, (uint32_t)t->p[P_CHRD] | 0x40u) : chord_build(t, root, out);
+}
+static inline __attribute__((always_inline)) uint32_t chord_gap(const track_t *t)   /* (~0.5 ms a step to 64 (32 ms); V10.27, a tester: past it up to ~1 s) */
+{
+    uint32_t v = (uint32_t)clamp(t->p[P_CSTR], 0, 127);
+    return v <= 64u ? v * (FS / 2000u) : 64u * (FS / 2000u) + (v - 64u) * (v - 64u) * 11u;
+}
 
 /* ------------------------------------------------------------- arp --- */
 static void arp_add(track_t *t, uint32_t note)
@@ -1171,13 +1180,13 @@ static void key_off(uint32_t k, track_t *t)
 }
 
 /* (V10.25) SCENE: key k down (on) or up on every track with a role; the notes again from the key at the key-up */
-static uint32_t scn_notes(const track_t *t, uint32_t r, uint32_t root, uint8_t *o)
+static uint32_t scn_notes(const track_t *t, uint32_t r, uint32_t root, uint8_t *o, int pk)
 {
     if (r == SC_BASS || r == SC_LEAD) {
         o[0] = (uint8_t)clamp((int32_t)root + (r == SC_BASS ? -12 : 12), 0, 127);
         return 1;
     }
-    return chord_build_mode(t, root, o, (t->p[P_CHRD] ? (uint32_t)t->p[P_CHRD] : CD_TRI) | 0x80u);   /* (whatever its voice) */
+    return chord_build_mode(t, root, o, (t->p[P_CHRD] ? (uint32_t)t->p[P_CHRD] : CD_TRI) | 0x80u | (pk ? 0x40u : 0u));
 }
 static void scene_key(uint32_t k, int on)
 {
@@ -1187,7 +1196,7 @@ static void scene_key(uint32_t k, int on)
         track_t *t = &trk[i];
         if (!scn_role[i] || drum_track(t))
             continue;
-        n = scn_notes(t, scn_role[i], kb_map(t, k), o);
+        n = scn_notes(t, scn_role[i], kb_map(t, k), o, 0);
         mc = trk_midi_ch(i);
         if (on && n > 1u && rec_on(t) && !t->p[P_AMODE])   /* (a chord: into one step, as key_on) */
             for (j = 0; j < n; j++)

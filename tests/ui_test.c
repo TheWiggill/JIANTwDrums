@@ -282,8 +282,14 @@ static void hold(uint32_t label)                  /* held 0.8 s, then let go */
     fm1_in.buttons &= ~(1u << panel.btn[label]);
     frame();
 }
+static uint32_t menu_tab(void);
+static uint32_t mtab_first(uint32_t t);
+static int raw_knob;                              /* (V10.27) turn(): the knob as named, no MENU mapping */
 static void turn(uint32_t role, int32_t s)
 {
+    if (ui.menu == 1 && role >= EN_K1 && role <= EN_K4 && !raw_knob)   /* (V10.27) MENU: KNOB k its card's row; a knob in the
+                                                     * older tests: the selected row's own */
+        role = EN_K1 + (ui.menu_sel - mtab_first(menu_tab())) % 4u;
     host_enc[panel.enc[role]] += s * panel.dir[role];
     frame();
     host_ticks += 200000u;                        /* (no knob acceleration between the turns) */
@@ -2581,7 +2587,19 @@ static int test_menu_tabs(void)
     ok &= ui.menu_sel == MI_USB;
     turn(EN_K4, 1); ok &= (ui_prefs & PREF_USB_FIXED) && fx_usb_fixed;
     turn(EN_K2, -1); ok &= !(ui_prefs & PREF_USB_FIXED) && !fx_usb_fixed;
-    bad += check("MENU: any of KNOB 1..4 changes the selected row's value in any tab, the menu stays", ok && ui.menu == 1);
+    bad += check("MENU: the selected row's knob changes its value in any tab, the menu stays", ok && ui.menu == 1);
+    {   /* (V10.27, a tester: "the 4 knobs move the same parameter") KNOB k its card's row (the rows' numbers 1..4) */
+        uint32_t a0 = click_mode, l0 = click_lvl;
+        ui.menu_sel = MI_LOWCUT; ui.force = 1; frame();
+        raw_knob = 1;
+        turn(EN_K3, 1);
+        ok = ui.menu_sel == MI_CLICK && click_mode != a0 && click_lvl == l0;
+        turn(EN_K4, 1);
+        ok &= ui.menu_sel == MI_CLKLVL && click_lvl != l0;
+        raw_knob = 0;
+        click_mode = a0; click_lvl = l0;
+        bad += check("MENU: KNOB 1..4 each its own card's row, the row picked with it (V10.27)", ok && ui.menu == 1);
+    }
 
     /* OCT+ / OCT-: the next / previous value on every kind of row (as the knobs: stopping at the ends; COLOR wraps) */
     ok = 1;
@@ -5330,7 +5348,7 @@ static int test_step_rec(void)
     {   /* (0.6.84) STRUM: recorded whole into the one step where the key went down (its later notes no longer fall into
          * the next step), and the sequencer strums the chord back, low to high */
         uint32_t i, used = 0, kr = 7, b2, first = 0, later = 0;
-        t->p[P_CSTR] = 127;                            /* (~63 ms apart) */
+        t->p[P_CSTR] = 64;                             /* (~32 ms apart; V10.27: past 64 up to ~1 s) */
         for (i = 0; i < NSTEP; i++) step_clear(&t->step[i]);
         while (t->seq_pos < step_samples(t, div_samples((uint32_t)t->p[P_SDIV]), t->seq_idx) * 2u / 5u)
             events_block(CTL);                         /* (just before the middle of a step: a strum would cross it) */
@@ -13023,6 +13041,38 @@ static int test_comp_cards(void)
     return check("COMP / COMP 2 / COMPS: every value of the four cards whole, in the four skins and LARGE", bad == 0 && n > 1000u);
 }
 
+/* (V10.27, a tester: "really slow LFOs, slower playheads and strum") the LFO's RATE: Hz, then 16BAR 8BAR 4BAR .. 1/32;
+ * PLAYHEADS' RATE 1/16 1/8 after OFF; STRUM past 64 up to ~1 s */
+static int test_slower(void)
+{
+    int ok;
+    track_t t;
+    ok = param_turn(&TP[P_LRATE], 0, -1) == -14 && param_turn(&TP[P_LRATE], -14, -1) == -13 &&
+         param_turn(&TP[P_LRATE], -13, -1) == -1 && param_turn(&TP[P_LRATE], -1, 1) == -13 && param_turn(&TP[P_LRATE], -14, 1) == 0 &&
+         param_turn(&TP[P_LRATE], -12, -1) == -12;
+    memset(&t, 0, sizeof t);
+    t.p[P_CSTR] = 40; ok &= chord_gap(&t) == 40u * (FS / 2000u);
+    t.p[P_CSTR] = 127; ok &= chord_gap(&t) > FS * 9u / 10u;
+    ok &= FG_ORD[1] == 11u && FG_DEN[11] == 16u;
+    return check("SLOWER: LFO 16BAR 8BAR before 4BAR, PLAYHEADS 1/16 1/8, STRUM to ~1 s (V10.27)", ok);
+}
+/* (V10.27, a tester: "a key plays a different chord after playing others") the CHORD page drew every degree's chord
+ * with chord_build, which wrote LEAD's last chord: the screen changed the next key's voicing. The screen peeks now */
+static int test_chord_peek(void)
+{
+    uint8_t a[KB_CH + 1], b[KB_CH + 1];
+    uint32_t na, nb, i;
+    ui_power_on();
+    song.sel = 4; set_engine_of(TSEL, ENGI_ANALOG);
+    TSEL->p[P_QUANT] = QN_SNAP; TSEL->p[P_CHRD] = 1; TSEL->p[P_CVOI] = 1; TSEL->p[P_VOICE] = V_POLY;   /* (TRIAD, LEAD) */
+    for (i = 0; i < 40u; i++) events_block(CTL);
+    key_down(7); events_block(CTL); key_up(7); events_block(CTL);
+    key_down(12); events_block(CTL); na = kb_sn[12]; memcpy(a, kb_snd[12], sizeof a); key_up(12); events_block(CTL);
+    key_down(7); events_block(CTL); key_up(7); events_block(CTL);
+    go_title("CHORD"); frames(200);                      /* (the page draws all seven degrees' chords) */
+    key_down(12); events_block(CTL); nb = kb_sn[12]; memcpy(b, kb_snd[12], sizeof b); key_up(12); events_block(CTL);
+    return check("CHORD LEAD: the CHORD page on screen does not change the next key's chord (V10.27)", na == nb && !memcmp(a, b, na));
+}
 /* (V10.25) SEQ > STRETCH's NUDGE: OCT- the whole sequence a step (blue), OCT+ the cursor step's MICRO timing (red) */
 static int test_nudge_micro(void)
 {
@@ -13151,6 +13201,8 @@ int main(void)
     bad += test_presets_back();
     bad += test_scene();
     bad += test_nudge_micro();
+    bad += test_chord_peek();
+    bad += test_slower();
     bad += test_large_face();
     bad += test_lz_home();
     bad += test_lz_edit();

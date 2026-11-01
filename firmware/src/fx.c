@@ -265,14 +265,14 @@ static __attribute__((noinline)) void clip_block(uint32_t n)
  * cents; a flutter ~7 Hz, ~3 samples), 0 at WOW 0 (no jump when it comes in), with a faint hiss; TAPE drives it x1 .. x4
  * into the soft clip with a bias (even harmonics; made up at a mix's usual level, as CLIP), loses the highs (a one-pole
  * down to ~7 kHz) and lifts the low end (a band about 60..100 Hz, up to ~+3 dB). Both knobs smoothed block to block */
-#define TP_LEN 128u
+#define TP_LEN 256u                                     /* (V10.27: int16, as many bytes as 128 int32) */
 #ifndef FM1_OPAQUE
 #define FM1_OPAQUE(v) ((void)(v))                    /* (the host: no reach to mind) */
 #endif
 static struct {
-    int32_t buf[2][TP_LEN];
+    int16_t buf[2][TP_LEN];
     uint32_t w, ph_w, ph_d, ph_f;
-    int32_t d, wa, lp[2], b1[2], b2[2], noise;
+    int32_t d, wa, lp[2], b1[2], b2[2], noise, wob, wv1, wtgt, wcnt, wrnd;   /* (V10.27) the wobble: where it drifts to, for how long */
     int32_t drv, wow;                                   /* the knobs smoothed (Q8: 0 .. 100 << 8) */
 } tp __attribute__((section(".pool")));
 static __attribute__((noinline)) void tape_block(uint32_t n)
@@ -295,8 +295,18 @@ static __attribute__((noinline)) void tape_block(uint32_t n)
     tp.ph_d += 13u * n << 10;
     tp.ph_f += 682u * n << 10;
     wa = wv * 64 * 256 / 100;                           /* (p9b: x1.6 the wow; with the flutter ~105 samples of TP_LEN) */
-    d1 = ((wa * (32768 - sine_i(tp.ph_w + 0x40000000u))) >> 16) + ((wa * (32768 - sine_i(tp.ph_d))) >> 17) +
-         (((wv * 2304 / 100) * (32768 - sine_i(tp.ph_f))) >> 16);   /* (p9b: thrice the flutter) */
+    if (!tp.wrnd) tp.wrnd = 0x2545F491;                  /* (V10.27: its own; the hiss's stays as it always played) */
+    if (--tp.wcnt <= 0) {                               /* (V10.27, a tester: "WOW barely heard, make it wobble like a
+                                                         * vinyl") a warped record: the delay drifts to a new place at
+                                                         * random every 0.1 .. 0.5 s, smoothed (~0.2 s), up to ~130
+                                                         * samples at 100: ~+-40 cents, never twice the same */
+        tp.wtgt = (int32_t)((noise32(&tp.wrnd) >> 17) * (uint32_t)wv / 80u);   /* (Q8 samples: 0 .. 40960, 160 samples) */
+        tp.wcnt = 70 + (int32_t)(noise32(&tp.wrnd) >> 23);
+    }
+    tp.wv1 += (tp.wtgt - tp.wv1) >> 5;                  /* (two one-poles: a smooth swell, no corner) */
+    tp.wob += (tp.wv1 - tp.wob) >> 5;
+    d1 = ((wa * (32768 - sine_i(tp.ph_w + 0x40000000u))) >> 17) + ((wa * (32768 - sine_i(tp.ph_d))) >> 18) + tp.wob +
+         (((wv * 2304 / 100) * (32768 - sine_i(tp.ph_f))) >> 16);   /* (p9b: thrice the flutter; V10.27: the swing halved) */
     tp.d = d1;
     for (i = 0; i < n; i++) {
         int32_t x[2], d = d0 + (d1 - d0) * (int32_t)i / (int32_t)n, di = d >> 8, fr = d & 255;
@@ -306,10 +316,10 @@ static __attribute__((noinline)) void tape_block(uint32_t n)
         tp.w = (tp.w + 1u) & (TP_LEN - 1u);
         for (c = 0; c < 2u; c++) {
             int32_t y = x[c], a, b;
-            tp.buf[c][tp.w] = y;
+            tp.buf[c][tp.w] = (int16_t)clamp(y >> 2, -32768, 32767);
             if (wv) {
-                a = tp.buf[c][(tp.w - (uint32_t)di) & (TP_LEN - 1u)];
-                b = tp.buf[c][(tp.w - (uint32_t)di - 1u) & (TP_LEN - 1u)];
+                a = tp.buf[c][(tp.w - (uint32_t)di) & (TP_LEN - 1u)] * 4;
+                b = tp.buf[c][(tp.w - (uint32_t)di - 1u) & (TP_LEN - 1u)] * 4;
                 y = a + (((b - a) * fr) >> 8) + (int32_t)((noise32(&tp.noise) >> 28) - 8u) * wv / 50;
             }
             if (dv) {

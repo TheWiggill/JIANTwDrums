@@ -6,7 +6,7 @@
  * chance roll; no components, locks or ratchets (those are the sequencer's). The settings are the section's (fg_set,
  * project.c FUNC 'F' 'G'); the heads start with the transport and stop with it. Cost: a few operations a block a head */
 #define FG_HEADS 3u
-#define FG_NRATE 10u
+#define FG_NRATE 12u                                    /* (V10.27: 1/8 1/16 appended, a tester's) */
 typedef struct {
     uint8_t rate, dir;                                   /* 0 OFF .. FG_NRATE - 1; FWD REV PING RND */
     int8_t ivl;                                          /* degrees, -14 .. 14 */
@@ -19,8 +19,9 @@ typedef struct {
 } fg_head_t;
 static fg_set_t fg_set[NTRK][FG_HEADS];
 static fg_head_t fg_head[NTRK][FG_HEADS];
-static const uint8_t FG_NUM[FG_NRATE] = {0, 1, 1, 1, 2, 1, 3, 2, 3, 4}, FG_DEN[FG_NRATE] = {1, 4, 3, 2, 3, 1, 2, 1, 1, 1};
-static const char *const N_FGRATE[FG_NRATE] = {"OFF", "1/4", "1/3", "1/2", "2/3", "x1", "3/2", "x2", "x3", "x4"};
+static const uint8_t FG_NUM[FG_NRATE] = {0, 1, 1, 1, 2, 1, 3, 2, 3, 4, 1, 1}, FG_DEN[FG_NRATE] = {1, 4, 3, 2, 3, 1, 2, 1, 1, 1, 8, 16};
+static const char *const N_FGRATE[FG_NRATE] = {"OFF", "1/4", "1/3", "1/2", "2/3", "x1", "3/2", "x2", "x3", "x4", "1/8", "1/16"};
+static const uint8_t FG_ORD[FG_NRATE] = {0, 11, 10, 1, 2, 3, 4, 5, 6, 7, 8, 9};   /* (the knob: OFF, slowest first) */
 static const char *const N_FGDIR[4] = {"FWD", "REV", "PING", "RND"};
 enum { FG_FWD, FG_REV, FG_PING, FG_RND };
 

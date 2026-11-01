@@ -380,8 +380,8 @@ static void track_lfo_tick(track_t *t)
     if (r < 0) {                                        /* (JIANT 0.6.51) in time: 4BAR .. 1/32 (params.c N_LSYNC), on
                                                          * the transport's grid while it plays (PHASE its offset), free
                                                          * while it is stopped */
-        static const uint16_t U[12] = {384, 192, 96, 48, 24, 18, 16, 12, 8, 6, 4, 3};   /* 1/24 of a quarter */
-        uint32_t len = beat_samples() * U[(uint32_t)(-r - 1) % 12u] / 24u;
+        static const uint16_t U[14] = {384, 192, 96, 48, 24, 18, 16, 12, 8, 6, 4, 3, 768, 1536};   /* 1/24 of a quarter */
+        uint32_t len = beat_samples() * U[(uint32_t)(-r - 1) % 14u] / 24u;
         if (len < 64u)
             len = 64u;
         if (song.playing)

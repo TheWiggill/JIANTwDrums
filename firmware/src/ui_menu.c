@@ -256,7 +256,7 @@ static int32_t menu_scroll_max(void)
  *   panel  MENU: the four tabs as tiles, each with its rows and their values (the tab shown framed); TAB: the tab's rows
  *          (the set's tinted with their knob's number, the selected one striped in the accent); ROW: the row's values as
  *          chips (the one set framed; COLOR: each palette's colours, live)
- * The knobs, ALGORITHM, PRESETS, OCT-/+ as before (any knob or OCT-/+ the selected row's value; PRESETS its row, on MENU
+ * The knobs, ALGORITHM, PRESETS, OCT-/+ as before (V10.27: KNOB k its card's row; OCT-/+ the selected row's value; PRESETS its row, on MENU
  * the tab). The drawing redone whole on a change (menu_sig) */
 static int menu_large(void) { return (ui_prefs & PREF_LARGE) != 0u; }
 static uint32_t menu_tab(void) { return MI_TAB[ui.menu_sel % MI_COUNT]; }
@@ -574,8 +574,16 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
     ui.mlv = 1;                                         /* (the tab's rows) */
     if ((s = panel_enc(EN_ALGO)) != 0)
         menu_tab_go(s);
-    for (s = 0, k = 0; k < 4u; k++)                    /* KNOB 1..4, any of them */
-        s += panel_enc(EN_K1 + k);
+    for (s = 0, k = 0; k < 4u; k++) {                  /* (V10.27, a tester) KNOB k its card's row, as the cards and the */
+        int32_t sk = panel_enc(EN_K1 + k);              /* rows' numbers show (was: any knob the selected row) */
+        uint32_t t = menu_tab(), r = mtab_first(t) + menu_set() * 4u + k;
+        if (!sk) continue;
+        if (r < mtab_first(t) + mtab_rows(t) && r < MI_VALUES) {
+            ui.menu_sel = (uint8_t)r;
+            menu_put(r, menu_step(r, sk));
+            ui.force = 1;
+        }
+    }
     if (ui.menu_sel == MI_BT && up && bt_prox_ok()) {  /* (V10.14) BLUETOOTH ON: OCT+ opens PROX's page */
         ui.menu = 3;
         ui.force = 1;

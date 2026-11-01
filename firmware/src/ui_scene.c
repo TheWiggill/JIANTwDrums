@@ -97,7 +97,7 @@ static void graph_scene(void)
                 if (t->step[j].time == ST_NOTE) cv_rect(x + 2, y0 + (int32_t)j * yh / 16, cw - 10, 2, T_DIM);
             continue;
         }
-        n = scn_notes(t, r, last_note, o);               /* the last key's notes on it, by pitch */
+        n = scn_notes(t, r, last_note, o, 1);               /* the last key's notes on it, by pitch */
         for (j = 0; j < n; j++) {
             int32_t y = y0 + yh - 4 - (clamp(o[j], 36, 96) - 36) * (yh - 6) / 60;
             cv_rect(x + 2 + (r == SC_ARP ? (int32_t)j * 7 : 0), y, r == SC_ARP ? 6 : cw - 10, 3, c);

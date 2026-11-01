@@ -1493,7 +1493,7 @@ static void draw_columns(void)
         const fg_set_t *f = &fg_set[song.sel % NTRK][fg_ui % FG_HEADS];
         fmt_int(val, (int32_t)(fg_ui % FG_HEADS) + 2);
         hot_gauge_column(0, "HEAD", val, (int32_t)(fg_ui % FG_HEADS) * 500);
-        gauge_column(1, "RATE", N_FGRATE[f->rate % FG_NRATE], f->rate ? VAL(1u) : T_DIM, (int32_t)f->rate * 1000 / 9);
+        gauge_column(1, "RATE", N_FGRATE[f->rate % FG_NRATE], f->rate ? VAL(1u) : T_DIM, (int32_t)f->rate * 1000 / (FG_NRATE - 1));
         gauge_column(2, "DIR", N_FGDIR[f->dir & 3u], f->rate ? VAL(2u) : T_DIM, (int32_t)(f->dir & 3u) * 333);
         val[0] = f->ivl > 0 ? '+' : 0;
         fmt_int(val + (f->ivl > 0), f->ivl);
