@@ -1476,7 +1476,13 @@ static void draw_columns(void)
         else if (r) { val[0] = 'x'; fmt_int(val + 1, r); }
         else str_cpy(val, "TO 64", sizeof val);
         gauge_column(1, "REPEAT", val, r != 1 ? VAL(1u) : T_DIM, (int32_t)shp_r * 1000 / 8);
-        hot_text_column(2, "NUDGE", "< >");
+        if (ndg_step) {                                  /* (V10.25) red: the cursor step's MICRO (64ths) */
+            int32_t m = ST_MICRO(&TSEL->step[ui.cursor % NSTEP]);
+            val[0] = m > 0 ? '+' : 0;
+            fmt_int(val + (m > 0), m);
+            text_column(2, "NUDGE", val, T_REC);
+        } else
+            text_column(2, "NUDGE", "< >", T_THEME);   /* blue: the whole sequence by steps */
         val[0] = ofs > 0 ? '+' : 0;
         fmt_int(val + (ofs > 0), ofs);
         card_mot_of(&TSEL->p[P_SOFS]);

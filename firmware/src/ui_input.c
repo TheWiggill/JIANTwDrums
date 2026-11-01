@@ -1128,7 +1128,9 @@ static void shape_knob(uint32_t slot, int32_t steps)
     int32_t d = steps > 0 ? 1 : -1;
     if (slot == 0u) { shp_i = (uint8_t)clamp((int32_t)shp_i + d, 0, 14); shape_apply(0); }
     else if (slot == 1u) { shp_r = (uint8_t)clamp((int32_t)shp_r + d, 0, 8); shape_apply(1); }
-    else if (slot == 2u) {
+    else if (slot == 2u && ndg_step) {                  /* (V10.25) the cursor step off the grid, 64ths of a step */
+        micro_edit(steps);
+    } else if (slot == 2u) {
         track_t *t = TSEL;
         if (chain_busy()) { ui_message("SONG PLAYS: STOP IT TO EDIT"); return; }
         tl_take(t);
@@ -2666,6 +2668,12 @@ static void ui_input_frame(void)
                 else if (b == B_OCTUP) ui_message("SOUND KEPT");
                 else ui_message(undo_sound(song.sel) ? "NOTHING TO GO BACK TO" : "SOUND BEFORE");
                 br_armed = 0;
+                break;
+            }
+            if (!ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_SHAPE) {   /* (V10.25) STRETCH: NUDGE's */
+                ndg_step = b == B_OCTUP;                /* mode, OCT- the sequence (blue), OCT+ the step (red) */
+                ui_message(ndg_step ? "NUDGE: THE STEP'S MICRO TIMING" : "NUDGE: THE WHOLE SEQUENCE");
+                ui.force = 1;
                 break;
             }
             if (!ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_EUCLID) {   /* (V10.6) EUCLID / MODES: */

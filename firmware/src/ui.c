@@ -788,6 +788,8 @@ static uint32_t lock_id(uint32_t k)
 
 static void ev_enter(void);
 static uint8_t br_armed;
+static uint8_t ndg_step;                            /* (V10.25) SEQ > STRETCH's NUDGE: 0 the sequence by steps (blue), 1 the
+                                                     * cursor step's MICRO timing (red); OCT- / OCT+ pick it */
 static uint32_t tl_t0;                              /* (V10.24) TOOLS: OCT+ held since (0: not), its action and track */
 static uint8_t tl_kind, tl_trk;
 #define TL_HOLD 900u                                /* (ms: held this long, it is done; no dialog) */

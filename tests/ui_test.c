@@ -180,6 +180,7 @@ static void ui_power_on(void)
     memset(&song, 0, sizeof song);
     scn_on = 0; scn_keys = 0;                     /* (V10.25: SCENE off at power-on, its roles the defaults) */
     memset(eu, 0, sizeof eu);                     /* (EUCLID / MUTATE: the session's, none at power-on) */
+    ndg_step = 0;
     { static const uint8_t R0[NTRK] = {SC_KEEP, SC_LEAD, SC_KEEP, SC_ARP, SC_BASS, SC_CHORD}; memcpy(scn_role, R0, sizeof R0); sc_trk = 5; }
     memset(&chain, 0, sizeof chain);
     chain_defaults(&chain_config);
@@ -13022,6 +13023,29 @@ static int test_comp_cards(void)
     return check("COMP / COMP 2 / COMPS: every value of the four cards whole, in the four skins and LARGE", bad == 0 && n > 1000u);
 }
 
+/* (V10.25) SEQ > STRETCH's NUDGE: OCT- the whole sequence a step (blue), OCT+ the cursor step's MICRO timing (red) */
+static int test_nudge_micro(void)
+{
+    int ok;
+    track_t *t;
+    ui_power_on();
+    song.sel = 1; t = TSEL;
+    my_steps(t);
+    go_title("STRETCH"); frame();
+    ui.cursor = 0;
+    t->step[0] = (step_t){{60}, 1, ST_NOTE, 0, 100};
+    press(B_OCTUP);
+    ok = ndg_step == 1u;
+    turn(EN_K3, 1); turn(EN_K3, 1); turn(EN_K3, 1);
+    ok &= ST_MICRO(&t->step[0]) == 3 && t->step[0].note[0] == 60;
+    turn(EN_K3, -1);
+    ok &= ST_MICRO(&t->step[0]) == 2;
+    press(B_OCTDN);
+    ok &= ndg_step == 0u;
+    turn(EN_K3, 1);
+    ok &= t->step[1].note[0] == 60 && ST_MICRO(&t->step[1]) == 2;   /* (the sequence a step right, its MICRO with it) */
+    return check("NUDGE: OCT+ the step's MICRO (64ths), OCT- the whole sequence a step (V10.25)", ok);
+}
 /* (V10.25) SCL > SCENE: one key plays every track given a role (T6 CHORD a triad, T5 BASS an octave down, T2 LEAD an
  * octave up, T4 ARP the chord into its arp); the kit and KEEP tracks are not reached; the key up ends them all; REC
  * records every role's track */
@@ -13109,6 +13133,7 @@ int main(void)
     bad += test_string_excite();
     bad += test_presets_back();
     bad += test_scene();
+    bad += test_nudge_micro();
     bad += test_large_face();
     bad += test_lz_home();
     bad += test_lz_edit();
