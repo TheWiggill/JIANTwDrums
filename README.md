@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.23).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.24).
 
 ## Reporting a crash
 
@@ -428,6 +428,19 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.24 (beta)
+- **SCL › SCENE**, the multitimbral mode: give each track a role (KEEP, CHORD, ARP, BASS, LEAD); with SCENE ON one key
+  plays them all at once from that note and the key (the kit keeps its sequence). REC records every role's track into
+  its own steps. See the manual, "SCENE".
+- **SEQ › EUCLID** redrawn: each DRUM-X lane a concentric ring in its heat colour, the lane picked bright, VARY's turns
+  (A A′ A″ B) under the ring.
+- **SEQ › MUTATE** redrawn: the anchor's pattern above, the pattern playing below with the changed steps lit, an arc
+  filling to the next mutation; OCT+ MUTATE / OCT− ANCHOR on screen.
+- **SAVE › PRESETS**: two columns (the engines with their beings and counts, the presets); turning plays each sound,
+  **OCT+** keeps it, **OCT−** brings back the sound from before you browsed.
+- **SAVE › TOOLS**: KNOB 1 the scope (TRACK, SOUND, SONG, SYSTEM), KNOB 2 the action, a picture of what it clears;
+  **hold OCT+ a second** to do it (a bar fills; no dialog, UNDO as before).
 
 ### V10.23 (beta)
 - **STRING FDBK** is heard: the loop took BLOOM's level twice (about −15 dB); now about four times louder.

@@ -628,6 +628,9 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.24", items: [
+    ["SCL › SCENE, el modo multitímbrico: cada pista con un rol (KEEP, CHORD, ARP, BASS, LEAD); con SCENE ON una tecla las toca todas desde esa nota y la tonalidad (el kit sigue con su secuencia). REC graba cada pista con rol en sus pasos.", "SCL › SCENE, the multitimbral mode: each track a role (KEEP, CHORD, ARP, BASS, LEAD); with SCENE ON one key plays them all from that note and the key (the kit keeps its sequence). REC records every role's track into its steps."],
+    ["Rediseño: EUCLID con anillos por carril en colores de calor y las vueltas de VARY; MUTATE muestra el ancla y lo que suena, con un arco hasta la próxima mutación; PRESETS en dos columnas (OCT+ se queda con el sonido, OCT− vuelve al anterior); TOOLS por alcance, se ejecuta manteniendo OCT+ un segundo.", "Redesign: EUCLID as rings per lane in heat colours with VARY's turns; MUTATE shows the anchor and what plays, an arc to the next mutation; PRESETS in two columns (OCT+ keeps the sound, OCT− goes back); TOOLS by scope, done by holding OCT+ a second."]]},
   {v: "V10.23", items: [
     ["STRING FDBK se escucha: el nivel del BLOOM se aplicaba dos veces (unos −15 dB). Al pasar EXCITE a FDBK suena enseguida: GAIN ya no hereda el 0 de STRETCH; cada modo guarda sus cuatro perillas de EDIT 2.", "STRING FDBK is heard: BLOOM's level was applied twice (about −15 dB). Turning EXCITE to FDBK sounds at once: GAIN no longer inherits STRETCH's 0; each mode keeps its own four EDIT 2 knobs."]]},
   {v: "V10.22", items: [
