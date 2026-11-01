@@ -794,6 +794,44 @@ static int test_euclid_src(void)
     for (i = n = c = 0; i < 16u; i++) { n += (step_lanes(&d->step[i]) & ~((1u << DV_KICK) | (1u << DV_SNARE))) != 0u; c += (step_lanes(&d->step[i]) >> DV_SNARE) & 1u; }
     ok &= n == 0u && c == 2u && d->p[P_SLEN] == 16;
     bad += check("V10.28 a recorded kit: its lanes only, VARY moves its hits (as many)", ok);
+    {   /* (V10.31) reversible: back to rest, or HITS / DENSITY 0, puts the sequence back whole */
+        step_t was[NSTEP];
+        song.sel = 1; frame(); go_title("EUCLID"); frame();
+        for (i = 0; i < NSTEP; i++) step_clear(&m->step[i]);
+        for (i = 0; i < 4u; i++) { step_t *q = &m->step[i * 4u]; q->time = ST_NOTE; q->n = i ? 1 : 3; q->vel = (uint8_t)(60 + i * 20); q->note[0] = NT[i]; q->note[1] = 67; q->note[2] = 71; }
+        ST_MICRO_SET(&m->step[4], 9);
+        m->p[P_SLEN] = 16;
+        memcpy(was, m->step, sizeof was);
+        eu_put(EK_K4, 30); frame();
+        ok = memcmp(was, m->step, sizeof was) != 0;
+        eu_put(EK_K4, 0); frame();
+        ok &= !memcmp(was, m->step, sizeof was) && m->p[P_SLEN] == 16 && msg_is("YOUR SEQUENCE BACK");
+        eu_put(EK_HITS, 7); frame(); eu_put(EK_M0 + 1u, 60); frame();
+        ok &= memcmp(was, m->step, sizeof was) != 0;
+        eu_put(EK_HITS, 0); frame();
+        ok &= !memcmp(was, m->step, sizeof was) && eu[1].l[0].h == 4u;
+        bad += check("V10.31 EUCLID reversible on a melody: VARY back to 0, or HITS 0, the sequence back whole (chords, velocities, micro)", ok);
+        song.sel = 0; frame(); go_title("EUCLID"); frame();
+        for (i = 0; i < NSTEP; i++) step_clear(&d->step[i]);
+        for (i = 0; i < 16u; i += 4u) grid_hit(d, i, (i % 8u) ? DV_SNARE : DV_KICK, 1);
+        grid_hit(d, 2, DV_HATC, 1); grid_hit(d, 10, DV_HATC, 1);
+        d->p[P_SLEN] = 16;
+        memcpy(was, d->step, sizeof was);
+        eu_put(EK_HITS, 6); frame();                 /* DENSITY 6: a whole kit */
+        ok = memcmp(was, d->step, sizeof was) != 0;
+        eu_put(EK_HITS, 0); frame();
+        ok &= !memcmp(was, d->step, sizeof was);
+        bad += check("V10.31 EUCLID reversible on a kit: DENSITY 0 puts the recorded kit back", ok);
+        song.sel = 1; frame(); go_title("EUCLID"); frame();
+        m->step[0].note[0] = 62; eu_put(EK_K4, 10); frame();   /* (the melody taken again: the kit's whole copy gone) */
+        ok = eu_bk_k == 1u;
+        song.sel = 0; frame(); go_title("EUCLID"); frame();
+        eu_put(EK_HITS, 5); frame();
+        eu_put(EK_HITS, 0); frame();
+        for (i = n = 0; i < 16u; i++) n += step_lanes(&d->step[i]) != step_lanes(&was[i]);
+        ok &= n == 0u && d->p[P_SLEN] == 16;
+        bad += check("V10.31 .. the kit's copy taken by another track: DENSITY 0 still brings its hits back (from what EUCLID took)", ok);
+    }
     memset(eu, 0, sizeof eu);
     return bad;
 }
@@ -1218,6 +1256,24 @@ static int test_dximg(void)
     bad += check("DRUM HANDS: kept with the project, beside the group mutes (0.7.9)", ok);
     dx_hands = 0; dx_mute_set(0);
     ui_power_on();
+    {   /* (V10.31) SCENE kept with the project ('S' 'C'); none stored: OFF, all KEEP */
+        static const uint8_t R6[NTRK] = {SC_KEEP, SC_CHORD, SC_BASS, SC_KEEP, SC_LEAD, SC_ARP};
+        scn_on = 1; memcpy(scn_role, R6, sizeof scn_role);
+        project_capture(&proj_scratch);
+        ok = proj_pack(&st, &proj_scratch);
+        scn_on = 0; memset(scn_role, 0, sizeof scn_role);
+        ok &= proj_import(&proj_scratch, &st, sizeof st) && !project_restore_runtime(&proj_scratch);
+        ok &= scn_on == 1u && !memcmp(scn_role, R6, sizeof scn_role);
+        scn_on = 0; memset(scn_role, 0, sizeof scn_role);
+        project_capture(&proj_scratch);
+        ok &= proj_pack(&st, &proj_scratch);
+        scn_on = 1; scn_role[2] = SC_BASS;
+        ok &= proj_import(&proj_scratch, &st, sizeof st) && !project_restore_runtime(&proj_scratch);
+        ok &= !scn_on && !scn_role[2];
+        bad += check("V10.31 SCENE kept with the project: ON and the six roles; a project without it: OFF, all KEEP", ok);
+        scn_on = 0; memset(scn_role, 0, sizeof scn_role);
+        ui_power_on();
+    }
     return bad;
 }
 /* (0.6.49) DRUM-X LAYER and each sound's FEEDBK: 0 runs the sound as before; LAYER moves it; kept with the project;

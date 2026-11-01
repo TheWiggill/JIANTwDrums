@@ -63,6 +63,9 @@ SECTIONS
         _hot_end = .;
     } > RAMTEXT AT > XIP
     _hot_load = LOADADDR(.hot_text);
+    /* (V10.31) EUCLID's keep: the sequence a track had before EUCLID transformed it (src/ui_euclid.c eu_bk), RAM data
+     * in RAMTEXT's room above the RAM code (not loaded, not zeroed: valid only once eu_bk_k names a track) */
+    .eu_keep (NOLOAD) : { . = ALIGN(4); *(.eu_keep*) . = ALIGN(4); } > RAMTEXT
     .data : { . = ALIGN(4); _data_start = .; *(.data*) *(.sdata*) . = ALIGN(4); _data_end = .; } > RAM AT > XIP
     _data_load = LOADADDR(.data);
     /* (V10.12) the Bluetooth segment's RAM in the pool, but its baseband block (ble_hw_wl82.c bb, 1508 B, read and

@@ -14,7 +14,8 @@
 #define EU_M 4u
 typedef struct { uint8_t h, n, r; } eul_t;
 typedef struct { uint8_t on, lane, src, root, ctr, vary; uint16_t mask, prev, seed; uint8_t m[EU_M]; eul_t a, l[NLANE];
-                 uint8_t rl; uint16_t rs; uint8_t mu[4], bar, flip, own; uint32_t sg; } eu_t;   /* (V10.28) rl: the recorded
+                 uint8_t rl; uint16_t rs; uint8_t mu[4], bar, flip, own; uint16_t rsm; uint32_t sg; } eu_t;   /* (V10.31)
+                                                         * rsm: the rs taken (the lanes the sequence had) */   /* (V10.28) rl: the recorded
                                                          * sequence's length, rs: what plays its rhythm (bit l a kit's lane,
                                                          * bit 0 a melody's), own: it had notes, sg: the steps last seen */   /* lane 0 ALL (a: DENSITY, STEPS, ROTATE), 1.. a lane; (V10.16) mu: MUTATE's
                                                          * EVERY AMOUNT MODE WHAT, bar: the bar it last mutated on, flip: PULSE's */
@@ -32,6 +33,12 @@ static uint8_t eu_za[NTRK][64] __attribute__((section(".pool")));   /* (V10.24) 
  * a melody's first note of each step (bit 7: a chord), 1 a held step, 0 none. EUCLID transforms it: its rhythm until
  * HITS STEPS or ROTATE are turned, its notes always */
 static uint8_t eu_src[NTRK][64] __attribute__((section(".pool")));
+/* (V10.31) EUCLID reversible: the last sequence taken, whole (every step's notes, chords, velocities, components,
+ * micro timing), its LENGTH; HITS (a kit: DENSITY) back to 0, or every setting neutral again (VARY and MODES 0, the
+ * sequence's own rhythm), puts it back as it was. One track at a time (RAM): taking another's keeps this one's EUCLID */
+typedef struct { int16_t slen; step_t st[NSTEP]; } eu_bk_t;
+static eu_bk_t eu_bk __attribute__((section(".eu_keep")));
+static uint8_t eu_bk_k = 0xFF;                          /* the track eu_bk holds (0xFF: none) */
 static void eu_anchor(uint32_t k) { memcpy(eu_z[k % NTRK], (uint8_t *)&eu[k % NTRK] + EU_Z0, EU_ZN); eu_zs[k % NTRK] = eu[k % NTRK].seed; }
 static uint32_t eu_val(const track_t *t, const step_t *s) { return drum_track(t) ? step_lanes(s) & 0xFFu : s->time == ST_NOTE && s->n ? s->note[0] : 0u; }
 
@@ -58,10 +65,23 @@ static void eu_kit(eu_t *e)
 
 /* (V10.28) the track's steps changed by someone else since EUCLID last wrote them: taken as the sequence to transform
  * (none when empty or a factory pattern untouched); its HITS / STEPS (a kit: each lane's) set from it */
+/* (V10.31) HITS / STEPS (a kit: each lane's) and the rhythm's lanes from the sequence taken (eu_src, e->rl long) */
+static void eu_from_src(uint32_t k, eu_t *e)
+{
+    uint32_t i, l, dr = drum_track(&trk[k]) != 0, n = e->rl;
+    e->rs = 0;
+    for (l = 0; l < (dr ? NLANE : 1u); l++) {
+        uint32_t c = 0;
+        for (i = 0; i < n; i++) c += dr ? (eu_src[k][i] >> l) & 1u : eu_src[k][i] > 1u;
+        e->l[l].h = (uint8_t)c; e->l[l].n = (uint8_t)n; e->l[l].r = 0;
+        if (c) e->rs |= (uint16_t)(1u << l);
+    }
+    e->a.n = (uint8_t)n;
+}
 static void eu_take(uint32_t k, eu_t *e)
 {
     const track_t *t = &trk[k];
-    uint32_t i, l, len = (uint32_t)clamp(t->p[P_SLEN], 2, 64), sg = steps_sig(t), dr = drum_track(t) != 0, h = 0, c[NLANE] = {0};
+    uint32_t i, len = (uint32_t)clamp(t->p[P_SLEN], 2, 64), sg = steps_sig(t), dr = drum_track(t) != 0, h = 0;
     if (sg == e->sg) return;
     e->sg = sg; e->rl = 0; e->rs = 0; e->ctr = 0; e->own = 0;
     for (i = 0; i < 64u; i++) {
@@ -71,17 +91,44 @@ static void eu_take(uint32_t k, eu_t *e)
             v = dr ? step_lanes(s) & 0xFFu : s->time == ST_NOTE && s->n ? (uint32_t)clamp(s->note[0], 2, 127) | (s->n > 1u ? 0x80u : 0u)
               : i && s->time == ST_TIE && eu_src[k][i - 1u] ? 1u : 0u;
         eu_src[k][i] = (uint8_t)v;
-        for (l = 0; dr && l < NLANE; l++) c[l] += (v >> l) & 1u;
         h += dr ? v != 0u : v > 1u;
     }
-    if (!h) return;
+    if (!h) { if (eu_bk_k == k) eu_bk_k = 0xFF; return; }
+    memcpy(eu_bk.st, t->step, sizeof eu_bk.st);         /* (V10.31) the whole of it, to put back */
+    eu_bk.slen = t->p[P_SLEN];
+    eu_bk_k = (uint8_t)k;
     e->rl = (uint8_t)len; e->own = 1;
-    for (l = 0; l < (dr ? NLANE : 1u); l++) {
-        e->l[l].h = (uint8_t)(dr ? c[l] : h); e->l[l].n = (uint8_t)len; e->l[l].r = 0;
-        if (e->l[l].h) e->rs |= (uint16_t)(1u << l);
-    }
-    e->a.n = (uint8_t)len;
+    eu_from_src(k, e);
+    e->rsm = e->rs;
     eu_anchor(k);
+}
+/* (V10.31) track k's sequence as it was before EUCLID (eu_bk), when it holds it; 1 done */
+static int eu_back(uint32_t k, eu_t *e)
+{
+    track_t *t = &trk[k % NTRK];
+    if (!e->own) return 0;
+    if (eu_bk_k != k % NTRK) {                           /* (another track's kept now: the rhythm and the notes taken,
+                                                         * at rest; the steps' finer detail is not kept) */
+        eu_from_src(k % NTRK, e);
+        e->vary = 0; memset(e->m, 0, sizeof e->m);
+        ui_message("YOUR SEQUENCE BACK");
+        return 0;
+    }
+    load_begin(t, LOAD_PAT);
+    memcpy(t->step, eu_bk.st, sizeof t->step);
+    t->p[P_SLEN] = eu_bk.slen;
+    load_end(t);
+    pat_sig[k % NTRK] = ~steps_sig(t);
+    e->sg = ~steps_sig(t);                               /* (taken again: HITS / STEPS / the lanes as the sequence's) */
+    eu_take(k % NTRK, e);
+    ui_message("YOUR SEQUENCE BACK");
+    ui.force = 1;
+    return 1;
+}
+/* every setting at rest on a taken sequence: its own rhythm (all its lanes), VARY and MODES 0 */
+static int eu_rest(const eu_t *e)
+{
+    return e->own && e->rl && e->rs == e->rsm && !e->vary && !e->m[0] && !e->m[1] && !e->m[2] && !e->m[3];
 }
 /* track k's settings, made the first time: (V10.28) all at 0 (a kit: DENSITY 0, no lanes; a melody: no HITS), so
  * EUCLID builds from nothing, or from the sequence the track has (eu_take) */
@@ -324,6 +371,8 @@ static void eu_gen(uint32_t k, uint32_t hand)
     eu_t *e = eu_of(k);
     if (hand && fm1_ms - eu_ms > 2000u) undo_mark();     /* (a new gesture: an UNDO point; MUTATE's turns none) */
     eu_ms = hand ? fm1_ms : eu_ms;
+    if (e->own && (eu_rest(e) || (drum_track(t) ? !(e->lane % (NLANE + 1u)) && !e->a.h : !e->l[0].h)) && eu_back(k, e))
+        return;                                          /* (V10.31) at rest, or HITS / DENSITY 0: the sequence as it was */
     load_begin(t, LOAD_PAT);
     if (drum_track(t)) eu_drums(t, e, e->lane % (NLANE + 1u)); else eu_melody(k, t, e);
     load_end(t);
