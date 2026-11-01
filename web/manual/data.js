@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.32", items: [
+    ["MIDI Bluetooth se empareja sin PIN (Just Works) cuando la compu o el teléfono lo piden: Windows y los Mac / Android que antes lo rechazaban ahora conectan. El emparejamiento sobrevive al apagado.", "Bluetooth MIDI pairs with no PIN (Just Works) when the computer or phone asks: Windows and the Macs / Androids that refused before now connect. The pairing survives a power-off."]]},
   {v: "V10.31", items: [
     ["EUCLID es reversible: guarda tu secuencia completa y la devuelve tal cual al volver todo a reposo o con HITS / DENSITY en 0 (YOUR SEQUENCE BACK). SCL › SCENE se guarda con el proyecto.", "EUCLID is reversible: it keeps your whole sequence and gives it back as it was when everything is at rest again or HITS / DENSITY go to 0 (YOUR SEQUENCE BACK). SCL › SCENE is saved with the project."]]},
   {v: "V10.30", items: [
