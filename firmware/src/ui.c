@@ -787,9 +787,15 @@ static uint32_t lock_id(uint32_t k)
 }
 
 static void ev_enter(void);
+static uint8_t br_armed;
+static uint32_t tl_t0;                              /* (V10.24) TOOLS: OCT+ held since (0: not), its action and track */
+static uint8_t tl_kind, tl_trk;
+#define TL_HOLD 900u                                /* (ms: held this long, it is done; no dialog) */
+static const uint8_t TL_SC[6] = {0, 1, 2, 2, 3, 3};  /* (V10.24) TOOLS' actions' scopes: TRACK SOUND SONG SYSTEM */                            /* (V10.24) PRESETS: an UNDO mark taken at the browse's first turn */
 static void page_entered(void)
 {
     const page_t *pg = cur_page();
+    br_armed = 0;
     ui.knob_ms = fm1_ms;                         /* (0.9.0) HUD: the knob row whole again on a new page */
     if (!ui.home && pg->fam == FAM_FX && fx_trk_k(ui.page) < 0 && pg->graph != GR_BUSES)
         ui.fxmod = (uint8_t)fx_mod_of(ui.page);  /* (FX: the effect shown, BUSES' tile lit) */

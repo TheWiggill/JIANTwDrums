@@ -250,8 +250,10 @@ static const param_desc_t CLEN_DESC = {"C.LEN", F_ENUM, 0, 64, 0, N_CLEN, 0};   
 static const param_desc_t DXIMG_DESC = {"IMAGE", F_INT, 0, 127, 0, 0, 0};       /* (0.6.48) P_DXIMG */
 /* (V10.6) SEQ > EUCLID / MODES' knobs (ui_euclid.c: ids ID_EU0 + EK_*, the views of the selected track's settings) */
 #define ID_EU0 0xF0u
+#define ID_SC0 0xE8u                                    /* (V10.25) SCL > SCENE's four (ui_scene.c sc_desc) */
 #define ID_MU0 0xE4u                                    /* (V10.16) SEQ > MUTATE's four (EK_U0 + 0..3) */
 static const param_desc_t *eu_desc(uint32_t k, int16_t **valp);
+static const param_desc_t *sc_desc(uint32_t k, int16_t **valp);   /* (V10.25) ui_scene.c */
 static const char *const N_CHRD[] = {"OFF", "TRIAD", "7TH", "ADD9", "SUS2", "SUS4", "MAJ", "MIN", "7", "MAJ7", "MIN7",
                                      "POWER", 0};
 static const char *const N_CVOI[] = {"CLOSE", "LEAD", "OPEN", "+BASS", 0};
@@ -541,7 +543,7 @@ enum { GR_NONE, GR_ADSR, GR_LFO, GR_STEPS, GR_ARP, GR_SCALE, GR_FX, GR_ROLL, GR_
        GR_SLCR, GR_MOD, GR_PATS, GR_SONG, GR_TOOLS, GR_CHANCE, GR_MOTION, GR_EVENTS, GR_DXSND, GR_MSEQ, GR_SLPIT,
        GR_FMOP, GR_FMOP2, GR_FMENV,
        GR_COMP, GR_EUCLID, GR_MORPH, GR_DXIMG, GR_FUGUE, GR_SHAPE, GR_PUNCH, GR_BUSES, GR_FOCUS, GR_STAGE,
-       GR_LYRIC, GR_GCOMP, GR_LIVE };   /* (p2, main 0.9.11) GLO > LIVE: MANO, RIELES (ui_live.c); the enum's last */   /* (0.8.5) EDIT > WORDS: VOICE's lyric (sing.c) */   /* (0.8.5:
+       GR_LYRIC, GR_GCOMP, GR_LIVE, GR_SCENE };   /* (p2, main 0.9.11) GLO > LIVE: MANO, RIELES (ui_live.c); the enum's last */   /* (0.8.5) EDIT > WORDS: VOICE's lyric (sing.c) */   /* (0.8.5:
                                                          * LENTE's EDIT > FOCUS, ENV > STAGE) */   /* (0.6.99) FX > PUNCH: the punch-in lane */   /* (JIANT 0.6.39) SEQ > COMP: the step components (ui_input.c comp_*, ui_graph.c graph_comp) */   /* (JIANT 0.6.10, from Felucca 1.5: FM6's operator pages, ui_fm6op.c) */
 
 typedef struct {
@@ -624,6 +626,8 @@ static const page_t PAGES[] = {
     {"SCL", FAM_SCL, SC_TRACK, GR_SCALE, {P_ROOT, P_SCALE, P_QUANT, ID_ALLTR}},   /* (JIANT: ROOT, SCALE every melodic track's;
                                                          * 0.7.6: ALL TR, the global, where TRANS was: SCL 2 gone) */
     {"CHORD", FAM_SCL, SC_TRACK, GR_NONE, {P_CHRD, P_CVOI, P_CSTR, 0xFF}},   /* (0.6.81) a key plays a chord (seq.c) */
+    {"SCENE", FAM_SCL, SC_TRACK, GR_SCENE, {ID_SC0, ID_SC0 + 1u, ID_SC0 + 2u, ID_SC0 + 3u}},   /* (V10.25) the multitimbral
+                                                         * mode: SCENE, TRACK, ROLE, CHORD (ui_scene.c) */
     {"EDIT 1", FAM_EDIT, SC_ENGINE, GR_NONE, {P_E0, P_E1, P_E2, P_E3}},
     {"EDIT 2", FAM_EDIT, SC_ENGINE, GR_NONE, {P_E4, P_E5, P_E6, P_E7}},
     {"WORDS", FAM_EDIT, SC_TRACK, GR_LYRIC, {P_VLANG, P_VLYR, P_E0, 0xFF}},   /* (0.8.5) VOICE: LANG LYRIC POS, OCT+ TYPE
@@ -799,6 +803,8 @@ static const param_desc_t *page_desc(const page_t *pg, uint32_t slot, int16_t **
         return eu_desc(id - ID_EU0, valp);
     if (id >= ID_MU0 && id < ID_MU0 + 4u)            /* (V10.16) MUTATE's */
         return eu_desc(id - ID_MU0 + 8u, valp);
+    if (id >= ID_SC0 && id < ID_SC0 + 4u)            /* (V10.25) SCENE's */
+        return sc_desc(id - ID_SC0, valp);
     *valp = &TSEL->p[id];
     if (id == P_APRATE && TSEL->p[P_APSYNC])         /* (0.6.9) AUTO PAN on the tempo: a division */
         return &AP_BEAT;

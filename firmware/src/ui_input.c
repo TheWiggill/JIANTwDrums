@@ -1356,6 +1356,10 @@ static void edit_param(uint32_t slot, int32_t steps)
         return;
     }
     if (pg->graph == GR_BROWSE) {                         /* KNOB 1: one preset, KNOB 2: the next / previous engine */
+        if (slot < 2u && !br_armed) {                    /* (V10.24) the sound before the browse: OCT- brings it back */
+            undo_mark();
+            br_armed = 1;
+        }
         if (slot == 0u) {
             preset_step(steps);
         } else if (slot == 1u) {
@@ -1369,8 +1373,13 @@ static void edit_param(uint32_t slot, int32_t steps)
     }
     if (pg->graph == GR_TOOLS) {                          /* (0.6.25) TOOLS: a list, any knob (and PRESETS) moves the
                                                          * pick down / up; OCT+ does it (its dialog first) */
-        ui.act = steps < 0 && ui.act <= 1u ? 0u : (uint8_t)clamp((int32_t)ui.act + (steps > 0 ? 1 : -1), 1, 6);   /* (left
-                                                         * past the first: none picked) */
+        int32_t a = ui.act ? (int32_t)ui.act - 1 : 0, sc = TL_SC[a];   /* (V10.24) KNOB 1 the scope (its first), the */
+        if (slot == 0u && ui.act) {                      /* others the action (across the scopes) */
+            sc = clamp(sc + (steps > 0 ? 1 : -1), 0, 3);
+            for (a = 0; TL_SC[a] != sc; a++) {}
+        } else if (ui.act)
+            a = clamp(a + (steps > 0 ? 1 : -1), 0, 5);
+        ui.act = (uint8_t)(a + 1);
         return;
     }
     if (pg->graph == GR_SLOTS && save_on() && save_level() == SV_PROJ) {   /* (0.8.5) SAVE > PROJECT's SECTIONS: KNOB 1
@@ -1430,6 +1439,10 @@ sect:
         *vp = (int16_t)v;
         excite_turn(TSEL, vp, was);
     }
+    if (vp >= sc_v && vp < sc_v + 3) {                  /* (V10.25) SCENE's SCENE TRACK ROLE */
+        sc_put((uint32_t)(vp - sc_v), v);
+        return;
+    }
     if (vp >= eu_v && vp < eu_v + EK_N) {               /* (V10.6) EUCLID / MODES: the setting, the pattern again */
         eu_put((uint32_t)(vp - eu_v), v);
         return;
@@ -1458,6 +1471,21 @@ sect:
 }
 
 
+/* (V10.24) SAVE > TOOLS: OCT+ pressed on the picked action: held TL_HOLD it is done (no dialog) */
+static void tools_arm(void)
+{
+    uint32_t c = act_col();
+    if (!c--) return;
+    if (chain_busy()) { ui_message("SONG PLAYS: STOP IT TO EDIT"); return; }
+    if (!act_ready()) {                               /* nothing there to clear or delete */
+        ui_message(c == 2u ? "NOTHING TO DELETE" : "NOTHING TO CLEAR");
+        return;
+    }
+    tl_kind = (uint8_t)(c == 0u ? CF_CLEAR_SEQ : c == 1u ? CF_INIT_SOUND : c == 2u ? CF_DEL_ROW : c == 4u ? CF_INIT_SYS :
+                        c == 5u ? CF_CPU_TEST : CF_CLEAR_SONG);
+    tl_trk = (uint8_t)(c == 2u ? ui.song_row : song.sel);
+    tl_t0 = fm1_ms | 1u;
+}
 /* OCT+ on an action page: the picked action. A load stays picked (browse and load again); the others
  * are dropped once done. Flash writes only while stopped; over the user's data: the dialog */
 static void act_do(void)
@@ -1483,16 +1511,8 @@ static void act_do(void)
         ev_oct();
         return;
     }
-    if (cur_page()->graph == GR_TOOLS) {
-        if (chain_busy()) { ui_message("SONG PLAYS: STOP IT TO EDIT"); return; }
-        if (!act_ready()) {                               /* nothing there to clear or delete */
-            ui_message(c == 2u ? "NOTHING TO DELETE" : "NOTHING TO CLEAR");
-            return;
-        }
-        confirm_open(c == 0u ? CF_CLEAR_SEQ : c == 1u ? CF_INIT_SOUND : c == 2u ? CF_DEL_ROW : c == 4u ? CF_INIT_SYS :
-                     c == 5u ? CF_CPU_TEST : CF_CLEAR_SONG, c == 2u ? ui.song_row : song.sel);
+    if (cur_page()->graph == GR_TOOLS)                   /* (V10.24) OCT+ held: tools_arm, on the press */
         return;
-    }
     if (cur_page()->graph == GR_SONG) {                 /* (0.8.5) SAVE > PROJECT's ARRANGE: OCT+ adds a row after the
                                                          * last (its section and bars), the new one selected; PLAY plays */
         chain_row_t *r;
@@ -1791,6 +1811,10 @@ static void presets_turn(int32_t s)
         fmt_int(b + 5, (int32_t)ui.cursor + 1);
         ui_message(b);
         return;
+    }
+    if (!ui.home && cur_page()->graph == GR_BROWSE && !br_armed) {   /* (V10.24) as KNOB 1 there */
+        undo_mark();
+        br_armed = 1;
     }
     preset_step(s);
 }
@@ -2285,6 +2309,20 @@ static void ui_input_frame(void)
     layer_oct_open(pressed);                            /* (OCT± with a SET layer's button down: it opens now) */
     oct = oct_taps(pressed, ui.menu || ui.confirm || act_cols() || name_on() || layer_set_open());
     oct = layer_oct(pressed, oct);                      /* (a SET layer's OCT-: put back) */
+    if (!ui.home && !ui.menu && !ui.confirm && !ui.ly && cur_page()->graph == GR_TOOLS && ((pressed >> panel.btn[B_OCTUP]) & 1u))
+        tools_arm();
+    if (tl_t0) {                                        /* (V10.24) TOOLS: OCT+ held TL_HOLD does the action */
+        if (!((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u) || cur_page()->graph != GR_TOOLS || ui.home) {
+            if ((int32_t)(fm1_ms - tl_t0) < (int32_t)TL_HOLD) ui_message("HOLD OCT+ TO DO IT");
+            tl_t0 = 0;
+        } else if ((int32_t)(fm1_ms - tl_t0) >= (int32_t)TL_HOLD) {
+            uint8_t a = ui.act;
+            confirm_open(tl_kind, tl_trk);
+            ui.act = a;
+            tl_t0 = 0;
+            oct |= 2u;                                  /* (the dialog's OK, below, this frame) */
+        }
+    }
     layer_masks();                                      /* seq.c: keys pressed with a layer's button are its own */
     live_frame();                                       /* (p2) GLO > LIVE: MANO's keys, OCT- held, the modifiers */
     {   /* (0.6.67) a button held + SELECT (rule 5): its dice (HOME the generator, GEN; EDIT the sound, SEQ the sequence,
@@ -2622,6 +2660,14 @@ static void ui_input_frame(void)
                 break;
             if (live_page())                            /* (p2) LIVE: OCT- RETURN / held BYPASS, OCT+ COMMIT */
                 break;                                  /* (ui_live.c live_frame) */
+            if (!ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_BROWSE) {   /* (V10.24) PRESETS: OCT+ keeps
+                                                         * the sound, OCT- the one before the browse */
+                if (!br_armed) ui_message(b == B_OCTUP ? "TURN KNOB 1 TO BROWSE" : "NOTHING TO GO BACK TO");
+                else if (b == B_OCTUP) ui_message("SOUND KEPT");
+                else ui_message(undo_sound(song.sel) ? "NOTHING TO GO BACK TO" : "SOUND BEFORE");
+                br_armed = 0;
+                break;
+            }
             if (!ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_EUCLID) {   /* (V10.6) EUCLID / MODES: */
                 eu_oct(b == B_OCTUP, cur_page()->id[0] == ID_MU0);   /* OCT+ a new variation, OCT- the one before;
                                                          * (V10.16) MUTATE: a mutation now, back to the anchor */

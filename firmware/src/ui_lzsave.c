@@ -57,26 +57,43 @@ static void graph_lib(void)
         }
     }
 }
+/* (V10.24, the user's pick A) TOOLS by scope: at the left a picture of what the action takes (the steps, the sound's
+ * wave, the song's rows, everything), at the right the scope's actions; under them a bar fills while OCT+ is held */
 static void graph_lz_tools(void)
 {
     static const char *const WHAT[6] = {"CLEAR SEQ", "INIT SOUND", "DELETE ROW", "CLEAR SONG", "NEW PROJECT", "CPU TEST"};
     static const char *const ON[6] = {"STEPS + AUTO", "ENGINE DEFAULT", "", "ALL ROWS", "EVERYTHING", "HEAVY SONG"};
-    uint32_t c;
+    uint32_t a = ui.act ? ui.act - 1u : 0u, sc = TL_SC[a], c, n = 0, h = graph_h(), i;
+    int32_t hold = tl_t0 ? (int32_t)(fm1_ms - tl_t0) * 232 / (int32_t)TL_HOLD : 0;
+    uint16_t col = !ui.act ? T_DIM : sc == 0u ? T_THEME : sc == 1u ? T_ACCENT : sc == 2u ? T_MID : T_TEXT;
     char b[12];
-    for (c = 0; c < 6u; c++) {
-        int32_t y = 1 + (int32_t)c * 23;
+    cv_frame(4, 4, 76, 76, col);                         /* the picture */
+    if (sc == 0u)
+        for (i = 0; i < 16u; i++)                         /* the track's steps */
+            cv_rect(10 + (int32_t)(i % 8u) * 8, 14 + (int32_t)(i / 8u) * 30, 6, 24, TSEL->step[i].time == ST_NOTE ? col : T_DIM);
+    else if (sc == 1u)
+        for (i = 0; i < 64u; i++)                         /* a wave */
+            cv_rect(10 + (int32_t)i, 42 + ((24 * og_sin(i * 2048u)) >> 15), 1, 2, col);
+    else if (sc == 2u)
+        for (i = 0; i < 4u; i++)                          /* the song's rows */
+            cv_rect(10, 12 + (int32_t)i * 16, 64, 12, i < chain_config.count ? col : T_DIM);
+    else
+        cv_text_in(4, 38, 76, &AF_M, "ALL", col, T_SURF);
+    for (c = 0; c < 6u; c++) {                           /* the scope's actions */
+        int32_t y = 4 + (int32_t)n * 26;
         int sel = ui.act == c + 1u;
-        uint16_t bg = sel ? T_TINT : T_RAISE;
-        cv_rect(4, y, 232, 21, bg);
-        GFX_HOOK_ALIGN(0, y, 0, y + 21, AL_V, "tools row text centred up/down");
-        cv_text_on(12, y + CAP_IN(M, 21), &AF_M, WHAT[c], sel ? T_TEXT : T_MID, bg);
-        if (c == 2u) {                                   /* (the row ARRANGE has picked) */
-            str_cpy(b, "ROW ", sizeof b);
-            fmt_int(b + 4, (int32_t)ui.song_row + 1);
-        }
-        GFX_HOOK_ALIGN(0, y, 0, y + 21, AL_V, "tools row text centred up/down");
-        cv_text_r(230, y + CAP_IN(X, 21), &AF_X, c == 2u ? b : ON[c], sel ? T_MID : T_DIM, bg);
+        uint16_t bg = sel ? T_TINT : T_SURF;
+        if (TL_SC[c] != sc) continue;
+        n++;
+        cv_rect(88, y, 148, 24, bg);
+        GFX_HOOK_ALIGN(0, y, 0, y + 12, AL_V, "tools row text centred up/down");
+        cv_text_on(94, y + CAP_IN(M, 14), &AF_M, WHAT[c], sel ? T_TEXT : T_MID, bg);
+        if (c == 2u) { str_cpy(b, "ROW ", sizeof b); fmt_int(b + 4, (int32_t)ui.song_row + 1); }
+        cv_text(94, y + 15, &AF_X, c == 2u ? b : ON[c], sel ? T_MID : T_DIM);
     }
+    cv_rect(4, (int32_t)h - 20, 232, 6, T_RAISE);        /* OCT+ held: the bar */
+    if (hold > 0) cv_rect(4, (int32_t)h - 20, hold > 232 ? 232 : hold, 6, col);
+    cv_text_in(4, (int32_t)h - 11, 232, &AF_X, ui.act ? "HOLD OCT+ TO DO IT" : "TURN A KNOB TO PICK", T_DIM, T_SURF);
 }
 /* PROJECT: the sections, the arrangement's chips, the song's strip (ar: ARRANGE, its rows picked) */
 static void graph_proj(int ar)
@@ -267,18 +284,36 @@ static void graph_sound(void)
             cv_frame(x, y, 35, 15, T_THEME);
     }
 }
+/* (V10.24, the user's pick A) PRESETS in two columns: at the left the engines (their being, how many presets), the
+ * selected track's lit; at the right the list (LIST's) around the sound, its engine named only when another's. KNOB 1
+ * plays each as it passes; OCT+ keeps it, OCT- brings back the sound from before the browse (ui_input.c br_undo) */
 static void graph_lz_presets(void)
 {
-    uint32_t total, cur = preset_pos(&total), e, k, i, first;
-    lz_track_being();
+    uint32_t total, cur = preset_pos(&total), e, k, i, first, r, rc = 0, rows = (graph_h() - 2u) / 15u;
+    rows = rows > 9u ? 9u : rows;
+    for (r = 0; r < NENG_SHOWN; r++) if (eng_vis(r) == TSEL->eng_req) rc = r;
+    first = rc < rows / 2u ? 0u : rc - rows / 2u;
+    if (first + rows > NENG_SHOWN) first = NENG_SHOWN > rows ? NENG_SHOWN - rows : 0u;
+    for (r = first; r < NENG_SHOWN && r < first + rows; r++) {
+        int32_t y = 2 + (int32_t)(r - first) * 15;
+        int sel = r == rc;
+        char n[4];
+        e = eng_vis(r);
+        lz_mini_being(e, 9, y + 7, 3, sel ? bg_col(230) : ux_mix(bg_col(120), T_SURF, 45));
+        cv_clip_text(21, y + CAP_IN(X, 14), &AF_X, ENGINES[e]->name, sel ? T_TEXT : T_DIM, T_SURF, 46);
+        n[0] = 0; fmt_int(n, (int32_t)preset_shown(e));
+        cv_text_r(82, y + CAP_IN(X, 14), &AF_X, n, sel ? T_MID : T_DIM, T_SURF);
+        if (sel) cv_rect(0, y + 2, 2, 10, T_ACCENT);
+    }
+    cv_rect(86, 2, 1, (int32_t)rows * 15 - 2, T_DIM);
     if (!total) {
         cv_text_in(88, 63, 148, &AF_X, "NO FAVORITES", T_MID, T_SURF);
         return;
     }
-    first = cur < 4u ? 0u : cur - 4u;
-    if (total > 9u && first + 9u > total)
-        first = total - 9u;
-    for (i = first; i < total && i < first + 9u; i++) {
+    first = cur < rows / 2u ? 0u : cur - rows / 2u;
+    if (total > rows && first + rows > total)
+        first = total - rows;
+    for (i = first; i < total && i < first + rows; i++) {
         int32_t y = 2 + (int32_t)(i - first) * 15;
         int sel = i == cur;
         uint16_t bg = sel ? T_TINT : T_SURF;
@@ -293,15 +328,17 @@ static void graph_lz_presets(void)
             en = ENGINES[e]->name;
         }
         if (sel)
-            cv_rect(88, y, 148, 14, bg);
+            cv_rect(90, y, 146, 14, bg);
         GFX_HOOK_ALIGN(0, y, 0, y + 14, AL_V, "sound preset row centred up/down");
-        cv_free_text(94, y + CAP_IN(X, 14), &AF_X, nm, sel ? T_TEXT : T_MID, bg, 84);
+        cv_free_text(96, y + CAP_IN(X, 14), &AF_X, nm, sel ? T_TEXT : T_MID, bg, 92);
         if (favorite_has(e, k)) {
             GFX_HOOK_ALIGN(0, y, 0, y + 14, AL_V, "sound preset star centred up/down");
-            cv_text_on(182, y + CAP_IN(S, 14), &AF_S, "*", T_ACCENT, bg);   /* (a favourite; 0.8.5 no icons) */
+            cv_text_on(226, y + CAP_IN(S, 14), &AF_S, "*", T_ACCENT, bg);   /* (a favourite; 0.8.5 no icons) */
         }
-        GFX_HOOK_ALIGN(0, y, 0, y + 14, AL_V, "sound preset row centred up/down");
-        cv_text_r(232, y + CAP_IN(X, 14), &AF_X, eng_abbr(en), T_DIM, bg);
+        if (e != TSEL->eng_req) {                       /* (another engine's: LIST crosses engines) */
+            GFX_HOOK_ALIGN(0, y, 0, y + 14, AL_V, "sound preset row centred up/down");
+            cv_text_r(220, y + CAP_IN(X, 14), &AF_X, eng_abbr(en), T_DIM, bg);
+        }
     }
 }
 /* the lens's panel for the SAVE page shown */

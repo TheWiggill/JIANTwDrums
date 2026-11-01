@@ -23,7 +23,11 @@ static uint8_t eu_z[NTRK][EU_ZN];                       /* (V10.16) each track's
 static uint32_t eu_s, eu_ms;
 enum { EK_HITS, EK_STEPS, EK_ROT, EK_K4, EK_M0, EK_U0 = EK_M0 + EU_M, EK_N = EK_U0 + 4 };
 static const uint8_t EU_MX[4] = {5, 100, 2, 3};          /* (V10.16) MUTATE's settings' tops */
-static void eu_anchor(uint32_t k) { memcpy(eu_z[k % NTRK], (uint8_t *)&eu[k % NTRK] + EU_Z0, EU_ZN); }
+static uint16_t eu_zs[NTRK];                            /* (V10.24) the anchor's seed (OCT- returns to it too) */
+static uint8_t eu_za[NTRK][64] __attribute__((section(".pool")));   /* (V10.24) the anchor's steps as generated (a kit: the
+                                                         * lanes' bits; a melody: the first note, 0 none), MUTATE's picture */
+static void eu_anchor(uint32_t k) { memcpy(eu_z[k % NTRK], (uint8_t *)&eu[k % NTRK] + EU_Z0, EU_ZN); eu_zs[k % NTRK] = eu[k % NTRK].seed; }
+static uint32_t eu_val(const track_t *t, const step_t *s) { return drum_track(t) ? step_lanes(s) & 0xFFu : s->time == ST_NOTE && s->n ? s->note[0] : 0u; }
 
 static uint32_t eu_rnd(void) { eu_s ^= eu_s << 13; eu_s ^= eu_s >> 17; eu_s ^= eu_s << 5; return eu_s; }
 static uint32_t eu_ch(uint32_t pct) { return eu_rnd() % 100u < pct; }
@@ -250,6 +254,10 @@ static void eu_gen(uint32_t k, uint32_t hand)
     if (drum_track(t)) eu_drums(t, e, e->lane % (NLANE + 1u)); else eu_melody(k, t, e);
     load_end(t);
     pat_sig[k % NTRK] = ~steps_sig(t);                   /* (the user's steps now) */
+    if (e->seed == eu_zs[k % NTRK] && !memcmp((uint8_t *)e + EU_Z0, eu_z[k % NTRK], EU_ZN)) {   /* (V10.24) the anchor's */
+        uint32_t i;
+        for (i = 0; i < 64u; i++) eu_za[k % NTRK][i] = (uint8_t)eu_val(t, &t->step[i]);
+    }
     ui.force = 1;
 }
 
@@ -319,7 +327,7 @@ static void eu_mutate(uint32_t k, eu_t *e)
     eul_t *L = al ? &e->a : &e->l[dr ? sl - 1u : 0u];
     int32_t d = (int32_t)(1u + p / 40u);
     if (e->mu[2] != 1u) memcpy((uint8_t *)e + EU_Z0, eu_z[k], EU_ZN);
-    if (e->mu[2] == 2u && (e->flip ^= 1u) == 0u) { eu_gen(k, 0); return; }   /* (PULSE: the anchor's turn) */
+    if (e->mu[2] == 2u && (e->flip ^= 1u) == 0u) { e->seed = eu_zs[k]; eu_gen(k, 0); return; }   /* (PULSE: the anchor's turn) */
     eu_s ^= fm1_ms * 2654435761u + k;
     e->seed = (uint16_t)(eu_rnd() | 1u);
     if ((w == 1u || w == 3u) && L->n) {                  /* RHYTHM */
@@ -357,7 +365,7 @@ static void eu_oct(int up, int mu)
     if (chain_busy()) { ui_message("SONG PLAYS: STOP IT TO EDIT"); return; }
     if (mu) {
         if (up) eu_mutate(song.sel, e);
-        else { memcpy((uint8_t *)e + EU_Z0, eu_z[song.sel], EU_ZN); eu_gen(song.sel, 1); }
+        else { memcpy((uint8_t *)e + EU_Z0, eu_z[song.sel], EU_ZN); e->seed = eu_zs[song.sel]; eu_gen(song.sel, 1); }
         ui_message(up ? "MUTATED" : "ANCHOR");
         return;
     }
@@ -369,59 +377,142 @@ static void eu_oct(int up, int mu)
 }
 
 /* ------------------------------------------------------------- the graph --- */
-/* the pattern as it is: a ring of its steps (DRUM: the lane picked) at the left; DRUM: the eight lanes as rows (HITS /
- * STEPS) at the right; melodic: the key in the ring and the notes as a roll at the right, where the key came from */
+/* (V10.24, the user's pick A) DRUM: the lanes as concentric rings (BD outside), each a cycle of its own STEPS at the turn
+ * playing, its hits in its heat (few violet, many yellow); the lane picked bright, the others dimmed (ALL: all bright);
+ * the lanes' names and HITS at the right. Melodic: the ring of the melody's cycle, the key in it, the notes as a roll.
+ * Under the ring VARY's turns (A A' A'' B), the one playing marked */
+static void eu_ring(const track_t *t, int32_t cx, int32_t cy, int32_t rad, uint32_t lane, uint32_t n, uint32_t now, uint16_t col, int lit)
+{
+    uint32_t len = (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP), base, i;
+    n = n && n < len ? n : len;
+    base = now != ~0u ? now / n * n : 0u;
+    if (base + n > len) base = len - n;                 /* (a lane whose STEPS do not divide the pattern: its last n) */
+    now = now != ~0u ? now - base : ~0u;
+    for (i = 0; i < n; i++) {
+        uint32_t a = i * 65536u / n + 49152u;
+        int32_t x = cx + ((rad * og_cos(a)) >> 15), y = cy + ((rad * og_sin(a)) >> 15), r;
+        const step_t *s = &t->step[base + i];
+        uint32_t hit = lane < NLANE ? (step_lanes(s) >> lane) & 1u : s->time == ST_NOTE && s->n;
+        uint32_t acc = lane < NLANE && hit && ((step_accents(s) >> lane) & 1u);
+        if (!hit) { if (lit) cv_rect(x, y, 1, 1, T_DIM); continue; }
+        r = acc ? 3 : n > 24u ? 1 : 2;
+        cv_rect(x - r, y - r, 2 * r + 1, 2 * r + 1, i == now && lit ? T_TEXT : col);
+        if (lit && lane < NLANE && (step_lmode(s, lane) == LM_X2 || step_lmode(s, lane) == LM_X4))
+            cv_frame(x - r - 2, y - r - 2, 2 * r + 5, 2 * r + 5, col);
+    }
+}
+/* (V10.24, the user's pick A) SEQ > MUTATE: the anchor's pattern (grey) above, the one playing below, the steps a
+ * mutation changed in the accent; at the right an arc fills to the next mutation (the bars left in it); OCT+ / OCT- */
+static void eu_strip(const track_t *t, const uint8_t *za, int32_t y0, int32_t hh, uint32_t len, uint32_t now, int anchor)
+{
+    int32_t cw = 180 / (int32_t)len, i, j;
+    uint32_t dr = drum_track(t) != 0, lo = 127, hi = 0, v;
+    cw = cw < 2 ? 2 : cw;
+    for (i = 0; !dr && i < (int32_t)len; i++)            /* (a melody: its range, of both rows) */
+        for (j = 0; j < 2; j++) {
+            v = j ? za[i] : eu_val(t, &t->step[i]);
+            if (v) { lo = v < lo ? v : lo; hi = v > hi ? v : hi; }
+        }
+    if (hi < lo + 6u) { lo = hi >= 6u ? hi - 6u : 0u; hi = lo + 6u; }
+    for (i = 0; i < (int32_t)len && i * cw < 182; i++) {
+        uint32_t a = za[i], c = anchor ? a : eu_val(t, &t->step[i]);
+        int32_t x = 4 + i * cw;
+        uint16_t col = anchor ? T_MID : c != a ? T_ACCENT : T_THEME;
+        if (dr)
+            for (j = 0; j < (int32_t)NLANE; j++) {
+                if ((c >> j) & 1u) cv_rect(x, y0 + j * hh / 8, cw - 1, hh / 8 - 1, anchor ? T_MID : ((a >> j) & 1u) ? T_THEME : T_ACCENT);
+                else if (!anchor && ((a >> j) & 1u)) cv_rect(x, y0 + j * hh / 8 + hh / 16 - 1, cw - 1, 1, T_DIM);   /* (a hit gone) */
+            }
+        else if (c)
+            cv_rect(x, y0 + hh - 3 - (int32_t)((c - lo) * (uint32_t)(hh - 4) / (hi - lo)), cw - 1, c != a && !anchor ? 4 : 3, col);
+        if (!anchor && (uint32_t)i == now) cv_rect(x, y0 + hh + 2, cw - 1, 1, T_TEXT);
+    }
+}
+static void graph_mutate(const track_t *t, const eu_t *e)
+{
+    int32_t h = (int32_t)graph_h(), hh = (h - 44) / 2, cx = 210, cy = h / 2 - 4, i;
+    uint32_t len = (uint32_t)clamp(t->p[P_SLEN], 1, 64), now = song.playing ? t->seq_idx % len : ~0u;
+    uint32_t ev = e->mu[0] ? 1u << (e->mu[0] - 1u) : 0u, q = ev ? ((bar_n % ev) * 4u + beat_n % 4u) * 64u / (ev * 4u) : 0u;
+    char b[8];
+    cv_text(4, 2, &AF_X, "ANCHOR", T_DIM);
+    eu_strip(t, eu_za[song.sel % NTRK], 12, hh, len, now, 1);
+    cv_text(4, 18 + hh, &AF_X, "NOW", T_TEXT);
+    eu_strip(t, eu_za[song.sel % NTRK], 28 + hh, hh, len, now, 0);
+    for (i = 0; i < 64; i++) {                           /* the arc to the next mutation */
+        uint32_t a = (uint32_t)i * 1024u + 49152u;
+        int32_t x = cx + ((20 * og_cos(a)) >> 15), y = cy + ((20 * og_sin(a)) >> 15);
+        cv_rect(x - 1, y - 1, 2, 2, ev && song.playing && (uint32_t)i <= q ? T_ACCENT : T_DIM);
+    }
+    cv_text_in(cx - 18, cy - 9, 36, &AF_X, ev ? "NEXT" : "OFF", T_DIM, T_SURF);
+    if (ev) { b[0] = 0; fmt_int(b, (int32_t)(song.playing ? ev - bar_n % ev : ev)); cv_text_in(cx - 18, cy + 2, 36, &AF_X, b, T_TEXT, T_SURF); }
+    cv_text(4, h - 10, &AF_X, "OCT+ MUTATE", T_ACCENT);
+    cv_text_r(234, h - 10, &AF_X, "OCT- ANCHOR", T_THEME, T_SURF);
+}
 static void graph_euclid(const track_t *t)
 {
     static const char *const LN[NLANE + 1] = {"ALL", "BD", "SD", "CP", "CH", "OH", "TM", "RS", "CB"};
     static const char *const NN[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+    static const char *const TN[4] = {"A", "A'", "A''", "B"};
     const eu_t *e = eu_of(song.sel);
-    uint32_t dr = drum_track(t) != 0, len = (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP), sl = e->lane % (NLANE + 1u), lane = (sl + NLANE) % (NLANE + 1u), i, n;
-    int32_t h = (int32_t)graph_h(), cy = h / 2, cx = 64, rad = h / 2 - 12 < 54 ? h / 2 - 12 : 54;
-    uint32_t now = song.playing ? t->seq_idx % len : ~0u, t_base = 0, t_now = now;
+    uint32_t dr = drum_track(t) != 0, len = (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP), sl = e->lane % (NLANE + 1u), lane = (sl + NLANE) % (NLANE + 1u), i, n, tn, cyc;
+    int32_t h = (int32_t)graph_h(), cy = h / 2 - 5, cx = 64, rad = h / 2 - 17 < 54 ? h / 2 - 17 : 54;
+    uint32_t now = song.playing ? t->seq_idx % len : ~0u, t_now = now;
     char b[12];
-    n = dr ? (sl ? e->l[lane].n : e->a.n) : e->l[0].n;   /* (V10.21) the ring: one cycle (the lane's, ALL's STEPS, the
-                                                         * melody's), the turn playing (VARY's turns, a longer pattern) */
-    n = n && n < len ? n : len;
+    if (cur_page()->id[0] == ID_MU0) { graph_mutate(t, e); return; }
     if (e->mu[0]) {                                      /* (V10.16) MUTATE on: the bars to the next one */
         uint32_t ev = 1u << (e->mu[0] - 1u);
         str_cpy(b, "MUT ", sizeof b);
         fmt_int(b + 4, (int32_t)(song.playing ? ev - bar_n % ev : ev));
-        cv_text(2, 2, &AF_X, b, T_ACCENT);
+        cv_text(4, 2, &AF_X, b, T_ACCENT);
     }
-    {
-        uint32_t base = now != ~0u ? now / n * n : 0u;
-        if (base + n > len) base = len - n;             /* (a lane whose STEPS do not divide the pattern: its last n) */
-        t_base = base;
-        t_now = now;                                     /* (the roll: the whole pattern) */
-        now = now != ~0u ? now - base : ~0u;
-    }
-    for (i = 0; i < n; i++) {                            /* the ring */
-        uint32_t a = i * 65536u / n + 49152u;
-        int32_t x = cx + ((rad * og_cos(a)) >> 15), y = cy + ((rad * og_sin(a)) >> 15), r;
-        const step_t *s = &t->step[t_base + i];
-        uint32_t hit = dr ? (step_lanes(s) >> lane) & (sl ? 1u : 0xFFu) : s->time == ST_NOTE && s->n;   /* (ALL: any) */
-        uint32_t acc = dr ? (step_accents(s) >> lane) & (sl ? 1u : 0xFFu) : 0u, gh = dr && sl && hit && step_lmode(s, lane) == LM_GHOST;
-        r = !hit ? 1 : gh ? 2 : acc ? 5 : n > 24u ? 3 : 4;
-        cv_rrect(x - r, y - r, 2 * r + 1, 2 * r + 1, r, !hit ? T_DIM : gh ? T_MID : dr ? T_ACCENT : T_THEME, T_SURF);
-        if (hit && dr && sl && (step_lmode(s, lane) == LM_X2 || step_lmode(s, lane) == LM_X4))
-            cv_frame(x - r - 2, y - r - 2, 2 * r + 5, 2 * r + 5, T_ACCENT);
-        if (i == now) cv_frame(x - 7, y - 7, 15, 15, T_TEXT);
+    if (dr) {                                            /* VARY's turns: of the lanes' least common length */
+        for (cyc = 1, i = 0; i < NLANE; i++) {
+            uint32_t a = cyc, c = e->l[i].n;
+            if (!e->l[i].h || !c) continue;
+            while (c) { uint32_t x = a % c; a = c; c = x; }
+            cyc = cyc / a * e->l[i].n > 64u ? 64u : cyc / a * e->l[i].n;
+        }
+        tn = eu_turns(cyc < 2u ? 16u : cyc, e->m[3]);
+    } else
+        tn = eu_turns(e->l[0].n ? e->l[0].n : 16u, e->vary);
+    if (tn > 1u) {                                       /* the turns, under the ring */
+        uint32_t tp = now != ~0u ? now / (len / tn ? len / tn : 1u) % tn : 0u;
+        for (i = 0; i < tn; i++) {
+            int32_t x = cx - (int32_t)tn * 13 + 4 + (int32_t)i * 26;
+            const char *nm = tn == 2u ? TN[i * 3u] : TN[i];
+            cv_text_in(x - 4, h - 12, 22, &AF_X, nm, i == tp ? T_ACCENT : T_DIM, T_SURF);
+            if (i == tp) cv_rect(x, h - 3, 14, 1, T_ACCENT);
+        }
     }
     if (dr) {
-        cv_text_in(cx - 30, cy - 8, 60, &AF_M, LN[sl], T_ACCENT, T_SURF);
+        uint32_t nl = 0, k = 0;
+        int32_t gap;
+        for (i = 0; i < NLANE; i++) nl += e->l[i].h != 0u || (sl && i == lane);
+        gap = (rad - 10) / (int32_t)(nl > 1u ? nl - 1u : 1u);
+        gap = gap > 12 ? 12 : gap;
+        for (k = 0; k < 2u; k++)                         /* the rings: the picked lane last, over the others */
+            for (i = 0; i < NLANE; i++) {
+                uint32_t r = 0, j, nn = e->l[i].n ? e->l[i].n : 1u, lit = !sl || i == lane;
+                uint16_t c = heat_col(48 + (int32_t)(e->l[i].h * 200u / nn));
+                if ((!e->l[i].h && !(sl && i == lane)) || (sl && (i == lane) != (k == 1u)) || (!sl && k)) continue;
+                for (j = 0; j < i; j++) r += e->l[j].h != 0u || (sl && j == lane);
+                eu_ring(t, cx, cy, rad - (int32_t)r * gap, i, nn, now, lit ? c : ux_mix(c, T_SURF, 68), (int)lit);
+            }
+        cv_text_in(cx - 20, cy - 5, 40, &AF_X, LN[sl], T_ACCENT, T_SURF);
         for (i = 0; i < NLANE; i++) {                    /* the lanes */
             int32_t y = 6 + (int32_t)i * (h - 12) / NLANE, rh = (h - 12) / NLANE - 2;
-            uint32_t on = sl ? i == lane : e->l[i].h != 0u;   /* (ALL: the lanes it plays) */
+            uint32_t on = sl ? i == lane : e->l[i].h != 0u, nn = e->l[i].n ? e->l[i].n : 1u;   /* (ALL: the lanes it plays) */
             uint16_t c = on ? T_TEXT : e->l[i].h ? T_MID : T_DIM;
             if (sl && on) cv_rect(136, y, 98, rh, T_RAISE);
-            cv_rect(136, y, 3, rh, on ? T_ACCENT : T_DIM);
-            cv_text(144, y + (rh - 8) / 2, &AF_X, LN[i + 1u], c);   /* (V10.21: the lanes' names; LN[0] is ALL) */
+            cv_rect(136, y, 2, rh, sl && on ? T_ACCENT : T_SURF);
+            cv_text(144, y + (rh - 8) / 2, &AF_X, LN[i + 1u], c);
             b[0] = 0; fmt_int(b, e->l[i].h); str_cpy(b + str_len(b), "/", 2); fmt_int(b + str_len(b), e->l[i].n);
-            cv_text_r(230, y + (rh - 8) / 2, &AF_X, b, c, sl && on ? T_RAISE : T_SURF);
+            cv_text_r(230, y + (rh - 8) / 2, &AF_X, b, e->l[i].h ? heat_col(48 + (int32_t)(e->l[i].h * 200u / nn)) : T_DIM, sl && on ? T_RAISE : T_SURF);
         }
         return;
     }
+    n = e->l[0].n;
+    eu_ring(t, cx, cy, rad, NLANE, n, now, T_THEME, 1);
     str_cpy(b, NN[e->root % 12u], sizeof b);             /* the key, in the ring: its root, its scale */
     cv_text_in(cx - 30, cy - 14, 60, &AF_M, b, T_TEXT, T_SURF);
     for (i = 1; i < sizeof SCALE_MASK / sizeof SCALE_MASK[0] && SCALE_MASK[i] != e->mask; i++) {}

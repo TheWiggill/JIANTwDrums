@@ -253,9 +253,10 @@ static uint32_t chord_build_mode(const track_t *t, uint32_t root, uint8_t *out, 
     static const int8_t SHP[6][4] = {{0, 4, 7, -1}, {0, 3, 7, -1}, {0, 4, 7, 10}, {0, 4, 7, 11}, {0, 3, 7, 10},
                                      {0, 7, 12, -1}};
     const engine_t *e = ENGINES[eng_idx(t->eng_req)];
-    uint32_t vc = (uint32_t)t->p[P_CVOI], n = 0, i, j, ti = trk_index(t) % NTRK;
-    int32_t nt[KB_CH + 1], r = (int32_t)root;
-    if (!mode || mode > CD_POW || e->oneshot || (e->keys && e->keys(t, 0) >= 0) || t->p[P_VOICE] != V_POLY) {
+    uint32_t vc = (uint32_t)t->p[P_CVOI], n = 0, i, j, ti = trk_index(t) % NTRK, any = mode & 0x80u;   /* (V10.25 SCENE: */
+    int32_t nt[KB_CH + 1], r = (int32_t)root;                                                      /* any voice) */
+    mode &= 0x7Fu;
+    if (!mode || mode > CD_POW || e->oneshot || (e->keys && e->keys(t, 0) >= 0) || (t->p[P_VOICE] != V_POLY && !any)) {
         out[0] = (uint8_t)root;
         return 1;
     }
@@ -367,7 +368,18 @@ static void arp_remove(track_t *t, uint32_t note)
 
 static void rec_note(track_t *t, uint32_t note, uint32_t vel);
 static void rec_release(track_t *t, uint32_t note);
-static int rec_on(const track_t *t) { return ((song.rec >> trk_index(t)) & 1u) && song.playing && !chain.running; }
+/* (V10.25) SCENE (SCL > SCENE, ui_scene.c): the keys play every track given a role at once, from the one key: CHORD the
+ * key's chord of the scale (its CHORD type, TRI if off), ARP that chord into the track's arp, BASS the key an octave
+ * down, LEAD an octave up; KEEP: the track as it is (its sequence plays on, the keys do not reach it). Armed, REC
+ * records every track with a role into its own steps. The roles are the session's (RAM) */
+enum { SC_KEEP, SC_CHORD, SC_ARP, SC_BASS, SC_LEAD, SC_N };
+static uint8_t scn_on, scn_role[NTRK] = {SC_KEEP, SC_LEAD, SC_KEEP, SC_ARP, SC_BASS, SC_CHORD};
+static uint32_t scn_keys;                           /* the keys down that play the scene (their key-up too) */
+static int rec_on(const track_t *t)
+{
+    uint32_t i = trk_index(t);                       /* (not modulo: the internal parts past NTRK never record) */
+    return (((song.rec >> i) & 1u) || (scn_on && song.rec && i < NTRK && scn_role[i])) && song.playing && !chain.running;
+}
 static int pfx_rec_ok(void) { return song.rec && song.playing && !chain.running; }   /* (pfx.c: the punch-in lane) */
 
 #include "motion.c"
@@ -1158,6 +1170,48 @@ static void key_off(uint32_t k, track_t *t)
     }
 }
 
+/* (V10.25) SCENE: key k down (on) or up on every track with a role; the notes again from the key at the key-up */
+static uint32_t scn_notes(const track_t *t, uint32_t r, uint32_t root, uint8_t *o)
+{
+    if (r == SC_BASS || r == SC_LEAD) {
+        o[0] = (uint8_t)clamp((int32_t)root + (r == SC_BASS ? -12 : 12), 0, 127);
+        return 1;
+    }
+    return chord_build_mode(t, root, o, (t->p[P_CHRD] ? (uint32_t)t->p[P_CHRD] : CD_TRI) | 0x80u);   /* (whatever its voice) */
+}
+static void scene_key(uint32_t k, int on)
+{
+    uint32_t i, j, n, mc;
+    uint8_t o[KB_CH + 1];
+    for (i = 0; i < trk_live && i < NTRK; i++) {
+        track_t *t = &trk[i];
+        if (!scn_role[i] || drum_track(t))
+            continue;
+        n = scn_notes(t, scn_role[i], kb_map(t, k), o);
+        mc = trk_midi_ch(i);
+        if (on && n > 1u && rec_on(t) && !t->p[P_AMODE])   /* (a chord: into one step, as key_on) */
+            for (j = 0; j < n; j++)
+                rec_note(t, o[j], 100);
+        in_norec = (uint8_t)(on && n > 1u);
+        for (j = 0; j < n; j++) {
+            if (midi_local_held(t, o[j]))
+                continue;
+            if (on) {
+                input_on(t, o[j], 100);
+                mo_key(t, 0x09u | (0x90u | mc) << 8 | (uint32_t)o[j] << 16 | 100u << 24);
+            } else {
+                input_off(t, o[j]);
+                mo_key(t, 0x08u | (0x80u | mc) << 8 | (uint32_t)o[j] << 16);
+            }
+        }
+        in_norec = 0;
+    }
+}
+
+/* (the keys' block is RAM code: SCENE's call goes through a pointer, out of the direct calls' +-4 MiB reach check;
+ * a key event, not every block) */
+static void (*volatile scene_fp)(uint32_t, int) = scene_key;
+
 #ifdef FM1_INPUT_LAT
 /* the press latency stats (hal/fm1_input.h fm1_in_stat, console `inp`): from the first scan that saw
  * key k closed to its note-on here, and to the note's first sample leaving the DMA (kb_out_tick:
@@ -1221,6 +1275,11 @@ static void keyboard_block(void)
             kb_oct[k] = (int8_t)(!song.grid && drum_track(&trk[kb_trk[k]]) ? song.octave : 0);   /* (0.8.5) */
             if (kb_note[k] == KB_SILENT)
                 continue;
+            if (scn_on && !song.grid) {           /* (V10.25) SCENE: every track with a role */
+                scn_keys |= 1u << k;
+                scene_fp(k, 1);
+                continue;
+            }
             key_on(k, &trk[kb_trk[k]]);
 #ifdef FM1_INPUT_LAT
             kb_lat(k);
@@ -1233,6 +1292,11 @@ static void keyboard_block(void)
             }
             if (kb_note[k] == KB_SILENT) {
                 lv.kb &= ~(1u << k);
+                continue;
+            }
+            if ((scn_keys >> k) & 1u) {           /* (V10.25) a SCENE key: its notes on every role */
+                scn_keys &= ~(1u << k);
+                scene_fp(k, 0);
                 continue;
             }
             key_off(k, &trk[kb_trk[k] % NTRK]);

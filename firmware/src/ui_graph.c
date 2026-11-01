@@ -62,6 +62,8 @@ static void lz_uline(int32_t x, int32_t y, const aafont_t *f, const char *s, uin
 /* the height ADSR and LFO are drawn on: 100 px, or (MENU > LARGE's strip: draw_graph) the strip's ~ 56 */
 static int32_t graph_ht = 100;
 #include "ui_organic.c"                              /* JIANT FM's organic line art (drawn by code) */
+static uint16_t heat_col(int32_t v);
+#include "ui_scene.c"                                /* (V10.25) SCL > SCENE: the multitimbral page */
 #include "ui_euclid.c"                               /* (V10.6) SEQ > EUCLID / MODES: the generator, its graph */
 #include "ui_fm6op.c"                                /* (0.6.10, from Felucca 1.5) EDIT > OPERATOR, OP ENV, OPERATOR 2 */
 static uint16_t heat_col(int32_t v);
@@ -1368,7 +1370,7 @@ static uint32_t graph_signature(void)
     if (pg->graph == GR_SLPIT)
         h ^= (sl_ui_step + 1u) * 40503u;
     if (pg->graph == GR_TOOLS)                       /* (0.6.12) the action picked, the song's row */
-        h ^= ui.act * 7919u + ui.song_row * 104729u;
+        h ^= ui.act * 7919u + ui.song_row * 104729u + (tl_t0 ? (fm1_ms - tl_t0 + 1u) / 40u + 1u : 0u) * 2654435761u;
     if (pg->graph == GR_SLOTS) {                     /* (a checksum over each slot; the project, the music's section, the song) */
         for (i = 0; i < 4u; i++)
             h ^= (uint32_t)graph_project_used(i) << (20u + i);
@@ -1412,6 +1414,10 @@ static uint32_t graph_signature(void)
     if (pg->graph == GR_MORPH)                       /* (0.6.45) the wave, MORPH */
         h = (h ^ ((uint32_t)t->p[P_MORPH] << 16 | (uint32_t)t->p[P_E0] << 8 | (uint32_t)t->p[P_E1] |
                   (uint32_t)t->p[P_E2] << 24)) * 16777619u;
+    if (pg->graph == GR_SCENE) {                     /* (V10.25) the roles, the track picked, the last key */
+        for (i = 0; i < NTRK; i++) h = (h ^ scn_role[i] ^ (uint32_t)drum_track(&trk[i]) << 4 ^ (uint32_t)trk[i].p[P_CHRD] << 8) * 16777619u;
+        h = (h ^ scn_on ^ (uint32_t)sc_trk << 2 ^ (uint32_t)last_note << 8) * 16777619u;
+    }
     if (pg->graph == GR_EUCLID) {                    /* (V10.6) the pattern, the lane, the key, the step playing */
         h = (h ^ steps_sig(t) ^ (uint32_t)t->p[P_SLEN] << 24) * 16777619u;
         h = (h ^ eu[song.sel % NTRK].lane ^ (uint32_t)eu[song.sel % NTRK].src << 4 ^ (uint32_t)eu[song.sel % NTRK].root << 8 ^
@@ -2029,6 +2035,9 @@ static void draw_graph(void)
     } else if (pg->graph == GR_LIVE) {               /* (p2) GLO > LIVE: the rails, MANO's board (ui_live.c) */
         cv_oy = 0;
         graph_live();
+    } else if (pg->graph == GR_SCENE) {              /* (V10.25) SCL > SCENE: the six tracks' roles */
+        cv_oy = 0;
+        graph_scene();
     } else if (pg->graph == GR_EUCLID) {             /* (V10.6) SEQ > EUCLID / MODES: the ring, the lanes or the notes */
         cv_oy = 0;
         graph_euclid(t);

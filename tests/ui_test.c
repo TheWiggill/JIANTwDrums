@@ -178,6 +178,9 @@ static void ui_power_on(void)
         sing_init();                              /* (0.9.0: as felucca_init, VOICE's English generator words) */
     memset(trk, 0, sizeof trk);
     memset(&song, 0, sizeof song);
+    scn_on = 0; scn_keys = 0;                     /* (V10.25: SCENE off at power-on, its roles the defaults) */
+    memset(eu, 0, sizeof eu);                     /* (EUCLID / MUTATE: the session's, none at power-on) */
+    { static const uint8_t R0[NTRK] = {SC_KEEP, SC_LEAD, SC_KEEP, SC_ARP, SC_BASS, SC_CHORD}; memcpy(scn_role, R0, sizeof R0); sc_trk = 5; }
     memset(&chain, 0, sizeof chain);
     chain_defaults(&chain_config);
     live.mode = 0;                                /* (0.6.81: PLAY the loop, as at power-on; a DICE ALL leaves SONG) */
@@ -1894,11 +1897,18 @@ static void go_title(const char *title)
     ui.page = (uint8_t)i;
     page_entered();
 }
-static void tools_pick(uint32_t n)                /* (0.6.25) TOOLS: the n-th action picked (KNOB 1 down the list) */
+static void tools_pick(uint32_t n)                /* (0.6.25) TOOLS: the n-th action picked */
 {
-    uint32_t k;
-    ui.act = 0;
-    for (k = 0; k < n; k++) turn(EN_K1, 1);
+    ui.act = (uint8_t)n;
+    frame();
+}
+static void tools_hold(void)                      /* (V10.24) TOOLS: OCT+ held a second (the action done), let go */
+{
+    fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+    host_pressed |= 1u << panel.btn[B_OCTUP];
+    frames(1000);
+    fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
+    frame();
 }
 static int test_init_system(void)
 {
@@ -1914,8 +1924,8 @@ static int test_init_system(void)
         motion_capture(&trk[1], P_LEVEL, 40);
         sig0 = steps_sig(&trk[0]);
         go_title("TOOLS"); tools_pick(5); press(B_OCTUP);
-        ok2 = ui.confirm == CF_INIT_SYS && trk[0].step[2].n == 1u;
-        press(B_OCTUP);
+        ok2 = !ui.confirm && trk[0].step[2].n == 1u && msg_is("HOLD OCT+ TO DO IT");   /* (V10.24: a tap does nothing) */
+        tools_hold();
         ok2 &= !ui.confirm && msg_is("NEW PROJECT") && chain_config.count == 0u;
         for (k = 0; k < NTRK; k++)
             ok2 &= seq_is_empty(&trk[k]) && !motion_count(&trk[k]) && trk[k].eng_req == trk_def_engine(k);
@@ -1934,9 +1944,8 @@ static int test_init_system(void)
         trk[0].step[2] = (step_t){{60}, 1, ST_NOTE, 0, 100};
         song.g[G_BPM] = 97;
         sig0 = steps_sig(&trk[0]);
-        go_title("TOOLS"); tools_pick(6); press(B_OCTUP);
-        ok2 = ui.confirm == CF_CPU_TEST;
-        press(B_OCTUP);
+        go_title("TOOLS"); tools_pick(6); tools_hold();
+        ok2 = 1;
         ok2 &= !ui.confirm && msg_is("CPU TEST: PRESS PLAY") && song.g[G_BPM] == 160 && song.g[G_RTYPE] == 4;
         for (k = 0; k < trk_live; k++) {
             kit += drum_track(&trk[k]);
@@ -2006,41 +2015,34 @@ static int test_actions(void)
     press(B_OCTDN);
     bad += check("0.9.2 PATTERNS: OCT- back to the SEQ page it is over (was HOME; the octave stays)",
                  !ui.home && cur_page()->fam == FAM_SEQ && cur_page()->graph != GR_PATS && song.octave == 2);
-    /* TOOLS: CLRSQ and INIT are picked, not done, by their knobs */
+    /* TOOLS (V10.24): KNOB 1 the scope, KNOB 2 the action; OCT+ held does it, a tap says so */
     my_steps(t);
     go_title("TOOLS");
     bad += check("TOOLS: nothing picked, OCT+ dark", act_cols() == 15u && act_col() == 0u && oct_leds_seen(0) == 1u);
-    turn(EN_K1, 3);
-    bad += check("KNOB 1 picks CLEAR, the steps stay; OCT+ breathes", ui.act == 1u && !seq_is_empty(t) &&
-                 oct_leds_seen(0) == (1u | OCT_BREATH));
-    {
-        char a[16], b[16];
-        foot_hint(a, b);
-        bad += check("..the footer: OCT+ CLEAR / OCT- CANCEL", str_eq(a, "OCT+ CLEAR") && str_eq(b, "OCT- CANCEL"));
-    }
-    turn(EN_K1, -1);
-    bad += check("KNOB 1 left drops it", ui.act == 0u);
-    turn(EN_K1, 1); turn(EN_K1, 1);                   /* (0.9.2: KNOB 1; PRESETS a sound there, rule 3) */
-    bad += check("(0.6.25) TOOLS is a list: KNOB 1 moves the pick down (INIT SOUND), any knob too", ui.act == 2u);
-    turn(EN_K3, -1);
-    bad += check("  .. and up", ui.act == 1u);
-    turn(EN_K1, -1);
     turn(EN_K1, 1);
+    bad += check("a knob picks CLEAR SEQ (TRACK), the steps stay; OCT+ breathes", ui.act == 1u && !seq_is_empty(t) &&
+                 oct_leds_seen(0) == (1u | OCT_BREATH));
+    turn(EN_K1, 1);
+    bad += check("KNOB 1 the scope: SOUND (INIT SOUND)", ui.act == 2u);
+    turn(EN_K1, 1);
+    bad += check("  .. SONG (DELETE ROW first)", ui.act == 3u);
+    turn(EN_K2, 1);
+    bad += check("KNOB 2 the action: CLEAR SONG", ui.act == 4u);
+    turn(EN_K1, -1); turn(EN_K1, -1);
     press(B_OCTDN);
     bad += check("OCT- cancels the pick (still on TOOLS)", ui.act == 0u && !ui.home && !seq_is_empty(t));
     turn(EN_K1, 1);
     press(B_OCTUP);
-    bad += check("TOOLS CLEAR first asks confirmation", ui.confirm == CF_CLEAR_SEQ && !seq_is_empty(t));
-    press(B_OCTUP);
-    bad += check("OCT+ clears the pattern, the pick dropped", seq_is_empty(t) && msg_is("T1 CLEARED") && str_eq(ui.msg2, "SEQ+REC: ALL TRACKS") && ui.act == 0u);
-    turn(EN_K1, 1);
+    bad += check("TOOLS CLEAR: a tap does nothing, says hold", !ui.confirm && !seq_is_empty(t) && msg_is("HOLD OCT+ TO DO IT"));
+    tools_hold();
+    bad += check("OCT+ held: the pattern cleared, no dialog", seq_is_empty(t) && !ui.confirm && msg_is("T1 CLEARED"));
+    tools_pick(1);
     bad += check("nothing to clear: OCT+ dark", oct_leds_seen(0) == 1u);
-    turn(EN_K2, 1);
+    tools_pick(2);
     t->p[P_E0] = (int16_t)(t->p[P_E0] + 1);
-    press(B_OCTUP);
-    bad += check("TOOLS INIT first asks confirmation", ui.confirm == CF_INIT_SOUND);
-    press(B_OCTUP);
-    bad += check("KNOB 2 INIT, OCT+: SOUND INIT", msg_is("SOUND INIT") && ui.act == 0u);
+    tools_hold();
+    bad += check("INIT SOUND held: SOUND INIT", msg_is("SOUND INIT"));
+    ui.act = 0;
     press(B_OCTDN);
     bad += check("OCT- with nothing picked: HOME", ui.home);
     /* the dialogs and the menu */
@@ -3452,9 +3454,7 @@ static int test_chain(void)
     bad += check("SONG: + ADD, then END the last row (full: END right after row 16)", ui.song_row == CHAIN_ROWS);
     bad += check("SONG append row stays bounded at 16", chain_config.count == CHAIN_ROWS && chain_valid(&chain_config));
     go_title("TOOLS"); tools_pick(4); press(B_OCTUP);
-    bad += check("CLEAR SONG requires explicit confirmation", ui.confirm == CF_CLEAR_SONG && chain_config.count == CHAIN_ROWS);
-    press(B_OCTDN);
-    bad += check("cancel preserves the full song", chain_config.count == CHAIN_ROWS);
+    bad += check("CLEAR SONG wants OCT+ held: a tap leaves the full song", !ui.confirm && chain_config.count == CHAIN_ROWS);
     { uint32_t n0 = chain_config.count, pg0 = ui.page;
     go_title("ARRANGE"); frame();
     ui.song_row = 0; chain_config.row[0].slot = 0;
@@ -3464,7 +3464,7 @@ static int test_chain(void)
     bad += check("SONG: SECT left of A asks DELETE ROW?, OCT+ deletes it", ok && chain_config.count == n0 - 1u);
     ui.page = (uint8_t)pg0; ui.force = 1; frame();
     }
-    tools_pick(4); press(B_OCTUP); press(B_OCTUP);
+    go_title("TOOLS"); tools_pick(4); tools_hold();
     bad += check("confirmed CLEAR SONG keeps musical steps", !chain_config.count && !ui.song_row);
     return bad;
 }
@@ -4852,9 +4852,9 @@ static int test_bughunt_ui(void)
     ok &= !ui.confirm && msg_is("NOTHING TO CLEAR");
     tools_pick(4);
     ok &= act_ready();
-    press(B_OCTUP);
-    bad += check("TOOLS: DELETE ROW / CLEAR SONG / CLEAR PAT with nothing there: NOTHING TO ..; a song: its dialog",
-                 ok && ui.confirm == CF_CLEAR_SONG);
+    tools_hold();
+    bad += check("TOOLS: DELETE ROW / CLEAR SONG / CLEAR PAT with nothing there: NOTHING TO ..; a song: held, cleared",
+                 ok && !chain_config.count);
     /* 7: REC works in the layers, as PLAY: it arms the track (PLAY starts); the layer stays, no page */
     ok = 1;
     {
@@ -11872,13 +11872,16 @@ static int test_lz_key(void)
     ui_power_on(); frame();
     press(B_SCL); frame();
     ok = pd_on() && lz_fam() == LZ_KEY && pd_level() == 0u && str_eq(cur_page()->title, "SCL") && lz_tab_lit(0) &&
-         lz_tabs() == 2u && lz_crumb_is("SCL \xB7 KEY \xB7 SCL") && lz_count_is("1/2");
+         lz_tabs() == 3u && lz_crumb_is("SCL \xB7 KEY \xB7 SCL") && lz_count_is("1/3");   /* (V10.25: SCENE third) */
     frames(320); press(B_SCL); frame();
     ok &= pd_level() == 1u && str_eq(cur_page()->title, "CHORD") && lz_tab_lit(1) && lz_crumb_is("SCL \xB7 CHORD \xB7 CHORD");
     frames(320); press(B_SCL); frame();
+    ok &= pd_level() == 2u && str_eq(cur_page()->title, "SCENE");
+    frames(320); press(B_SCL); frame();
     ok &= pd_level() == 0u && str_eq(cur_page()->title, "SCL");
-    turn(EN_SELECT, 3); frame();
-    ok &= str_eq(cur_page()->title, "CHORD");                       /* (SCL's chain ends there: not into ARP) */
+    turn(EN_SELECT, 4); frame();
+    ok &= str_eq(cur_page()->title, "SCENE");                       /* (SCL's chain ends there: not into ARP) */
+    turn(EN_SELECT, -1); frame();
     frames(320); press(B_ARP); frame();
     ok &= pd_level() == 2u && str_eq(cur_page()->title, "ARP") && lz_tab_lit(0) && lz_tabs() == 1u &&
           lz_crumb_is("ARP \xB7 ARP \xB7 ARP") && lz_count_is("1/2");
@@ -13019,6 +13022,66 @@ static int test_comp_cards(void)
     return check("COMP / COMP 2 / COMPS: every value of the four cards whole, in the four skins and LARGE", bad == 0 && n > 1000u);
 }
 
+/* (V10.25) SCL > SCENE: one key plays every track given a role (T6 CHORD a triad, T5 BASS an octave down, T2 LEAD an
+ * octave up, T4 ARP the chord into its arp); the kit and KEEP tracks are not reached; the key up ends them all; REC
+ * records every role's track */
+static uint32_t trk_gates(uint32_t p)
+{
+    uint32_t i, n = 0;
+    for (i = 0; i < NVOICE; i++) n += trk[p].v[i].gate != 0;
+    return n;
+}
+static int test_scene(void)
+{
+    int bad = 0, ok;
+    uint32_t i;
+    ui_power_on();
+    song.sel = 0;
+    go_title("SCENE"); frame();
+    trks_put(1);                                         /* (6 TRACKS: T5 T6 awake) */
+    set_engine_of(&trk[0], ENGI_DRUM);
+    for (i = 1; i < NTRK; i++) set_engine_of(&trk[i], ENGI_ANALOG);
+    for (i = 0; i < 60u; i++) events_block(CTL);        /* (the engines faded in) */
+    turn(EN_K1, 1);
+    ok = scn_on == 1u;
+    turn(EN_K2, -1);                                     /* (T6 -> T5: BASS) */
+    ok &= sc_trk == 4u && scn_role[4] == SC_BASS;
+    bad += check("SCENE page: KNOB 1 ON, KNOB 2 the track, its role shown", ok);
+    key_down(white(7));                                  /* (C4 or so) */
+    for (i = 0; i < 4u; i++) events_block(CTL);
+    ok = trk_gates(5) == 3u && trk_gates(4) == 1u && trk_gates(1) == 1u && trk[3].arp_phys > 0u && trk_gates(0) == 0u && trk_gates(2) == 0u;
+    bad += check("SCENE: one key, T6 a triad, T5 the bass, T2 the lead, T4 its arp; the kit and T3 (KEEP) not", ok);
+    key_up(white(7));
+    for (i = 0; i < 4u; i++) events_block(CTL);
+    bad += check("SCENE: the key up ends every role", trk_gates(5) == 0u && trk_gates(4) == 0u && trk_gates(1) == 0u && !trk[3].arp_phys);
+    turn(EN_K1, -1);
+    bad += check("SCENE OFF: a key plays the selected track again", !scn_on);
+    trks_put(0);
+    return bad;
+}
+/* (V10.24) SAVE > PRESETS: KNOB 1 plays each sound as it passes; OCT- brings back the one from before the browse, OCT+
+ * keeps it */
+static int test_presets_back(void)
+{
+    int ok;
+    int16_t p0;
+    uint32_t e0, pr0;
+    ui_power_on();
+    song.sel = 4;
+    e0 = TSEL->eng_req; pr0 = TSEL->preset; p0 = TSEL->p[P_E1];
+    go_title("PRESETS"); frame();
+    turn(EN_K1, 1); turn(EN_K1, 1);
+    ok = TSEL->preset != pr0 || TSEL->eng_req != e0;
+    press(B_OCTDN);
+    ok &= TSEL->eng_req == e0 && TSEL->preset == pr0 && TSEL->p[P_E1] == p0 && msg_is("SOUND BEFORE") && !ui.home;
+    turn(EN_K1, 1);
+    pr0 = TSEL->preset;
+    press(B_OCTUP);
+    ok &= TSEL->preset == pr0 && msg_is("SOUND KEPT");
+    press(B_OCTDN);
+    ok &= TSEL->preset == pr0;                          /* (kept: nothing to go back to) */
+    return check("PRESETS: OCT- the sound before the browse, OCT+ keeps it (V10.24)", ok);
+}
 /* (V10.23) STRING's EXCITE into FDBK: EDIT 2's four knobs become the amp's with values heard at once (GAIN was STRETCH's 0:
  * "the modes don't take until a knob goes up"), and back out STRETCH BODY SIZE BOW as they were left */
 static int test_string_excite(void)
@@ -13044,6 +13107,8 @@ int main(void)
     int bad = 0;
     bad += test_comp_cards();
     bad += test_string_excite();
+    bad += test_presets_back();
+    bad += test_scene();
     bad += test_large_face();
     bad += test_lz_home();
     bad += test_lz_edit();

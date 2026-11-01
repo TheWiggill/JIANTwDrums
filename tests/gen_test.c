@@ -785,7 +785,7 @@ int main(void)
     {   /* NEW PROJECT (SAVE > TOOLS 5): GENRE back to EXPLORE */
         gen_reset();
         gp.genre = 5;
-        go_title("TOOLS"); tools_pick(5); press(B_OCTUP); press(B_OCTUP);
+        go_title("TOOLS"); tools_pick(5); tools_hold();   /* (V10.24: OCT+ held) */
         bad += gcheck("NEW PROJECT: GENRE back to EXPLORE", gp.genre == GEN_EXPLORE && msg_is("NEW PROJECT"));
     }
     /* ---- the screen: HOME + SELECT opens GEN, the knobs set, SELECT pages, OCT+ makes, OCT- is done */

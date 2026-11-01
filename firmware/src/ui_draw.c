@@ -1570,10 +1570,14 @@ static void draw_columns(void)
         draw_act_column(3, "CLEAR", T_MID, ICON_X_MOTION_DEL);
         return;
     }
-    if (cur_page()->graph == GR_TOOLS) {
-        static const char *const labels[] = {"PAT", "SOUND", "ROW", "SONG"};
-        static const uint8_t icons[] = {ICON_AUTO, ICON_AUTO, ICON_X_SONG, ICON_X_SONG};   /* ROW, SONG: the song's */
-        for (c = 0; c < 4u; c++) draw_act_column(c, labels[c], VAL(c), icons[c]);
+    if (cur_page()->graph == GR_TOOLS) {                 /* (V10.24) KNOB 1 the scope, KNOB 2 the action; OCT+ held */
+        static const char *const SC[4] = {"TRACK", "SOUND", "SONG", "SYSTEM"};
+        static const char *const AC[6] = {"CLEAR", "INIT", "DEL ROW", "CLEAR", "NEW", "CPU"};
+        uint32_t a = ui.act ? ui.act - 1u : 0u;
+        text_column(0, "SCOPE", ui.act ? SC[TL_SC[a]] : "--", ui.act ? VAL(0u) : T_DIM);
+        text_column(1, "ACTION", ui.act ? AC[a] : "--", ui.act ? VAL(1u) : T_DIM);
+        empty_column(2);
+        text_column(3, "DO", "OCT+", ui.act && act_ready() ? T_ACCENT : T_DIM);
         return;
     }
     if (cur_page()->scope == SC_TRK) {                 /* LEVEL PAN REV of the selected track, the DJ FILTER */

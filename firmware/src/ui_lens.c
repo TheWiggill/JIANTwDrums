@@ -92,8 +92,8 @@ static const ng_t CG_ENV[] = {{"TRACKS", 0}, {"ENV", 0}, {"STAGE", 0}};
 static const nv_t CE_LFO[] = {NV("MOD", 0, 0, 0), NV("LFO", 0, 1, 1), NV("LFO 2", 0, 1, 1), NV("LFO DEST", 0, 1, 1),
                               NV("MSEQ", 0, 2, 2), NV("MSEQ 2", 0, 2, 2)};   /* (0.9.18: LFO 2, PHASE) */
 static const ng_t CG_LFO[] = {{"MOD", 0}, {"LFO", 0}, {"MSEQ", 0}};
-static const nv_t CE_SCL[] = {NV("SCL", 0, 0, 0), NV("CHORD", 0, 1, 1)};
-static const ng_t CG_SCL[] = {{"KEY", 0}, {"CHORD", 0}};
+static const nv_t CE_SCL[] = {NV("SCL", 0, 0, 0), NV("CHORD", 0, 1, 1), NV("SCENE", 0, 2, 2)};   /* (V10.25 SCENE) */
+static const ng_t CG_SCL[] = {{"KEY", 0}, {"CHORD", 0}, {"SCENE", 0}};
 static const nv_t CE_ARP[] = {NV("ARP", 0, 0, 2), NV("ARP 2", 0, 0, 2)};
 static const ng_t CG_ARP[] = {{"ARP", 0}};
 enum { SV_LIB, SV_PROJ, SV_SOUND };
