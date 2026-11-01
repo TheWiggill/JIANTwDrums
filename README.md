@@ -429,6 +429,14 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
 
 ## Changelog
 
+### V10.27 (beta)
+- Testers' fixes: the **CHORD** page on screen no longer changes the next key's chord (with VOICING LEAD a key could
+  play another inversion after the page was shown).
+- **MENU** (HOME held): KNOB 1..4 each edit their own card's row (all four edited the selected row).
+- **TAPE WOW** wobbles like a warped record: a random, smoothed pitch drift, up to ~±45 cents at 100 (it was ~4 cents).
+- Slower: **LFO RATE** 8BAR and 16BAR (between the slowest Hz and 4BAR); **PLAYHEADS RATE** 1/8 and 1/16; **STRUM**
+  as before up to 64, then up to ~1 s.
+
 ### V10.26 — public (2026-11-02)
 - Stable installer: everything from V10.21 to V10.26, tested on hardware: SCENE, the redesigned EUCLID / MUTATE /
   PRESETS / TOOLS, NUDGE's micro timing, ENV 2, LP24, PLS3, STRING FDBK.

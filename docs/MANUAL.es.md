@@ -2025,7 +2025,7 @@ pequeña curva de respuesta donde iría la barra.
 - **ENV 2** (V10.22, después de ENV DEST): un segundo ADSR por voz que no va a ningún lado solo: elegí **SRC ENV2** en
   un slot de MOD y mandalo a cualquier DEST, como el LFO.
 - **LFO**: RATE, WAVE (SIN, TRI, SAW, SQR, S&H), MODE, FADE; **LFO 2**: PHASE. **LFO DEST**: PITCH, FILTER, SHAPE, AMP.
-  - **RATE** es libre en Hz; girándolo a la izquierda pasado el más lento queda **a tempo** (4BAR, 2BAR, 1BAR, 1/2,
+  - **RATE** es libre en Hz; girándolo a la izquierda pasado el más lento queda **a tempo** (16BAR y 8BAR, V10.27, después 4BAR, 2BAR, 1BAR, 1/2,
     1/4, 1/8D, 1/4T, 1/8, 1/8T, 1/16, 1/16T, 1/32), enganchado al compás mientras el transporte toca (en TRIG, PHASE es
     su desfase), en cualquier MODE: ahí ninguna nota lo mueve.
   - **MODE TRIG**: una frase nueva (una nota sin otra mantenida) reinicia el LFO en **PHASE** (LFO 2) y lo vuelve a

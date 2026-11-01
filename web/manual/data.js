@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.27", items: [
+    ["Arreglos de testers: la página CHORD ya no cambia el acorde de la tecla siguiente (con VOICING LEAD); en el MENU cada perilla mueve su propia tarjeta; el WOW del TAPE ondula como un vinilo (hasta ~45 cents); LFO a 8BAR y 16BAR, PLAYHEADS a 1/8 y 1/16, STRUM hasta ~1 s.", "Testers' fixes: the CHORD page no longer changes the next key's chord (VOICING LEAD); in the MENU each knob moves its own card; TAPE WOW wobbles like a record (up to ~45 cents); LFO at 8BAR and 16BAR, PLAYHEADS at 1/8 and 1/16, STRUM up to ~1 s."]]},
   {v: "V10.26 pública", items: [
     ["El instalador público pasa a V10.26: SCENE, EUCLID / MUTATE / PRESETS / TOOLS rediseñados, el microtiming de NUDGE, ENV 2, LP24, PLS3 y STRING FDBK. SCENE arranca apagado con todas las pistas en KEEP; OCT+ tira el dado de los roles (nunca dos pistas iguales ni dos con acordes).", "The public installer moves to V10.26: SCENE, the redesigned EUCLID / MUTATE / PRESETS / TOOLS, NUDGE's micro timing, ENV 2, LP24, PLS3 and STRING FDBK. SCENE starts OFF with every track KEEP; OCT+ dices the roles (never two tracks alike nor two playing chords)."]]},
   {v: "V10.25", items: [
