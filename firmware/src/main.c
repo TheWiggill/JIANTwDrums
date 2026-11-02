@@ -188,6 +188,13 @@ static void felucca_init(void)
  * reset), a hang (a WDT reset) or a failed boot (bootguard: the last one died within its first 30 s): straight to the
  * UI. The UBOOT paths never get here. */
 static uint32_t crash_seen __attribute__((section(".noinit")));   /* fm1_crash.count at the last boot */
+/* (V10.46) the supply setup's boot guard (hal/fm1_power.h, since V10.11): PW_CR_START while it runs and until the UI
+ * is up; a reset before that (the watchdog of a hang: .noinit kept) finds it set and the next start skips the setup
+ * (PW_CR_SKIP: the boot loader's supplies, as JIANT up to V10.10), and keeps skipping it until the power goes off. A
+ * power-off loses .noinit: the next power-on tries again */
+#define PW_CR_START 0x5057A001u
+#define PW_CR_SKIP 0x5057A002u
+static uint32_t pw_crumb __attribute__((section(".noinit.zbt")));
 static uint8_t boot_clean;                    /* no crash, hang (WDT) or failed boot before this one (boot_leds):
                                                * the sweep runs and the autosave is restored (project.c autosave_boot) */
 static void boot_leds(void)
@@ -363,6 +370,8 @@ static void fm1_main(void)
     scrn.idle = fm1_ms;                        /* (MENU > SCREEN OFF: from here) */
     if (said)                                  /* (p1) cpu_boot */
         cpu_off("2 CORES OFF AFTER A CRASH");
+    if (pw_crumb == PW_CR_SKIP) ui_message("SAFE START: POWER SETUP SKIPPED");
+    else pw_crumb = 0;                         /* (V10.46) the UI is up: the supply setup went well */
     bt_boot(boot_clean);                       /* (V10.12) BLUETOOTH's boot guard (bt.c) */
 
     for (;;) {
@@ -527,7 +536,13 @@ void fm1_cstart(void)
 #endif
     for (s = _hot_load, d = _hot_start; d < _hot_end; s++, d++)
         *d = *s;                                /* (0.6.78) core 0's hottest audio code (core.h HOTRAM) */
-    fm1_power_ready = (uint8_t)fm1_power_init();   /* (V10.11) the supplies as stock V15 sets them (the DC-DC on:
+    if (pw_crumb == PW_CR_START || pw_crumb == PW_CR_SKIP)
+        pw_crumb = PW_CR_SKIP;                  /* (V10.46) the last start hung here or before the UI: not again */
+    else {
+        pw_crumb = PW_CR_START;
+        fm1_power_ready = (uint8_t)fm1_power_init();
+    }
+                                                /* (V10.11) the supplies as stock V15 sets them (the DC-DC on:
                                                  * hal/fm1_power.h, Melodee's sequence), the radio's prerequisite */
     fm1_rails_boot();                           /* (0.9.9-stab) the core supplies to M-VAVE's own levels (VDC14 1.60 V,
                                                  * SYSVDD 1.38 V, hal/fm1_sys.h) before the second core and the audio:
