@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.42).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.43).
 
 ## Reporting a crash
 
@@ -428,6 +428,12 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.43 (beta)
+- **Pages that show what they do**: EDIT › LEVELS / LEVELS 2 (DRUM-X) draw a column per sound, its level the height,
+  lit as the sound plays, the page's four framed. FX › MASTER draws CLIP's curve (in → out, the level now a dot),
+  PUNCH's push as a bar and the duck's gain moving over its curve. FX › PUNCH shows the lane 16 steps a row, every
+  step a box, each recorded punch in its colour and the playhead walking it (an empty lane used to draw nothing).
 
 ### V10.42 (beta)
 - **Factory presets less alike, the basics there**: FM6's seven near copies (ICE BELL, DX KEYS, FM PLUCK, SOFT BELL,
