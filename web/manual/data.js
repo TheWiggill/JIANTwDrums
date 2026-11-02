@@ -628,6 +628,9 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.45", items: [
+    ["Arreglo: GLO › LIVE › MANO perilla 4 vuelve a ser el FILTRO DJ (desde V10.37 cambiaba el tempo; aviso de un usuario).", "Fix: GLO › LIVE › MANO KNOB 4 is the DJ FILTER again (since V10.37 it changed the tempo; a user's report)."],
+    ["MORPH dibuja la onda: en ANALOG PWM, SYNC, RING, SAW3 y PLS3 la página MORPH muestra la onda misma mientras MORPH la deforma (antes era una rampa).", "MORPH draws the wave: on ANALOG's PWM, SYNC, RING, SAW3 and PLS3 the MORPH page shows the wave itself as MORPH bends it (it was a ramp)."]]},
   {v: "V10.44", items: [
     ["Más páginas que muestran lo que hacen: FX › MASTER › EQ dibuja la curva de las cuatro bandas (LOW / HIGH como estantes, los medios como campanas, un punto por banda); GLO › SYSTEM 2 dibuja USB, TRS y BT como cajas con una luz de IN / OUT que parpadea cuando pasa MIDI, y la barra de PROX con Bluetooth conectado o en AIR.", "More pages that show what they do: FX › MASTER › EQ draws the four bands' curve (LOW / HIGH as shelves, the mids as bells, a dot per band); GLO › SYSTEM 2 draws USB, TRS and BT as boxes with an IN / OUT light that flashes as MIDI passes, and PROX's bar when Bluetooth is linked or in AIR."]]},
   {v: "V10.43", items: [
