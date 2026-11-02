@@ -369,6 +369,20 @@ static void fm1_main(void)
         uint32_t m = fm1_ms;
         fm1_wdt_feed();
         usb_retry(fm1_ms);
+#if FELUCCA_USB_HOST
+        if (uh.want && !bt_hw_seg()) {                  /* (V10.41) the host's code is in the Bluetooth segment */
+            uh.want = 0;
+            usb_host_want = 0;
+            ui_message("USB HOST: INSTALL AGAIN (NO SEG)");
+        } else if (uh.want || uh.on)
+            uh_task(fm1_ms);                            /* (V10.41) USB > HOST: the keyboard found, kept, lost */
+        if (uh.msg) {
+            static const char *const UHM[7] = {"", "USB HOST: PLUG A MIDI KEYBOARD", "USB HOST OFF", "USB MIDI KEYBOARD READY",
+                                               "NOT A USB MIDI KEYBOARD", "LOW SPEED: NOT SUPPORTED", "USB KEYBOARD LOST"};
+            ui_message(UHM[uh.msg % 7u]);
+            uh.msg = 0;
+        }
+#endif
         if (fm1_ms > 30000u && bootguard.pending) {     /* a crash or hang in the first 30 s counts */
             bootguard.pending = 0;
             bootguard.failed = 0;

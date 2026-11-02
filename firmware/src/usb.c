@@ -1774,9 +1774,20 @@ static __attribute__((noinline)) void uac_in_fill(uint32_t n)
 #endif
 #endif
 
+#ifndef FELUCCA_USB_HOST
+#define FELUCCA_USB_HOST 0                              /* (the host tests: no host mode) */
+#endif
+#include "usb_host.c"                                   /* (V10.41) FELUCCA_USB_HOST: the port as a MIDI host (USB > HOST) */
+
 static void usb_poll(void)                              /* TIMER5 ISR, 2 kHz */
 {
     uint32_t iu, it, ir;
+#if FELUCCA_USB_HOST
+    if (uh.run) {                                       /* a host: one IN endpoint, nothing of the device side */
+        uh_poll();
+        return;
+    }
+#endif
     if (!usb.up)
         return;
     if (fm1_usb_sof_take()) {                           /* SOF pending: NOT a reliable "host is there" */
@@ -1905,6 +1916,10 @@ static int usb_retry_due(uint32_t now_ms)              /* (apart: the host tests
     }
     if (usb.up || usb.detached || now_ms - t < 1000u)
         return 0;
+#if FELUCCA_USB_HOST
+    if (uh.on)                                          /* (the port is a host: uh_task's) */
+        return 0;
+#endif
     t = now_ms;
     return 1;
 }
@@ -1927,6 +1942,10 @@ static void usb_detach(void)
  * apply (the console off, the stems on) drop it once: the second finds it off */
 static __attribute__((unused)) void usb_replug(void)
 {
+#if FELUCCA_USB_HOST
+    if (uh.on)                                          /* (a device setting while a host: applied when HOST is off) */
+        return;
+#endif
     if (usb.up) {
         usb.up = 0;                                     /* usb_poll (TIMER5) stops before the SIE goes */
         RING_PUBLISH();

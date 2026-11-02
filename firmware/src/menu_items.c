@@ -107,7 +107,8 @@ static const char *const USBLVL_N[6] = {"MASTER", "FIXED", "-6 dB", "-12 dB", "-
  * console; (0.8.0) STEMS+IN, the stems with the host's audio output too (10 channels in: the stems, then the host's
  * audio as the last track mixed it and as it came; the phone app records a voice through the FM-1 and moves it by
  * the latency). ui.c usb_out */
-static const char *const USBOUT_N[5] = {"CONSOLE", "STEREO", "STEMS", "IN+OUT", "STEMS+IN"};
+static const char *const USBOUT_N[6] = {"CONSOLE", "STEREO", "STEMS", "IN+OUT", "STEMS+IN", "HOST"};
+static uint8_t usb_host_want;                          /* (V10.41) USB > HOST (usb_host.c), applied when the menu closes; never saved */
 static const char *const HOLD_N[4] = {"0.3 s", "0.4 s", "0.5 s", "0.6 s"};   /* (the editor's names; the menu draws its own) */
 /* 1.1 (Discussion #131): the metronome (click.c) and the count-in (seq.c); ui.c ui_rec_prefs holds them */
 static const char *const CLICK_N[3] = {"OFF", "REC", "ON"};          /* REC: while a track is armed and playing */
@@ -139,6 +140,9 @@ static void usb_serial_apply(void)
     if (menu_serial_at && fm1_ms - menu_serial_at < 200u)
         return;
     menu_serial_at = 0;
+#if FELUCCA_USB_HOST
+    uh.want = usb_host_want;                           /* (V10.41: uh_task switches the port, the main loop) */
+#endif
 #if FELUCCA_CDC
     usb_cdc_switch(FELUCCA_CDC_DEFAULT && !(ui_prefs & PREF_SERIAL_OFF) && !usb_out);   /* (a FELUCCA_CDC_DEFAULT=0 build: off) */
 #endif
@@ -161,7 +165,7 @@ static const menu_flag_t *menu_flag(uint32_t row)
 static uint32_t menu_n(uint32_t row)
 {
     return row == MI_COLOR ? NPALETTES : row == MI_SKIN ? SKIN_N : row == MI_LOWCUT || (row >= MI_CLICK && row <= MI_COUNTIN) || row == MI_LOAD || row == MI_BT ? 3u :
-           row == MI_HOLD || row == MI_MIDIOUT || row == MI_LEARN ? 4u : row == MI_MIDIMAP ? MLM_N : row == MI_USB ? 6u : row == MI_SERIAL ? 5u : row == MI_LEDS ? LEDS_COUNT : row == MI_SCROFF ? NELEM(SCROFF_N) : 2u;
+           row == MI_HOLD || row == MI_MIDIOUT || row == MI_LEARN ? 4u : row == MI_MIDIMAP ? MLM_N : row == MI_USB ? 6u : row == MI_SERIAL ? 5u + FELUCCA_USB_HOST : row == MI_LEDS ? LEDS_COUNT : row == MI_SCROFF ? NELEM(SCROFF_N) : 2u;
 }
 static uint32_t menu_get(uint32_t row)
 {
@@ -176,7 +180,7 @@ static uint32_t menu_get(uint32_t row)
     case MI_STYLE: return ui_style == ST_LINE;
     case MI_LOWCUT: return settings.lowcut % 3u;
     case MI_USB: return (ui_prefs & PREF_USB_FIXED) ? 1u + usb_lvl % 5u : 0u;
-    case MI_SERIAL: return usb_out == 3u ? 4u : usb_out == 2u ? 3u : usb_out ? 2u : (ui_prefs & PREF_SERIAL_OFF) ? 1u : 0u;
+    case MI_SERIAL: return usb_host_want ? 5u : usb_out == 3u ? 4u : usb_out == 2u ? 3u : usb_out ? 2u : (ui_prefs & PREF_SERIAL_OFF) ? 1u : 0u;
     case MI_HOLD: return settings_hold % 4u;
     case MI_SCROFF: return scr_get();
     case MI_CLICK: case MI_CLKLVL: case MI_COUNTIN: return rp_get(row - MI_CLICK);
@@ -206,7 +210,7 @@ static const char *menu_vname(uint32_t row, uint32_t v)
     case MI_STYLE: return STYLE_N[v & 1u];
     case MI_LOWCUT: return SPK_EQ[v % 3u];
     case MI_USB: return USBLVL_N[v % 6u];
-    case MI_SERIAL: return USBOUT_N[v % 5u];
+    case MI_SERIAL: return USBOUT_N[v % 6u];
     case MI_HOLD: return HOLD_N[v & 3u];
     case MI_CLICK: return CLICK_N[v % 3u];
     case MI_CLKLVL: return CLKLVL_N[v % 3u];
@@ -254,6 +258,9 @@ static void menu_put(uint32_t row, uint32_t v)
         fx_usb_gain = USB_GAIN[usb_lvl];
         break;
     case MI_SERIAL:                                /* (0.7.1) applied when the menu closes (usb_serial_apply) */
+        usb_host_want = v == 5u;                       /* (V10.41) HOST: the device's own setting kept as it was */
+        if (v == 5u)
+            break;
         ui_prefs = (uint8_t)(v ? ui_prefs | PREF_SERIAL_OFF : ui_prefs & ~PREF_SERIAL_OFF);
         usb_out = (uint8_t)(v == 2u ? 1u : v == 3u ? 2u : v == 4u ? 3u : 0u);   /* (0.7.5: 2 IN+OUT; 0.8.0: 3 STEMS+IN) */
         break;
