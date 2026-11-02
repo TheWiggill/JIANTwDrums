@@ -3251,6 +3251,8 @@ async function sendSet(s, id, k) {
       showValue(k, r.value, false);
       mixFromDump();
     }
+    if (!s && dev && id === dev.info.pe0) { dev.dump = await getDump(); await rereadEngineDesc(); refreshAll(); }   /* (V10.40) WAVE / EXCITE / MODE:
+                                                         * some knobs change name and range (ANALOG SAW3's INT 3, STRING FDBK) */
   } catch (e) { if (e.message !== "closed") console.warn(e); }
 }
 
@@ -3887,7 +3889,8 @@ setInterval(async () => {
     const dump = await getDump();
     if (d !== dev) return;
     const soundChanged = dump.engine !== d.dump.engine || dump.preset !== d.dump.preset;
-    const engineChanged = dump.engine !== d.dump.engine;
+    const engineChanged = dump.engine !== d.dump.engine || dump.p[d.info.pe0] !== d.dump.p[d.info.pe0];   /* (V10.40: or its
+                                                         * WAVE / MODE, whose knobs can change: rereadEngineDesc rebuilds only if they did) */
     const oldLen = d.dump.p[pSlen()];
     for (const [k, c] of ctl) {
       const v = c.scope ? dump.g[c.id] : dump.p[c.id];

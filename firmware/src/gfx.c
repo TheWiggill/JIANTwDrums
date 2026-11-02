@@ -321,7 +321,9 @@ static void cv_blit_from(uint32_t x, uint32_t y, uint32_t r0)
  * strip is cut in 8 x 4 cells, a hash of each kept; the runs of cells whose hash changed are sent (cv_blit_cells), a row
  * of them a window. A frame drawn in full (dc_frame(1): ui.force, a page change, a wake, a blit outside the cells) sends
  * them all. A cell goes out when any of its pixels changed (a 16-bit hash, snd7: 3.8 kB of the pool back; a change missed
- * about once in 65536 changed cells, and one cell of each strip a frame sent anyway, in turn: a miss mended within seconds) */
+ * about once in 65536 changed cells, and one cell of each strip a frame sent anyway, in turn: a miss mended within seconds)
+ * (V10.40: a strip's n / 128 + 1 cells a frame, side by side (one window): every strip sent again within ~128 frames (~10 s;
+ * HOME's panel strip, 1140 cells, took ~95 s), ~7 % more sent. A wider hash would want 3.8 kB more of the pool) */
 #ifndef DC_CW
 #define DC_CW 8u                        /* a cell: 8 x 4 (8 x 8 sent ~15 % more, 4 x 4 wants twice the hashes) */
 #define DC_CH 4u
@@ -370,7 +372,7 @@ static uint32_t dc_cell(uint32_t cx, uint32_t cy)     /* the hash of canvas cell
 }
 static __attribute__((noinline)) void cv_blit_cells(uint32_t x, uint32_t y)   /* (snd7: out of the recorded code) */
 {
-    uint32_t i, ncx = (cv_w + DC_CW - 1u) / DC_CW, ncy = (cv_h + DC_CH - 1u) / DC_CH, cx, cy, base;
+    uint32_t i, ncx = (cv_w + DC_CW - 1u) / DC_CW, ncy = (cv_h + DC_CH - 1u) / DC_CH, cx, cy, base, roll;
     uint16_t *hp;
     GFX_HOOK_BLIT(x, y, 0u);                            /* (the screen shows the whole strip after it) */
     for (i = 0; i < dc_n; i++)
@@ -390,7 +392,8 @@ static __attribute__((noinline)) void cv_blit_cells(uint32_t x, uint32_t y)   /*
         dc_n++;
     } else if (!dc_all) {
         hp = dc_hash + dc_st[i].base;
-        base = ++dc_roll % (ncx * ncy);
+        roll = ncx * ncy / 128u + 1u;
+        base = (++dc_roll * roll) % (ncx * ncy);
         for (cy = 0; cy < ncy; cy++) {                  /* each row of cells: its runs of changed cells, a window each */
             uint32_t y0 = cy * DC_CH, h = cv_h - y0 < DC_CH ? cv_h - y0 : DC_CH, run = 0xFFFFu;
             for (cx = 0; cx <= ncx; cx++) {
@@ -398,7 +401,10 @@ static __attribute__((noinline)) void cv_blit_cells(uint32_t x, uint32_t y)   /*
                 if (cx < ncx) {
                     uint32_t hs = dc_cell(cx, cy);
                     hs = (hs ^ hs >> 16) & 0xFFFFu;
-                    ch = hp[cy * ncx + cx] != hs || cy * ncx + cx == base;
+                    {
+                        uint32_t idx = cy * ncx + cx, d = idx >= base ? idx - base : idx + ncx * ncy - base;
+                        ch = hp[idx] != hs || d < roll;        /* (the roll cells from base: sent anyway) */
+                    }
                     hp[cy * ncx + cx] = (uint16_t)hs;
                 }
                 if (ch && run == 0xFFFFu)

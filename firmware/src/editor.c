@@ -229,7 +229,9 @@ static void ed_sync(void)                                /* main loop */
 
 /* descriptor of parameter id of track t: the engine parameters of the engine it asked for
  * (t->engine follows in the audio ISR, after a short fade) */
-static const param_desc_t *ed_tdesc(const track_t *t, uint32_t id) { return param_desc_of(trk_eng(t), id); }
+static void excite_turn(track_t *t, const int16_t *vp, int32_t old);   /* (ui_input.c) */
+static const param_desc_t *ed_tdesc(const track_t *t, uint32_t id) { return track_desc(t, id); }   /* (V10.40: the mode's
+                                                         * own, as the panel: ANALOG SAW3's INT 3, STRING FDBK's knobs) */
 /* descriptor and value slot of (scope, id): scope 0 = the selected track, 1 = global */
 static const param_desc_t *ed_desc(uint32_t scope, uint32_t id, int16_t **vp)
 {
@@ -448,9 +450,12 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
             } else if (a[0] == 1 && a[1] == G_DJF) {     /* (0.9.1) the DJ FILTER: recorded as its knob is */
                 motion_djf_set(TSEL, (int16_t)clamp(ed_rv(a + 2), d->min, d->max));
             } else if (d->max > d->min) {
+                int32_t was = *vp;
                 *vp = (int16_t)enum_orig(d, clamp(ed_rv(a + 2), d->min, d->max));
-                if (a[0] == 0)
+                if (a[0] == 0) {
                     (void)motion_capture(TSEL, a[1], *vp);
+                    excite_turn(TSEL, vp, was);         /* (V10.40) a WAVE / EXCITE whose knobs change meaning, as the panel */
+                }
             }
             ui.force = 1;
             ed_w.v[a[0] ? P_COUNT + a[1] : a[1]] = *vp;   /* the editor's own change: no push */
