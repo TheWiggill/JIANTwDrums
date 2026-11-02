@@ -457,9 +457,9 @@ violeta, con el nombre violeta, y dice **OCT+**; apretá OCT+ para ejecutarla.
 
 | Página | KNOB 1 | KNOB 2 | KNOB 3 | KNOB 4 |
 | --- | --- | --- | --- | --- |
-| MANO (0.9.11) | RATE | LOOP | THIN | DJ FILT (el de MIXER; las teclas: los modificadores en vivo) |
+| MANO (0.9.11) | RATE | LOOP | THIN | DJ FILT (el DJ FILTER del master; las teclas: los modificadores en vivo) |
 | RIELES (0.9.11) | PISTAS (ALL, T1 … T6, SYN, DRM) | RATE | CORTE | DENS |
-| MIXER | LEVEL | PAN | REV | DJ FILT (0.9.1: el DJ FILTER del master; era MUTE, ahora en la capa GLO) |
+| MIXER | LEVEL | PAN | REV | BPM (V10.37; antes el DJ FILTER, ahora en el KNOB 4 de MANO) |
 | SENDS (0.8.5) | DIST | CHORUS | DLY | REV (los de la pista seleccionada, como FX > SENDS) |
 | GLOBAL | BPM | SWING | CLOCK | TUNE |
 | SYSTEM | TRACKS | LOAD | ROUTE | CPU (%) |
@@ -2011,7 +2011,7 @@ ancho). Se oculta con LOAD ECO (la tarjeta de envío de chorus de una pista dice
 - **PUNCH**: engorda las pistas DRUM.
 - **DUCK**: el bombo baja todo lo demás; **REL** es su release.
 
-### DJ FILTER (0.9.1, GLO › MIXER KNOB 4)
+### DJ FILTER (0.9.1, GLO › LIVE › MANO KNOB 4; en MIXER hasta V10.36)
 
 Una perilla sobre toda la mezcla, justo antes de CLIP y del nivelador. **En el medio (OFF) queda fuera de la cadena**:
 no se procesa nada y el sonido es exactamente el de sin él. Hacia la izquierda es un **pasa-bajos** que baja (más
@@ -2080,7 +2080,7 @@ pequeña curva de respuesta donde iría la barra.
 
 Las seis secuencias una al lado de la otra y modificadores para tocar encima, como efectos MIDI sobre un master:
 dividir, multiplicar, acortar, dar vuelta, ralear, repetir. Nunca tocan los pasos: cambian cómo el secuenciador los
-recorre, y la pista siempre vuelve en fase. Dos páginas, el primer grupo de GLO (**LIVE · MIX · GLOBAL · SYSTEM**): un
+recorre, y la pista siempre vuelve en fase. Dos páginas, el primer grupo de GLO (**LIVE · MIX · COMPS · GLOBAL · SYSTEM**, V10.37: primero las páginas para tocar): un
 toque de GLO adentro recorre los grupos, SELECT a la izquierda de MIXER llega a ellas; al prender, GLO sigue abriendo
 el MIXER.
 
@@ -2108,7 +2108,7 @@ enganchado: violeta).
   momento). **C#5 / D#5** GIRO: el cabezal un paso atrás / adelante (una rotación). **F#5** RND: los pasos en cualquier
   orden (encendido / apagado).
 - **KNOB 1 RATE, 2 LOOP, 3 THIN** sobre las pistas mantenidas (ninguna: todas), enganchadas como cualquier perilla;
-  **KNOB 4** el DJ FILTER, el mismo del KNOB 4 de MIXER.
+  **KNOB 4** el DJ FILTER del master.
 - En MANO las teclas no tocan notas; en cualquier otra página vuelven a tocar (una tecla todavía apretada sostiene su
   modificador hasta que la soltás).
 

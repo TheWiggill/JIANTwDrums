@@ -444,10 +444,11 @@ the bars with KNOB 1 the bar and KNOB 2 LEN.
 
 | Page | KNOB 1 | KNOB 2 | KNOB 3 | KNOB 4 |
 | --- | --- | --- | --- | --- |
-| MANO (0.9.11) | RATE | LOOP | THIN | DJ FILT (MIXER's; the keys: the live modifiers) |
+| MANO (0.9.11) | RATE | LOOP | THIN | DJ FILT (the master DJ FILTER; the keys: the live modifiers) |
 | RIELES (0.9.11) | PISTAS (ALL, T1 … T6, SYN, DRM) | RATE | CORTE | DENS |
-| MIXER | LEVEL | PAN | REV | DJ FILT (0.9.1: the master DJ FILTER; was MUTE, now on the GLO layer) |
+| MIXER | LEVEL | PAN | REV | BPM (V10.37; was the DJ FILTER, now on MANO's KNOB 4) |
 | SENDS (0.8.5) | DIST | CHORUS | DLY | REV (the selected track's, as FX > SENDS) |
+| COMPS, COMPS 2 | the global lane's step components (V10.37: right after MIX) | | | |
 | GLOBAL | BPM | SWING | CLOCK | TUNE |
 | SYSTEM | TRACKS | LOAD | ROUTE | CPU (%) |
 
@@ -1905,7 +1906,7 @@ from before).
 - **PUNCH**: fattens the DRUM tracks.
 - **DUCK**: the kick pulls the rest down; **REL** is its release.
 
-### DJ FILTER (0.9.1, GLO › MIXER KNOB 4)
+### DJ FILTER (0.9.1, GLO › LIVE › MANO KNOB 4; on MIXER until V10.36)
 
 One knob on the whole mix, just before CLIP and the leveler. **In the middle (OFF) it is out of the chain**: nothing
 is processed and the sound is exactly as without it. Turned left it is a **low-pass** sweeping down (darker: from
@@ -1967,7 +1968,7 @@ curve where the bar would be.
 
 The six sequences side by side, and modifiers you play over them like MIDI effects on a master: divide, multiply,
 shorten, reverse, thin, repeat. They never touch the steps: they change how the sequencer walks them, and a track
-always comes back in phase. Two pages, the first group of GLO (**LIVE · MIX · GLOBAL · SYSTEM**): a GLO tap inside goes
+always comes back in phase. Two pages, the first group of GLO (**LIVE · MIX · COMPS · GLOBAL · SYSTEM**, V10.37: the performing pages first): a GLO tap inside goes
 round the groups, SELECT left of MIXER reaches them; at power-on GLO still opens the MIXER.
 
 **RIELES** (rails): each track's loop across the screen at its own length, its playhead (orange) running at its own

@@ -430,6 +430,8 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
 ## Changelog
 
 ### V10.37 (beta)
+- **GLO › MIXER KNOB 4 is BPM** (the tempo at hand; the DJ FILTER stays on LIVE › MANO's KNOB 4), and GLO's pages
+  go **LIVE · MIX · COMPS · GLOBAL · SYSTEM**: the performing ones first, the settings last.
 - **Bluetooth named where MIDI is**: GLOBAL › **CLOCK** reads **USB +BT** (that source follows a clock sent over
   Bluetooth too), and GLO › **SYSTEM 2** shows Bluetooth's state on KNOB 3 (OFF, ADV, CONN, AIR) next to USB and TRS IN.
 
