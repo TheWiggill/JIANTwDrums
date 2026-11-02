@@ -2361,7 +2361,7 @@ every setting, its values and its meaning: nothing changes in the saved settings
 | MIDI › MIDI | 1 | MIDI OUT | **KEYS**, CLOCK, ALL, OFF — what goes out over USB MIDI (see [14](#14-midi-and-usb)) |
 | | 2 | LEARN | **OFF**, ON — (0.9.12) arms MIDI LEARN: a knob turned picks its parameter, the next CC is learned to it (see [MIDI LEARN](#midi-learn-0912)); not saved, OFF at power-on |
 | | 3 | LEARN CLEAR | an action: the card shows how many CCs are learned (NONE, 3 CC …); KNOB 3 right arms it, OCT+ forgets them all |
-| USB › USB | 1 | USB AUDIO | CONSOLE (the serial console with stereo USB audio, the default), STEREO (audio + MIDI only, class 0: helps macOS 13–15 see the USB audio input), STEMS (0.7.1: an 8-channel audio input, see "Stems" below), IN+OUT (0.7.5: stereo audio both ways, see "USB audio in" below), STEMS+IN (0.8.0: the stems with the audio output too, see "Stems with a voice" below) — was SYSTEM › USB; applied when the MENU closes |
+| USB › USB | 1 | USB AUDIO | CONSOLE (the serial console with stereo USB audio, the default), STEREO (audio + MIDI only, class 0: helps macOS 13–15 see the USB audio input), STEMS (0.7.1: an 8-channel audio input, see "Stems" below), IN+OUT (0.7.5: stereo audio both ways, see "USB audio in" below), STEMS+IN (0.8.0: the stems with the audio output too, see "Stems with a voice" below), **HOST** (V10.41: a USB-MIDI keyboard plugged straight in, see "USB HOST" below) — was SYSTEM › USB; applied when the MENU closes |
 | | 2 | USB LEVEL | MASTER (USB follows the MASTER knob), FIXED (USB at full level), −6 / −12 / −18 / −24 dB (USB fixed and attenuated: for a phone or a computer whose input clips at the full level) |
 | SYSTEM › CONTROLS | 1 | HOLD TIME | 0.3 s, **0.4 s** (default), 0.5 s, 0.6 s — how long until a held button opens its layer (was HOLD) |
 | | 2 | KNOB SPEEDUP | **ON** (default), OFF — fast turns take bigger steps (was KNOB ACCEL) |
@@ -2479,6 +2479,20 @@ you play reaches all the tracks with a role at once, each in its own way, all fr
   are heard, which a body or a hand near the antenna (top left of the back) shadows, so no phone is needed in your
   hand. On the BT row (AIR) press **OCT+**, calibrate FAR (away) and NEAR (hand on it) as above. It needs some
   Bluetooth devices nearby; with none it stays at 0.
+
+### USB HOST: a keyboard straight in (V10.41, experimental)
+
+MENU › SYSTEM › USB › **HOST**, then close the MENU: the FM-1's USB port becomes the host of a class compliant USB-MIDI
+keyboard or controller (no computer in between), alone or behind a hub. What it plays reaches the FM-1 as USB-MIDI
+does: notes, CC, program change, bend, the clock and start / stop (CLOCK USB +BT), MIDI LEARN and MAP.
+- **Power**: the FM-1 does not power the port. Use a keyboard with its own power supply, or put a **powered USB hub**
+  between them.
+- Messages: USB HOST: PLUG A MIDI KEYBOARD, USB MIDI KEYBOARD READY, NOT A USB MIDI KEYBOARD (a device without MIDI
+  input for the FM-1), LOW SPEED: NOT SUPPORTED, USB KEYBOARD LOST (it reconnects by itself).
+- While HOST is on there is no USB to a computer: no editor, no stems, no MIDI to the computer. Any other USB value turns
+  it off. HOST is never saved: the FM-1 always powers on as a USB device, so the installer and the editor always work.
+- Input only: nothing is sent to the keyboard. Its code lives in the Bluetooth area of the flash (a broken install
+  says USB HOST: INSTALL AGAIN). From Melodee (Kerem Kilic; the USB host enumeration by recursivefieldinstruments).
 
 ### MIDI LEARN (0.9.12)
 

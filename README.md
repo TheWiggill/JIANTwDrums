@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.40).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.41).
 
 ## Reporting a crash
 
@@ -428,6 +428,13 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.41 (beta)
+- **USB HOST** (experimental, a user's ask): MENU › SYSTEM › USB › HOST makes the FM-1's USB port the host of a class
+  compliant **USB-MIDI keyboard or controller**, plugged straight in (or behind a hub), no computer needed. Notes, CC,
+  program change, bend, clock and start / stop come in as USB-MIDI does. The FM-1 does not power the port: use a
+  keyboard with its own power or a powered hub. Never saved (the FM-1 always powers on as a USB device). Input only.
+  From Melodee (Kerem Kilic; the USB host enumeration by recursivefieldinstruments).
 
 ### V10.40 (beta)
 - **Web editor follows the knobs that change with the mode**: with ANALOG on SAW3 / PLS3 it shows **INT 3** (−24…24
