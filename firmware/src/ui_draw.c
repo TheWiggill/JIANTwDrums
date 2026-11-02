@@ -1593,10 +1593,8 @@ static void draw_columns(void)
         pf_column(1, "PAN", &TP[P_PAN], t->p[P_PAN], VAL(1u), param_icon(&TP[P_PAN], t->p[P_PAN]));
         card_mot_of(&TSEL->p[P_REV]);
         pf_column(2, "REV", &TP[P_REV], t->p[P_REV], VAL(2u), ICON_AUTO);
-        djf_format(song.g[G_DJF], val, &unit);          /* (0.9.1) KNOB 4: the master DJ FILTER (was the track's MUTE) */
-        card_mot_next = (uint8_t)motion_djf_any();
-        card_curve_next = (int16_t)(song.g[G_DJF] + 256);
-        draw_column(3, "DJ FILT", val, unit, VAL(3u), RATIO(&GP[G_DJF], song.g[G_DJF]), ICON_AUTO);
+        pf_column(3, "BPM", &GP[G_BPM], song.g[G_BPM], VAL(3u), ICON_AUTO);   /* (V10.37) KNOB 4 the tempo, at hand (the DJ
+                                                         * FILTER stays on LIVE > MANO's KNOB 4) */
         return;
     }
     if (cur_page()->graph == GR_BROWSE) {

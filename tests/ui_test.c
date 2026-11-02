@@ -2220,11 +2220,14 @@ static int test_tracks(void)
     bad += check("#94 MIXER: the PRESETS knob loads the next sound; the steps and the mix stay",
                  trk[0].preset != before.preset && !memcmp(trk[0].step, before.step, sizeof before.step) &&
                  trk[0].p[P_LEVEL] == before.p[P_LEVEL] && cur_page()->graph == GR_TRK);
-    turn(EN_K4, 1);
-    bad += check("(0.9.1) MIXER KNOB 4 right: the DJ FILTER a high-pass (MUTE stays: the GLO layer's, below)",
-                 song.g[G_DJF] == 1 && trk[0].p[P_MUTE] == 0 && song.sel == 0);
-    turn(EN_K1, -3);
-    bad += check("KNOB 1 changes LEVEL only", song.g[G_DJF] == 1 && trk[0].p[P_LEVEL] == before.p[P_LEVEL] - 3);
+    {
+        int16_t bpm0 = song.g[G_BPM];
+        turn(EN_K4, 1);
+        bad += check("(V10.37) MIXER KNOB 4 right: the tempo up (was the DJ FILTER: LIVE > MANO), MUTE untouched",
+                     song.g[G_BPM] == bpm0 + 1 && song.g[G_DJF] == 0 && trk[0].p[P_MUTE] == 0 && song.sel == 0);
+        turn(EN_K1, -3);
+        bad += check("KNOB 1 changes LEVEL only", song.g[G_BPM] == bpm0 + 1 && trk[0].p[P_LEVEL] == before.p[P_LEVEL] - 3);
+    }
     turn(EN_K2, 2);
     bad += check("KNOB 2 changes PAN", trk[0].p[P_PAN] == before.p[P_PAN] + 2);
     turn(EN_K4, -3);
@@ -3768,12 +3771,13 @@ static int test_product_ux(void)
     bad += check("MIXER K3 edits reverb, never sequence length", TSEL->p[P_SLEN] == len && TSEL->p[P_REV] == send + 1);
     frames(320);                                       /* (taps further apart than a double tap: #83) */
     turn(EN_SELECT, 1); frames(320); ok = str_eq(cur_page()->title, "SENDS");   /* (0.9.2: SELECT the chain; a GLO tap */
-    press(B_GLO); frames(320); ok &= cur_page()->fam == FAM_GLO && str_eq(cur_page()->title, "GLOBAL");   /* the next group) */
+    press(B_GLO); frames(320); ok &= cur_page()->fam == FAM_GLO && str_eq(cur_page()->title, "COMPS");   /* the next group;
+                                                         * V10.37: COMPS right after MIX) */
+    press(B_GLO); frames(320); ok &= str_eq(cur_page()->title, "GLOBAL");
     press(B_GLO); frames(320); ok &= str_eq(cur_page()->title, "SYSTEM");
-    press(B_GLO); frames(320); ok &= str_eq(cur_page()->title, "COMPS");   /* (0.9.9-seq2f) */
     press(B_GLO); frames(320); ok &= cur_page()->graph == GR_LIVE && str_eq(cur_page()->title, "MANO");   /* (p2: LIVE first, */
     press(B_GLO); ok &= cur_page()->graph == GR_TRK && str_eq(cur_page()->title, "MIXER");          /* then MIX) */
-    bad += check("0.9.2 GLO: SELECT MIXER > SENDS, a GLO tap the next group: GLOBAL > SYSTEM > COMPS > LIVE (MANO) > MIXER", ok);
+    bad += check("0.9.2 GLO: SELECT MIXER > SENDS, a GLO tap the next group: (V10.37) COMPS > GLOBAL > SYSTEM > LIVE (MANO) > MIXER", ok);
     go_home(); hold(B_SEQ);
     bad += check("long SEQ off the SEQ pages is a tap (no SONG: SAVE held, G5)", cur_page()->graph != GR_SONG);
     go_page(GR_SONG);
@@ -5785,14 +5789,14 @@ static int test_bughunt_ui2(void)
             a[k][2] = accent_in(X + 4, Y + 112, X + 37, Y + 117);     /* REV */
             a[k][3] = accent_in(X + 4, Y + 22, X + 37, Y + 37);       /* the name (in the accent: muted) */
             if (k == 3u)
-                ok &= song.g[G_DJF] == 1 && !trk[0].p[P_MUTE];
+                ok &= song.g[G_BPM] == 121 && !trk[0].p[P_MUTE];   /* (V10.37: KNOB 4 the tempo) */
         }
         for (k = 0; k < 4u; k++) {
             uint32_t j;
             for (j = 0; j < 4u; j++)
                 ok &= j == k && k < 3u ? a[k][j] > 0u : a[k][j] == 0u;
         }
-        bad += check("MIXER (six columns, any COLOR): K1..K3 light LEVEL / PAN / REV, K4 (the DJ FILTER) none of them", ok);
+        bad += check("MIXER (six columns, any COLOR): K1..K3 light LEVEL / PAN / REV, K4 (V10.37: BPM) none of them", ok);
     }
     {   /* 4. renaming the slot the music came from renames the music: the next SAVE prefills the new name */
         char pn[16];
@@ -12121,20 +12125,20 @@ static int test_lz_glo(void)
     turn(EN_K3, 4); frame();
     ok &= TSEL->p[P_DLY] > v;
     frames(320); press(B_GLO); frame();
-    ok &= pd_level() == 1u && str_eq(cur_page()->title, "GLOBAL") && lz_tab_lit(2);
+    ok &= pd_level() == 3u && str_eq(cur_page()->title, "COMPS") && lz_tab_lit(2);   /* (V10.37: after MIX) */
     frames(320); press(B_GLO); frame();
-    ok &= pd_level() == 2u && str_eq(cur_page()->title, "SYSTEM") && lz_tab_lit(3) && lz_crumb_is("GLO \xB7 SYSTEM \xB7 SYSTEM");
+    ok &= pd_level() == 1u && str_eq(cur_page()->title, "GLOBAL") && lz_tab_lit(3);
     frames(320); press(B_GLO); frame();
-    ok &= pd_level() == 3u && str_eq(cur_page()->title, "COMPS") && lz_tab_lit(4);   /* (0.9.9-seq2f) */
+    ok &= pd_level() == 2u && str_eq(cur_page()->title, "SYSTEM") && lz_tab_lit(4) && lz_crumb_is("GLO \xB7 SYSTEM \xB7 SYSTEM");
     frames(320); press(B_GLO); frame();
     ok &= str_eq(cur_page()->title, "MANO") && lz_tab_lit(0) && lz_crumb_is("GLO \xB7 LIVE \xB7 MANO") && lz_count_is("1/9");
     frames(320); press(B_GLO); frame();                 /* (p2: LIVE first in the chain; at power-on GLO opens MIXER) */
     ok &= pd_level() == 0u && str_eq(cur_page()->title, "MIXER");
     turn(EN_SELECT, 3); frame();
-    ok &= pd_level() == 2u && str_eq(cur_page()->title, "SYSTEM");
+    ok &= pd_level() == 3u && str_eq(cur_page()->title, "COMPS 2");   /* (V10.37: SENDS COMPS COMPS 2) */
     open_family(FAM_ENV); frame();
     press(B_GLO); frame();
-    ok &= str_eq(cur_page()->title, "SYSTEM");
+    ok &= str_eq(cur_page()->title, "COMPS 2");
     bad += check("0.9.2 GLO: MIXER SENDS GLOBAL SYSTEM (seq2f: COMPS COMPS 2) by SELECT, a GLO tap the next group (p2: LIVE first); from elsewhere the page left", ok);
     {   /* (0.9.9-snd8b) every chain fits nav_list's buffer (FX's 17th page, TAPE, overran a 16: a crash entering FX) */
         uint32_t k, worst = 0;
@@ -12789,7 +12793,7 @@ static void tk_start(uint32_t from)                     /* 0 home, 1 seq, 2 fxdl
 }
 static int test_nav_tasks(void)
 {
-    static const uint8_t WANT[14] = {4, 3, 5, 6, 34, 10, 9, 2, 3, 1, 3, 8, 18, 4};   /* (V10.1: SAVE composes first, 106 -> 108) */   /* (seq2: task 5 by STEP's KNOB 1, no BAR;
+    static const uint8_t WANT[14] = {4, 3, 5, 6, 34, 10, 9, 2, 3, 1, 3, 8, 18, 5};   /* (V10.37: COMPS before GLOBAL, SYSTEM a tap further) */   /* (V10.1: SAVE composes first, 106 -> 108) */   /* (seq2: task 5 by STEP's KNOB 1, no BAR;
                                                          * task 11 TRACK under LEN's tab; task 13 eight detents (seq2c:
                                                          * MUTATE 2); was 73) */
     uint32_t got[14], t, tot = 0;
@@ -12865,7 +12869,7 @@ static int test_nav_tasks(void)
             ok = str_eq(cur_page()->title, "COMP 2") && ui.cursor == 8u && TSEL->step[8].comp2 != 0u;
             break;
         default:                                        /* GLO: six tracks (SYSTEM > TRACKS) */
-            tk_start(0); trks_put(0); frame(); tk_btn(B_GLO); tk_btn(B_GLO); tk_btn(B_GLO); tk_val(EN_K1, 1); frame();
+            tk_start(0); trks_put(0); frame(); tk_btn(B_GLO); tk_btn(B_GLO); tk_btn(B_GLO); tk_btn(B_GLO); tk_val(EN_K1, 1); frame();
             ok = str_eq(cur_page()->title, "SYSTEM") && trk_live == NTRK;
             break;
         }
@@ -12878,7 +12882,7 @@ static int test_nav_tasks(void)
     }
     printf("ui:   the race: %u %u %u %u %u %u %u %u %u %u %u %u %u %u = %u actions (0.9.1: 75)\n", got[0], got[1], got[2], got[3],
            got[4], got[5], got[6], got[7], got[8], got[9], got[10], got[11], got[12], got[13], tot);
-    bad += check("0.9.2 the mock-up's 14 tasks on the panel: each goal reached in its PROPOSED actions (seq2c: 106, was 73)", okall && tot == 110u);   /* (V10.8: an accent past VEL 127: +1; V10.16 MUTATE in SEQ's chain: +1) */
+    bad += check("0.9.2 the mock-up's 14 tasks on the panel: each goal reached in its PROPOSED actions (seq2c: 106, was 73)", okall && tot == 111u);   /* (V10.8: an accent past VEL 127: +1; V10.16 MUTATE in SEQ's chain: +1) */
     ui_power_on();
     return bad;
 }
