@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.41).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.42).
 
 ## Reporting a crash
 
@@ -428,6 +428,13 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.42 (beta)
+- **Factory presets less alike, the basics there**: FM6's seven near copies (ICE BELL, DX KEYS, FM PLUCK, SOFT BELL,
+  FM STRINGS, WOOD: the first eight patches bent a little) are now other instruments: **FM LEAD, SQR LEAD, SAW LEAD,
+  SLAP BASS, SUB BASS, BELL PAD** (HARD BASS stays). WHEEL gets **PEDAL BASS** and **DRIVE LEAD** where DUB ORGAN and
+  SOFT KEYS were; LOFI gets a third bass, **PULSE BASS**. Program-change numbers stay where they were (a project keeps
+  its sounds: they are stored in it, not looked up by name).
 
 ### V10.41 (beta)
 - **USB HOST** (experimental, a user's ask): MENU › SYSTEM › USB › HOST makes the FM-1's USB port the host of a class
