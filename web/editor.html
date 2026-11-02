@@ -1580,7 +1580,7 @@ function makeMockDevice(opt = {}) {
     ...[1, 2, 3, 4].flatMap((k) => [E("SRC" + k, MSRC, 0), E("DEST" + k, MDST, 0), D("AMT" + k, F.BIPCT, -64, 63, 0)]),   /* the matrix */
   ];
   const GP = [
-    D("BPM", F.BPM, 40, 240, 120), D("SWING", F.PCT, 0, 100, 0), E("CLOCK", ["INT", "USB", "TRS"], 0), D("TUNE", F.INT, -50, 50, 0),
+    D("BPM", F.BPM, 40, 240, 120), D("SWING", F.PCT, 0, 100, 0), E("CLOCK", ["INT", "USB+BT", "TRS"], 0), D("TUNE", F.INT, -50, 50, 0),
     E("TIME", NDTIME, 1), D("FEEDBK", F.PCT, 0, 120, 60), D("TONE", F.PCT, 0, 127, 64), D("MIX", F.PCT, 0, 127, 90),   /* (JIANT 0.4: free
        times past the divisions; TONE: COLR + HPF in one) */
     D("SIZE", F.PCT, 0, 127, 90), D("DAMP", F.PCT, 0, 127, 60), D("RATE", F.LFOHZ, 0, 127, 40), D("DEPTH", F.PCT, 0, 127, 60),

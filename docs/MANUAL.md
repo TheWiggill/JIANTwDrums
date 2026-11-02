@@ -2319,7 +2319,7 @@ track.
 
 ### GLOBAL (GLO > GLOBAL)
 
-**BPM** (40–240), **SWING**, **CLOCK** (INT, USB, TRS: follow MIDI clock and start/stop from that input), **TUNE**
+**BPM** (40–240), **SWING**, **CLOCK** (INT, USB +BT, TRS: follow MIDI clock and start/stop from that input; USB +BT is USB or Bluetooth), **TUNE**
 (±50).
 
 ### The MENU (hold HOME)
@@ -2464,7 +2464,7 @@ you play reaches all the tracks with a role at once, each in its own way, all fr
   **CONN** once an app is connected. Connect from a Bluetooth MIDI app on the phone or computer (it appears as
   **JIANT FM-1**); keep the app in the foreground, phones cut Bluetooth for apps in the background.
 - **MIDI in**: what the app sends plays the FM-1 exactly as USB-MIDI does (notes, CC, program change, bend, clock with
-  CLK USB, MIDI LEARN and MAP). **MIDI out**: what MENU › MIDI OUT lets out (KEYS / CLOCK / ALL) goes to the app too.
+  CLOCK USB +BT, MIDI LEARN and MAP). **MIDI out**: what MENU › MIDI OUT lets out (KEYS / CLOCK / ALL) goes to the app too.
   No SysEx (the editor and updates stay on USB).
 - **PROX**: a modulation source from **how close the connected phone is** (its Bluetooth signal, filtered). It follows
   the phone, not a hand. On the BT row (CONN) press **OCT+**: the PROX page. Phone away (a metre or so): **OCT−**

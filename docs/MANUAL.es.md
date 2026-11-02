@@ -2460,7 +2460,7 @@ la pista seleccionada.
 
 ### GLOBAL (GLO > GLOBAL)
 
-**BPM** (40–240), **SWING**, **CLOCK** (INT, USB, TRS: sigue el clock MIDI y el start/stop de esa entrada), **TUNE**
+**BPM** (40–240), **SWING**, **CLOCK** (INT, USB +BT, TRS: sigue el clock MIDI y el start/stop de esa entrada; USB +BT es USB o Bluetooth), **TUNE**
 (±50).
 
 ### El MENU (mantené HOME)
@@ -2613,7 +2613,7 @@ que tocás llega a la vez a todas las pistas con rol, cada una a su manera, todo
   y **CONN** cuando una app se conecta. Conectate desde una app de MIDI Bluetooth del celular o la compu (aparece como
   **JIANT FM-1**); dejá la app en primer plano, los celulares cortan el Bluetooth de las apps en segundo plano.
 - **MIDI de entrada**: lo que manda la app toca el FM-1 igual que por USB-MIDI (notas, CC, program change, bend,
-  clock con CLK USB, MIDI LEARN y MAP). **MIDI de salida**: lo que deja salir MENU › MIDI OUT (KEYS / CLOCK / ALL)
+  clock con CLOCK USB +BT, MIDI LEARN y MAP). **MIDI de salida**: lo que deja salir MENU › MIDI OUT (KEYS / CLOCK / ALL)
   también va a la app. Sin SysEx (el editor y las actualizaciones siguen por USB).
 - **PROX**: una fuente de modulación según **qué tan cerca está el celular conectado** (su señal Bluetooth,
   filtrada). Sigue al celular, no a la mano. En la fila BT (CONN) apretá **OCT+**: la página PROX. Celular lejos (a un
