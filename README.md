@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.43).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.44).
 
 ## Reporting a crash
 
@@ -428,6 +428,12 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.44 (beta)
+- **More pages that show what they do**: FX › MASTER › EQ draws the four bands' curve (LOW / HIGH shelves, the two
+  mids as bells, a dot per band); GLO › SYSTEM 2 draws USB, TRS and BT as boxes with an IN / OUT light that flashes
+  as MIDI passes, and PROX's bar when Bluetooth is linked or in AIR. These pictures (and LEVELS') live in the
+  Bluetooth segment, the app's flash being full.
 
 ### V10.43 (beta)
 - **Pages that show what they do**: EDIT › LEVELS / LEVELS 2 (DRUM-X) draw a column per sound, its level the height,
