@@ -159,7 +159,25 @@ static void fxg_master(int32_t x, int32_t y, int32_t w, int32_t h)
         fxg_label(x + w, y + 14, "DUCK", T_DIM, 1);
     }
     fxg_label(x, y + 14, b, T_MID, 0);
-    {   /* the duck's gain over a beat: down by DUCK, back over REL (e^-u k, a factor a column) */
+    if (w > 120) {                                      /* (V10.43) the page: CLIP's curve (in -> out, the level now a dot),
+                                                         * PUNCH's bar (its push on the peaks now), then the duck */
+        int32_t s = ch, d = song.g[G_CLIP] * 127 / 100, g = 4096 + d * d * 2, dy = 0;
+        cv_frame(x, cy, s, s, T_LINE);
+        for (i = 0; i < s; i++) {
+            int32_t yy = cy + s - 1 - tk_dist_y(DT_SOFT, i * 32768 / s, d ? g : 4096, d) * (s - 2) / 32767;
+            if (i) cv_line(x + i - 1, py, x + i, yy, FXG_H(200));
+            if (i == lvl * s / 320) dy = yy;
+            py = yy;
+        }
+        cv_rect(x + lvl * s / 320 - 1, dy - 1, 3, 3, T_TEXT);
+        cv_rect(x + s + 6, cy, 6, s, T_RAISE);
+        i = song.g[G_PUNCH] * s / 100 * (lvl - 26) / 230;
+        if (i > 0) cv_rect(x + s + 6, cy + s - i, 6, i, FXG_H(230));
+        x += s + 18;
+        w -= s + 18;
+    }
+    {   /* the duck's gain over a beat: down by DUCK, back over REL (e^-u k, a factor a column); (V10.43) the gain now a
+         * line across */
         int32_t kk = clamp(8000 - rel * 50, 1600, 8000), e = 1000;
         for (i = 0; i <= w; i++) {
             int32_t d = 1000 - duck * e / 127, yy = cy + ch - d * ch / 1000;
@@ -168,6 +186,8 @@ static void fxg_master(int32_t x, int32_t y, int32_t w, int32_t h)
             py = yy;
             e = e * (1000 - kk / (w ? w : 1)) / 1000;
         }
+        if (duck)
+            cv_rect(x, cy + ch - duck_g1 * ch / 32767, w, 1, T_TEXT);
     }
 }
 static void fxg_punch(int32_t x, int32_t y, int32_t w, int32_t h)
@@ -177,6 +197,18 @@ static void fxg_punch(int32_t x, int32_t y, int32_t w, int32_t h)
     char b[32];
     if (steps > 64) steps = 64;
     if (steps < 1) steps = 1;
+    if (w > 120) {                                      /* (V10.43) the page: 16 a row, the empty steps as boxes, an open one
+                                                         * its punch's colour, the playhead framed (a lane never shown
+                                                         * empty before: an empty lane drew nothing) */
+        int32_t ch = (h - 22) / 4, cw2 = w / 16;
+        for (i = 0; i < steps; i++) {
+            uint32_t v = pfx_lane_at((uint32_t)i);
+            int32_t cx = x + i % 16 * cw2, cy = y + 20 + i / 16 * ch;
+            cv_rect(cx, cy, cw2 - 2, ch - 3, v ? FXG_H(48 + v * 13) : (i & 3) ? T_RAISE : T_LINE);
+            if (song.playing && (uint32_t)i == pfx_lane_pos())
+                cv_frame(cx - 1, cy - 1, cw2, ch - 1, T_TEXT);
+        }
+    } else {
     cw = w / steps;
     if (cw < 1) cw = 1;
     for (i = 0; i < steps && i * cw < w; i++) {
@@ -186,6 +218,7 @@ static void fxg_punch(int32_t x, int32_t y, int32_t w, int32_t h)
             cv_rect(x + i * cw, y + (w > 120 ? 20 : 14), cw > 2 ? cw - 1 : 1, h - (w > 120 ? 26 : 20), at ? T_TEXT : FXG_H(179));
         else
             cv_rect(x + i * cw, y + h - 7, cw > 2 ? cw - 1 : 1, 1, T_LINE);
+    }
     }
     str_cpy(b, "LANE ", sizeof b);
     fmt_int(b + 5, song.g[G_PFXLEN]);

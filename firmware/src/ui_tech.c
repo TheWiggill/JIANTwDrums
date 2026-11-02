@@ -125,12 +125,28 @@ static void tech_retrig(const track_t *t)
 }
 
 /* the page's technical graph, if it has one (1) */
+/* (V10.43) EDIT > LEVELS / LEVELS 2 (DRUM-X): a column a sound, its LEVEL the height, lit by the sound as it plays
+ * (its envelope now, as the colony's beings), the page's four framed */
+static void tech_levels(const track_t *t, uint32_t b)
+{
+    const drum_lane_t *K = drum_kit_of(t);
+    uint32_t l;
+    for (l = 0; l < 8u; l++) {
+        int32_t x = 6 + (int32_t)l * 29, v = clamp(t->p[P_LN0 + l], 0, 127) * 104 / 127;
+        int32_t e = K && K[l].x.live ? clamp(K[l].x.ea >> 22, 0, 255) : 0;
+        cv_rect(x, 8, 25, 104, T_RAISE);
+        if (!dx_lane_muted(l)) cv_rect(x, 112 - v, 25, v, e ? heat_col(80 + e * 3 / 4) : T_LINE);   /* (a muted sound: empty) */
+        if (l - b < 4u) cv_frame(x - 1, 7, 27, 106, T_THEME);
+        cv_text_in(x, 118, 25, &AF_S, drum_lane_abbr(t, l), l - b < 4u ? T_TEXT : T_DIM, T_SURF);
+    }
+}
 static int graph_tech(const track_t *t, const page_t *pg)
 {
     if (pg->scope != SC_GLOBAL)
         switch (pg->id[0]) {
         case P_LRTRG: if (pg->id[1] != 0xFFu) return 0; tech_retrig(t); return 1;   /* (not DIGITAL's OP1 ENV) */
         case P_ED_FLT: tech_dest(t); return 1;
+        case P_LN0: case P_LN4: tech_levels(t, pg->id[0] - P_LN0); return 1;
         default: return 0;
         }
     switch (pg->id[0]) {
