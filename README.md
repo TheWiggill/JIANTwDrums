@@ -429,6 +429,12 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
 
 ## Changelog
 
+### V10.46 — public (2026-11-02)
+- Stable installer: everything from V10.36 to V10.46: the SAFE START (a start that hangs in the power setup is retried
+  without it), LFO DRIFT and breathing pads, in-tune random intervals, ANALOG SAW3 / PLS3 with an interval per
+  oscillator, GLO pages reordered with BPM on MIXER, USB HOST (an experiment), presets less alike with more basses and
+  leads, pages that show what they do (LEVELS, MASTER, EQ, PUNCH, SYSTEM 2, MORPH), the LIVE DJ filter fix.
+
 ### V10.46 (beta)
 - **Safe start**: if a start hangs between the power-supply setup (added in V10.11) and the UI, the watchdog resets it
   and the next start skips that setup (as JIANT did up to V10.10), showing SAFE START on screen, until the FM-1 is
