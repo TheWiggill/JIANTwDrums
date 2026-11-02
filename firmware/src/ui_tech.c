@@ -125,9 +125,67 @@ static void tech_retrig(const track_t *t)
 }
 
 /* the page's technical graph, if it has one (1) */
+/* (V10.44) pictures in the Bluetooth segment (BTAPP_FN: the app slot full), drawn only once bt_hw_seg() said it is this
+ * build's (else the page keeps its old picture) */
+/* FX > MASTER > EQ: the four bands' curve (LOW and HIGH shelves, the mids bells), each band's dot, the frequencies */
+static BTAPP_FN void tech_eq(int32_t x, int32_t y, int32_t w, int32_t h)
+{
+    static const uint16_t F[4] = {120, 380, 650, 900};   /* (x / 1024: ~60 250 2k 8k on a log axis) */
+    int32_t i, k, py = 0, mid = y + 20 + (h - 30) / 2, sc = (h - 34) / 2;
+    cv_rect(x, mid, w, 1, T_LINE);
+    for (i = 0; i <= w; i++) {
+        int32_t f = i * 1024 / w, db = 0, yy;
+        for (k = 0; k < 4; k++) {
+            int32_t d = f - F[k], wt = (k == 0 && d < 0) || (k == 3 && d > 0) ? 256 : 256 - d * d / 160;
+            if (wt > 0) db += eq_v[k] * wt;
+        }
+        yy = mid - db * sc / (12 * 256);
+        yy = clamp(yy, y + 18, y + h - 10);
+        if (i) cv_line(x + i - 1, py, x + i, yy, heat_col(128 + db / 24));
+        py = yy;
+    }
+    for (k = 0; k < 4; k++) {
+        int32_t cx = x + F[k] * w / 1024;
+        cv_rect(cx - 2, mid - eq_v[k] * sc / 12 - 2, 5, 5, heat_col(128 + eq_v[k] * 10));
+        cv_text_in(cx - 12, y + h - 7, 24, &AF_X, k == 0 ? "60" : k == 1 ? "250" : k == 2 ? "2K" : "8K", T_DIM, T_SURF);
+    }
+}
+/* GLO > SYSTEM 2: the three ports as boxes, a light each way that flashes as messages pass (MIDI in: the queue's write
+ * count, USB / TRS by its source; out: USB's and Bluetooth's queue), Bluetooth's state and, linked or in AIR, PROX */
+static uint32_t sp_in, sp_out, sp_trs;
+static uint8_t sp_lit[4];
+static BTAPP_FN void tech_ports(void)
+{
+    static const char *const N[3] = {"USB", "TRS", "BT"};
+    uint32_t i, b = (uint32_t)bt_get();
+    if (mi_w != sp_in) { sp_lit[midi_in_source[(mi_w - 1u) % MQ] == 2u ? 2 : 0] = 6; sp_in = mi_w; }
+    if (mo_w != sp_out) { sp_lit[1] = 6; sp_out = mo_w; }
+    if (um.msgs != sp_trs) { sp_lit[2] = 6; sp_trs = um.msgs; }
+    for (i = 0; i < 3u; i++) {
+        int32_t x = 8 + (int32_t)i * 78, on = i == 0u ? usb.up : i == 1u ? 1 : b != 0u;
+        uint32_t li = i == 1u ? 2u : 0u;
+        cv_frame(x, 14, 70, 70, on ? T_THEME : T_LINE);
+        cv_text(x + 6, 20, &AF_S, N[i], on ? T_TEXT : T_DIM);
+        cv_text(x + 6, 38, &AF_X, i == 0u ? (!usb.up ? "OFF" : usb.config ? "MIDI" : "WAIT") : i == 1u ? "IN" : bt_vname(b),
+                T_MID);
+        cv_rect(x + 8, 62, 10, 10, (i == 2u ? b == 2u && sp_lit[0] : sp_lit[li]) ? heat_col(200) : T_RAISE);
+        cv_text(x + 21, 64, &AF_X, "IN", T_DIM);
+        if (i != 1u) {
+            cv_rect(x + 40, 62, 10, 10, (i == 2u ? b == 2u : 1) && sp_lit[1] ? heat_col(120) : T_RAISE);
+            cv_text(x + 53, 64, &AF_X, "OUT", T_DIM);
+        }
+    }
+    if (b >= 2u) {                                     /* (linked or AIR: PROX, what the radio hears) */
+        cv_text(8, 96, &AF_X, "PROX", T_DIM);
+        cv_rect(40, 96, 190, 6, T_RAISE);
+        cv_rect(40, 96, mod_prox * 190 / 32767, 6, heat_col(64 + mod_prox / 200));
+    }
+    for (i = 0; i < 3u; i++)
+        if (sp_lit[i]) sp_lit[i]--;
+}
 /* (V10.43) EDIT > LEVELS / LEVELS 2 (DRUM-X): a column a sound, its LEVEL the height, lit by the sound as it plays
  * (its envelope now, as the colony's beings), the page's four framed */
-static void tech_levels(const track_t *t, uint32_t b)
+static BTAPP_FN void tech_levels(const track_t *t, uint32_t b)   /* (V10.44 in the segment) */
 {
     const drum_lane_t *K = drum_kit_of(t);
     uint32_t l;
@@ -146,11 +204,12 @@ static int graph_tech(const track_t *t, const page_t *pg)
         switch (pg->id[0]) {
         case P_LRTRG: if (pg->id[1] != 0xFFu) return 0; tech_retrig(t); return 1;   /* (not DIGITAL's OP1 ENV) */
         case P_ED_FLT: tech_dest(t); return 1;
-        case P_LN0: case P_LN4: tech_levels(t, pg->id[0] - P_LN0); return 1;
+        case P_LN0: case P_LN4: if (!bt_hw_seg()) return 0; tech_levels(t, pg->id[0] - P_LN0); return 1;
         default: return 0;
         }
     switch (pg->id[0]) {
     case G_BPM: tech_global(); return 1;
+    case G_MIDI: if (pg->id[1] != G_MIDI || !bt_hw_seg()) return 0; tech_ports(); return 1;   /* (V10.44) SYSTEM 2 */
     default: return 0;
     }
 }

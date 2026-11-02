@@ -317,7 +317,10 @@ static void fxg_mod(uint32_t m, int32_t x, int32_t y, int32_t w, int32_t h)
     case 2: fxg_chorus(x, y, w, h); break;
     case 3: if (cur_page()->graph == GR_SLPIT && w > 120) fxg_slpitch(x, y, w, h); else fxg_slicer(x, y, w, h); break;
     case 4: fxg_punch(x, y, w, h); break;
-    default: fxg_master(x, y, w, h); break;           /* (snd2: MASTER last) */
+    default:
+        if (w > 120 && cur_page()->id[0] == ID_EQ0 && bt_hw_seg()) tech_eq(x, y, w, h);   /* (V10.44) EQ: its curve */
+        else fxg_master(x, y, w, h);
+        break;                                         /* (snd2: MASTER last) */
     }
 }
 /* the set's place: n dots (5 x 3, 7 apart) at the top left, k lit; its name at the right */
