@@ -1813,6 +1813,11 @@ static void draw_columns(void)
             continue;
         }
         if (cur_page()->id[c] == G_MIDI && cur_page()->scope == SC_GLOBAL) {
+            if (c == 2u) {                               /* (V10.37) KNOB 3: Bluetooth (MENU > SYSTEM > BT) */
+                str_cpy(val, bt_vname(bt_get()), 12);
+                unit_column(c, "BT", val, "", T_THEME);
+                continue;
+            }
             if (c) {                                     /* (0.9.9-snd8) SYSTEM 2's KNOB 2: the TRS messages come in */
                 fmt_int(val, (int32_t)(um.msgs % 10000u));
                 unit_column(c, "TRS IN", val, "MSG", T_THEME);

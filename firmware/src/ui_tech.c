@@ -81,7 +81,7 @@ static void tech_global(void)
 {
     int32_t sw = song.g[G_SWING], bpm = song.g[G_BPM], tune = song.g[G_TUNE], i, x0 = TK_X0 + 6, w = PANEL_W - 12;
     int32_t step = w / 16, base = 60, hot = 40 + (bpm - 40) * 190 / 200, now = -1, cx, k;
-    static const char *const CK[3] = {"INT", "USB", "TRS"};
+    static const char *const CK[3] = {"INT", "USB+BT", "TRS"};
     if (song.playing) {
         uint32_t bar = div_samples(2) * 16u;
         now = bar ? (int32_t)((ms_clock % bar) / div_samples(2)) : -1;
