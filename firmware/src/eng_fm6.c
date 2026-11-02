@@ -491,15 +491,16 @@ static const preset_t FM6_PRESETS[] = {
     {"MARIMBA", {0, 0, 0, 0, 0, 0, 0, 5}, {0, 0, 127, 0}, 0, TAG(PLUCK), FX(0, 0, 25, 40), PAT(3)},
     {"ORGAN", {0, 0, 0, 0, 0, 0, 0, 6}, {0, 0, 127, 0}, 0, TAG(KEYS), FX(10, 40, 0, 30), PAT(6)},
     {"PLUCK", {0, 0, 0, 0, 0, 0, 0, 7}, {0, 0, 127, 0}, 0, TAG(PLUCK), FX(0, 20, 35, 30), PAT(13)},
-    /* (0.7.0) the factory patches bent a little: an ice bell and a soft bell from BELL, DX keys from TINE EP, a pluck
-     * and wood from PLUCK and MARIMBA, strings from PAD, a hard bass */
-    {"ICE BELL", {0, 0, -20, 0, 0, 0, 45, 1}, {0, 0, 127, 0}, 0, TAG(BELL), FX(0, 60, 30, 80), PAT(5)},
-    {"DX KEYS", {0, 0, 12, 0, 0, 0, 10, 0}, {0, 0, 127, 0}, 0, TAG(KEYS), FX(0, 40, 25, 40), PAT(6)},
-    {"FM PLUCK", {0, 0, 20, 0, -20, 0, 0, 7}, {0, 0, 127, 0}, 0, TAG(PLUCK), FX(0, 20, 45, 35), PAT(3)},
-    {"SOFT BELL", {0, 0, -25, 0, 0, 0, 20, 1}, {0, 0, 127, 0}, 0, TAG(BELL), FX(0, 20, 35, 75), PAT(7)},
-    {"FM STRINGS", {0, 0, -10, 0, 0, 0, 35, 4}, {0, 0, 127, 0}, 0, TAG(PAD), FX(0, 55, 25, 65), PAT(5), BREATHE(10, 1, 0)},
+    /* (V10.42) the eight factory patches as other instruments through the macros, not the same ones bent a little
+     * (0.7.0 had an ice bell and a soft bell, DX keys, a pluck, wood, strings: near copies of the first eight): leads,
+     * basses and a bell pad. Program numbers 8..14 as before */
+    {"FM LEAD", {16, 2, -30, 0, 0, 0, 8, 3}, {0, 0, 127, 20}, 0, 1 | TAG(LEAD), FX(10, 20, 30, 30), PAT(4)},
+    {"SQR LEAD", {0, 0, 10, 1, 20, 0, 6, 7}, {0, 30, 110, 25}, 0, 1 | TAG(LEAD), FX(0, 15, 35, 30), PAT(4)},
+    {"SLAP BASS", {0, 1, 25, 0, -30, 3, 0, 2}, {0, 0, 127, 0}, 0, 1 | TAG(BASS), FX(10, 0, 10, 5), PAT(2)},
+    {"SUB BASS", {0, 0, -64, 0, 0, 0, 0, 2}, {0, 0, 127, 10}, 0, 1 | TAG(BASS), FX(0, 0, 0, 0), PAT(2)},
+    {"BELL PAD", {0, 0, -10, 0, 0, 0, 40, 1}, {55, 0, 105, 75}, 0, TAG(PAD), FX(0, 55, 30, 80), PAT(5), BREATHE(10, 1, 0)},
     {"HARD BASS", {0, 2, 25, 0, 0, 0, 0, 2}, {0, 0, 127, 0}, 0, 1 | TAG(BASS), FX(15, 0, 10, 5), PAT(2)},
-    {"WOOD", {0, 0, -15, 0, 0, 0, 0, 5}, {0, 0, 127, 0}, 0, TAG(PLUCK), FX(0, 10, 30, 45), PAT(3)},
+    {"SAW LEAD", {1, 3, -20, 0, 10, 0, 12, 3}, {0, 0, 127, 20}, 0, 1 | TAG(LEAD), FX(15, 25, 30, 25), PAT(4)},
 };
 
 static const engine_t ENG_FM6 = {

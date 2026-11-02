@@ -319,9 +319,10 @@ static const preset_t WHEEL_PRESETS[] = {
     {"GOSPEL", {6, 0, 0, 0, 1, 60, 40, 2}, {0, 64, 127, 45}, 0, TAG(KEYS), FX(0, 0, 0, 40), PAT(6)},
     {"SOFT FLUTE", {1, 0, -2, 0, 0, 10, 0, 1}, {0, 64, 127, 55}, 0, TAG(LEAD), FX(0, 20, 15, 55), PAT(5)},
     {"ROCK DRIVE", {7, 0, 0, 0, 0, 70, 100, 2}, {0, 64, 127, 40}, 0, TAG(KEYS), FX(35, 0, 10, 25), PAT(4)},
-    /* (0.7.0) a dub organ, soft keys, a chapel, a tops organ with a soft percussion, a bass register */
-    {"DUB ORGAN", {2, 0, 0, 0, 0, 20, 10, 1}, {0, 64, 127, 40}, 0, TAG(KEYS), FX(0, 10, 45, 40), PAT(6)},
-    {"SOFT KEYS", {3, 0, 0, -2, 0, 5, 0, 0}, {5, 64, 127, 50}, 0, TAG(KEYS), FX(0, 25, 20, 45), PAT(6)},
+    /* (0.7.0) a chapel, a tops organ with a soft percussion, a bass register; (V10.42) a pedal bass and a
+     * driven lead where a dub organ and soft keys were */
+    {"PEDAL BASS", {0, 6, 0, -8, 0, 30, 15, 0}, {0, 64, 127, 25}, 0, 1 | TAG(BASS), FX(0, 0, 0, 10), PAT(2)},
+    {"DRIVE LEAD", {13, 0, 0, 3, 2, 60, 80, 1}, {0, 64, 127, 35}, 0, 1 | TAG(LEAD), FX(10, 0, 30, 30), PAT(4)},
     {"CHURCH", {12, 0, 0, 0, 0, 0, 0, 0}, {15, 64, 127, 70}, 0, TAG(KEYS), FX(0, 15, 10, 80), PAT(5)},
     {"WAVE ORGAN", {8, 0, 0, 2, 3, 35, 15, 2}, {0, 64, 127, 35}, 0, TAG(KEYS), FX(0, 20, 25, 35), PAT(3)},
     {"REED BASS", {14, 2, 0, -4, 0, 20, 10, 0}, {0, 64, 127, 30}, 0, 1 | TAG(BASS), FX(0, 0, 0, 5), PAT(2)},

@@ -662,6 +662,8 @@ static const preset_t LOFI_PRESETS[] = {
     {"TRI BASS", {0, 1, 64, 0, 80, 0, 0, 0}, {0, 60, 90, 20}, 0, 1 | TAG(BASS), FX(0, 0, 5, 0), PAT(2)},
     {"SOFT CHIP", {1, 0, 64, 0, 85, 8, 0, 0}, {5, 70, 80, 50}, 0, TAG(KEYS), FX(0, 20, 35, 40), PAT(6)},
     {"SAW CHIP", {2, 2, 64, 0, 100, 10, 0, 0}, {0, 65, 90, 35}, 0, 1 | TAG(LEAD), FX(5, 0, 35, 25), PAT(4)},
+    /* (V10.42, appended) a third bass: a narrow pulse, closed */
+    {"PULSE BASS", {0, 0, 40, 0, 70, 0, 0, 0}, {0, 55, 80, 15}, 0, 1 | TAG(BASS), FX(0, 0, 5, 0), PAT(2)},
 };
 
 static const engine_t ENG_LOFI = {
