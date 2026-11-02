@@ -2962,6 +2962,41 @@ static int test_menu_tabs(void)
         ok &= semi_snap(3) == 5 && semi_snap(-2) == 0 && semi_snap(10) == 12 && semi_snap(19) == 19 && semi_snap(23) == 24;
         bad += check("V10.38 ANALOG INT diced: only 0, 4th, 5th, octave (and 19, 24), never a dissonant interval", ok);
     }
+    {   /* (V10.39) SAW3 / PLS3: NOISE's knob is INT 3 (osc 3's interval), from 0 when the WAVE comes in or leaves; a
+         * different INT 3 sounds different; the other WAVEs keep NOISE */
+        track_t *t = &trk[1];
+        int32_t o[2u * CTL], h[2];
+        uint32_t b, i, j;
+        ui_power_on();
+        song.sel = 1;
+        set_engine_of(t, 0);
+        t->engine = t->eng_req;
+        t->p[P_E3] = 40; t->p[P_E0] = 0;
+        ok = str_eq(track_desc(t, P_E3)->label, "NOISE");
+        { int32_t was = t->p[P_E0]; t->p[P_E0] = 7; excite_turn(t, &t->p[P_E0], was); }
+        ok &= str_eq(track_desc(t, P_E3)->label, "INT 3") && t->p[P_E3] == 0;
+        t->p[P_E0] = 8;
+        ok &= str_eq(track_desc(t, P_E3)->label, "INT 3");
+        { int32_t was = t->p[P_E0]; t->p[P_E0] = 1; excite_turn(t, &t->p[P_E0], was); }
+        ok &= str_eq(track_desc(t, P_E3)->label, "NOISE") && t->p[P_E3] == 0;
+        t->p[P_E0] = 7; t->p[P_MUTE] = 0; song.master_q12 = 4096;
+        for (j = 0; j < 2u; j++) {
+            uint32_t z;
+            for (z = 0; z < NTRK; z++) trk[z].p[P_MUTE] = z != 1u;
+            t->p[P_E3] = (int16_t)(j ? 7 : 0);
+            trk_note_on(t, 57, 100);
+            h[j] = 0;
+            for (b = 0; b < 40u; b++) {
+                memset(o, 0, sizeof o);
+                mix_block(o, CTL);
+                for (i = 0; i < 2u * CTL; i += 2u) h[j] = (int32_t)((uint32_t)h[j] * 31u + (uint32_t)o[i]);
+            }
+            trk_note_off(t, 57);
+            for (b = 0; b < 200u; b++) mix_block(o, CTL);
+        }
+        ok &= h[0] != h[1];
+        bad += check("V10.39 ANALOG SAW3 / PLS3: NOISE's knob is INT 3 (osc 3's interval), from 0 on the WAVE change, heard", ok);
+    }
 
     /* (V10.13) ABOUT's texts kept in the segment (ui_menu.c ABOUT_PROJECT, ABOUT_CREDITS): each line a kind octet
      * (1..12) and a text, the list ended; every credit and the licences there (the host: all in one image) */

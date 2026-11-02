@@ -8,6 +8,12 @@
  * from osc 1, as a classic two-oscillator synth (fifths, octaves; SAW3: its osc 2). */
 static const char *const N_ANALOG_WAVE[] = {"SAW", "SQR", "TRI", "SIN", "PWM", "SYNC", "RING", "SAW3", "PLS3"};
 enum { AW_SYNC = 5, AW_RING, AW_SAW3, AW_PLS3 };   /* (V10.22) PLS3: three pulses as SAW3's saws, SHAPE (and MORPH) their width */
+/* (V10.39, the user: each oscillator its own interval) SAW3 / PLS3: NOISE's knob (P_E3) is INT 3, osc 3's interval in
+ * semitones (INT stays osc 2's); no noise there (every factory SAW3 has NOISE 0: the same sound). analog_desc */
+#define AN_OSC3(p) ((p)[P_E0] == AW_SAW3 || (p)[P_E0] == AW_PLS3)
+#define AN_INT3(p) clamp((p)[P_E3], -24, 24)
+static const param_desc_t AN_INT3_DESC = {"INT 3", F_SEMI, -24, 24, 0, 0, 0};
+static const param_desc_t *analog_desc(const track_t *t, uint32_t k) { return k == 3u && AN_OSC3(t->p) ? &AN_INT3_DESC : 0; }
 /* (JIANT 0.5) FILTER TYPE (P_FTYPE): LP as before (analog_render's loop); HP BP from the same state-variable filter
  * (analog_ext's loop, every WAVE); COMB the filter open, the part's sum through a feedback comb tuned to the newest
  * note and CUT (+-32 semitones about it), RES its feedback (voice.c track_comb).
@@ -83,7 +89,7 @@ static __attribute__((noinline)) void analog_morph(track_t *t, voice_t *v, int32
     const int16_t *p = t->p;
     uint32_t i, inc1 = m->inc, ph0 = v->ph[0], ph1 = v->ph[1], ft = ft_voice(p);
     uint32_t inc2 = p[P_E1] || p[P_E7] ? cents_inc(m->pitch16 + p[P_E7] * 16, p[P_E1], 0) : inc1;
-    int32_t m2 = p[P_E2] * 258, m1 = 32767 - m2, nz = p[P_E3] * 200, drv = p[P_E6], kd = 8192 - p[P_E5] * 7600 / 127;
+    int32_t m2 = p[P_E2] * 258, m1 = 32767 - m2, nz = AN_OSC3(p) ? 0 : p[P_E3] * 200, drv = p[P_E6], kd = 8192 - p[P_E5] * 7600 / 127;
     int32_t drive = 32768 + drv * 512, cut = (p[P_E4] << 8) + m->cutoff + ((v->pitch16 - 60 * 16) << 2);
     int32_t ic1 = v->s[0], ic2 = v->s[1], nst = v->s[2];
     tsvf_t flt;
@@ -122,8 +128,8 @@ static __attribute__((noinline)) void analog_pls3(track_t *t, voice_t *v, int32_
 {
     const int16_t *p = t->p;
     uint32_t i, inc1 = m->inc, ph0 = v->ph[0], ph1 = v->ph[1], ph2 = v->ph[2], ft = ft_voice(p), pw = an_pw(t, m);
-    uint32_t inc2 = cents_inc(m->pitch16 + p[P_E7] * 16, p[P_E1], 0), inc3 = cents_inc(m->pitch16, -p[P_E1], 0);
-    int32_t m2 = p[P_E2] * 258, m1 = 32767 - m2, nz = p[P_E3] * 200, drv = p[P_E6], kd = 8192 - p[P_E5] * 7600 / 127;
+    uint32_t inc2 = cents_inc(m->pitch16 + p[P_E7] * 16, p[P_E1], 0), inc3 = cents_inc(m->pitch16 + AN_INT3(p) * 16, -p[P_E1], 0);
+    int32_t m2 = p[P_E2] * 258, m1 = 32767 - m2, nz = 0, drv = p[P_E6], kd = 8192 - p[P_E5] * 7600 / 127;
     int32_t drive = 32768 + drv * 512, cut = (p[P_E4] << 8) + m->cutoff + ((v->pitch16 - 60 * 16) << 2);
     int32_t ic1 = v->s[0], ic2 = v->s[1], nst = v->s[2];
     tsvf_t flt;
@@ -153,7 +159,7 @@ static __attribute__((noinline)) void analog_ext(track_t *t, voice_t *v, int32_t
     uint32_t wave = (uint32_t)p[P_E0], i, inc1 = m->inc, ph0 = v->ph[0], ph1 = v->ph[1], ph2 = v->ph[2], r, inc2, inc3;
     uint32_t ft = ft_voice(p), pw = an_pw(t, m);
     int32_t mx = wave >= AW_SYNC ? an_mext(t->mo_cur, m) : 0;   /* (0.6.81) MORPH, SHAPE on SYNC RING SAW3 */
-    int32_t det = p[P_E1] + (wave == AW_SAW3 ? mx * 40 / (127 << 8) : 0), m2 = p[P_E2] * 258, m1 = 32767 - m2, nz = p[P_E3] * 200, drv = p[P_E6], kd = 8192 - p[P_E5] * 7600 / 127;
+    int32_t det = p[P_E1] + (wave == AW_SAW3 ? mx * 40 / (127 << 8) : 0), m2 = p[P_E2] * 258, m1 = 32767 - m2, nz = wave == AW_SAW3 ? 0 : p[P_E3] * 200, drv = p[P_E6], kd = 8192 - p[P_E5] * 7600 / 127;
     int32_t drive = 32768 + drv * 512, cut = (p[P_E4] << 8) + m->cutoff + ((v->pitch16 - 60 * 16) << 2);
     int32_t ic1 = v->s[0], ic2 = v->s[1], nst = v->s[2];
     tsvf_t flt;
@@ -166,7 +172,7 @@ static __attribute__((noinline)) void analog_ext(track_t *t, voice_t *v, int32_t
         r = inc1 >> 8 ? (inc2 / (inc1 >> 8)) >> 4 : r; /* (its ratio to osc 1, x16: the restart below) */
         if (r < 1u) r = 1u;
     }
-    inc3 = wave == AW_SAW3 ? cents_inc(m->pitch16, -det, 0) : 0u;
+    inc3 = wave == AW_SAW3 ? cents_inc(m->pitch16 + AN_INT3(p) * 16, -det, 0) : 0u;   /* (V10.39: osc 3 at INT 3) */
     if (wave < AW_SYNC)                                 /* (JIANT 0.5: HP BP COMB) the plain WAVEs: osc 2 as analog_render */
         inc2 = det || p[P_E7] ? cents_inc(m->pitch16 + p[P_E7] * 16, det, 0) : inc1;
     for (i = 0; i < n; i++) {
@@ -334,6 +340,7 @@ static const engine_t ENG_ANALOG = {
         {"INT", F_SEMI, -24, 24, 0, 0, 0},             /* (JIANT 0.4: osc 2's interval, was KTR: the filter's key
                                                          * tracking, fixed at its old default, half) */
     },
+    .desc = analog_desc,
     .presets = ANALOG_PRESETS,
     .npresets = NELEM(ANALOG_PRESETS),
     .note_on = analog_note_on,

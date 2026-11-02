@@ -478,6 +478,12 @@ static void excite_turn(track_t *t, const int16_t *vp, int32_t old)
     static int16_t side[NTRK][2][4];
     static uint8_t had[NTRK];
     uint32_t k = (uint32_t)(t - trk) % NTRK, i, was = old == 5, now = t->p[P_E0] == 5;   /* (eng_string.c SX_FDBK) */
+    if (vp == &t->p[P_E0] && t->eng_req % NENGINES == 0u &&   /* (V10.39) ANALOG into / out of SAW3 PLS3: NOISE <-> INT 3 */
+        (old == 7 || old == 8) != AN_OSC3(t->p)) {      /* (the knob changes meaning: from 0, no noise, unison) */
+        t->p[P_E3] = 0;
+        knob_cap(t, P_E3);
+        return;
+    }
     if (vp != &t->p[P_E0] || t->eng_req % NENGINES != ENGI_STRING || was == now)
         return;
     for (i = 0; i < 4u; i++) {
