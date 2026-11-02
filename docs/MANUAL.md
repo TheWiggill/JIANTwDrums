@@ -613,7 +613,9 @@ your user presets show under ALL and FAV. The dice (GEN) uses the types too: a b
 
 - **ANALOG**: two oscillators. WAVE: SAW, SQR, TRI, SIN, PWM, SYNC, RING, SAW3, **PLS3** (V10.22: three pulses, oscillator 3 detuned the other way;
   MORPH sets the pulse width). **INT** sets oscillator 2's interval
-  (±24 semitones). Its filter is per voice.
+  (±24 semitones). In **SAW3** and **PLS3** the NOISE knob becomes **INT 3**, oscillator 3's own interval (V10.39; no
+  noise in those two WAVEs). A random choice (GEN, the dice) keeps INT and INT 3 at 0, a fourth, a fifth or an octave
+  (V10.38). Its filter is per voice.
 - **FM6**: a six-operator FM engine (Dexed's msfa), 32 algorithms drawn on screen, four voices per track. The EDIT 1/2
   knobs are macros over the patch. **SLOT**: the factory patches F1–F8, OWN (an edited or imported patch) and B1–B32
   (a 32-voice DX7 bank sent from the web editor; empty slots are skipped). A voice from the editor or a B slot plays

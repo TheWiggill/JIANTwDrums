@@ -633,7 +633,9 @@ click; las notas siguen.
 
 - **ANALOG**: dos osciladores. WAVE: SAW, SQR, TRI, SIN, PWM, SYNC, RING, SAW3, **PLS3** (V10.22: tres pulsos, el oscilador 3 desafinado al revés;
   MORPH fija el ancho de pulso). **INT** fija el intervalo del
-  oscilador 2 (±24 semitonos). Su filtro es por voz.
+  oscilador 2 (±24 semitonos). En **SAW3** y **PLS3** la perilla NOISE pasa a ser **INT 3**, el intervalo propio del
+  oscilador 3 (V10.39; sin ruido en esas dos formas de onda). Una elección al azar (GEN, los dados) deja INT e INT 3 en
+  0, cuarta, quinta u octava (V10.38). Su filtro es por voz.
 - **FM6**: un motor FM de seis operadores (msfa, de Dexed), 32 algoritmos dibujados en pantalla, cuatro voces por
   pista. Las perillas de EDIT 1/2 son macros sobre el patch. **SLOT**: los patches de fábrica F1–F8, OWN (un patch
   editado o importado) y B1–B32 (un banco DX7 de 32 voces enviado desde el editor web; los slots vacíos se saltean). Una voz del editor o de un

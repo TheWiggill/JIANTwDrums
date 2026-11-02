@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.38).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.39).
 
 ## Reporting a crash
 
@@ -428,6 +428,11 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.39 (beta)
+- **ANALOG SAW3 / PLS3: each oscillator its own interval**. In the three-oscillator WAVEs the NOISE knob (EDIT 1, KNOB 4)
+  becomes **INT 3**, oscillator 3's interval (±24 semitones); INT stays oscillator 2's. No noise in those two WAVEs (the
+  factory SAW3 sounds had none: they sound the same). Changing WAVE into or out of them sets that knob to 0.
 
 ### V10.38 (beta)
 - **Random intervals stay in tune**: GEN, EXPLORE and the sound dice (EDIT + SELECT) used to give ANALOG's **INT**
