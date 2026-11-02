@@ -503,6 +503,14 @@ static void tracks_edit(uint32_t slot, int32_t steps)
         song.g[G_BPM] = (int16_t)clamp(song.g[G_BPM] + accel(EN_K4, steps, 200), GP[G_BPM].min, GP[G_BPM].max);
         ui.bpm_t = 40;
         return;
+    case 4: {                                           /* (V10.45) LIVE > MANO KNOB 4: the DJ FILTER (V10.37 sent it to the
+                                                         * tempo, MIXER's new KNOB 4); no acceleration across the middle */
+        int32_t v = song.g[G_DJF], to = clamp(v + accel(EN_K4, steps, 127), -64, 63);
+        if ((v < 0 && to > 0) || (v > 0 && to < 0))
+            to = 0;
+        motion_djf_set(t, (int16_t)to);
+        return;
+    }
     case 0:
         vp = &t->p[P_LEVEL];
         d = &TP[P_LEVEL];

@@ -270,6 +270,39 @@ static void graph_sing(const track_t *t)
     cv_rect(cx0 + 10, 110, (cw - 10) * clamp(nn, 0, 100) / 100, 3, T_ACCENT);
 }
 
+/* (V10.45) MORPH on ANALOG's PWM SYNC RING SAW3 PLS3: the wave itself over two cycles, as MORPH bends it (the user: it was
+ * a ramp, MORPH's amount): PWM / PLS3 the pulses' width, SYNC the slave's ratio (1..4), RING the product of two
+ * triangles (1..4), SAW3 three saws spread apart. In the Bluetooth segment (the app slot full) */
+static BTAPP_FN int32_t morph_tri(uint32_t u)       /* a triangle, -32768..32767, u a phase in 1/65536 */
+{
+    u &= 65535u;
+    return (int32_t)(u < 32768u ? u * 2u : (65535u - u) * 2u) - 32768;
+}
+static BTAPP_FN void morph_wave(uint32_t mode, int32_t m)
+{
+    int32_t i, px = 0, py = 0, r = 256 + m * 768 / 127, w = 32768 + m * 26000 / 127;
+    cv_rect(PANEL_X0, 46, PANEL_W, 1, T_RAISE);
+    for (i = 0; i <= 110; i++) {
+        uint32_t u = (uint32_t)i * 131072u / 110u, c = u & 65535u;
+        int32_t s, x = PANEL_X0 + i * 2, y;
+        switch (mode) {
+        case 0: s = (int32_t)c < w ? 26000 : -26000; break;                                   /* PWM */
+        case 1: s = (int32_t)((c * (uint32_t)r >> 8) & 65535u) - 32768; break;               /* SYNC */
+        case 2: s = morph_tri(u + 16384u) * morph_tri((u * (uint32_t)r >> 8) + 16384u) >> 15; break;   /* RING */
+        case 3: {                                                                           /* SAW3 */
+            uint32_t d = u / 256u * (uint32_t)m / 6u;                /* (the spread: up to ~8 % a voice) */
+            s = ((int32_t)c - 32768 + (int32_t)((u + d) & 65535u) - 32768 + (int32_t)((u - d) & 65535u) - 32768) / 3;
+            break;
+        }
+        default: s = ((int32_t)c < w ? 9000 : -9000) + ((int32_t)((c + 21845u) & 65535u) < w ? 9000 : -9000) +
+                     ((int32_t)((c + 43690u) & 65535u) < w * 7 / 8 ? 9000 : -9000); break;   /* PLS3 */
+        }
+        y = 46 - s * 18 / 32768;
+        if (i) cv_line_t(px, py, x, y, heat_col(80 + (uint32_t)m), 2);
+        px = x; py = y;
+    }
+}
+
 static void graph_morph(const track_t *t)
 {
     const int16_t *p = t->p;
@@ -293,11 +326,15 @@ static void graph_morph(const track_t *t)
         if (p[P_E0] >= 4) {                             /* (0.6.81) PWM SYNC RING SAW3: the WAVE, what MORPH moves */
             static const char *const WHAT[5] = {"PWM  WIDTH", "SYNC  RATIO", "RING  RATIO", "SAW3  SPREAD", "PLS3  WIDTH"};
             str_cpy(b, WHAT[clamp(p[P_E0] - 4, 0, 4)], sizeof b);
+            if (bt_hw_seg())                            /* (V10.45) the wave as MORPH bends it */
+                morph_wave((uint32_t)clamp(p[P_E0] - 4, 0, 4), p[P_MORPH]);
+            else {
             cv_rect(PANEL_X0, 46, PANEL_W, 1, T_RAISE);
             for (i = 0; i <= 110u; i++) {
                 int32_t x = PANEL_X0 + (int32_t)i * 2, y = 46 - (int32_t)((i * 34u * (uint32_t)p[P_MORPH]) / (110u * 127u)) + 17;
                 if (i) cv_line_t(px, py, x, y, heat_col(80 + (uint32_t)(46 - y + 34) * 2u), 2);
                 px = x; py = y;
+            }
             }
             cv_text(PANEL_X0 + 2, 90, &AF_S, b, T_MID);
             return;

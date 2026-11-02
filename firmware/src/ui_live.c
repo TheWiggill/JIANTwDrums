@@ -278,7 +278,7 @@ static __attribute__((noinline)) void live_knob(uint32_t slot, int32_t steps)
     uint32_t tg = lv_tracks(), f = tg ? (uint32_t)__builtin_ctz(tg) : 0u, i;
     int32_t d = clamp(steps, -12, 12), v;
     if (mano && slot == 3u) {                           /* the DJ FILTER, as MIXER's KNOB 4 */
-        tracks_edit(3, steps);
+        tracks_edit(4, steps);                         /* (V10.45: 3 is MIXER's BPM now) */
         return;
     }
     if (!mano && !slot--) {                             /* PISTAS: ALL, T1 .. T6, SYN, DRM */
