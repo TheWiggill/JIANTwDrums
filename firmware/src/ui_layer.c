@@ -691,7 +691,8 @@ static void macro_dice(uint32_t mode)
                 if ((used >> d) & 1u)
                     continue;
                 if (d >= MD_E1 && d < MD_E1 + 8u &&
-                    ((pd = track_desc(t, P_E0 + (d - MD_E1))) == 0 || pd->max <= pd->min || pd->label[0] == '-'))
+                    ((pd = track_desc(t, P_E0 + (d - MD_E1))) == 0 || pd->max <= pd->min || pd->label[0] == '-' ||
+                     pd->fmt == F_SEMI))                /* (V10.38: never an interval, INT: out of tune) */
                     continue;
                 break;
             }

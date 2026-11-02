@@ -2947,6 +2947,21 @@ static int test_menu_tabs(void)
         ok &= t->p[P_LWAVE] == TP[P_LWAVE].def && t->p[P_LD_FLT] == 0;
         bad += check("V10.36 LFO DRIFT: a smooth slow wander in range (no steps); BREATHE pads load it on the filter", ok);
     }
+    {   /* (V10.38) ANALOG's INT (osc 2's interval) from the sound dice, GEN and the macros: never out of tune */
+        track_t *t = &trk[1];
+        uint32_t r;
+        ui_power_on();
+        ok = 1;
+        for (r = 0; r < 300u; r++) {
+            int32_t v;
+            set_engine_of(t, 0);
+            sound_dice_of(t, 1);
+            v = t->p[P_E7];
+            ok &= v == 0 || v == 5 || v == -5 || v == 7 || v == -7 || v == 12 || v == -12 || v == 19 || v == -19 || v == 24 || v == -24;
+        }
+        ok &= semi_snap(3) == 5 && semi_snap(-2) == 0 && semi_snap(10) == 12 && semi_snap(19) == 19 && semi_snap(23) == 24;
+        bad += check("V10.38 ANALOG INT diced: only 0, 4th, 5th, octave (and 19, 24), never a dissonant interval", ok);
+    }
 
     /* (V10.13) ABOUT's texts kept in the segment (ui_menu.c ABOUT_PROJECT, ABOUT_CREDITS): each line a kind octet
      * (1..12) and a text, the list ended; every credit and the licences there (the host: all in one image) */

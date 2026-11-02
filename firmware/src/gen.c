@@ -1477,6 +1477,10 @@ static void gen_sound(track_t *t, uint32_t role, uint32_t ri)
         const param_desc_t *d = track_desc(t, P_E0 + i);
         int32_t span = (d->max - d->min) / 16;
         if (!d->label || d->label[0] == '-' || d->max <= d->min || d->fmt == F_ENUM || !span) continue;
+        if (d->fmt == F_SEMI) {                         /* (V10.38) an interval: consonant (0, 4th, 5th, octave) */
+            t->p[P_E0 + i] = (int16_t)(gch(25) ? semi_pick(gr(), d->min, d->max) : clamp(semi_snap(t->p[P_E0 + i]), d->min, d->max));
+            continue;
+        }
         t->p[P_E0 + i] = (int16_t)clamp(t->p[P_E0 + i] + grr(-span, span), d->min, d->max);
     }
     if (e == EG_A && !(r->wv & GNOWV)) {                /* ANALOG: the archetype's wave, one oscillator */

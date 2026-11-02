@@ -417,6 +417,24 @@ static int32_t param_turn(const param_desc_t *d, int32_t v, int32_t steps)
 static uint8_t fmt_named;        /* the last param_format was a name (F_ENUM, even "4"): ui_draw.c's digits do not roll it */
 
 /* value string (<= 5 chars) and unit for a parameter value */
+/* (V10.38, the user: a random INT out of tune spoils the song) an interval chosen at random (GEN, the sound dice):
+ * unison, fourth, fifth or octave, up or down, within the parameter's range; semi_snap: the nearest of them */
+static const int8_t SEMI_OK[9] = {0, 7, 12, -12, 5, -5, -7, 0, 7};
+static int32_t semi_pick(uint32_t r, int32_t lo, int32_t hi)
+{
+    int32_t v = SEMI_OK[r % 9u];
+    return v < lo || v > hi ? 0 : v;
+}
+static int32_t semi_snap(int32_t v)
+{
+    static const int8_t C[11] = {0, 5, -5, 7, -7, 12, -12, 19, -19, 24, -24};   /* (19: GLASS KEYS' octave and fifth) */
+    uint32_t i;
+    int32_t best = 0;
+    for (i = 1; i < 11u; i++)
+        if ((C[i] - v) * (C[i] - v) < (best - v) * (best - v))
+            best = C[i];
+    return best;
+}
 static void param_format(const param_desc_t *d, int32_t v, char *val, const char **unit)
 {
     *unit = "";

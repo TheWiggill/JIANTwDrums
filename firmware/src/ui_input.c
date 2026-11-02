@@ -1866,6 +1866,8 @@ static void sound_dice_of(track_t *t, int quiet)
             continue;
         if (d->fmt == F_ENUM)
             t->p[P_E0 + i] = (int16_t)(rng() % 3u ? t->p[P_E0 + i] : d->min + (int32_t)(rng() % (uint32_t)(d->max - d->min + 1)));
+        else if (d->fmt == F_SEMI)                      /* (V10.38) an interval: 0, 4th, 5th, octave, up or down */
+            t->p[P_E0 + i] = (int16_t)semi_pick(rng(), d->min, d->max);
         else
             t->p[P_E0 + i] = (int16_t)dice_by(t->p[P_E0 + i], d->min, d->max, span ? span : 1);
     }
