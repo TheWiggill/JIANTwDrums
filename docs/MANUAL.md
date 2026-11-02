@@ -1930,7 +1930,7 @@ curve where the bar would be.
   attack when it reaches sustain (an ADSR-shaped LFO).
 - **ENV 2** (V10.22, after ENV DEST): a second ADSR per voice that goes nowhere by itself: pick **SRC ENV2** on a MOD
   slot and send it to any DEST, like the LFO.
-- **LFO**: RATE, WAVE (SIN, TRI, SAW, SQR, S&H), MODE, FADE; **LFO 2**: PHASE. **LFO DEST**: PITCH, FILTER, SHAPE, AMP.
+- **LFO**: RATE, WAVE (SIN, TRI, SAW, SQR, S&H, **DRIFT**: V10.36, a smooth random wander for drones and pads that breathe; with RATE 4BAR … 16BAR it drifts slowly), MODE, FADE; **LFO 2**: PHASE. **LFO DEST**: PITCH, FILTER, SHAPE, AMP.
   - **RATE** is free in Hz; turn it left past the slowest and it goes **in time** with the tempo (16BAR and 8BAR, V10.27, then 4BAR, 2BAR, 1BAR, 1/2,
     1/4, 1/8D, 1/4T, 1/8, 1/8T, 1/16, 1/16T, 1/32), locked to the bar while the transport plays (in TRIG, PHASE is its
     offset), in either MODE: a note never moves it then.

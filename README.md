@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.35).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.36).
 
 ## Reporting a crash
 
@@ -428,6 +428,11 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.36 (beta)
+- **LFO WAVE DRIFT** (a user's ask, for ambient): a smooth random wander, no steps; with RATE 4BAR … 16BAR drones and
+  pads drift and breathe. The factory pads now **breathe by themselves** (DRIFT on the filter, some a little on pitch):
+  ANALOG SOFT PAD, STRINGS, JUNO PAD, DARK PAD; FM6 PAD, FM STRINGS; PHASE GLASS PAD, VOX PAD; NOISE HISS PAD; LOFI CHIP PAD.
 
 ### V10.35 — public (2026-11-02)
 - Stable installer: everything from V10.27 to V10.35: testers' fixes, EUCLID reversible on your own sequence (VARY in
