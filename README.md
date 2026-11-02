@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.39).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.40).
 
 ## Reporting a crash
 
@@ -428,6 +428,14 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.40 (beta)
+- **Web editor follows the knobs that change with the mode**: with ANALOG on SAW3 / PLS3 it shows **INT 3** (−24…24
+  semitones, it used to show NOISE 0…127 and could not send a negative interval), and STRING FDBK's or NOISE LFSR's
+  knobs as the panel names them; changing WAVE / EXCITE from the editor resets the knobs that change meaning, as on the
+  FM-1.
+- **HOME's screen repairs itself faster**: the screen only resends what changed, and very rarely a small 8 × 4 pixel
+  block could stay old for up to ~1.5 minutes on HOME. Now any such block is redrawn within ~10 seconds.
 
 ### V10.39 (beta)
 - **ANALOG SAW3 / PLS3: each oscillator its own interval**. In the three-oscillator WAVEs the NOISE knob (EDIT 1, KNOB 4)
