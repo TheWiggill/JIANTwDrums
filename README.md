@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.37).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.38).
 
 ## Reporting a crash
 
@@ -428,6 +428,12 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.38 (beta)
+- **Random intervals stay in tune**: GEN, EXPLORE and the sound dice (EDIT + SELECT) used to give ANALOG's **INT**
+  (oscillator 2's interval) any value, so most generated songs had a dissonant oscillator. Now an interval chosen by
+  chance is **0, a fourth, a fifth or an octave** (5, 7, 12, up or down; also VOICE's SHIFT), and the random macros
+  never aim at it. Turning INT by hand still reaches any value.
 
 ### V10.37 (beta)
 - **GLO › MIXER KNOB 4 is BPM** (the tempo at hand; the DJ FILTER stays on LIVE › MANO's KNOB 4), and GLO's pages
