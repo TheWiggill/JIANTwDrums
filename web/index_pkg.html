@@ -55,6 +55,7 @@
   <div class="jiant-notice">
     <p style="margin:0 0 8px;font-weight:600" data-t="firstTitle"></p>
     <p class="small" style="margin:0 0 10px" data-t="firstText"></p>
+    <p class="small" style="margin:0 0 10px" data-t="darkText"></p>
     <p style="margin:0 0 10px"><button id="first-stock" data-t="firstStock"></button></p>
     <p class="small" style="margin:0" data-t="firstOk"></p>
   </div>
@@ -113,6 +114,7 @@ const TEXT = {
     install: "インストール",
     firstTitle: "他のカスタムファームウェアから入れる場合は、先に公式V15へ戻してください",
     firstText: "Felucca・baudgirl などの別のカスタムファームウェアが入った FM-1 に直接 JIANT を書き込むと、起動しなくなることがあります。まず下のボタンで公式V15に戻し（全体バックアップも取れます）、それから JIANT をインストールしてください。公式V15 か JIANT がすでに入っている場合はそのままで大丈夫です。",
+    darkText: "インストール後に画面が暗い・何も表示されず、PC が FM-1 を認識しない場合：電源を切らずに、USB データケーブルで PC に直接つなぎ、デバイス一覧に WL80UBOOT (4C4A:8057) があるか確認してください。あれば同じボタンでもう一度インストールできます。何も見えない場合は COPY REPORT と、以前のファームウェア・インストールしたバージョンを添えて連絡してください。",
     firstStock: "先に公式V15へ戻す",
     firstOk: "インストールの前に、接続された FM-1 のファームウェアを自動で確認します。公式V15 か JIANT のときだけ書き込みます。",
     checking: "FM-1 のファームウェアを確認中…",
@@ -161,6 +163,7 @@ const TEXT = {
     install: "Install",
     firstTitle: "Coming from another custom firmware? Return to official V15 first",
     firstText: "Writing JIANT straight over another custom firmware (Felucca, baudgirl or any other) can leave the FM-1 unable to start. First return to official V15 with the button below (it also saves a complete backup), then install JIANT. If the FM-1 already runs official V15 or JIANT, go ahead.",
+    darkText: "If after installing the screen stays dark or blank and the computer does not see the FM-1: plug it straight into the computer with a USB data cable and check the device list for WL80UBOOT (4C4A:8057). If it is there, press the same Install button again: it can be written again. If nothing shows, write to us with COPY REPORT, the firmware it had before and the version you installed.",
     firstStock: "Return to official V15 first",
     firstOk: "Before installing, the installer checks the connected FM-1's firmware by itself: it writes only over official V15 or JIANT.",
     checking: "Checking the FM-1's firmware…",
@@ -357,6 +360,7 @@ TEXT.es = {
   install: "Instalar",
   firstTitle: "¿Venís de otro firmware custom? Primero volvé al V15 oficial",
   firstText: "Escribir JIANT directamente sobre otro firmware custom (Felucca, Skiff, baudgirl o cualquier otro) puede dejar el FM-1 sin arrancar. Primero volvé al V15 oficial con el botón de abajo (también guarda un backup completo) y después instalá JIANT. Si el FM-1 ya tiene el V15 oficial o JIANT, seguí directo.",
+  darkText: "Si después de instalar la pantalla queda negra o en blanco y la computadora no ve el FM-1: conectalo directo a la computadora con un cable USB de datos y fijate si en la lista de dispositivos aparece WL80UBOOT (4C4A:8057). Si aparece, apretá el mismo botón de instalar otra vez: se puede volver a escribir. Si no aparece nada, escribinos con COPY REPORT, el firmware que tenía antes y la versión que instalaste.",
   firstStock: "Primero volver al V15 oficial",
   firstOk: "Antes de instalar, el instalador revisa solo el firmware del FM-1 conectado: escribe únicamente sobre el V15 oficial o JIANT.",
   checking: "Revisando el firmware del FM-1…",

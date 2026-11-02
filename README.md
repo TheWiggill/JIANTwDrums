@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.45).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.46).
 
 ## Reporting a crash
 
@@ -428,6 +428,11 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.46 (beta)
+- **Safe start**: if a start hangs between the power-supply setup (added in V10.11) and the UI, the watchdog resets it
+  and the next start skips that setup (as JIANT did up to V10.10), showing SAFE START on screen, until the FM-1 is
+  switched off. Prompted by reports of FM-1s that stayed dark after installing (cause not yet known).
 
 ### V10.45 (beta)
 - **Fix**: GLO › LIVE › MANO KNOB 4 is the DJ FILTER again (since V10.37 it changed the tempo; a user's report).

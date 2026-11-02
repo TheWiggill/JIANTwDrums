@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.46", items: [
+    ["Arranque seguro: si un arranque se cuelga entre la configuración de alimentación (agregada en V10.11) y la interfaz, el watchdog lo reinicia y el siguiente arranque saltea esa configuración (como JIANT hasta V10.10) y muestra SAFE START, hasta que se apague el FM-1. Por reportes de FM-1 que quedaron sin arrancar después de instalar (la causa todavía no se conoce).", "Safe start: if a start hangs between the power-supply setup (added in V10.11) and the UI, the watchdog resets it and the next start skips that setup (as JIANT did up to V10.10), showing SAFE START, until the FM-1 is switched off. Prompted by reports of FM-1s that stayed dark after installing (cause not yet known)."]]},
   {v: "V10.45", items: [
     ["Arreglo: GLO › LIVE › MANO perilla 4 vuelve a ser el FILTRO DJ (desde V10.37 cambiaba el tempo; aviso de un usuario).", "Fix: GLO › LIVE › MANO KNOB 4 is the DJ FILTER again (since V10.37 it changed the tempo; a user's report)."],
     ["MORPH dibuja la onda: en ANALOG PWM, SYNC, RING, SAW3 y PLS3 la página MORPH muestra la onda misma mientras MORPH la deforma (antes era una rampa).", "MORPH draws the wave: on ANALOG's PWM, SYNC, RING, SAW3 and PLS3 the MORPH page shows the wave itself as MORPH bends it (it was a ramp)."]]},
