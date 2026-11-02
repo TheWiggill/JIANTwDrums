@@ -2,6 +2,7 @@
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
 /* Parameter descriptors, formatting and the page table. */
 static const char *const N_LWAVE[] = {"SIN", "TRI", "SAW", "SQR", "S&H"};
+static const char *const N_LWAVE6[] = {"SIN", "TRI", "SAW", "SQR", "S&H", "DRIFT"};   /* (V10.36) the LFO's own: AUTO PAN keeps five */
 /* (JIANT 0.6.51) the LFO's RATE below 0: in time with the tempo, -1 the slowest (next to the slowest free rate) */
 static const char *const N_LSYNC[14] = {"4BAR", "2BAR", "1BAR", "1/2", "1/4", "1/8D", "1/4T", "1/8", "1/8T", "1/16",
                                         "1/16T", "1/32", "8BAR", "16BAR"};   /* (V10.27: -13 8BAR, -14 16BAR, a tester's) */
@@ -94,7 +95,7 @@ static const param_desc_t TP[P_COUNT] = {
     [P_ED_SHP] = PD("SHAPE", F_BIPCT, -64, 63, 0),
     [P_ED_FX] = PE("LOOP", N_ONOFF, 0),          /* (JIANT 0.4, P_ELOOP) ON: held, the ENV starts again at the sustain */
     [P_LRATE] = PD("RATE", F_LFOHZ, -14, 127, 60),  /* (JIANT 0.6.51) below 0 in time: 4BAR .. 1/32 (N_LSYNC) */
-    [P_LWAVE] = PE("WAVE", N_LWAVE, 0),
+    [P_LWAVE] = PE("WAVE", N_LWAVE6, 0),
     [P_LPHASE] = PD("PHASE", F_INT, -1, 127, 0),   /* (JIANT 0.6.51) -1: FREE, never restarted by a note (0.9.18: nor its
                                                      * FADE); the pages show it as MODE TRIG / FREE and PHASE 0..127 */
     [P_LFADE] = PD("FADE", F_TIME, 0, 127, 0),

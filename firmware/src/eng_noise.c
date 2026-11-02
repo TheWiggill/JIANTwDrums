@@ -250,7 +250,7 @@ static const preset_t NOISE_PRESETS[] = {
     {"METAL", {NZ_META, 0, 100, 40, 100, 32, 0, 0}, {0, 75, 40, 60}, 10, TAG(FX), FX(0, 20, 30, 45), PAT(7)},
     /* (0.7.0) textures for the generator: the sea, a hiss pad, vinyl crackle, tape air */
     {"SEA", {NZ_ANLG, 40, 50, 60, 40, 0, 90, 0}, {100, 90, 120, 110}, 0, TAG(FX), FX(0, 20, 20, 80), PAT(5)},
-    {"HISS PAD", {NZ_ANLG, 90, 95, 110, 127, 0, 20, 0}, {80, 90, 115, 100}, 0, TAG(PAD), FX(0, 40, 30, 85), PAT(5)},
+    {"HISS PAD", {NZ_ANLG, 90, 95, 110, 127, 0, 20, 0}, {80, 90, 115, 100}, 0, TAG(PAD), FX(0, 40, 30, 85), PAT(5), BREATHE(24, 0, 1)},
     {"CRACKLE", {NZ_DUST, 60, 100, 40, 64, 60, 20, 0}, {5, 90, 127, 60}, 0, TAG(FX), FX(0, 0, 20, 50), PAT(5)},
     {"TAPE AIR", {NZ_ANLG, 75, 60, 20, 64, 0, 50, 10}, {90, 90, 120, 110}, 0, TAG(FX), FX(0, 30, 25, 70), PAT(5)},
 };

@@ -23,6 +23,12 @@ static int32_t lfo_wave(track_t *t, uint32_t ph)
         return ph < 0x80000000u ? 32767 : -32767;
     case 4:
         return (int32_t)(t->lfo_rnd >> 16) - 32768;
+    case 5: {                                           /* (V10.36) DRIFT: from the last value (lfo_rnd's low half) to
+                                                         * the next (its high half) on a smoothstep: no step, no corner */
+        int32_t a = (int32_t)(t->lfo_rnd & 0xFFFFu) - 32768, b = (int32_t)(t->lfo_rnd >> 16) - 32768;
+        int32_t x = (int32_t)(ph >> 17), s = (int32_t)(((int64_t)x * x >> 15) * (98304 - 2 * x) >> 15);
+        return a + (int32_t)(((int64_t)(b - a) * s) >> 15);
+    }
     default:
         return osc_sine(ph);
     }
@@ -391,8 +397,16 @@ static void track_lfo_tick(track_t *t)
             t->lfo_ph += (uint32_t)(((uint64_t)CTL << 32) / len);
     } else
         t->lfo_ph += LFO_INC[r & 127];
-    if (t->lfo_ph < old)
-        t->lfo_rnd = lfo_rand(t);
+    if (t->lfo_ph < old) {
+        uint32_t o = t->lfo_rnd >> 16, n = lfo_rand(t);
+        if (t->p[P_LWAVE] == 5) {                       /* (V10.36) DRIFT walks: the next value within half the range
+                                                         * of the last, folded back at the ends (a slow wander) */
+            int32_t v = (int32_t)o + ((int32_t)(n >> 16) - 32768) / 2;
+            v = v < 0 ? -v : v > 65535 ? 131070 - v : v;
+            n = (uint32_t)v << 16 | o;
+        }
+        t->lfo_rnd = n;
+    }
     t->lfo_val = lfo_wave(t, t->lfo_ph);
     if (t->lfo_fade < 32767) {
         int32_t step = (int32_t)(ENV_LIN[t->p[P_LFADE] & 127] >> 9);

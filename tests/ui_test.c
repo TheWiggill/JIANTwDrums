@@ -2912,6 +2912,39 @@ static int test_menu_tabs(void)
     bad += check("V10.12 MENU > SYSTEM > BLUETOOTH: OFF by default, STOP FIRST while playing, ON saved with its mark (NO SEG "
                  "without the segment), V10.35 AIR its own bit, OFF; the boot guard after a reset in the start or a crash while it ran", ok);
 
+    /* (V10.36) LFO WAVE DRIFT: a smooth wander (no step bigger than a sine's at that rate), it moves over cycles and
+     * stays in range; a pad with BREATHE (ANALOG DARK PAD) loads the LFO DRIFT on its filter, 16 bars; S&H unchanged */
+    {
+        track_t *t = &trk[1];
+        int32_t prev, lo = 32767, hi = -32768, maxd = 0, k2;
+        uint32_t pi2;
+        ui_power_on();
+        t->p[P_LWAVE] = 5;
+        t->p[P_LRATE] = 100;
+        track_lfo_tick(t);
+        prev = t->lfo_val;
+        for (k2 = 0; k2 < 200000; k2++) {
+            int32_t d;
+            track_lfo_tick(t);
+            d = t->lfo_val - prev;
+            d = d < 0 ? -d : d;
+            maxd = d > maxd ? d : maxd;
+            lo = t->lfo_val < lo ? t->lfo_val : lo;
+            hi = t->lfo_val > hi ? t->lfo_val : hi;
+            prev = t->lfo_val;
+        }
+        ok = str_eq(TP[P_LWAVE].names[5], "DRIFT") && TP[P_LWAVE].max == 5 && TP[P_APWAVE].max == 4 &&
+             hi - lo > 20000 && lo >= -32768 && hi <= 32767 && maxd < (int32_t)(LFO_INC[100] >> 15) * 4 + 64;
+        set_engine_of(t, 0);
+        for (pi2 = 0; pi2 < ENG_ANALOG.npresets && !str_eq(ENG_ANALOG.presets[pi2].name, "DARK PAD"); pi2++)
+            ;
+        apply_preset_to(t, pi2);
+        ok &= t->p[P_LWAVE] == 5 && t->p[P_LRATE] == -14 && t->p[P_LD_FLT] == 22 && t->p[P_LD_PIT] == 1;
+        apply_preset_to(t, 0);
+        ok &= t->p[P_LWAVE] == TP[P_LWAVE].def && t->p[P_LD_FLT] == 0;
+        bad += check("V10.36 LFO DRIFT: a smooth slow wander in range (no steps); BREATHE pads load it on the filter", ok);
+    }
+
     /* (V10.13) ABOUT's texts kept in the segment (ui_menu.c ABOUT_PROJECT, ABOUT_CREDITS): each line a kind octet
      * (1..12) and a text, the list ended; every credit and the licences there (the host: all in one image) */
     {

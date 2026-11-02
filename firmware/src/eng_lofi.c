@@ -657,7 +657,7 @@ static const preset_t LOFI_PRESETS[] = {
     {"FLOAT ARP", {2, 6, 8, 0, 64, 0, 0, 0}, {0, 50, 80, 50}, 0, 1 | TAG(PLUCK), FX(0, 25, 30, 30), PAT(3)},
     {"FLOAT PAD", {2, 6, 112, 0, 40, 0, 0, 0}, {60, 90, 110, 90}, 0, 1 | TAG(PAD), FX(30, 10, 50, 40), PAT(3)},
     /* (0.7.0) the chip as a band: a pad, a Game Boy arp, a triangle bass, soft keys, a saw lead */
-    {"CHIP PAD", {0, 1, 64, 0, 90, 12, 0, 0}, {40, 90, 115, 80}, 0, TAG(PAD), FX(0, 50, 30, 60), PAT(5)},
+    {"CHIP PAD", {0, 1, 64, 0, 90, 12, 0, 0}, {40, 90, 115, 80}, 0, TAG(PAD), FX(0, 50, 30, 60), PAT(5), BREATHE(14, 1, 0)},
     {"GB ARP", {2, 0, 16, 0, 120, 0, 0, 0}, {0, 55, 0, 35}, 0, TAG(PLUCK), FX(0, 10, 45, 25), PAT(3)},
     {"TRI BASS", {0, 1, 64, 0, 80, 0, 0, 0}, {0, 60, 90, 20}, 0, 1 | TAG(BASS), FX(0, 0, 5, 0), PAT(2)},
     {"SOFT CHIP", {1, 0, 64, 0, 85, 8, 0, 0}, {5, 70, 80, 50}, 0, TAG(KEYS), FX(0, 20, 35, 40), PAT(6)},

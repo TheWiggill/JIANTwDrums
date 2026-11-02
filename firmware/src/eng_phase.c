@@ -214,10 +214,10 @@ static const preset_t PHASE_PRESETS[] = {
     /* (0.7.0) the CZ side of it: a piano, a glass pad, a digital stab (RING), a synth bass, a vowel pad, a harp,
      * a lead, ring keys */
     {"CZ PIANO", {3, 0, 55, 85, 0, 0, 15, 0}, {0, 78, 30, 55}, 0, TAG(KEYS), FX(0, 20, 25, 40), PAT(6)},
-    {"GLASS PAD", {6, 5, 45, 35, 14, 0, 0, 0}, {60, 90, 115, 95}, 0, TAG(PAD), FX(0, 60, 30, 75), PAT(5)},
+    {"GLASS PAD", {6, 5, 45, 35, 14, 0, 0, 0}, {60, 90, 115, 95}, 0, TAG(PAD), FX(0, 60, 30, 75), PAT(5), BREATHE(18, 1, 1)},
     {"DIGI STAB", {4, 2, 75, 70, 0, 1, 0, 0}, {0, 55, 20, 40}, 0, TAG(KEYS), FX(5, 10, 45, 40), PAT(6)},
     {"SYN BASS", {1, 0, 50, 70, 0, 0, 60, 0}, {0, 58, 50, 25}, 0, 1 | TAG(BASS), FX(8, 0, 10, 5), PAT(2)},
-    {"VOX PAD", {5, 4, 35, 30, 10, 0, 0, 0}, {70, 95, 115, 100}, 0, TAG(PAD), FX(0, 55, 25, 70), PAT(5)},
+    {"VOX PAD", {5, 4, 35, 30, 10, 0, 0, 0}, {70, 95, 115, 100}, 0, TAG(PAD), FX(0, 55, 25, 70), PAT(5), BREATHE(14, 0, 0)},
     {"HARP", {3, 0, 70, 90, 0, 0, 0, 0}, {0, 85, 0, 70}, 0, TAG(PLUCK), FX(0, 15, 40, 55), PAT(3)},
     {"PD LEAD", {0, 2, 65, 55, 9, 0, 20, 10}, {4, 70, 95, 45}, 0, 1 | TAG(LEAD), FX(10, 10, 40, 30), PAT(4)},
     {"RING KEYS", {2, 4, 60, 60, 0, 1, 0, 0}, {0, 75, 25, 60}, 0, TAG(KEYS), FX(0, 25, 35, 50), PAT(6)},
