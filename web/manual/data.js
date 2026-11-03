@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.47", items: [
+    ["El roll sigue al playhead (pedido de un usuario): con una secuencia de más de 16 pasos, mientras suena y si no tocaste nada en 3 segundos, SEQ › STEP (el piano roll y la grilla de batería) muestra los 16 pasos que se están tocando. Al tocar una tecla o una perilla la vista se queda donde está 3 segundos, así lo que ves es lo que editan las teclas.", "The roll follows the playhead (a user's ask): with a sequence longer than 16 steps, while it plays and nothing was touched for 3 seconds, SEQ › STEP (the piano roll and the drum grid) shows the 16 steps playing. Touching a key or a knob holds the view for 3 seconds, so what you see is what the keys edit."]]},
   {v: "V10.46", items: [
     ["Arranque seguro: si un arranque se cuelga entre la configuración de alimentación (agregada en V10.11) y la interfaz, el watchdog lo reinicia y el siguiente arranque saltea esa configuración (como JIANT hasta V10.10) y muestra SAFE START, hasta que se apague el FM-1. Por reportes de FM-1 que quedaron sin arrancar después de instalar (la causa todavía no se conoce).", "Safe start: if a start hangs between the power-supply setup (added in V10.11) and the UI, the watchdog resets it and the next start skips that setup (as JIANT did up to V10.10), showing SAFE START, until the FM-1 is switched off. Prompted by reports of FM-1s that stayed dark after installing (cause not yet known)."]]},
   {v: "V10.45", items: [
