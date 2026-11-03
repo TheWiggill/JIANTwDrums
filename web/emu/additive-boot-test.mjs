@@ -14,7 +14,7 @@ function render(e,ms){
  return peak;
 }
 const e=await boot();assert.equal(e.web_additive_edition(),1,'not ADD without SAMPLE');render(e,5000);assert.ok(e.web_screen_draws()>0,'fresh boot did not draw');
-e.web_buttons(1<<7);render(e,100);e.web_buttons(0);render(e,150);e.web_enc(0,10);render(e,150);e.web_enc(4,-1);render(e,100);assert.equal(e.web_selected_engine(),13,'PRESETS/KNOB2 did not select ADD');
+e.web_buttons(1<<7);render(e,100);e.web_buttons(0);render(e,150);e.web_enc(0,10);render(e,150);e.web_enc(4,-1);render(e,100);assert.equal(e.web_selected_engine(),15,'PRESETS/KNOB2 did not select INPUT (V10.54: last)');e.web_enc(4,-1);render(e,100);assert.equal(e.web_selected_engine(),13,'PRESETS/KNOB2 did not select ADD');
 e.web_gen(0,12345,64,0);render(e,100);e.web_play(1);assert.ok(render(e,3000)>0.00001,'generated scene silent');
 e.web_play(0);render(e,100);
 // (V10.2: SAVE opens TIMELINE; PRESETS is the chain's last page, SELECT to the end)
