@@ -388,7 +388,7 @@ static void fm1_main(void)
         if (uh.msg) {
             static const char *const UHM[8] = {"", "USB HOST: PLUG A MIDI KEYBOARD", "USB HOST OFF", "USB MIDI KEYBOARD READY",
                                                "NOT USB MIDI OR AUDIO 16BIT 44.1K", "LOW SPEED: NOT SUPPORTED", "USB DEVICE LOST",
-                                               "USB AUDIO IN READY (LAST TRACK)"};   /* (V10.53) */
+                                               "USB AUDIO IN READY: USE INPUT"};   /* (V10.53; V10.56: an INPUT track takes it) */
             ui_message(UHM[uh.msg % 8u]);
             uh.msg = 0;
         }
