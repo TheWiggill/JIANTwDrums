@@ -67,6 +67,9 @@
  * State: vxs (in the pool: no global of the RAM region moves). MENU > ANIM OFF: they rest. */
 #define VX_POOL __attribute__((section(".pool")))
 #define VX_CODE __attribute__((noinline))                 /* (each creature its own function: its size on its own) */
+#define VX_SEG BTAPP_FN                                  /* (V10.48) LOFI's, ANIMAL's and STRING's creatures in the Bluetooth
+                                                         * segment (the app slot full): without it vx_draw says none (the
+                                                         * being instead) */
 #define VX_NE 9                                          /* the creatures: VOICE ANIMAL DRUM-X ANALOG FM6 WHEEL NOISE PHASE LOFI
                                                          * ((0.9.9-snd5) STRING ADD: PHASE's and WHEEL's slots, below) */
 #define VX_NSW 56                                        /* NOISE's swarm (the mock-up's 84: its cost) */
@@ -608,7 +611,7 @@ static const int8_t VX_AN[3][VA_NP] = {
 static const uint8_t VA_EYE_R[3] = {3, 5, 2};
 /* MODE -> the animal on the line insect 0 .. bird 128 .. mammal 256; the middle of its presets' SIZE */
 static const uint8_t VA_POS[AN_NMODE] = {128, 0, 128, 0, 255}, VA_MID[AN_NMODE] = {64, 30, 50, 70, 64};   /* (.. its presets' SIZE) */
-static VX_CODE void vx_animal(const track_t *t, int32_t cx, int32_t cy, int32_t s, int32_t en_home)
+static VX_SEG void vx_animal(const track_t *t, int32_t cx, int32_t cy, int32_t s, int32_t en_home)
 {
     vxf_t f = {cx, cy, s};
     const int16_t *p = t->p;
@@ -1661,7 +1664,7 @@ static VX_CODE void vx_phase(const track_t *t, const int32_t *A, int32_t en_home
 
 /* --------------------------------------------------------------------------------------------- LOFI --- */
 /* ORGANISMO DE CIRCUITO */
-static VX_CODE void vx_lofi(const track_t *t, const int32_t *A, int32_t en_home)
+static VX_SEG void vx_lofi(const track_t *t, const int32_t *A, int32_t en_home)
 {
     const int16_t *p = t->p;
     int32_t a0 = A[2] * 256 / 124, b0 = (A[3] - 4) * 256 / 94, fl = p[P_E1] != RW_BYTE, new_fr = vxs.fr[8] != ui.frame;
@@ -1766,7 +1769,7 @@ static VX_CODE void vx_lofi(const track_t *t, const int32_t *A, int32_t en_home)
 /* ---------------------------------------------------------------------------------------- (snd5) STRING --- */
 /* TEJEDORA II: a radial web, a ray a voice (its line, one period, along it); the spider stands on the newest ray at POS
  * and plucks it with the exciter EXCITE draws; STRETCH warps the spiral, BODY and SIZE the cocoon hanging at the side */
-static VX_CODE void vx_string(const track_t *t, const int32_t *A, int32_t en_home)
+static VX_SEG void vx_string(const track_t *t, const int32_t *A, int32_t en_home)
 {
     const int16_t *p = t->p;
     vxf_t f = vx_uf(A, 95, 0);
@@ -1941,6 +1944,8 @@ static int vx_draw(const track_t *t, int32_t x, int32_t y, int32_t w, int32_t h,
 {
     const engine_t *e = trk_engp(t);
     int32_t A[4] = {x, y, w, h}, cx = x * 16 + w * 8, cy = y * 16 + h * 8, s;
+    if (!bt_hw_seg() && (e == &ENG_LOFI || e == &ENG_ANIMAL || e == &ENG_STRING))
+        return 0;                                        /* (V10.48: those creatures live in the segment) */
     if (e == &ENG_FORMANT) {                             /* (the tract ~80 x 62 units about (-20, 37): the crown off) */
         s = vx_fit(w, h, 80, 62);
         vx_voice(t, cx + 5 * s / 4, cy - 37 * s / 16, s, en_home);
