@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.52", items: [
+    ["IMAGE se ve: la página EDIT › STEREO de los sintes dibuja el campo estéreo de L a R. Cada voz que suena es una burbuja en su lugar, con el tamaño según su volumen y la nota arriba; las voces en silencio son una marquita donde caerían; una barra muestra cuánto abre IMAGE.", "IMAGE you can see: a synth's EDIT › STEREO page draws the stereo field from L to R. Each voice sounding is a blob at its place, its size following its level, its note above it; silent voices are a small tick where they would sit; a bar shows how wide IMAGE opens."]]},
   {v: "V10.51", items: [
     ["Arreglo: el roll que sigue al playhead (V10.47) no hacía nada en el FM-1: la pantalla no se redibujaba mientras el playhead estaba fuera de los 16 pasos visibles. Ahora sí lo sigue.", "Fix: the roll following the playhead (V10.47) did nothing on the FM-1: the panel was never redrawn while the playhead was outside the 16 steps shown. Now it follows."]]},
   {v: "V10.50", items: [
