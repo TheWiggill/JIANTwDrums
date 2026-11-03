@@ -1581,6 +1581,9 @@ static uint32_t graph_signature(void)
         seq_roll_view(pg)) {
         uint32_t ph = song.playing ? seq_src(t, t->seq_idx) : 0xFFFFu, rl = roll_view(pg) || seq_roll_view(pg) ||
                                                                           pg->graph == GR_CHANCE;
+        if (rl)                                      /* (V10.51) the playhead followed here (V10.47 did it in the drawing,
+                                                      * which a playhead out of the bar shown never asked for: no redraw) */
+            pr_follow_bar(t);
         if (rl && ph / 16u != ui.bank)
             ph = 0xFFFFu;                            /* the roll shows the cursor's bank only */
         h ^= steps_hash(t) + ph * 31u + ui.cursor * 7919u + ui.lane * 104723u + ui.bank * 613u;

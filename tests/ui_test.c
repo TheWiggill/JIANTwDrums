@@ -11943,6 +11943,33 @@ static int test_lz_home(void)
 /* EDIT (0.9.2, ui_lzedit.c): SOUND . TONE . the detail (FOCUS / OPERATOR / SOUND) one chain; SELECT a page a detent (no
  * wrap), an EDIT tap the next group's first, EDIT from elsewhere the page left; PRESETS the sounds on every page (rule 3:
  * was KNOB 1's on the detail); FOCUS's knobs (PARAM, its value, SRC and AMT of the MOD slot aimed at it); VOICE 2 */
+/* (V10.51) the roll follows the playhead: a sequence of 64, playing, nothing touched 3 s: the bar shown is the one playing
+ * (V10.47 did it in the drawing only, never asked for while the playhead was out of the bar shown); a touch holds it */
+static int test_roll_follow(void)
+{
+    int bad = 0, ok;
+    track_t *t;
+    ui_power_on(); set_engine_of(TSEL, 0); t = TSEL;
+    t->p[P_SLEN] = 64;
+    go_title("STEP"); frame();
+    ok = ui.bank == 0u;
+    song.playing = 1;
+    t->seq_idx = 40;
+    scrn.idle = fm1_ms - 5000u;
+    frames(64);
+    ok &= ui.bank == 2u;
+    scrn.idle = fm1_ms;                                 /* (a key or a knob just now: held) */
+    t->seq_idx = 52;
+    frames(64);
+    ok &= ui.bank == 2u;
+    scrn.idle = fm1_ms - 5000u;
+    frames(64);
+    ok &= ui.bank == 3u;
+    song.playing = 0;
+    bad += check("V10.51 the roll follows the playhead (64 steps, untouched 3 s: the bar playing; a touch holds it)", ok);
+    return bad;
+}
+
 static int test_lz_edit(void)
 {
     int bad = 0, ok;
@@ -13438,6 +13465,7 @@ int main(void)
     bad += test_large_face();
     bad += test_lz_home();
     bad += test_lz_edit();
+    bad += test_roll_follow();
     bad += test_lz_env();
     bad += test_lz_mod();
     bad += test_lz_key();
