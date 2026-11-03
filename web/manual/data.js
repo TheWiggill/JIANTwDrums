@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.61", items: [
+    ["Umbrales de PROX (MENU › SYSTEM › BLUETOOTH, OCT+ abre la página PROX): KNOB 1 MIN (por debajo PROX vale 0: el celular se suelta sin alejarlo tanto), KNOB 2 MAX (por encima vale 100 %), KNOB 3 SPD (la respuesta, 1 como antes .. 5 la más rápida). Sobre la calibración FAR / NEAR, se guardan con ella."]]},
   {v: "V10.60", items: [
     ["Más memoria libre en el firmware (~4,3 KB, antes 0,8 KB): la conversión de sonidos DIGITAL viejos y la lectura de proyectos de JIANT 0.1-0.5 pasaron al segmento Bluetooth. En el uso no cambia nada."]]},
   {v: "V10.59", items: [

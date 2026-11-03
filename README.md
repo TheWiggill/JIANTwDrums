@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.60).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.61).
 
 ## Reporting a crash
 
@@ -428,6 +428,11 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.61 (beta)
+- **PROX thresholds** (MENU › SYSTEM › BLUETOOTH, OCT+ for the PROX page): KNOB 1 **MIN** (under it PROX is 0: the
+  phone lets go without taking it far away), KNOB 2 **MAX** (over it PROX is full), KNOB 3 **SPD** (the response, 1
+  as before .. 5 quickest). Over the FAR / NEAR calibration, saved with it.
 
 ### V10.60 — public (2026-11-03)
 - Stable installer: everything from V10.47 to V10.60: the INPUT engine (USB audio into a track, IN 1 / IN 2 / 1+2 /
