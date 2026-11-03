@@ -1124,12 +1124,38 @@ static void test_stems_in(void)
     ua_r = ua_w = 0;
 }
 
+static void test_duplex_full_scale(void)
+{
+    static const int16_t pairs[][2]={{-32768,32767},{32767,-32768},{-30000,30000},{30000,-30000},{-20000,20000},{20000,-20000}};
+    unsigned k,f,bad=0,maxerr=0;
+    for(k=0;k<sizeof pairs/sizeof pairs[0];k++) for(f=0;f<65536;f++){
+        memset(&uin,0,sizeof uin);usb.config=1;uin.alt=1;uin.go=1;uin.g=32767;uin.step=65536;uin.ph=f;
+        ui_r=0;ui_w=UI_TARGET;
+        ui_ring[0]=(uint16_t)pairs[k][0]|(uint32_t)(uint16_t)pairs[k][1]<<16;
+        ui_ring[1]=(uint16_t)pairs[k][1]|(uint32_t)(uint16_t)pairs[k][0]<<16;
+        uac_in_fill(1);
+        int32_t a=pairs[k][0],b=pairs[k][1];
+        int32_t exact=a+(int32_t)(((int64_t)(b-a)*f)>>16);
+        exact=(exact*32767)>>15;
+        unsigned err=(unsigned)abs(uin_l[0]-exact);
+        int32_t right=b+(int32_t)(((int64_t)(a-b)*f)>>16);
+        right=(right*32767)>>15;
+        unsigned er=(unsigned)abs(uin_r[0]-right);
+        if(er>err)err=er;
+        if(err>maxerr)maxerr=err;
+        if(err>1){if(bad<3)printf("FAIL a=%d b=%d fraction=%u output=%d expected=%d\n",a,b,f,uin_l[0],exact);bad++;}
+    }
+    printf("INPUT full-scale interpolation: %u wrong samples, max error %u LSB\n",bad,maxerr);
+    check("input: full-scale interpolation stays within 1 LSB on both channels", bad==0);
+}
+
 int main(void)
 {
     printf("-- USB audio input, CDC %s\n", T_CDC ? "on" : "off");
     test_descriptors();
     test_stems();
     test_duplex();
+    test_duplex_full_scale();
     test_stems_in();
     test_ring();
     test_rate();
@@ -1138,3 +1164,4 @@ int main(void)
     printf(fails ? "UAC TEST FAILED (%d)\n" : "uac: all ok\n", fails);
     return fails != 0;
 }
+
