@@ -133,6 +133,9 @@ static BTAPP_FN void tech_eq(int32_t x, int32_t y, int32_t w, int32_t h)
     static const uint16_t F[4] = {120, 380, 650, 900};   /* (x / 1024: ~60 250 2k 8k on a log axis) */
     int32_t i, k, py = 0, mid = y + 20 + (h - 30) / 2, sc = (h - 34) / 2;
     cv_rect(x, mid, w, 1, T_LINE);
+    if (ui_scope)                                        /* (V10.58) MENU > DISPLAY > SCOPE ON: the master's scope behind the
+                                                         * curve, live (the users missed the page's picture of the sound) */
+        scope_at(x, w, mid, sc, T_RAISE);
     for (i = 0; i <= w; i++) {
         int32_t f = i * 1024 / w, db = 0, yy;
         for (k = 0; k < 4; k++) {
