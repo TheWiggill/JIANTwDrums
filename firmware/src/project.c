@@ -1425,7 +1425,10 @@ static int proj_motion_ids(motion_store_t *m, uint32_t np)
 }
 /* a stored FUNA (st = PROJ_STORE_SIZE), FUN9 (PROJ_STORE_V9: no kit, the factory one), FUN8 (PROJ_STORE_V8: as FUN9,
  * its tail 64 bytes shorter) or FUN7 (PROJ_STORE_V7: no patches, the init one) */
-static int proj_unpack(project_t *q, const uint8_t *b, uint32_t st)
+/* (V10.60) in the Bluetooth segment (these formats are JIANT 0.1-0.5's, cold): without it they are not read */
+BTAPP_FN static int proj_unpack_bt(project_t *q, const uint8_t *b, uint32_t st);
+static int proj_unpack(project_t *q, const uint8_t *b, uint32_t st) { return bt_hw_seg() ? proj_unpack_bt(q, b, st) : 0; }
+BTAPP_FN static int proj_unpack_bt(project_t *q, const uint8_t *b, uint32_t st)
 {
     uint32_t pos = 68u, t, i, magic, size, sum, np = b[66], v7 = st == PROJ_STORE_V7;
     uint32_t vb = st == PROJ_STORE_SIZE, va = vb || st == PROJ_STORE_VA;   /* (va: FUNA or FUNB, the kit's layout) */

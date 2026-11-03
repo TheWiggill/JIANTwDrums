@@ -112,7 +112,7 @@ static const engine_t ENG_FM4_GONE = {
 #endif
 /* per DIGITAL algorithm: the FM6 algorithm (0-based), the FM6 operator (1..6) of DIGITAL's op 1..4, and its share:
  * 1 alone, 2..4 summed with others into one input or the output (DIGITAL averages them) */
-static const struct { uint8_t alg, op[4], share[4]; } FM4_ALG[8] = {
+static const struct { uint8_t alg, op[4], share[4]; } FM4_ALG[8] BTAPP_RO = {
     {0, {3, 4, 5, 6}, {1, 1, 1, 1}},
     {13, {3, 4, 5, 6}, {1, 1, 2, 2}},
     {7, {3, 5, 6, 4}, {1, 2, 1, 2}},
@@ -123,10 +123,10 @@ static const struct { uint8_t alg, op[4], share[4]; } FM4_ALG[8] = {
     {31, {1, 2, 3, 6}, {4, 4, 4, 4}},
 };
 
-static int32_t fm4_abs(int32_t x) { return x < 0 ? -x : x; }
+BTAPP_FN static int32_t fm4_abs(int32_t x) { return x < 0 ? -x : x; }
 
 /* 256 x log2(x), x > 0 (the mantissa: f + 0.346 f (1 - f), within 0.01 octave) */
-static int32_t fm4_lg(uint32_t x)
+BTAPP_FN static int32_t fm4_lg(uint32_t x)
 {
     int32_t n = 0;
     uint32_t f;
@@ -138,14 +138,14 @@ static int32_t fm4_lg(uint32_t x)
     return n * 256 + (int32_t)(f + ((f * (256u - f) * 89u) >> 16));
 }
 /* microsteps (256 = 6 dB) of an amplitude in Q15 (32768 = 1) */
-static int32_t fm4_ms(uint32_t q15) { return q15 ? fm4_lg(q15) - 15 * 256 : FM4_MUTE; }
+BTAPP_FN static int32_t fm4_ms(uint32_t q15) { return q15 ? fm4_lg(q15) - 15 * 256 : FM4_MUTE; }
 
 /* DIGITAL time value v (0..127) in samples */
-static int32_t fm4_samples(int32_t v) { return (int32_t)(TIME_MS_X10[v & 127] * 441u / 100u); }
+BTAPP_FN static int32_t fm4_samples(int32_t v) { return (int32_t)(TIME_MS_X10[v & 127] * 441u / 100u); }
 
 /* the FM6 rate (0..99) of a stage that takes `per` samples per 6 dB (msfa: (4 + q % 4) << (7 + q / 4) a block,
  * q = rate x 41 / 64): the nearest in log */
-static uint32_t fm4_rate(int32_t per)
+BTAPP_FN static uint32_t fm4_rate(int32_t per)
 {
     uint32_t r, best = 0;
     int32_t bd = 0x7FFFFFFF, lt = fm4_lg((uint32_t)(per < 1 ? 1 : per));
@@ -158,14 +158,14 @@ static uint32_t fm4_rate(int32_t per)
     return best;
 }
 /* a decay over t samples that drops `drop` microsteps (FM4_MUTE: to silence, -40 dB at t) */
-static uint32_t fm4_fall(int32_t t, int32_t drop)
+BTAPP_FN static uint32_t fm4_fall(int32_t t, int32_t drop)
 {
     if (drop <= 0)
         return drop == FM4_MUTE ? fm4_rate(t * 100 / 664) : 99u;
     return fm4_rate(t * 111 / drop);                   /* (exponential: most of the way at t / 2.3) */
 }
 /* the EG level (0..99) `ms` microsteps below level 99 (msfa: (scaleout(L) >> 1) << 6) */
-static uint32_t fm4_level(int32_t ms)
+BTAPP_FN static uint32_t fm4_level(int32_t ms)
 {
     uint32_t l, best = 0;
     int32_t bd = 0x7FFFFFFF;
@@ -179,7 +179,7 @@ static uint32_t fm4_level(int32_t ms)
     return best;
 }
 /* the output level (0..99) `ms` microsteps below level 99 (msfa: scaleout(OL) << 5) */
-static uint32_t fm4_outlevel(int32_t ms)
+BTAPP_FN static uint32_t fm4_outlevel(int32_t ms)
 {
     uint32_t l, best = 0;
     int32_t bd = 0x7FFFFFFF;
@@ -201,16 +201,32 @@ static uint32_t fm4_nearest(const int16_t *e)
     for (k = 0; k < FM4_NPRESETS; k++) {
         int32_t d = ((e[0] & 7) != DIGITAL_PRESETS[k].e[0]) * 1000;
         for (i = 1; i < 7u; i++)
-            d += fm4_abs(e[i] - DIGITAL_PRESETS[k].e[i]) * (i < 4u ? 8 : 1);
+            d += (e[i] > DIGITAL_PRESETS[k].e[i] ? e[i] - DIGITAL_PRESETS[k].e[i] : DIGITAL_PRESETS[k].e[i] - e[i]) * (i < 4u ? 8 : 1);
         if (d < bd)
             bd = d, best = k;
     }
     return best;
 }
 
+/* p's values as FM6 has them once converted (the EDIT values its macros at 0, PTCH the FM6 preset, the OP ENV values
+ * their defaults, the ADSR neutral) -> that preset */
+static uint32_t fm4_tail(int16_t *p, uint32_t near)
+{
+    uint32_t k;
+    for (k = 0; k < 7u; k++)                           /* FM6's macros: the patch as it is */
+        p[P_E0 + k] = 0;
+    p[P_E7] = FM4_TO_FM6[near];
+    for (k = P_FM1_ATK; k <= P_FM4_LEVEL; k++)
+        p[k] = (k - P_FM1_ATK) % 5u == 2u || (k - P_FM1_ATK) % 5u == 4u ? 127 : 0;
+    p[P_ATK] = p[P_DEC] = p[P_REL] = 0;                 /* (0.6.81) the ADSR is in the operators' envelopes now: the */
+    p[P_SUS] = 127;                                    /* track's on FM6 neutral (it moves the carriers' since) */
+    return FM4_TO_FM6[near];
+}
+
 /* p: a track's values as DIGITAL has them (P_COUNT) -> v: its FM6 patch (FP_SIZE + 1 bytes); p's EDIT values become
- * FM6's (see the top) and the OP ENV values their defaults. -> the FM6 factory preset of PTCH */
-static uint32_t fm4_convert(int16_t *p, uint8_t *v)
+ * FM6's (see the top) and the OP ENV values their defaults. -> the FM6 factory preset of PTCH. (V10.60) In the
+ * Bluetooth segment (cold: an old project's or preset's DIGITAL sound, once); without it fm4_convert below */
+BTAPP_FN static uint32_t fm4_convert_bt(int16_t *p, uint8_t *v)
 {
     uint32_t alg = (uint32_t)p[P_E0] & 7u, car, k, near = fm4_nearest(&p[P_E0]);
     int32_t idx = clamp(p[P_E4], 0, 127), fenv = clamp(p[P_ED_FLT], -64, 63), sus = clamp(p[P_SUS], 0, 127);
@@ -349,14 +365,16 @@ static uint32_t fm4_convert(int16_t *p, uint8_t *v)
         v[FP_NAME + 8] = (uint8_t)('1' + alg);
     }
     fm6_sanitize(v);
-    for (k = 0; k < 7u; k++)                           /* FM6's macros: the patch as it is */
-        p[P_E0 + k] = 0;
-    p[P_E7] = FM4_TO_FM6[near];
-    for (k = P_FM1_ATK; k <= P_FM4_LEVEL; k++)
-        p[k] = (k - P_FM1_ATK) % 5u == 2u || (k - P_FM1_ATK) % 5u == 4u ? 127 : 0;
-    p[P_ATK] = p[P_DEC] = p[P_REL] = 0;                 /* (0.6.81) the ADSR is in the operators' envelopes now: the */
-    p[P_SUS] = 127;                                    /* track's on FM6 neutral (it moves the carriers' since) */
-    return FM4_TO_FM6[near];
+    return fm4_tail(p, near);
+}
+
+/* (V10.60) without the segment (not this build's): the FM6 factory preset that covers the nearest DIGITAL preset */
+static uint32_t fm4_convert(int16_t *p, uint8_t *v)
+{
+    if (bt_hw_seg())
+        return fm4_convert_bt(p, v);
+    fm6_unpack(FM6_FACTORY[FM4_TO_FM6[fm4_nearest(&p[P_E0])] % FM6_NFACTORY], v);
+    return fm4_tail(p, fm4_nearest(&p[P_E0]));
 }
 
 /* DIGITAL preset k's values into p as a preset load sets them (ui.c apply_preset_to: the EDIT values, ENV, ENV ->

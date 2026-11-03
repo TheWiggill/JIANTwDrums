@@ -33,22 +33,17 @@ static void bt_hw_enable(int on);
 static uint32_t bt_hw_status(void);
 static uint32_t bt_hw_rssi(uint16_t *w, uint32_t *rd);   /* bt_hw.c: the RSSI words since *rd (V10.14) */
 static uint32_t bt_hw_rxdiag(void);                     /* bt_hw.c: (V10.19) RSSI hook / good packets, 16 bits each */
-static int bt_hw_seg(void);                             /* bt_hw.c: 1 the segment installed is this build's (checked once) */
 /* (V10.13) code and constants of the app's own that live in the segment (app.ld .bt: flash 0xEA000, outside the full
  * app slot), cold and never needed by the sound: read or called only once bt_hw_seg() said the segment is this build's
  * (its CRC-32 covers them), or from the segment itself; without it they are missing (MENU > ABOUT's credits), never
  * read */
-#define BTAPP_RO __attribute__((section(".btapp.rodata"), used))
-#define BTAPP_FN __attribute__((section(".btapp.text"), used, noinline))
+/* (BTAPP_RO / BTAPP_FN and bt_hw_seg's prototype: core.h, V10.60) */
 #else
 static int bt_hw_start(uint8_t addr[6]) { (void)addr; return 2; }   /* (the host, the emulator: no radio) */
 static void bt_hw_enable(int on) { (void)on; }
 static uint32_t bt_hw_status(void) { return 0; }
 static uint32_t bt_hw_rssi(uint16_t *w, uint32_t *rd) { (void)w, (void)rd; return 0; }
 static uint32_t bt_hw_rxdiag(void) { return 0; }
-static int bt_hw_seg(void) { return 1; }                /* (the host: everything in the one image) */
-#define BTAPP_RO
-#define BTAPP_FN
 #endif
 #if FELUCCA_BT
 /* (V10.13) a BLE-MIDI message received (bt_seg.c ble_app_midi_in: channel messages, the clock, START CONTINUE STOP) into
