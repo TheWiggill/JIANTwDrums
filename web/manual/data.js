@@ -628,6 +628,10 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.60", items: [
+    ["Más memoria libre en el firmware (~4,3 KB, antes 0,8 KB): la conversión de sonidos DIGITAL viejos y la lectura de proyectos de JIANT 0.1-0.5 pasaron al segmento Bluetooth. En el uso no cambia nada."]]},
+  {v: "V10.59", items: [
+    ["FX › RPT a tempos lentos: 1/8 anda desde 41 BPM (antes 81) y 1/16 desde 21, grabado a la mitad de calidad (11 kHz, un repeat lo-fi). Los repeats más rápidos suenan igual que antes."]]},
   {v: "V10.58", items: [
     ["El EQ del master (y el TAPE) ya no vuelven a cero solos (reporte de un usuario, desde V10.44): cada lectura de un proyecto o sección guardada, como hacen algunas páginas de GLO, pisaba el EQ que sonaba. Ahora solo cambian al cargar un proyecto."],
     ["FX › EQ con MENU › DISPLAY › SCOPE ON: el osciloscopio del master en vivo detrás de la curva del EQ (OFF: la curva sola)."],

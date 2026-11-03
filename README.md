@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.58).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.60).
 
 ## Reporting a crash
 
@@ -428,6 +428,14 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.60 (beta)
+- **More room in the firmware** (~4.3 KB free, was 0.8 KB): the conversion of old DIGITAL sounds and the reading of
+  JIANT 0.1-0.5 projects moved into the Bluetooth segment. Nothing changes in use.
+
+### V10.59 (beta)
+- **FX › RPT at slow tempos**: 1/8 works from 41 BPM (was 81) and 1/16 from 21, recorded at half the quality
+  (11 kHz, a lo-fi repeat). Faster repeats sound as before.
 
 ### V10.58 (beta)
 - **The master EQ (and TAPE) no longer go back to flat on their own** (a user's report since V10.44): every read of a
