@@ -31,6 +31,7 @@ try:
         for _ in range(6):
             page.keyboard.press('ArrowRight');page.wait_for_timeout(150)
         page.locator('[role="slider"][aria-label="KNOB 2"]').focus()
+        page.keyboard.press('ArrowLeft');page.wait_for_timeout(150)   # (V10.54: INPUT is the last engine, ADD before it)
         page.keyboard.press('ArrowLeft');page.wait_for_timeout(150)
         page.locator('[role="slider"][aria-label="KNOB 2"]').evaluate('(el)=>el.blur()')
         page.evaluate("__node.port.postMessage({type:'diagnostics'})")
