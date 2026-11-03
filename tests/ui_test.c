@@ -3028,7 +3028,7 @@ static int test_menu_tabs(void)
         memset(&favorites.factory[6][22], 0, 10);
         memset(&bp, 0, sizeof bp);
         mod_prox = 0;
-        ok = MS_PROX == 15 && MS_N == 17 && str_eq(N_MSRC[MS_PROX], "PROX") && !MS_BIPOLAR(MS_PROX);
+        ok = MS_PROX == 15 && MS_N == 18 && MS_FOLLOW == 17 &&   /* (V10.22 ENV2, V10.54 FOLLOW after it) */ str_eq(N_MSRC[MS_PROX], "PROX") && !MS_BIPOLAR(MS_PROX);
         for (k = 0; k < 40u; k++)
             w[k] = LV(80u);
         bt_prox_step(w, 8, 1, t);
@@ -6070,11 +6070,11 @@ static int test_fm4_retired(void)
     bad += check("PRESETS KNOB 2: the engines in order (0.9.9: DRUM first; snd5: NOISE STRING ADD last, round), DIGITAL skipped, back to the first",
                  seen == all && TSEL->eng_req == 0u && eng_step(0, 1) == ENGI_FM6 && eng_step(ENGI_FM6, 1) == ENGI_PHASE &&
                  eng_step(ENGI_FM6, -1) == 0u && eng_step(0, -1) == ENGI_LOFI && eng_step(ENGI_DRUM, 1) == ENGI_VOICE &&
-                 eng_step(ENGI_VOICE, 1) == ENGI_ANIMAL && eng_step(ENGI_DRUM, -1) == ENGI_ADD && eng_step(ENGI_NOISE, 1) == ENGI_STRING &&
-                 eng_step(ENGI_STRING, 1) == ENGI_ADD && eng_step(ENGI_ADD, 1) == ENGI_DRUM);
+                 eng_step(ENGI_VOICE, 1) == ENGI_ANIMAL && eng_step(ENGI_DRUM, -1) == ENGI_INPUT && eng_step(ENGI_NOISE, 1) == ENGI_STRING &&
+                 eng_step(ENGI_STRING, 1) == ENGI_ADD && eng_step(ENGI_ADD, 1) == ENGI_INPUT && eng_step(ENGI_INPUT, 1) == ENGI_DRUM);   /* (V10.54: INPUT last) */
     {   /* the display order (engines.c ENGINE_ORDER, 0.9.9): every engine one can pick once; the PRESETS list follows it
          * (was ANALOG FM6 PHASE LOFI VOICE WHEEL NOISE DRUM ANIMAL: test_engine_order_099 has PROGRAM CHANGE's) */
-        static const char *const ORDER[] = {"DRUM", "VOICE", "ANIMAL", "LOFI", "ANALOG", "FM6", "PHASE", "WHEEL", "NOISE", "STRING", "ADD"};
+        static const char *const ORDER[] = {"DRUM", "VOICE", "ANIMAL", "LOFI", "ANALOG", "FM6", "PHASE", "WHEEL", "NOISE", "STRING", "ADD", "INPUT"};
         uint32_t last = 0xFFu, r = 0, n = 0;
         ok = NENG_SHOWN == NELEM(ORDER);
         for (i = 0; ok && i < NENG_SHOWN; i++)
@@ -13165,7 +13165,7 @@ static int test_engine_order_099(void)
 #if FELUCCA_FM4
                                      "DIGITAL",
 #endif
-                                     "PHASE", "LOFI", "VOICE", "WHEEL", "NOISE", "DRUM", "ANIMAL", "STRING", "ADD"};
+                                     "PHASE", "LOFI", "VOICE", "WHEEL", "NOISE", "DRUM", "ANIMAL", "STRING", "ADD", "INPUT"};   /* (V10.54) */
     int bad = 0, ok = 1;
     uint32_t i, e, k, n, all, seen = 0;
     project_store_t st;

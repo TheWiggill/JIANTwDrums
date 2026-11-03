@@ -329,10 +329,18 @@ static int screens(void)
     go_page(GR_ROLL); ui.cursor = 8; ui.bank = 0;
     memset(host_screen, 0, sizeof host_screen); ui.force = 1; ui_draw();
     y = graph_y() + (uint32_t)pr_row_y(60) + 1u;
-    x = (uint32_t)PR_CX(1);                          /* (0.8.5: columns 14 / 15 px, the bar a px in: x2 at x + 1 .. 6, 8 .. 13) */
-    ok = pr_is_bar(x + 2u, y) && pr_is_bar(x + 10u, y) && !pr_is_bar(x + 7u, y);
-    x = (uint32_t)PR_CX(3);
-    bad += check("  the piano roll draws an x2 step in two parts (x1 whole)", ok && pr_is_bar(x + 7u, y));
+    {   /* (V10.54: the bars' runs counted across the column, whatever its width: 13 px since 0.9.9-seq2b) */
+        uint32_t c, runs[2] = {0, 0};
+        for (c = 0; c < 2u; c++) {
+            uint32_t x0 = (uint32_t)PR_CX(c ? 3 : 1), x1 = (uint32_t)PR_CX(c ? 4 : 2), on = 0;
+            for (x = x0; x < x1; x++) {
+                uint32_t b = (uint32_t)pr_is_bar(x, y);
+                runs[c] += b && !on;
+                on = b;
+            }
+        }
+        bad += check("  the piano roll draws an x2 step in two parts (x1 whole)", runs[0] == 2u && runs[1] == 1u);
+    }
     t->step[4] = (step_t){{64}, 1, ST_NOTE, 0, 100};   /* SLIDE into a note: the line, but not from x2 */
     t->step[3].flags = SF_SLIDE;
     t->step[1].flags |= SF_SLIDE;                     /* (x2 kept) */

@@ -26,7 +26,7 @@ static void ck(const char *what, int ok)
 }
 
 /* ---- 1. centred: the render whose hash 0.9.0's sources give (the same code, built against them) ---- */
-#define DJF_CENTRE_090 0x0738bf41u   /* (0.9.9 ctl64: the mix in blocks of 64; the point is the filter centred leaves it
+#define DJF_CENTRE_090 0xe800cf98u   /* (V10.54: the factory sounds and the master since V10.42; 0.9.9 ctl64: the mix in blocks of 64; the point is the filter centred leaves it
                                          * untouched, checked against the same build's render) */
 static int32_t centre_peak;
 static uint32_t centre_render(void)
@@ -218,7 +218,7 @@ static void test_automation(void)
     t = &trk[0];
     song.sel = 0;
     song.g[G_DJF] = 5;                                  /* the knob before */
-    open_family(FAM_TRK);
+    go_title("MANO");                                   /* (V10.45: LIVE > MANO KNOB 4; MIXER's is BPM since V10.37) */
     song.rec = 1;
     seq_start();
     seq_tick(t, CTL);                                   /* step 1 */

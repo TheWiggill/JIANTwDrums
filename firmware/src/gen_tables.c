@@ -347,6 +347,8 @@ static const grecipe_t RECIPE[SR_N] = {
      * ~55 ms, no retrigger), driven after (DIST) */
     [SR_ACID]     = {{{EG_A, 4}, {EG_A, 2}, NO_}, GR(0, 7), GR(80, 88), GR(40, 48), GR(16, 31), GR(32, 40), GR(104, 112), GR4(52, 60), GFT(0, 24), GWV(0, 1, 1), 0, GDC(24, 0), V_LEGATO},
     [SR_REESE]    = {{{EG_A, 16}, {EG_A, 14}, NO_}, GR(0, 7), GR(72, 95), GR(104, 119), GR(32, 47), GR(40, 55), GR(16, 31), GR4(0, 11), GFT(0, 16), GNOWV, GLFO(12, 1), GDC(20, 28), V_LEGATO},
+    /* (V10.54) the FM6 / WHEEL numbers below re-aimed after V10.42 replaced FM6 8..12 and 14 (ICE BELL DX KEYS FM PLUCK SOFT BELL FM
+     * STRINGS WOOD) and WHEEL 5, 6 (DUB ORGAN SOFT KEYS): the roles got leads and basses (a SUB BASS on the bells) */
     [SR_FMBASS]   = {{{EG_FM, 2}, {EG_FM, 13}, {EG_PH, 7}}, GR(0, 7), GR(48, 71), GR(40, 87), GR(16, 31), GR(72, 103), GR(8, 23), GR4(8, 27), GFT(0, 0), GNOWV, 0, GDC(8, 0), V_LEGATO},
     [SR_ROCKBASS] = {{{EG_A, 2}, {EG_A, 14}, NO_}, GR(0, 7), GR(48, 71), GR(64, 111), GR(16, 39), GR(48, 71), GR(8, 23), GR4(8, 23), GFT(0, 0), GWV(1, 0, 0), 0, GDC(24, 16), V_LEGATO},
     /* the octave bass of italo, synth pop, electro, trance: a saw (or a square), plucked by the filter */
@@ -355,19 +357,19 @@ static const grecipe_t RECIPE[SR_N] = {
     [SR_WOW]      = {{{EG_A, 14}, {EG_A, 16}, NO_}, GR(0, 7), GR(72, 95), GR(104, 127), GR(24, 39), GR(32, 47), GR(48, 71), GR4(0, 7), GFT(0, 8), GNOWV, GLFO(44, 13), GDC(40, 0), V_LEGATO},
     /* ---- chords, pads */
     [SR_PAD]      = {{{EG_A, 15}, {EG_FM, 4}, {EG_PH, 9}}, GR(56, 103), GR(80, 103), GR(104, 119), GR(80, 111), GR(40, 71), GR(8, 23), GR4(4, 19), GFT(0, 0), GNOWV, GLFO(12, 3), GDC(0, 40), V_POLY},
-    [SR_STRINGS]  = {{{EG_A, 11}, {EG_FM, 12}, {EG_PH, 2}}, GR(40, 79), GR(80, 103), GR(104, 127), GR(72, 103), GR(48, 79), GR(8, 23), GR4(0, 11), GFT(0, 0), GNOWV, GLFO(12, 2), GDC(0, 56), V_POLY},
+    [SR_STRINGS]  = {{{EG_A, 11}, {EG_FM, 4}, {EG_PH, 2}}, GR(40, 79), GR(80, 103), GR(104, 127), GR(72, 103), GR(48, 79), GR(8, 23), GR4(0, 11), GFT(0, 0), GNOWV, GLFO(12, 2), GDC(0, 56), V_POLY},
     [SR_CHOIR]    = {{{EG_VO, 0}, {EG_VO, 4}, {EG_FM, 4}}, GR(56, 103), GR(88, 103), GR(104, 119), GR(80, 111), GR(56, 95), GR(0, 7), GR4(0, 7), GFT(0, 0), GNOWV, GLFO(8, 2), GDC(0, 60), V_POLY},
-    [SR_ORGAN]    = {{{EG_WH, 5}, {EG_WH, 1}, {EG_PH, 1}}, GR(0, 7), GR(64, 71), GR(120, 127), GR(24, 47), GR(56, 95), GR(0, 7), GR4(0, 3), GFT(0, 0), GNOWV, 0, GDC(0, 8), V_POLY},
-    [SR_EP]       = {{{EG_FM, 0}, {EG_FM, 9}, {EG_PH, 8}}, GR(0, 7), GR(72, 95), GR(16, 55), GR(48, 79), GR(56, 95), GR(0, 15), GR4(4, 19), GFT(0, 0), GNOWV, 0, GDC(0, 20), V_POLY},
+    [SR_ORGAN]    = {{{EG_WH, 8}, {EG_WH, 1}, {EG_PH, 1}}, GR(0, 7), GR(64, 71), GR(120, 127), GR(24, 47), GR(56, 95), GR(0, 7), GR4(0, 3), GFT(0, 0), GNOWV, 0, GDC(0, 8), V_POLY},
+    [SR_EP]       = {{{EG_FM, 0}, {EG_FM, 5}, {EG_PH, 8}}, GR(0, 7), GR(72, 95), GR(16, 55), GR(48, 79), GR(56, 95), GR(0, 15), GR4(4, 19), GFT(0, 0), GNOWV, 0, GDC(0, 20), V_POLY},
     [SR_STAB]     = {{{EG_A, 18}, {EG_PH, 10}, {EG_FM, 3}}, GR(0, 7), GR(56, 71), GR(24, 71), GR(24, 47), GR(48, 79), GR(16, 39), GR4(16, 39), GFT(0, 0), GNOWV, 0, GDC(8, 28), V_POLY},
-    [SR_DUBCHORD] = {{{EG_A, 18}, {EG_WH, 5}, {EG_A, 3}}, GR(0, 7), GR(48, 71), GR(16, 63), GR(32, 55), GR(48, 71), GR(24, 47), GR4(12, 31), GFT(2, 0), GNOWV, 0, GDC(0, 32), V_POLY},
+    [SR_DUBCHORD] = {{{EG_A, 18}, {EG_WH, 2}, {EG_A, 3}}, GR(0, 7), GR(48, 71), GR(16, 63), GR(32, 55), GR(48, 71), GR(24, 47), GR4(12, 31), GFT(2, 0), GNOWV, 0, GDC(0, 32), V_POLY},
     /* ---- arps, leads */
-    [SR_PLUCK]    = {{{EG_A, 20}, {EG_FM, 10}, {EG_A, 8}}, GR(0, 7), GR(40, 63), GR(0, 23), GR(32, 63), GR(56, 87), GR(24, 47), GR4(28, 55), GFT(0, 0), GNOWV, 0, GDC(0, 8), V_POLY},
-    [SR_BELL]     = {{{EG_FM, 11}, {EG_FM, 8}, {EG_A, 13}}, GR(0, 7), GR(80, 103), GR(0, 7), GR(72, 103), GR(72, 103), GR(0, 15), GR4(0, 11), GFT(0, 0), GNOWV, 0, GDC(0, 8), V_POLY},
+    [SR_PLUCK]    = {{{EG_A, 20}, {EG_FM, 7}, {EG_A, 8}}, GR(0, 7), GR(40, 63), GR(0, 23), GR(32, 63), GR(56, 87), GR(24, 47), GR4(28, 55), GFT(0, 0), GNOWV, 0, GDC(0, 8), V_POLY},
+    [SR_BELL]     = {{{EG_FM, 1}, {EG_FM, 5}, {EG_A, 13}}, GR(0, 7), GR(80, 103), GR(0, 7), GR(72, 103), GR(72, 103), GR(0, 15), GR4(0, 11), GFT(0, 0), GNOWV, 0, GDC(0, 8), V_POLY},
     [SR_LEAD]     = {{{EG_A, 21}, {EG_A, 0}, {EG_PH, 14}}, GR(0, 23), GR(48, 87), GR(56, 95), GR(32, 71), GR(56, 87), GR(16, 39), GR4(16, 39), GFT(0, 16), GNOWV, GLFO(4, 6), GDC(12, 12), V_LEGATO},
     [SR_VOXLEAD]  = {{{EG_VO, 1}, {EG_VO, 6}, {EG_A, 21}}, GR(0, 23), GR(56, 87), GR(56, 95), GR(32, 71), GR(56, 95), GR(8, 31), GR4(8, 23), GFT(0, 20), GNOWV, GLFO(4, 6), GDC(0, 20), V_LEGATO},
     [SR_CHIP]     = {{{EG_LO, 3}, {EG_LO, 13}, {EG_LO, 16}}, GR(0, 7), GR(40, 79), GR(24, 79), GR(16, 47), GR(72, 111), GR(8, 31), GR4(8, 27), GFT(0, 0), GNOWV, 0, 0, V_LEGATO},
-    [SR_KEYS]     = {{{EG_A, 23}, {EG_PH, 15}, {EG_WH, 6}}, GR(0, 7), GR(64, 87), GR(16, 55), GR(40, 71), GR(56, 95), GR(0, 23), GR4(4, 19), GFT(0, 0), GNOWV, 0, GDC(0, 20), V_POLY},
+    [SR_KEYS]     = {{{EG_A, 23}, {EG_PH, 15}, {EG_WH, 1}}, GR(0, 7), GR(64, 87), GR(16, 55), GR(40, 71), GR(56, 95), GR(0, 23), GR4(4, 19), GFT(0, 0), GNOWV, 0, GDC(0, 20), V_POLY},
     /* ---- textures */
     [SR_DRONE]    = {{{EG_A, 22}, {EG_A, 19}, {EG_FM, 4}}, GR(88, 119), GR(88, 103), GR(120, 127), GR(96, 127), GR(32, 63), GR(16, 39), GR4(0, 11), GFT(0, 0), GNOWV, GLFO(16, 1), GDC(0, 44), V_POLY},
     [SR_NOISE]    = {{{EG_NO, 4}, {EG_NO, 7}, {EG_NO, 5}}, GR(80, 119), GR(88, 103), GR(104, 127), GR(80, 119), 0, 0, 0, GFT(7, 0), GNOWV, 0, 0, V_POLY},
@@ -375,7 +377,7 @@ static const grecipe_t RECIPE[SR_N] = {
     [SR_HOOVER]   = {{{EG_A, 17}, {EG_A, 6}, {EG_PH, 6}}, GR(0, 15), GR(56, 95), GR(56, 95), GR(32, 63), GR(56, 95), GR(8, 23), GR4(8, 31), GFT(0, 0), GNOWV, 0, GDC(24, 48), V_POLY},
     [SR_WALL]     = {{{EG_A, 22}, {EG_A, 15}, {EG_A, 11}}, GR(24, 63), GR(88, 103), GR(104, 127), GR(80, 111), GR(48, 71), GR(0, 7), GR4(0, 7), GFT(0, 0), GNOWV, GLFO(8, 2), GDC(40, 56), V_POLY},
     [SR_GTR]      = {{{EG_PH, 13}, {EG_PH, 2}, {EG_A, 8}}, GR(0, 15), GR(64, 95), GR(56, 103), GR(48, 79), GR(56, 79), GR(16, 39), GR4(4, 19), GFT(2, 0), GNOWV, 0, GDC(12, 28), V_POLY},
-    [SR_SINEKEY]  = {{{EG_A, 5}, {EG_FM, 14}, {EG_A, 23}}, GR(0, 7), GR(64, 95), GR(24, 63), GR(48, 79), GR(56, 95), GR(0, 15), GR4(0, 15), GFT(0, 0), GNOWV, 0, GDC(0, 8), V_POLY},
+    [SR_SINEKEY]  = {{{EG_A, 5}, {EG_FM, 0}, {EG_A, 23}}, GR(0, 7), GR(64, 95), GR(24, 63), GR(48, 79), GR(56, 95), GR(0, 15), GR4(0, 15), GFT(0, 0), GNOWV, 0, GDC(0, 8), V_POLY},
     /* ---- (0.9.9-gen1) the archetypes the genres lacked */
     /* EBM, darkwave: a square through the MS20 filter, short, the envelope on it, driven */
     [SR_EBMBASS]  = {{{EG_A, 2}, {EG_A, 14}, NO_}, GR(0, 7), GR(32, 47), GR(8, 31), GR(8, 23), GR(48, 71), GR(40, 63), GR4(28, 47), GFT(5, 0), GWV(1, 0, 1), 0, GDC(28, 0), V_LEGATO},

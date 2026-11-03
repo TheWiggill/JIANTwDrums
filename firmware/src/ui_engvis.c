@@ -1955,6 +1955,7 @@ static VX_SEG void vx_input(const track_t *t, const int32_t *A, int32_t en_home)
     }
     {   /* FOLLOW: a thin column, the gate's gain a dot over it */
         int32_t fh = mod_follow * bh / 32767;
+        cv_frame(cx - 2, by, 5, bh, T_MID);              /* (its frame, the input silent too) */
         cv_rect(cx - 1, by + bh - fh, 3, fh, T_TEXT);
         if (thr)
             cv_rect(cx - 2, by - 6, 5, 3, gg > 16384 ? T_THEME : T_MID);

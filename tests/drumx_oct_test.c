@@ -325,7 +325,7 @@ static int down(void)
 }
 
 /* real-time recording, upper octave: held over steps 2..4, what plays back the pass after is what was heard */
-static int rec_up(void)
+static int oct_rec_up(void)
 {
     int bad = 0, ok = 1;
     uint32_t live[32], back[32], nl = 0, nb = 0, k, s2, loop, o;
@@ -408,7 +408,7 @@ static int rec_up(void)
     return bad;
 }
 
-static int rec_down(void)
+static int oct_rec_down(void)
 {
     int bad = 0, ok = 1;
     uint32_t d, nb, len0, len1;
@@ -875,8 +875,8 @@ int main(void)
     bad += centre();
     bad += up();
     bad += down();
-    bad += rec_up();
-    bad += rec_down();
+    bad += oct_rec_up();
+    bad += oct_rec_down();
     bad += midi();
     bad += per_lane();
     bad += ui_part();
