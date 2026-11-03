@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.56", items: [
+    ["USB IN+OUT sin feedback: el audio de la compu o del celular ya no suena solo por la última pista (al grabar en una app que monitorea su entrada, como Koala, se armaba un feedback digital). La entrada se escucha en una pista con el motor INPUT; STEMS+IN sigue como antes."]]},
   {v: "V10.55", items: [
     ["GEN vuelve a elegir bien los sonidos: desde V10.42 ponía sonidos equivocados en algunos roles (un sub bajo en las campanas, leads en los pianos eléctricos y plucks, un bajo de pedal en los órganos). Cada rol vuelve a tomar el tipo de sonido correcto."],
     ["Los medidores del motor INPUT muestran su columna central aunque no entre señal."]]},
