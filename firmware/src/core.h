@@ -220,6 +220,8 @@ enum {                          /* global parameters */
                                  * (pfx.c; project.c: block 'PX') */
     G_DDRV,                     /* (0.9.9-snd2) the delay's DRIVE, 0..100: a soft saturation inside its loop (fx.c dly_drive;
                                  * project.c: block 'DD', after GLUE's) */
+    G_DRTIM,                    /* (V10.49) the delay's right TIME as a ratio of the left's: 0 =L (as before), x1/2 .. x2
+                                 * (fx.c dly_rate; project.c: block 'DR', the last) */
     G_COUNT
 };
 #define G_SL_N (G_SLP15 + 1 - G_SLMODE)     /* the SLICER's globals (stored together: project.c, song_chain.c) */

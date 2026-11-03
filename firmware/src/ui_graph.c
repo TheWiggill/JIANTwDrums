@@ -178,6 +178,20 @@ static void graph_dximg(const track_t *t)
     int32_t img = clamp(t->p[P_DXIMG], 0, 127), k = img ? dx_img_k(t) : 0, cx = PANEL_X0 + PANEL_W / 2;
     uint32_t l;
     cv_rect(cx, 0, 1, 96, T_RAISE);
+    if (trk_eng(t) != ENGI_DRUM) {                       /* (V10.49) a synth: its eight voices' places, lit while they sound
+                                                          * (voice.c: POLY only) */
+        static const int8_t VP[8] = {-64, 64, -32, 32, -48, 48, -16, 16};
+        int poly = t->p[P_VOICE] == V_POLY;
+        for (l = 0; l < 8u; l++) {
+            int32_t x = cx + (poly ? VP[l] * img / 127 : 0) * (PANEL_W / 2 - 14) / 64, y = (int32_t)l * 12;
+            char b[2] = {(char)('1' + l), 0};
+            uint16_t c = l < NVOICE && t->v[l].active ? heat_col(160u + l * 10u) : T_RAISE;
+            cv_rrect(x - 8, y, 16, 11, 2, c, T_SURF);
+            cv_text_in(x - 8, y + CAP_IN(S, 11), 16, &AF_S, b, T_INK, c);
+        }
+        if (!poly) cv_text(PANEL_X0, 100, &AF_S, "POLY ONLY", T_DIM);
+        return;
+    }
     for (l = 0; l < DV_NLANE; l++) {
         int32_t p = img ? dx_img_pan(l, img) * k >> 8 : 0, y = (int32_t)l * 12;
         int32_t x = cx + p * (PANEL_W / 2 - 14) / 64;

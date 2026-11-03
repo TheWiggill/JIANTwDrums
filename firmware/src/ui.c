@@ -581,8 +581,8 @@ static int page_visible(uint32_t i)
         return trk_engp(TSEL) == &ENG_FORMANT;
     if (PAGES[i].graph == GR_PATS || PAGES[i].graph == GR_CHANCE)   /* (0.6.37) PHRASES, a step's CHANCE: out of the */
         return !ui.home && ui.page == i;               /* SEQ pages' cycle (only where code put the screen) */
-    if (PAGES[i].graph == GR_DXSND || PAGES[i].graph == GR_DXIMG)   /* (0.6.48: IMAGE) */
-        return trk_eng(TSEL) == ENGI_DRUM;
+    if (PAGES[i].graph == GR_DXSND || PAGES[i].graph == GR_DXIMG)   /* (0.6.48: IMAGE; V10.49: STEREO a synth's too) */
+        return trk_eng(TSEL) == ENGI_DRUM || (PAGES[i].graph == GR_DXIMG && PAGES[i].title[0] == 'S');
     if (PAGES[i].scope == SC_TRACK && PAGES[i].id[0] >= P_LN0 && PAGES[i].id[0] <= P_LN7)
         return trk_eng(TSEL) == ENGI_DRUM;
     if (PAGES[i].graph == GR_FOCUS)                     /* (0.8.5) FOCUS: a synth's (FM6: OPERATOR, DRUM: SOUND) */

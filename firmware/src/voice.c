@@ -309,7 +309,7 @@ static __attribute__((noinline)) void tf_run(track_t *t, int32_t *out, uint32_t 
                 y = y + (((x - y) * w) >> 12);          /* out */
             out[i] = y;
         }
-        if ((dx_xon & 1u) && ENGINES[t->engine] == &ENG_DRUM)
+        if (dx_xon & 1u)                               /* (V10.49: a synth's IMAGE too) */
             tf_sides(ti, &c, k, ft, was, on, n > CTL ? CTL : n);
         tf_on[ti] = (uint8_t)on;
     }
@@ -1510,6 +1510,7 @@ static uint32_t drift_clk[NTRK];
 typedef struct {
     int32_t lfo, tune, tune_fine, bend16, bend_fine, damt;
     uint32_t ti, fade;
+    int32_t img;                                        /* (V10.49) IMAGE on a synth part in POLY: 0 off, else its width */
 } vctx_t;
 /* one voice's block: its control tick (the envelope, the glide, the modulation) and its render into out[off .. off + n)
  * (the part's buffer from its sample; (ctl64) n < CTL: a note starting or ending inside the block, track_render: the
@@ -1591,7 +1592,18 @@ static uint32_t voice_block(track_t *t, const engine_t *e, voice_t *v, int32_t *
     if (MOD.on)                                     /* the modulation matrix (mod.c) */
         mod_voice(t, v, &m, fsum);
     vo_off_c[MC_CPU() & 1u] = (uint8_t)off;
-    e->render(t, v, out + off, n, &m);
+    if (c->img && off + n <= CTL) {                     /* (V10.49) IMAGE: what this voice adds taken from one side by its
+                                                         * place (eng_drum.c drum_side_begin: the sides cleared, dx_xon) */
+        static const int8_t VP[8] = {-64, 64, -32, 32, -48, 48, -16, 16};
+        int32_t vb[CTL], pn = VP[(uint32_t)(v - t->v) & 7u] * c->img / 127, g = pn > 0 ? pn : -pn;
+        int32_t *sd = (pn > 0 ? dx_sl : dx_sr) + off;
+        uint32_t j;
+        memcpy(vb, out + off, n * sizeof *out);
+        e->render(t, v, out + off, n, &m);
+        for (j = 0; j < n; j++)
+            sd[j] += (out[off + j] - vb[j]) * g >> 6;
+    } else
+        e->render(t, v, out + off, n, &m);
     vo_off_c[MC_CPU() & 1u] = 0;
     if (n < CTL)                                        /* (ctl64) part of a block: the ramp's level where it got to */
         v->env_out = m.amp0 + (((m.amp1 - m.amp0) * (int32_t)n) >> CTL_LOG2);
@@ -1643,9 +1655,9 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
         t->mo_prev = (uint16_t)c;
         t->mo_cur = (uint16_t)(c + clamp(g - c, -ms, ms));
     }
-    dx_xon = 0;                                         /* (0.6.48) a DRUM part's IMAGE and SENDs (eng_drum.c) */
-    if (e == &ENG_DRUM)
-        drum_side_begin(t, n);
+    dx_xon = 0;                                         /* (0.6.48) a DRUM part's IMAGE and SENDs (eng_drum.c); (V10.49) a
+                                                         * synth's IMAGE (its width: syn_img) */
+    drum_side_begin(t, n);
     if (e->block)                                       /* the engine's per-part work (WHEEL: bars, rotor) */
         e->block(t);
     damt = e == &ENG_DRUM ? 0 : 127 - clamp(p[P_DRIFT], 0, 127);   /* (0.7.8) DRIFT, 127 stored = 0 % */
@@ -1654,7 +1666,7 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
     {
         vctx_t c;
         c.lfo = lfo; c.tune = tune; c.tune_fine = tune_fine; c.bend16 = bend16; c.bend_fine = bend_fine;
-        c.damt = damt; c.ti = ti; c.fade = fade;
+        c.damt = damt; c.ti = ti; c.fade = fade; c.img = syn_img[ti];
         for (i = 0; i < NVOICE; i++) {
             voice_t *v = &t->v[i];
             uint32_t k = v->sub;

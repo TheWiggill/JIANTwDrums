@@ -380,9 +380,28 @@ static int32_t dx_img_k(const track_t *t)
     return k;
 }
 /* a DRUM part's render starts (voice.c track_render): the pans of the block, the buffers that will be fed cleared */
+/* (V10.49) IMAGE on a synth part in POLY (the users' ask; DRUM-X's knob): each voice to its own place across the stereo
+ * field as the kit's sounds (voice.c voice_block: what the voice adds taken from one side), through the part's filter
+ * (tf_sides) and fx.c drum_mix; narrowed by DIST as the kit's; slewed a little a block (no jump when turned). Its
+ * width this block, per part: syn_img (0 off) */
+static uint8_t syn_img[NTRK], syn_cur[NTRK];
 static __attribute__((noinline)) void drum_side_begin(const track_t *t, uint32_t n)
 {
-    int32_t img = clamp(t->p[P_DXIMG], 0, 127), k = img ? dx_img_k(t) : 0;
+    int32_t img = clamp(t->p[P_DXIMG], 0, 127), k;
+    if (t->engine % NENGINES != ENGI_DRUM) {             /* (V10.49) a synth part */
+        uint32_t ti = (uint32_t)(t - trk) % NTRK, j;
+        int32_t want = t->p[P_VOICE] == V_POLY ? img : 0, cur = syn_cur[ti], d = clamp(t->p[P_DIST], 0, 64);
+        cur += clamp(want - cur, -4, 4);
+        syn_cur[ti] = (uint8_t)cur;
+        syn_img[ti] = (uint8_t)(n <= CTL ? (d ? cur * (256 - d * 3) >> 8 : cur) : 0);
+        if (syn_img[ti]) {
+            dx_xon |= 1u;
+            for (j = 0; j < n; j++)
+                dx_sl[j] = dx_sr[j] = 0;
+        }
+        return;
+    }
+    k = img ? dx_img_k(t) : 0;
     uint32_t l, i, on = 0;
     dx_core_t *dc = &DXC;                                /* (0.7.9: this core's, read once) */
     int8_t *pc = dx_pcur[(uint32_t)(t - trk) % NTRK];

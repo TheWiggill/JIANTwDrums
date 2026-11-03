@@ -883,7 +883,7 @@ static int proj_gl_used(const project_t *q)            /* (0.9.9-seq2f) a global
 }
 static uint32_t proj_packed_size(const project_t *q)
 {
-    uint32_t n = (q->dx_acoustic ? 3u : 0u) + (proj_sc_used(q) ? 6u : 0u) + 68u + sizeof q->chain + 4u + q->motion.count * sizeof q->motion.event[0] + 2u + G_SL_N, t, i;
+    uint32_t n = (q->dx_acoustic ? 3u : 0u) + (proj_sc_used(q) ? 6u : 0u) + (q->g[G_DRTIM] ? 3u : 0u) + 68u + sizeof q->chain + 4u + q->motion.count * sizeof q->motion.event[0] + 2u + G_SL_N, t, i;
     if (proj_djf_events(&q->motion))                    /* (0.9.1) the DJ FILTER's records: their block's head */
         n += 3u;
     if (proj_mf_tracks(q))                              /* (0.9.1) MICRO's 64ths: their block */
@@ -1075,6 +1075,9 @@ static int proj_pack(project_store_t *out, const project_t *q)
         b[pos++] = 'S'; b[pos++] = 'C';
         memcpy(b + pos, q->scene, sizeof q->scene);
         pos += sizeof q->scene;
+    }
+    if (q->g[G_DRTIM]) {                                /* (V10.49) the delay's R TIME, when set (the last: before, it stops here) */
+        b[pos++] = 'D'; b[pos++] = 'R'; b[pos++] = (uint8_t)clamp(q->g[G_DRTIM], 0, 6);
     }
     memcpy(b + PROJC_PFX_OFF, q->pfx_lane, sizeof q->pfx_lane);
     b[PROJC_PFX_OFF + sizeof q->pfx_lane] = q->pfx_ltgt > 2u ? 0u : q->pfx_ltgt;
@@ -1369,6 +1372,10 @@ static int proj_unpack_c(project_t *q, const uint8_t *b)
         memcpy(q->scene, b + pos + 2u, sizeof q->scene);
         q->scene[0] &= 1u;
         pos += 2u + sizeof q->scene;
+    }
+    if (pos + 3u <= room && b[pos] == 'D' && b[pos + 1u] == 'R') {   /* (V10.49) the delay's R TIME (else =L) */
+        q->g[G_DRTIM] = (int16_t)(b[pos + 2u] > 6u ? 0u : b[pos + 2u]);
+        pos += 3u;
     }
     proj_new_tracks(q, nt);                             /* (a FUNC of fewer tracks: the rest at power-on) */
     for (t = nt; t < NTRK; t++)

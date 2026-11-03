@@ -1824,7 +1824,9 @@ static __attribute__((noinline)) void dly_lo(const int32_t *dly_in, int32_t *dx,
  * DLY_EDGE). Returns whether the block is dly_lo's (not plain at the full rate) */
 static __attribute__((noinline)) int dly_rate(uint32_t *dl, uint32_t *dr, uint32_t dro, int png, int gr)
 {
-    uint32_t need = png ? *dl * 2u : *dl + dro, s, span;
+    static const uint8_t RN[7] = {1, 1, 2, 3, 4, 3, 2}, RD[7] = {1, 2, 3, 4, 3, 2, 1};   /* (V10.49) R TIME's ratios */
+    uint32_t rt = !png && !gr ? (uint32_t)clamp(song.g[G_DRTIM], 0, 6) : 0u;
+    uint32_t need = png ? *dl * 2u : rt ? (*dl * RN[rt] / RD[rt] > *dl ? *dl * RN[rt] / RD[rt] : *dl) : *dl + dro, s, span;
     int fresh = 0;
     s = dly_stage(need, fx.primed ? fx.dr_sh : 0u);
     if (!fx.primed) {
@@ -1848,7 +1850,7 @@ static __attribute__((noinline)) int dly_rate(uint32_t *dl, uint32_t *dr, uint32
     span = DLY_SPAN(fx.dr_sh);
     if (png && *dl > span / 2u) *dl = span / 2u;
     if (*dl > span) *dl = span;
-    *dr = *dl + dro;
+    *dr = rt ? *dl * RN[rt] / RD[rt] : *dl + dro;      /* (V10.49) R TIME: the right echo its own time */
     if (*dr > span) *dr = span;
     if (fresh) {                                        /* (the new line: the read points where they are, no fade) */
         fx.dl_now = *dl; fx.dr_now = *dr; fx.gr_on = (uint8_t)gr;
@@ -2389,7 +2391,7 @@ static inline __attribute__((always_inline)) void mix_part(track_t *t, uint32_t 
             return;
         }
         int32_t lq0 = lq, gl0 = gl, gr0 = gr;           /* (0.7.5: uin_mix, the same ramps) */
-        if (dx_xon && ENGINES[t->engine] == &ENG_DRUM)  /* (0.6.48) IMAGE, SENDs: from the same ramps as below */
+        if (dx_xon)                                     /* (0.6.48) IMAGE, SENDs: from the same ramps as below (V10.49: a synth's IMAGE too) */
         {
             int32_t *const sx[3] = {sc, sd, sr};
             drum_mix(ol, or_, n, lq, dl, gl, dgl, gr, dgr, pm0, pm1, sx);
