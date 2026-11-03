@@ -191,14 +191,16 @@ UH_SEG static int uh_probe(uint8_t depth, uh_midi_t *m)
     if (!uh_parse_midi(uh_cfg, total, m) || !m->in_ep) {   /* (JIANT: input only) */
 #if FELUCCA_UAC
         uh_aud_t a;                                     /* (V10.53) not MIDI: an audio interface's input? */
-        static const uint8_t F441[3] = {0x44, 0xAC, 0x00};
+        static const uint8_t F441[3] = {0x44, 0xAC, 0x00}, F48[3] = {0x80, 0xBB, 0x00};
         if (!uh_parse_uac(uh_cfg, total, &a))
             return 0;
         if (uh_ctl(addr, 0x00, 9, a.cfg, 0, 0, 0, mps) < 0 ||   /* SET_CONFIGURATION, SET_INTERFACE (the capture alt) */
             uh_ctl(addr, 0x01, 11, a.alt, a.iface, 0, 0, mps) < 0)
             return 0;
-        if (a.setf)                                     /* SET_CUR SAMPLING_FREQ_CONTROL: 44,100 (a refusal: tried as is) */
-            uh_ctl_out(addr, 0x22, 1, 0x0100, (uint16_t)(0x80u | a.ep), F441, 3);
+        if (a.setf)                                     /* SET_CUR SAMPLING_FREQ_CONTROL: 44,100, or (V10.57) 48,000 when the
+                                                         * interface has no 44,100 (a refusal: tried as is) */
+            uh_ctl_out(addr, 0x22, 1, 0x0100, (uint16_t)(0x80u | a.ep), a.r48 ? F48 : F441, 3);
+        uin_r48 = a.r48;
         *m = (uh_midi_t){0};
         m->in_ep = a.ep;
         m->in_type = 1;                                 /* isochronous */
@@ -466,7 +468,7 @@ static void uh_poll(void)                               /* TIMER5 ISR, 2 kHz, wh
             fm1_usb_rx_sync();
             if (uh.aud == 1u) {
                 const uint16_t *m16 = (const uint16_t *)ep4rx;
-                uint32_t f = n / 2u > UI_MAXF ? UI_MAXF : n / 2u;
+                uint32_t f = n / 2u > UI_MAXF_RX ? UI_MAXF_RX : n / 2u;
                 for (i = f; i--;)
                     ep4rx[i] = (uint32_t)m16[i] | (uint32_t)m16[i] << 16;
                 n = f * 4u;

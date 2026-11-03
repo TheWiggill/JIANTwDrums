@@ -80,7 +80,9 @@ int main(void)
               a.setf && a.mps == 192);
         check("24-bit only: refused", !uh_parse_uac(D24, sizeof D24, &a));
         check("mono 16-bit at 44.1 only: taken, no SET_CUR", uh_parse_uac(MONO, sizeof MONO, &a) && a.ch == 1 && !a.setf && a.ep == 3);
-        check("48 kHz only: refused", !uh_parse_uac(F48, sizeof F48, &a));
+        check("48 kHz only (V10.57): taken, converted (r48), no SET_CUR (one rate)", uh_parse_uac(F48, sizeof F48, &a) && a.r48 &&
+              a.ch == 2 && a.ep == 1 && !a.setf && a.mps == 192);
+        check("44.1 and 48 kHz: 44.1 kept (no conversion)", uh_parse_uac(UM2, sizeof UM2, &a) && !a.r48);
         check("a keyboard is no audio input", !uh_parse_uac(KBD, sizeof KBD, &a));
     }
     printf("usbhost: %s\n", bad ? "FAILED" : "all ok");

@@ -103,10 +103,11 @@ static void test_stems(void)
  * held near UI_TARGET (no underrun or overrun once settled), a 1 kHz sine through it within -40 dB of a pure one at
  * its real frequency; the host stopping (a fade out from the last frame, primed again when it comes back), alt 0 */
 static int32_t dup_smin, dup_smax;
+static int dup_src48;                                /* (V10.57) dup_run: the source at 48 kHz (USB > HOST) */
 static double dup_run(double fd, uint32_t secs, uint32_t *under, uint32_t *over, int32_t *fmin, int32_t *fmax,
                       double *snr, int32_t *jump, int gap)
 {
-    static uint32_t pk[UI_MAXF];
+    static uint32_t pk[UI_MAXF_RX];
     double th = 0, t = 0, tp = 0, tb = 0, f0 = 1000.0;
     uint32_t acc = 0, blocks = 0, i, n0 = 0;
     int32_t prev = 0;
@@ -122,7 +123,8 @@ static double dup_run(double fd, uint32_t secs, uint32_t *under, uint32_t *over,
             uint32_t f = 44u;
             acc += 100u;
             if (acc >= 1000u) { acc -= 1000u; f = 45u; }
-            for (i = 0; i < f; i++, th += 1.0 / 44100.0) {
+            if (dup_src48) f = 48u;                     /* (V10.57) an interface at 48 kHz on the host port */
+            for (i = 0; i < f; i++, th += 1.0 / (dup_src48 ? 48000.0 : 44100.0)) {
                 int16_t l = (int16_t)lrint(20000.0 * sin(2.0 * M_PI * f0 * th)), r = (int16_t)lrint(10000.0 * sin(2.0 * M_PI * f0 * th));
                 pk[i] = (uint32_t)(uint16_t)l | (uint32_t)(uint16_t)r << 16;
             }
@@ -225,6 +227,16 @@ static void test_duplex(void)
         uin.gen++;
         uac_in_fill(32u);
         check("in+out: a new stream drops what the last one left in the ring (only the reader moves its index)", ui_r == ui_w && !uin_on && !uin.go);
+    }
+    {   /* (V10.57) USB > HOST: an interface at 48 kHz, read at the I2S clock from a step of 48 / 44.1 (no 44,100 to set) */
+        uin.alt = 0;
+        uh_aud_on = 1; uin_r48 = 1; dup_src48 = 1;
+        dup_run(44117.6, 12, &under, &over, &fmin, &fmax, &snr, &jump, 0);
+        printf("  48 kHz on the host port: fill %d..%d, step %d..%d, SNR %.1f dB, largest step %d\n", fmin, fmax, dup_smin, dup_smax, snr, jump);
+        check("host 48 kHz: settled, no underrun or overrun, the step about 48 / 44.1 (71331)",
+              !under && !over && fmin > 40 && fmax < (int32_t)UI_N - 64 && uin.step > 71331 - 700 && uin.step < 71331 + 700);
+        check("host 48 kHz: a 1 kHz sine comes out a 1 kHz sine (within -40 dB), no click", snr > 40.0 && jump < 4000);
+        uh_aud_on = 0; uin_r48 = 0; dup_src48 = 0;
     }
     uin.alt = 0;
     uac_in_fill(32u);

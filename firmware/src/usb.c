@@ -146,10 +146,13 @@ static struct {
 #define UI_STEP_MAX 650          /* the step's range: +-1 % of 65536 (a host clock far off: the ring re-primes) */
 static uint32_t ui_ring[UI_N] __attribute__((section(".pool")));   /* (2 KiB) */
 static volatile uint32_t ui_w, ui_r;
-static uint32_t ep4rx[UI_MAXF + 2u] __attribute__((aligned(4)));
+#define UI_MAXF_RX 50u           /* (V10.57) frames a packet taken at most: a 48 kHz interface on the host port sends 48 + 1 */
+static uint32_t ep4rx[UI_MAXF_RX + 2u] __attribute__((aligned(4)));
 static volatile uint8_t usb_duplex;                      /* the device presents the audio output too (usb_duplex_switch) */
 static volatile uint8_t uh_aud_on;                       /* (V10.53) USB > HOST: an audio interface's input plays into the
                                                          * ring, as IN+OUT's host does (usb_host.c uh_poll) */
+static uint8_t uin_r48;                                  /* (V10.57) the host port's interface plays at 48 kHz: the reader's
+                                                         * step from 48,000 / 44,100 (usb_host.c uh_probe) */
 static volatile uint8_t uin_feed;                        /* (V10.53) usb_duplex | uh_aud_on, set where either changes: the
                                                          * audio ISR tests one byte (its cost as before) */
 static struct {
@@ -1667,10 +1670,10 @@ static inline void uac_service(void)                   /* (inline: the guard alo
 static __attribute__((noinline)) void uin_take(const uint32_t *p, uint32_t n)   /* (not in the TIMER5 body: its copy loop) */
 {
     uint32_t w = ui_w, i, f = n / 4u;
-    if ((n & 3u) || f > UI_MAXF) {
+    if ((n & 3u) || f > UI_MAXF_RX) {
         uin.bad++;
-        if (f > UI_MAXF)
-            f = UI_MAXF;
+        if (f > UI_MAXF_RX)
+            f = UI_MAXF_RX;
     }
     if (UI_N - (w - ui_r) < f) {
         uin.overruns++;
@@ -1708,7 +1711,7 @@ static __attribute__((noinline)) void uin_rx(void)
 static __attribute__((noinline)) void uac_in_fill(uint32_t n)
 {
     uint32_t r = ui_r, fill = ui_w - r, i, need, ph = uin.ph;
-    int32_t step = uin.step, g = uin.g;
+    int32_t step = uin.step, g = uin.g, base = uh_aud_on && uin_r48 ? 71331 : 65536;   /* (V10.57: 48 kHz in, 65536 x 48 / 44.1) */
     if (!uh_aud_on && (!uin.alt || !usb.config)) {     /* (V10.53: or an audio interface on the host port) */
         uin.go = 0;
         uin_on = 0;
@@ -1728,7 +1731,7 @@ static __attribute__((noinline)) void uac_in_fill(uint32_t n)
         }
         uin.go = 1;
         ph = 0;
-        step = 65536;
+        step = base;
         g = 0;
         uin.fs = (int32_t)fill << 8;
     }
@@ -1767,7 +1770,7 @@ static __attribute__((noinline)) void uac_in_fill(uint32_t n)
     uin.fs += (((int32_t)fill << 8) - uin.fs) >> 7;     /* (a block a ~0.7 ms: ~90 ms; the packets' saw tooth averaged) */
     {
         int32_t e = (uin.fs >> 8) - (int32_t)UI_TARGET;   /* more in hand than wanted: read faster */
-        step = 65536 + (e > UI_STEP_MAX ? UI_STEP_MAX : e < -UI_STEP_MAX ? -UI_STEP_MAX : e);
+        step = base + (e > UI_STEP_MAX ? UI_STEP_MAX : e < -UI_STEP_MAX ? -UI_STEP_MAX : e);
     }
     uin.ph = ph;
     uin.step = step;
