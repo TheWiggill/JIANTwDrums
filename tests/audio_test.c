@@ -252,6 +252,54 @@ static void uin_run(int32_t level, int32_t pan, int mute, int32_t rev, int on, d
     uin_on = 0;
     *lr = sqrt(l / 9600.0); *rr = sqrt(r / 9600.0); *wr = sqrt(w / 9600.0);
 }
+/* (V10.54) the INPUT engine: track 2 takes the input (preset k: 0 IN 1, 1 IN 2, 2 1+2, 3 STEREO; play: KEYS), IN 1 a
+ * sine on the left, IN 2 silent; the last track's USB IN+OUT mix steps aside */
+static void ain_run(uint32_t k, int keys, double *lr, double *rr)
+{
+    int32_t out[2 * 32];
+    uint32_t b, i, t, ph = 0;
+    double l = 0, r = 0;
+    fresh();
+    lim_env = LIM_T; lev_env = 0; lev_g = lev_cur = 32768; lev_dg = 0; dc_l = dc_r = dce_l = dce_r = 0;
+    song.master_q12 = 4096;
+    for (t = 0; t < NTRK; t++) trk[t].p[P_DIST] = trk[t].p[P_CHOR] = trk[t].p[P_DLY] = trk[t].p[P_REV] = 0;
+    host_preset(&trk[1], ENGI_INPUT, k);
+    trk[1].p[P_E3] = (int16_t)keys;
+    trk[1].p[P_LEVEL] = 100; trk[1].p[P_PAN] = 0;
+    trk[1].p[P_CHOR] = trk[1].p[P_DLY] = trk[1].p[P_REV] = 0;
+    for (b = 0; b < 400u; b++) {
+        for (i = 0; i < 32u; i++, ph++) {
+            uin_l[i] = (int32_t)(8000.0 * sin(2.0 * M_PI * 440.0 * ph / 44100.0));
+            uin_r[i] = 0;
+        }
+        uin_on = 1;
+        audio_block(out, 32);
+        if (b >= 100u)
+            for (i = 0; i < 32u; i++) {
+                l += (double)(out[2u * i] >> OUT_SHIFT) * (out[2u * i] >> OUT_SHIFT);
+                r += (double)(out[2u * i + 1u] >> OUT_SHIFT) * (out[2u * i + 1u] >> OUT_SHIFT);
+            }
+    }
+    uin_on = 0;
+    *lr = sqrt(l / 9600.0); *rr = sqrt(r / 9600.0);
+}
+static void input_engine(void)
+{
+    double l, r, l1, r1;
+    ain_run(0, 0, &l, &r);
+    printf("audio: INPUT IN 1: L %.0f R %.0f\n", l, r);
+    check("INPUT: SOURCE IN 1 plays the left input on its track, centred", l > 500.0 && fabs(20.0 * log10(l / r)) < 0.2);
+    check("INPUT: FOLLOW (the matrix's source) follows the input", mod_follow > 4000);
+    ain_run(1, 0, &l1, &r1);
+    check("INPUT: SOURCE IN 2 (silent here): nothing, the last track's USB IN+OUT mix stepped aside", l1 < 1.0 && r1 < 1.0);
+    ain_run(2, 0, &l1, &r1);
+    check("INPUT: SOURCE 1+2: the sum, centred", fabs(20.0 * log10(l1 / l)) < 0.3 && fabs(20.0 * log10(l1 / r1)) < 0.2);
+    ain_run(3, 0, &l1, &r1);
+    printf("audio: INPUT STEREO: L %.0f R %.0f\n", l1, r1);
+    check("INPUT: SOURCE STEREO keeps the image: the left input on the left only", l1 > 500.0 && r1 < l1 * 0.03);
+    ain_run(0, 1, &l1, &r1);
+    check("INPUT: PLAY KEYS with no note: silent", l1 < 1.0 && r1 < 1.0);
+}
 static void usb_in(void)
 {
     double l, r, w, l0, r0, w0;
@@ -467,6 +515,7 @@ int main(void)
     usb_level();
     boot_keys();
     overload(); dma();
+    input_engine();
     usb_in();                                          /* (last: its reverb tail would reach the tests after it) */
     polyphony_headroom();
     drum_budget();

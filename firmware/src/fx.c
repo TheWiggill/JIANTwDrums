@@ -2196,8 +2196,6 @@ static __attribute__((noinline)) void stem_post(uint32_t ti, const int32_t *pre,
  * stereo Q15; uin_on: this block holds it. The last live track takes it (mix_part, uin_mix): into the dry mix with
  * its LEVEL and PAN (a balance), its CHORUS / DELAY / REVERB sends from the sum, ducked by DUCK, silenced by its MUTE
  * and the mute layer; whatever the track's own engine plays as well (its DIST and filter are not on the input) */
-static int32_t uin_l[CTL], uin_r[CTL];
-static volatile uint8_t uin_on;
 #define UIN_SRC 1
 static __attribute__((noinline)) void uin_mix(int32_t *ol, int32_t *or_, int32_t *sc, int32_t *sd, int32_t *sr, uint32_t n,
                                               int32_t lq, int32_t dl, int32_t gl, int32_t dgl, int32_t gr, int32_t dgr,
@@ -2334,7 +2332,7 @@ static inline __attribute__((always_inline)) void mix_part(track_t *t, uint32_t 
         }
     }
     mod_begin(t);                                       /* the matrix's per-block values into t->p (mod.c) */
-    int uin = uin_on && (uint32_t)(t - trk) + 1u == trk_live;   /* (0.7.5) USB IN+OUT: the host's audio comes in here */
+    int uin = uin_on && !ain_any && (uint32_t)(t - trk) + 1u == trk_live;   /* (V10.54: none INPUT) */   /* (0.7.5) USB IN+OUT: the host's audio comes in here */
     if (track_render(t, b, n))
         t->tail = (uint8_t)(512u / CTL);                /* blocks of DIST state to run out after the last voice */
     else if (!uin && (!t->tail || !t->p[P_DIST] || !--t->tail)) {

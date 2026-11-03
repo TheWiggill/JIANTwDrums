@@ -37,7 +37,7 @@
  * and the engines read t->p as before. An engine reads its parameters in note_on (events_block) unmodulated.
  * Nothing active (every slot with SRC, DST or AMT at 0): no work, and the sound is bit-identical. */
 enum { MS_OFF, MS_LFO, MS_ENV, MS_VEL, MS_KEY, MS_RAND, MS_MODW, MS_AT, MS_EXPR, MS_M1, MS_STEP = MS_M1 + 4, MS_NOISE, MS_PROX, MS_ENV2,
-       MS_N };   /* (V10.22) ENV2: ENV > ENV 2, per voice */
+       MS_FOLLOW, MS_N };   /* (V10.54) FOLLOW: the audio input's envelope */   /* (V10.22) ENV2: ENV > ENV 2, per voice */
 static volatile int16_t mod_prox;   /* (V10.14) PROX, the Bluetooth proximity: 0..32767 (bt.c bt_prox_step, the main loop; 0
                                      * with Bluetooth off or no central connected) */
 static uint32_t div_samples(uint32_t div);   /* fx.c */
@@ -116,6 +116,27 @@ static int32_t drift_noise(uint32_t seed, uint32_t clk, uint32_t lg)   /* (0.7.9
     return ya + (((yb - ya) * (int32_t)f) >> 8);
 }
 static uint32_t mns_clk;         /* (0.7.8) NOISE's clock: audio blocks (macro_master) */
+/* (V10.54) FOLLOW: the audio input's envelope (eng_input.c uin_l / uin_r, both inputs), 0..32767: its peak each block,
+ * up at once (half the way a block), down in ~50 ms; x2 (an input rarely peaks at full scale). ain_pk: each input's peak
+ * for the INPUT page's meters */
+static int32_t mod_follow, ain_fol;
+static int16_t ain_pk[2];
+static __attribute__((noinline)) void ain_follow(void)
+{
+    int32_t pl = 0, pr = 0, pk;
+    uint32_t i;
+    if (uin_on)
+        for (i = 0; i < CTL; i++) {
+            int32_t a = uin_l[i] < 0 ? -uin_l[i] : uin_l[i], b = uin_r[i] < 0 ? -uin_r[i] : uin_r[i];
+            if (a > pl) pl = a;
+            if (b > pr) pr = b;
+        }
+    pk = pl > pr ? pl : pr;
+    ain_fol += pk > ain_fol ? (pk - ain_fol + 1) >> 1 : -((ain_fol - pk + 31) >> 5);
+    mod_follow = clamp(ain_fol * 2, 0, 32767);
+    ain_pk[0] = (int16_t)(pl > ain_pk[0] ? clamp(pl, 0, 32767) : ain_pk[0] - (ain_pk[0] >> 5));
+    ain_pk[1] = (int16_t)(pr > ain_pk[1] ? clamp(pr, 0, 32767) : ain_pk[1] - (ain_pk[1] >> 5));
+}
 
 /* source s of the track: the per-track ones, the per-voice ones of the latest note-on */
 static int32_t mod_tsrc(const track_t *t, uint32_t s, int32_t lfo)
@@ -144,7 +165,7 @@ static int32_t mod_tsrc(const track_t *t, uint32_t s, int32_t lfo)
     case MS_NOISE:                                      /* (0.7.8) a random wander, a new point every ~46 ms, eased */
         return drift_noise((uint32_t)(t - trk) * 7919u + 0x1234u, mns_clk, 6u - (CTL_LOG2 - 5u));
     default:
-        return s == MS_ENV2 ? t->m_env2 : macro_v[(s - MS_M1) & 3u] * 258;   /* (V10.22 ENV2: out of the switch's run) */
+        return s == MS_ENV2 ? t->m_env2 : s == MS_FOLLOW ? mod_follow : macro_v[(s - MS_M1) & 3u] * 258;   /* (V10.22 ENV2: out of the switch's run) */
     }
 }
 
@@ -255,10 +276,12 @@ static __attribute__((noinline)) int mod_begin(track_t *t)
 static __attribute__((noinline)) void macro_master(void)
 {
     int32_t off[MD_N - MD_CLIP] = {0};
-    uint32_t i, k;
+    uint32_t i, k, any = 0;
     mns_clk++;
+    ain_follow();
     for (i = 0; i < NTRK; i++) {
         const track_t *t = &trk[i];
+        any |= t->engine == ENGI_INPUT;
         for (k = 0; k < NMSLOT; k++) {
             uint32_t s = (uint32_t)t->p[P_M1SRC + 3u * k], d = (uint32_t)t->p[P_M1DST + 3u * k];
             int32_t a = t->p[P_M1AMT + 3u * k], v;
@@ -275,6 +298,7 @@ static __attribute__((noinline)) void macro_master(void)
             }
         }
     }
+    ain_any = (uint8_t)any;
     clip_eff = (int16_t)clamp(song.g[G_CLIP] + off[0], 0, 100);
     pnch_eff = (int16_t)clamp(song.g[G_PUNCH] + off[1], 0, 100);
     for (k = 0; k < 8u; k++)

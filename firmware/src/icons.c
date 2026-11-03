@@ -255,6 +255,7 @@ static uint32_t engine_icon(const char *name)
         {"ANIMAL", ICON_PHYS},                /* (0.8.3: a physical model, as PHYS was) */
         {"STRING", ICON_PHYS},                /* (0.9.9-snd5: a physical model too) */
         {"ADD", ICON_WAVE},
+        {"INPUT", ICON_VOICE},                /* (V10.54) */
     };
     uint32_t i;
     for (i = 0; i < sizeof M / sizeof M[0]; i++)

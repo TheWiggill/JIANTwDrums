@@ -1929,6 +1929,38 @@ static VX_CODE void vx_add(const track_t *t, const int32_t *A, int32_t en_home)
     vxs.kc = 0;
 }
 
+/* (V10.54) INPUT: the audio interface's two inputs as meters (lit: the ones SOURCE takes), GATE's level across them,
+ * between them FOLLOW (the matrix's source) and the gate's gain; the source over them */
+static VX_SEG void vx_input(const track_t *t, const int32_t *A, int32_t en_home)
+{
+    uint32_t src = (uint32_t)clamp(t->p[P_E0], 0, AIN_N - 1), k;
+    int32_t bw = A[2] / 7, bh = A[3] - 30, by = A[1] + 16, cx = A[0] + A[2] / 2, thr = clamp(t->p[P_E2], 0, 127);
+    int32_t lv = thr * thr * 2, gg = ain_gg[(uint32_t)(t - trk) % NTRK];
+    (void)en_home;
+    if (bw < 4 || bh < 16)
+        return;
+    if (!vx_small)
+        cv_text(cx - 3 * (int32_t)str_len(N_AIN_SRC[src]), A[1] + 2 - AF_X_CAP_Y, &AF_X, N_AIN_SRC[src], T_THEME);
+    for (k = 0; k < 2u; k++) {
+        int32_t x = k ? cx + bw : cx - 2 * bw, v = clamp(ain_pk[k] * 2, 0, 32767), hh = v * bh / 32767;
+        int on = src >= AIN_SUM || src == k;
+        cv_frame(x, by, bw, bh, T_MID);
+        cv_rect(x + 1, by + bh - hh, bw - 2, hh, on ? T_THEME : T_MID);
+        if (thr) {
+            int32_t gy = by + bh - clamp(lv * 2, 0, 32767) * bh / 32767;
+            cv_rect(x - 2, gy, bw + 4, 1, T_TEXT);
+        }
+        if (!vx_small)
+            cv_text(x + bw / 2 - 3, by + bh + 4 - AF_X_CAP_Y, &AF_X, k ? "2" : "1", on ? T_TEXT : T_MID);
+    }
+    {   /* FOLLOW: a thin column, the gate's gain a dot over it */
+        int32_t fh = mod_follow * bh / 32767;
+        cv_rect(cx - 1, by + bh - fh, 3, fh, T_TEXT);
+        if (thr)
+            cv_rect(cx - 2, by - 6, 5, 3, gg > 16384 ? T_THEME : T_MID);
+    }
+}
+
 /* ------------------------------------------------------------------------------------------------ the glue --- */
 /* the engine's own creature in the rectangle x y w h (px: EDIT's left panel 8 14 108 112, HOME's middle 146 x 112, or a
  * whole panel: each fits itself to it), en_home: HOME's level for the track (-1: its own); 0 when the engine has none
@@ -1952,6 +1984,10 @@ static int vx_draw(const track_t *t, int32_t x, int32_t y, int32_t w, int32_t h,
     } else if (trk_eng(t) == ENGI_DRUM) {    /* (the kit ~128 x 92) */
         s = vx_fit(w, h, 128, 92);
         vx_kit(t, cx - (s >> 4), cy + (48 * s >> 8), s, en_home, -1);
+    } else if (e == &ENG_INPUT) {                       /* (V10.54) the inputs' meters */
+        if (!bt_hw_seg())
+            return 0;
+        vx_input(t, A, en_home);
     } else if (e == &ENG_ANIMAL)                        /* (the animal ~103 x 78) */
         vx_animal(t, cx, cy, vx_fit(w, h, 103, 78), en_home);
     else if (trk_eng(t) == ENGI_FM6)

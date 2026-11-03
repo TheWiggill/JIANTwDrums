@@ -14,6 +14,7 @@
 #include "eng_animal.c"         /* (JIANT 0.8.3) ANIMAL: animal calls (CMOS PULSE WHSTL WING GLOTT) */
 #include "eng_string.c"         /* (JIANT 0.9.9-snd5) STRING: Karplus-Strong, in the COMB's lines (engine 8) */
 #include "eng_add.c"            /* (JIANT 0.9.9-snd5) ADD: additive, nine partials, in WHEEL's voice state (engine 13) */
+#include "eng_input.c"          /* (V10.54) INPUT: the audio input on a track (engine 15) */
 #include "fm4_convert.c"        /* DIGITAL's tables, and its sounds -> FM6 */
 #if FELUCCA_FM4
 #include "eng_digital.c"        /* DIGITAL: four-operator FM (retired; FELUCCA_FM4=1 builds it) */
@@ -65,6 +66,7 @@ static const engine_t *const ENGINES[NENGINES] = {
     &ENG_FM6,                    /* 12 (ENGI_FM6) */
     &ENG_ADD,                    /* 13 (ENGI_ADD, 0.9.9-snd5; SLICE's, retired in JIANT: its sounds play as ADD's) */
     &ENG_ANIMAL,                 /* 14 (ENGI_ANIMAL, JIANT 0.8.3) */
+    &ENG_INPUT,                  /* 15 (ENGI_INPUT, V10.54) */
 };
 
 /* a track's engine number as an index (the audio paths: a compare, cheaper than % NENGINES; a bad number: 0) */
@@ -85,6 +87,7 @@ static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
     ENGI_PHASE, ENGI_WHEEL,      /* PHASE WHEEL */
     ENGI_NOISE,                  /* NOISE */
     ENGI_STRING, ENGI_ADD,       /* (0.9.9-snd5) STRING ADD */
+    ENGI_INPUT,                  /* (V10.54) the audio input */
 #if FELUCCA_FM4
     ENGI_DIGITAL,                /* DIGITAL (retired, FELUCCA_FM4 builds only): after the rest */
 #endif
@@ -99,6 +102,7 @@ static const uint8_t ENGINE_PC_ORDER[NENG_SHOWN] = {
 #endif
     ENGI_PHASE, ENGI_LOFI, ENGI_VOICE, ENGI_WHEEL, ENGI_NOISE, ENGI_DRUM, ENGI_ANIMAL,
     ENGI_STRING, ENGI_ADD,       /* (0.9.9-snd5: after ANIMAL, every number before kept) */
+    ENGI_INPUT,                  /* (V10.54) */
 };
 
 /* the engines one can pick (engine 1 only with FELUCCA_FM4), in ENGINE_ORDER: eng_ok(e), the n-th of them

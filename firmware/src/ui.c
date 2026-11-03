@@ -582,12 +582,12 @@ static int page_visible(uint32_t i)
     if (PAGES[i].graph == GR_PATS || PAGES[i].graph == GR_CHANCE)   /* (0.6.37) PHRASES, a step's CHANCE: out of the */
         return !ui.home && ui.page == i;               /* SEQ pages' cycle (only where code put the screen) */
     if (PAGES[i].graph == GR_DXSND || PAGES[i].graph == GR_DXIMG)   /* (0.6.48: IMAGE; V10.49: STEREO a synth's too) */
-        return trk_eng(TSEL) == ENGI_DRUM ? PAGES[i].id[0] != P_SIMG : PAGES[i].id[0] == P_SIMG;   /* (V10.49: a synth's
+        return trk_eng(TSEL) == ENGI_DRUM ? PAGES[i].id[0] != P_SIMG : PAGES[i].id[0] == P_SIMG && trk_eng(TSEL) != ENGI_INPUT;   /* (V10.49: a synth's
                                                          * STEREO its own page, P_SIMG) */
     if (PAGES[i].scope == SC_TRACK && PAGES[i].id[0] >= P_LN0 && PAGES[i].id[0] <= P_LN7)
         return trk_eng(TSEL) == ENGI_DRUM;
-    if (PAGES[i].graph == GR_FOCUS)                     /* (0.8.5) FOCUS: a synth's (FM6: OPERATOR, DRUM: SOUND) */
-        return trk_eng(TSEL) != ENGI_DRUM && trk_eng(TSEL) != ENGI_FM6 &&
+    if (PAGES[i].graph == GR_FOCUS)                     /* (0.8.5) FOCUS: a synth's (FM6: OPERATOR, DRUM: SOUND; V10.54 not INPUT's) */
+        return trk_eng(TSEL) != ENGI_DRUM && trk_eng(TSEL) != ENGI_FM6 && trk_eng(TSEL) != ENGI_INPUT &&
                !(FELUCCA_FM4 && trk_eng(TSEL) == ENGI_DIGITAL);
     if (PAGES[i].id[0] == P_ALLOC)                      /* (0.8.5) VOICE 2: not a kit's */
         return trk_eng(TSEL) != ENGI_DRUM;

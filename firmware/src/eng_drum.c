@@ -390,7 +390,7 @@ static __attribute__((noinline)) void drum_side_begin(const track_t *t, uint32_t
     int32_t img = clamp(t->p[P_DXIMG], 0, 127), k;
     if (t->engine % NENGINES != ENGI_DRUM) {             /* (V10.49) a synth part */
         uint32_t ti = (uint32_t)(t - trk) % NTRK, j;
-        int32_t want = t->p[P_VOICE] == V_POLY ? 127 - clamp(t->p[P_SIMG], 0, 127) : 0, cur = syn_cur[ti], d = clamp(t->p[P_DIST], 0, 64);
+        int32_t want = t->p[P_VOICE] == V_POLY && t->engine != ENGI_INPUT ? 127 - clamp(t->p[P_SIMG], 0, 127) : 0, cur = syn_cur[ti], d = clamp(t->p[P_DIST], 0, 64);
         cur += clamp(want - cur, -4, 4);
         syn_cur[ti] = (uint8_t)cur;
         syn_img[ti] = (uint8_t)(n <= CTL ? (d ? cur * (256 - d * 3) >> 8 : cur) : 0);
