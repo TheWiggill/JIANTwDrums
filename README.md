@@ -429,6 +429,12 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
 
 ## Changelog
 
+### V10.60 — public (2026-11-03)
+- Stable installer: everything from V10.47 to V10.60: the INPUT engine (USB audio into a track, IN 1 / IN 2 / 1+2 /
+  STEREO, GATE, KEYS, RING) and MOD SRC FOLLOW; USB HOST audio interfaces at 44.1 and 48 kHz (an experiment); USB
+  IN+OUT without feedback; STEREO IMAGE per voice; DLY R TIME; the roll follows the playhead; GEN's sounds fixed; the
+  master EQ no longer resets; menu and AIR fixes; FX > RPT at slow tempos; more free memory.
+
 ### V10.60 (beta)
 - **More room in the firmware** (~4.3 KB free, was 0.8 KB): the conversion of old DIGITAL sounds and the reading of
   JIANT 0.1-0.5 projects moved into the Bluetooth segment. Nothing changes in use.
