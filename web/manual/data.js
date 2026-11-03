@@ -628,6 +628,9 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.55", items: [
+    ["GEN vuelve a elegir bien los sonidos: desde V10.42 ponía sonidos equivocados en algunos roles (un sub bajo en las campanas, leads en los pianos eléctricos y plucks, un bajo de pedal en los órganos). Cada rol vuelve a tomar el tipo de sonido correcto."],
+    ["Los medidores del motor INPUT muestran su columna central aunque no entre señal."]]},
   {v: "V10.54", items: [
     ["Motor INPUT: la entrada de audio USB en una pista propia (una placa de audio USB en HOST con hub alimentado, o el audio de la compu con USB IN+OUT). EDIT › INPUT: SOURCE IN 1, IN 2, 1+2 (sumadas) o STEREO (con su imagen), así dos pistas pueden tomar IN 1 e IN 2 por separado; GAIN, GATE y PLAY THRU (siempre) o KEYS (solo mientras suena una nota, con su envolvente: los pasos gatillan la entrada). EDIT › SHAPE: WIDTH, RING (en KEYS, un seno a la nota), BITS y RATE. FILTER, DIST, LEVEL, PAN y envíos funcionan como en cualquier pista; la página muestra los medidores de las dos entradas. Mientras una pista es INPUT, la entrada ya no entra además por la última pista."],
     ["MOD SRC FOLLOW: el seguidor de envolvente de la entrada como fuente de modulación, en cualquier pista y destino (la entrada abre un filtro, hace ducking a un pad, maneja un envío)."]]},
