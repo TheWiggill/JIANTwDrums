@@ -390,7 +390,7 @@ static void menu_panel(void)
 static const char BP_S[][28] BTAPP_RO = {"BLUETOOTH \xB7 PROX", "SELECT: BACK", "NOT CONNECTED", "NOT CALIBRATED",
                                           "OCT-  FAR: PHONE AWAY", "OCT+  NEAR: PHONE ON THE", "FM-1, TOP LEFT (ANTENNA)",
                                           "PROX FAR SET", "PROX NEAR SET", "LEVEL ", "   RAW ", "FAR ", "   NEAR ", "%",
-                                          "K1 ZONE ", "%   K2 SPEED "};
+                                          "K1 MIN ", "%  K2 MAX ", "%  K3 SPD "};
 BTAPP_FN static void bt_prox_panel(const aafont_t *fx, const aafont_t *fm, const aafont_t *fs)   /* (the fonts
                                                                                                   * from the app: V10.14) */
 {
@@ -440,22 +440,25 @@ BTAPP_FN static void bt_prox_panel(const aafont_t *fx, const aafont_t *fm, const
     cv_text(10, 82 - AF_S_CAP_Y, fs, b, T_MID);
     for (k = 0; k < 3u; k++)
         cv_text(10, 98 + 10 * (int32_t)k - AF_X_CAP_Y, fx, BP_S[4u + k], T_DIM);
-    str_cpy(b, BP_S[14], sizeof b);                     /* (V10.61) KNOB 1 ZONE, KNOB 2 SPEED */
-    fmt_int(b + str_len(b), (int32_t)(100u - 10u * BT_ZONE()));
+    str_cpy(b, BP_S[14], sizeof b);                     /* (V10.61) KNOB 1 MIN, KNOB 2 MAX, KNOB 3 SPEED */
+    fmt_int(b + str_len(b), BT_MIN());
     str_cpy(b + str_len(b), BP_S[15], 16);
+    fmt_int(b + str_len(b), BT_MAX() < BT_MIN() + 10 ? BT_MIN() + 10 : BT_MAX());
+    str_cpy(b + str_len(b), BP_S[16], 16);
     fmt_int(b + str_len(b), (int32_t)BT_SPEED() + 1);
     cv_text(10, 136 - AF_S_CAP_Y, fs, b, T_TEXT);
 }
 BTAPP_FN static void bt_prox_input(uint32_t up, uint32_t dn)
 {
-    int32_t z = 0, v = 0;
+    int32_t z = 0, v = 0, w = 0;
     if (panel_enc(EN_SELECT) || panel_enc(EN_ALGO)) {
         ui.menu = 1;
         ui.force = 1;
-    } else if ((z = panel_enc(EN_K1)) != 0 || (v = panel_enc(EN_K2)) != 0) {   /* (V10.61) ZONE, SPEED (saved with the
-                                                                                 * settings, as FAR / NEAR) */
-        BT_TUNE[0] = (uint8_t)clamp((int32_t)BT_ZONE() - z, 0, 9);   /* (clockwise: a wider zone, 100 %) */
-        BT_TUNE[1] = (uint8_t)clamp((int32_t)BT_SPEED() + v, 0, 4);
+    } else if ((z = panel_enc(EN_K1)) != 0 || (v = panel_enc(EN_K2)) != 0 || (w = panel_enc(EN_K3)) != 0) {
+        /* (V10.61) MIN, MAX, SPEED (saved with the settings, as FAR / NEAR) */
+        BT_TUNE[0] = (uint8_t)clamp(BT_MIN() / 5 + z, 0, 18);
+        BT_TUNE[1] = (uint8_t)clamp((100 - BT_MAX()) / 5 - v, 0, 18);   /* (clockwise: MAX up) */
+        BT_TUNE[2] = (uint8_t)clamp((int32_t)BT_SPEED() + w, 0, 4);
         ui.force = 1;
     } else if (up || dn) {
         if (!bp.conn || !bp.have) {
@@ -470,7 +473,7 @@ BTAPP_FN static void bt_prox_input(uint32_t up, uint32_t dn)
         ui_message(BP_S[7u + up]);
     }
 }
-static uint32_t bt_prox_sig(void) { return ui.menu == 3 ? (uint32_t)mod_prox * 31u + bp.raw * 977u + bp.w4[0] * 13u + bp.w4[1] * 17u + bp.w4[2] * 19u + bp.w4[3] * 23u + bp.src * 29u + bp.have * 37u + bp.seen * 41u + (bt_hw_rxdiag() >> 4) * 43u + bp.conn * 5u + BT_CAL[0] * 3u + BT_CAL[1] * 7u + BT_TUNE[0] * 11u + BT_TUNE[1] * 53u : 0u; }
+static uint32_t bt_prox_sig(void) { return ui.menu == 3 ? (uint32_t)mod_prox * 31u + bp.raw * 977u + bp.w4[0] * 13u + bp.w4[1] * 17u + bp.w4[2] * 19u + bp.w4[3] * 23u + bp.src * 29u + bp.have * 37u + bp.seen * 41u + (bt_hw_rxdiag() >> 4) * 43u + bp.conn * 5u + BT_CAL[0] * 3u + BT_CAL[1] * 7u + BT_TUNE[0] * 11u + BT_TUNE[1] * 53u + BT_TUNE[2] * 59u : 0u; }
 
 static void confirm_open(uint32_t kind, uint32_t trk);   /* (0.6.58) INIT SYSTEM: ui_input.c */
 static void draw_menu(void)

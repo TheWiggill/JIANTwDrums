@@ -159,19 +159,23 @@ static struct {
     uint8_t mn[12], mx[12], src, lock, seen;            /* (V10.18) each reading's range on this link; the one used; kept
                                                          * (a point stored); a link seen */
 } bp;
-/* (V10.61, the user's ask: shorter distances, a quicker response) [20] ZONE 0..9: the part of FAR .. NEAR that moves
- * PROX, the near end's (0 all of it, 9 the nearest tenth: PROX moves only close to the antenna); [21] SPEED 0..4: the
- * level's smoothing 1/32 (as before, ~0.3 s) 1/16 1/8 1/4 1/2 (the fastest, the noisiest). 0 and 0 as V10.60 */
-#define BT_TUNE (&favorites.factory[6][20])
-#define BT_ZONE() ((uint32_t)(BT_TUNE[0] > 9u ? 0u : BT_TUNE[0]))
-#define BT_SPEED() ((uint32_t)(BT_TUNE[1] > 4u ? 0u : BT_TUNE[1]))
+/* (V10.61, the user's ask: a narrower field, PROX let go without taking the phone far away) thresholds over the
+ * calibrated FAR .. NEAR, in 5 % steps: [19] MIN 0..18 (0 .. 90 %: under it PROX is 0, so a phone a little away
+ * already lets go), [20] MAX as 100 % - 5 % x [20] (0..18: over it PROX is full), always 10 % over MIN; [21] SPEED
+ * 0..4: the level's smoothing 1/32 (as before, ~0.3 s) 1/16 1/8 1/4 1/2 (the fastest, the noisiest). 0 0 0 as V10.60 */
+#define BT_TUNE (&favorites.factory[6][19])
+#define BT_MIN() ((int32_t)(BT_TUNE[0] > 18u ? 0u : BT_TUNE[0]) * 5)
+#define BT_MAX() (100 - (int32_t)(BT_TUNE[1] > 18u ? 0u : BT_TUNE[1]) * 5)
+#define BT_SPEED() ((uint32_t)(BT_TUNE[2] > 4u ? 0u : BT_TUNE[2]))
 BTAPP_FN static int32_t bt_prox_map(int32_t lvl)
 {
-    int32_t f = (int32_t)BT_CAL[0] << 7, n = (int32_t)BT_CAL[1] << 7, z = 10 - (int32_t)BT_ZONE(), p;
+    int32_t f = (int32_t)BT_CAL[0] << 7, n = (int32_t)BT_CAL[1] << 7, lo = BT_MIN(), hi = BT_MAX(), p;
     if (f == n)
         return 0;
+    if (hi < lo + 10)
+        hi = lo + 10;
     p = clamp((lvl - f) * 32767 / (n - f), 0, 32767);
-    return clamp((p - 32767 * (10 - z) / 10) * 10 / z, 0, 32767);
+    return clamp((p - 32767 * lo / 100) * 100 / (hi - lo), 0, 32767);
 }
 BTAPP_FN static void bt_prox_step(const uint16_t *w, uint32_t n, uint32_t conn, uint32_t now)
 {
