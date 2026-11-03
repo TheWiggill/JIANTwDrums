@@ -1,1 +1,2 @@
-# (2026-10-30) none: the beta installer offers only web/PREVIEW (one beta). Commits here would be extra beta-only editions.
+# Previous beta retained for comparison with the USB INPUT fix.
+6c48e2a8e7049c31ab77c57b97c3ef6790d24090 # V10.61 before fix codex

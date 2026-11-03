@@ -121,6 +121,11 @@ jobs:
             PREVIEW_ROOT=/tmp/preview
             PREVIEW_SHA="$P"
           fi
+          # USB input regression: include the actual pinned beta, not main's sources.
+          for CDC in 0 1; do
+            (cd "$PREVIEW_ROOT" && cc -O2 -w -DHALF_FRAMES=128 -DT_CDC="$CDC" tests/uac_test.c -lm -o "/tmp/beta-uac-$CDC")
+            "/tmp/beta-uac-$CDC"
+          done
           (cd "$PREVIEW_ROOT" && python3 tools/build.py)
           PV=$(ver "$PREVIEW_ROOT")
           V=$(ver .)
