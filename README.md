@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.53).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.54).
 
 ## Reporting a crash
 
@@ -428,6 +428,17 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.54 (beta)
+- **INPUT engine**: the USB audio input on a track of its own (a USB audio interface on HOST behind a powered hub, or the
+  computer's audio with USB IN+OUT). EDIT › INPUT: **SOURCE** IN 1, IN 2, 1+2 (summed) or STEREO (the image kept), so
+  two tracks can take IN 1 and IN 2 each; **GAIN**, **GATE**, **PLAY** THRU (always) or KEYS (only while a note plays,
+  at its envelope: steps gate the input); EDIT › SHAPE: **WIDTH**, **RING** (KEYS: a sine at the note), **BITS**, **RATE**.
+  The track's FILTER, DIST, LEVEL, PAN and sends work as on any part; the page shows both inputs' meters. While a track
+  is INPUT, the input no longer also comes in through the last track. Presets: IN 1, IN 2, IN 1+2, STEREO IN, MIC GATE,
+  SPACE IN, TRANCE GATE, RING IN, CRUSH IN.
+- **MOD SRC FOLLOW**: the input's envelope follower as a modulation source, on any track and destination (an input
+  opening a filter, ducking a pad, driving a send).
 
 ### V10.53 (beta)
 - **USB audio interface input** (experimental, a user's ask): with MENU › SYSTEM › USB › HOST, a class compliant USB
