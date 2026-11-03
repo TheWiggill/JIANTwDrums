@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.48).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.49).
 
 ## Reporting a crash
 
@@ -428,6 +428,14 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.49 (beta)
+- **Delay R TIME** (users' ask): FX › DLY 3, KNOB 4. The right echo gets its own time, as a ratio of TIME: =L (as
+  before), x1/2, x2/3, x3/4, x4/3, x3/2, x2. TIME 1/8 with R TIME x3/2 puts the right echo at 3/16; it stays in time
+  when TIME changes or is modulated. Not with PING-PONG or the grains. Saved with the project.
+- **IMAGE on synths** (users' ask): EDIT › STEREO now also shows on synth tracks. In POLY, IMAGE spreads the voices
+  across the stereo field (each voice its own place, like DRUM-X's sounds); the page shows where the eight voices sit
+  and lights the ones sounding. DIST narrows it, as on DRUM-X.
 
 ### V10.48 (beta)
 - **Room for what comes next**: the LOFI, ANIMAL and STRING animations moved to the Bluetooth part of the flash, freeing
