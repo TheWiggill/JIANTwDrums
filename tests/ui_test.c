@@ -4551,11 +4551,11 @@ static int test_edit_cycle(void)
 {
     /* (0.9.2: one chain, SELECT a page a detent; an EDIT tap the next group's first. Was 0.8.5's lens: SELECT a level, the
      * tap the level's next set) */
-    static const char *const CH_A[] = {"EDIT 1", "EDIT 2", "FILTER", "MORPH", "VOICE", "VOICE 2", "STEREO", "FOCUS"};   /* (JIANT 0.5:
+    static const char *const CH_A[] = {"EDIT 1", "EDIT 2", "FILTER", "MORPH", "STEREO", "FOCUS", "VOICE", "VOICE 2"};   /* (JIANT 0.5:
                                                          * ANALOG's FILTER; 0.6.45: MORPH) */
-    static const char *const TP_A[] = {"FILTER", "FOCUS"};
-    static const char *const CH_F[] = {"EDIT 1", "EDIT 2", "FILTER", "VOICE", "VOICE 2", "STEREO", "OPERATOR", "OP ENV", "OPERATOR 2"};
-    static const char *const TP_F[] = {"FILTER", "OPERATOR"};
+    static const char *const TP_A[] = {"FILTER", "FOCUS", "VOICE"};
+    static const char *const CH_F[] = {"EDIT 1", "EDIT 2", "FILTER", "STEREO", "OPERATOR", "OP ENV", "OPERATOR 2", "VOICE", "VOICE 2"};
+    static const char *const TP_F[] = {"FILTER", "OPERATOR", "VOICE"};
     static const char *const CH_D[] = {"EDIT 1", "EDIT 2", "FILTER", "VOICE", "VOICE 2", "OP1 ENV", "OP2 ENV", "OP3 ENV",
                                        "OP4 ENV", "OP LEVEL"};
     static const char *const TP_D[] = {"FILTER", "OP1 ENV"};
@@ -11959,13 +11959,15 @@ static int test_lz_edit(void)
           lz_count_is("3/8");
     frames(320); press(B_EDIT); frame();                            /* EDIT: the next group, FOCUS */
     ok &= pd_level() == 2u && lz_tab_lit(2) && str_eq(cur_page()->title, "FOCUS") && lz_crumb_is("EDIT \xB7 FOCUS \xB7 FOCUS") &&
-          lz_count_is("8/8");
-    turn(EN_SELECT, 1); frame();
-    ok &= str_eq(cur_page()->title, "FOCUS");                       /* (no wrap) */
+          lz_count_is("6/8");
+    turn(EN_SELECT, 3); frame();
+    ok &= str_eq(cur_page()->title, "VOICE 2");                     /* (V10.49: VOICE VOICE 2 last; no wrap) */
     turn(EN_SELECT, -4); frame();
-    ok &= pd_level() == 1u && str_eq(cur_page()->title, "MORPH");    /* (MORPH VOICE VOICE 2 STEREO FOCUS: four back) */
+    ok &= pd_level() == 1u && str_eq(cur_page()->title, "MORPH");    /* (MORPH STEREO FOCUS VOICE VOICE 2: four back) */
     frames(320); press(B_EDIT); frame();
     ok &= str_eq(cur_page()->title, "FOCUS");
+    frames(320); press(B_EDIT); frame();
+    ok &= str_eq(cur_page()->title, "VOICE");                       /* (V10.49: the voices' group) */
     frames(320); press(B_EDIT); frame();
     ok &= str_eq(cur_page()->title, "EDIT 1");                      /* (round) */
     bad += check("0.9.2 EDIT: one chain by SELECT (no wrap), an EDIT tap the next group's first (round); tabs, crumb, n/N", ok);

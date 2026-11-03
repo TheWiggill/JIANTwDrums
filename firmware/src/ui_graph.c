@@ -172,6 +172,13 @@ static void graph_lfo(const track_t *t, uint16_t c)
  * height; under it the two waves it is between */
 /* (0.6.48) EDIT > IMAGE (a DRUM track): the eight sounds from left to right as IMAGE places them (as wide as DRV,
  * DIST and the FILTER let it play: dx_img_k), a row each, the kick on top, on a line from the middle */
+static uint32_t vx_on_mask(const track_t *t)            /* (V10.49) the part's voices sounding, a bit each */
+{
+    uint32_t m = 0, i;
+    for (i = 0; i < NVOICE; i++)
+        m |= (uint32_t)(t->v[i].active != 0) << i;
+    return m;
+}
 static void graph_dximg(const track_t *t)
 {
     static const char *const AB[DV_NLANE] = {"BD", "SD", "CP", "CH", "OH", "TM", "RS", "CB"};
@@ -182,6 +189,7 @@ static void graph_dximg(const track_t *t)
                                                           * (voice.c: POLY only) */
         static const int8_t VP[8] = {-64, 64, -32, 32, -48, 48, -16, 16};
         int poly = t->p[P_VOICE] == V_POLY;
+        img = 127 - clamp(t->p[P_SIMG], 0, 127);         /* (P_SIMG: stored inverted) */
         for (l = 0; l < 8u; l++) {
             int32_t x = cx + (poly ? VP[l] * img / 127 : 0) * (PANEL_W / 2 - 14) / 64, y = (int32_t)l * 12;
             char b[2] = {(char)('1' + l), 0};
@@ -1464,7 +1472,8 @@ static uint32_t graph_signature(void)
         h = (h ^ str_hash(lyr_gen[(t - trk) % NTRK], s->w)) * 16777619u;
     }
     if (pg->graph == GR_DXIMG)                       /* (0.6.48) IMAGE and how wide it plays */
-        h = (h ^ ((uint32_t)t->p[P_DXIMG] << 16 | (uint32_t)dx_img_k(t))) * 16777619u;
+        h = (h ^ ((uint32_t)t->p[P_DXIMG] << 16 | (uint32_t)dx_img_k(t) | (uint32_t)t->p[P_SIMG] << 24 |
+                  (trk_eng(t) != ENGI_DRUM ? vx_on_mask(t) << 9 : 0u))) * 16777619u;   /* (V10.49: a synth's, its voices lit) */
     if (DX_KIT3(pg))                                 /* (0.8.8) KIT 3's colony lives every frame, as KIT's (was still) */
         h ^= ui.frame * 2654435761u;
     if (pg->graph >= GR_FMOP && pg->graph <= GR_FMENV)   /* (0.9.6) FM6's operators: the colony lives, as the beings */

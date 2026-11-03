@@ -172,6 +172,8 @@ enum {                          /* per-track parameters */
 /* (JIANT 0.8.5) VOICE's words (sing.c), EDIT > WORDS, in slots of other engines' (0 there in every project and preset
  * before, on a VOICE track: OFF, TEXT): LANG OFF ES EN JA in LOFI's RTRG slot, LYRIC (TEXT, W1..W16, S1..S8) in DRUM's
  * IMAGE slot; a preset sets both (preset_t.xp) */
+#define P_SIMG P_LN0                   /* (V10.49) a synth's EDIT > STEREO IMAGE, stored inverted (127 = 0 %: the lane level's
+                                         * 127 every synth part holds); DRUM-X's lane 1 level there. (P_DXIMG is VOICE's LYRIC) */
 #define P_VLANG P_LRTRG
 #define P_VLYR P_DXIMG
 /* (JIANT 0.6.9) AUTO PAN (fx.c mix_part), in the slots of the old per-track SLICER (one on a bus since 0.6.3, its
