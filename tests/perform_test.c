@@ -193,16 +193,32 @@ static int test_too_long(void)
     ev_t ev[] = {{992, PF_R8 + 1}, {40000, -(PF_R8 + 1)}};
     test_signal(440, 12000, 277, 9000);
     run(72, 1, ev, 2, 50000);
-    bad += check("REPEAT 1/8 at 72 BPM (417 ms, the loop holds 371): nothing happens, bit for bit",
+    bad += check("REPEAT 1/8 at 72 BPM (417 ms, the loop holds 371 at 22 kHz): V10.59 plays it at 11 kHz (lo-fi)",
+                 !same(0, 40000) && (perf_avail() & PF_BIT(PF_R8)));
+    {   /* (V10.59) the 11 kHz loop repeats: a 1/8 later the same (a 440 Hz / 277 Hz pair: within the lo-fi's error) */
+        char what[160];
+        uint32_t L = (uint32_t)(44100u * 60u / 72u / 2u), t, a0 = 30000u;   /* (recorded from the 1/16 after 992, played
+                                                         * a 1/8 later: the input of a 1/8 before) */
+        double e = 0, p = 0;
+        for (t = a0; t < a0 + 4000u; t++) {
+            double d = (double)out_l[t] - in_l[t - L];
+            e += d * d;
+            p += (double)out_l[t] * out_l[t];
+        }
+        snprintf(what, sizeof what, "  .. a loop: a 1/8 later the same within %.1f %%", p > 0 ? 100.0 * sqrt(e / p) : 100.0);
+        bad += check(what, p > 0 && e < p * 0.01);
+    }
+    run(36, 1, ev, 2, 50000);
+    bad += check("REPEAT 1/8 at 36 BPM (833 ms, past 742 even at 11 kHz): nothing happens, bit for bit",
                  same(0, 50000) && !busy_seen && !sl_lent && !(perf_avail() & PF_BIT(PF_R8)));
     run(120, 1, ev, 2, 50000);
     bad += check("REPEAT 1/8 at 120 BPM (250 ms): it plays", !same(0, 40000) && (perf_avail() & PF_BIT(PF_R8)));
-    song.g[G_BPM] = 81;
-    bad += check("  REPEAT 1/8 fits from 81 BPM, 1/16 from 41",
+    song.g[G_BPM] = 41;
+    bad += check("  REPEAT 1/8 fits from 41 BPM, 1/16 from 21 (V10.59: below 81 / 41 at 11 kHz)",
                  (perf_avail() & PF_BIT(PF_R8)) &&
-                 (song.g[G_BPM] = 80, !(perf_avail() & PF_BIT(PF_R8))) &&
-                 (song.g[G_BPM] = 41, perf_avail() & PF_BIT(PF_R16)) &&
-                 (song.g[G_BPM] = 40, !(perf_avail() & PF_BIT(PF_R16))));
+                 (song.g[G_BPM] = 40, !(perf_avail() & PF_BIT(PF_R8))) &&
+                 (song.g[G_BPM] = 21, perf_avail() & PF_BIT(PF_R16)) &&
+                 (song.g[G_BPM] = 20, !(perf_avail() & PF_BIT(PF_R16))));
     {   /* a REPEAT held while the tempo slows past its fit stops cleanly */
         uint32_t t;
         int32_t mx = 0;

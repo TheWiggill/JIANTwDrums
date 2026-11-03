@@ -16,7 +16,7 @@
  * one held before.
  * The buffer: the SLICER's recordings (sl_buf, 32 KB) borrowed as one stereo loop of 8192 frames at 22.05 kHz
  * (371 ms). While borrowed, STUT tracks play live; their recordings are dropped afterwards. A REPEAT 1/8 longer
- * than the loop at the tempo (below 81 BPM) does nothing (the map shows it dimmed).
+ * than the loop at the tempo (below 81 BPM) records at 11 kHz (V10.59: lo-fi, down to ~41 BPM; slower: dimmed).
  * KNOB 1..4 with FX: the macros FILTER (the LPF / HPF), CRUSH, THROW (the dry mix into the delay and reverb
  * sends), DEPTH (the REPEAT's level).
  * MENU > FX LATCH ON (#40, a hand that cannot hold FX, a key and a knob together): a key pressed with FX turns its
@@ -87,7 +87,9 @@ static struct {
     uint8_t busy, sync, mute;          /* sync: a 1/16 starts with the next block; mute: tracks to ramp */
     /* the buffer */
     uint8_t mode, src, next;           /* BM_*, the effect it plays (PF_N none), one waiting for the fade */
-    uint8_t state, odd;                /* LOOP: 0 recording, 1 playing; the sample of a pair */
+    uint8_t state, odd;                /* LOOP: 0 recording, 1 playing; the sample of a frame's (1 << q) */
+    uint8_t q;                         /* (V10.59) samples a frame, log2: 1 (22.05 kHz), 2 (11 kHz: a REPEAT longer than the
+                                        * loop at 22.05, a slow tempo's 1/8: lo-fi, the effect's) */
     uint32_t len, wr, rp;              /* loop length (samples), frames written, read (samples into the loop) */
     uint32_t xrp, xlen, xn;            /* the loop it switched from, faded over xn samples */
     int32_t w, tw, hl, hr;             /* the buffer's share and its target, Q15; the first of a pair */
@@ -121,7 +123,7 @@ static uint32_t perf_avail(void)
 {
     uint32_t e, m = ~0u, b = beat_samples();
     for (e = PF_R8; e <= PF_R32; e++)
-        if (b > PB_MAX * PF_DEN[e])
+        if (b > 2u * PB_MAX * PF_DEN[e])   /* (V10.59: longer than the loop: at 11 kHz, pf.q 2) */
             m &= ~PF_BIT(e);
     return m;
 }
@@ -181,10 +183,12 @@ static void perf_buf_start(uint32_t e)
     pf.next = PF_N;
     pf.wr = pf.rp = 0;
     pf.odd = 0;
+    pf.hl = pf.hr = 0;
     pf.xn = 0;
     pf.mode = e == PF_GLT ? BM_GLT : BM_LOOP;
     pf.state = 0;
     pf.len = perf_len(e);
+    pf.q = e != PF_GLT && pf.len > PB_MAX ? 2u : 1u;
     memset(&pf.u, 0, sizeof pf.u);
     memset(sl_buf[PB_FRAMES - 2u], 0, 2u * sizeof sl_buf[0]);   /* (what GLITCH reads before the start: quiet) */
     if (e == PF_GLT) {                    /* its first 1/16: the transport's (this block's split starts the next one) */
@@ -200,7 +204,7 @@ static void perf_buf_select(uint32_t e)
     if (e == pf.src && pf.next == PF_N)
         return;
     if (e != PF_N && pf.mode == BM_LOOP && pf.state && e <= PF_R32 && pf.src != PF_N &&
-        perf_len(e) <= 2u * pf.wr) {
+        perf_len(e) <= pf.wr << pf.q) {
         pf.xrp = pf.rp;
         pf.xlen = pf.len;
         pf.xn = SL_RAMP;
@@ -368,6 +372,15 @@ static inline void pb_at(uint32_t s, uint32_t n, int32_t *l, int32_t *r)
     uint32_t f = s >> 1 < n ? s >> 1 : n - 1u;    /* (an odd loop's last sample: the frame before) */
     const int16_t *p = &sl_buf[0][0] + 2u * (f & (PB_FRAMES - 1u));
     const int16_t *q;                               /* a frame is the mean of samples 2f, 2f + 1: sample s */
+    if (pf.q > 1u) {                                /* (V10.59) 11 kHz: four samples a frame, linear between frames */
+        int32_t fr = (int32_t)(s & 3u);
+        f = s >> 2 < n ? s >> 2 : n - 1u;
+        p = &sl_buf[0][0] + 2u * (f & (PB_FRAMES - 1u));
+        q = f + 1u < n ? p + 2 : p;
+        *l = 2 * (p[0] + (((q[0] - p[0]) * fr) >> 2));
+        *r = 2 * (p[1] + (((q[1] - p[1]) * fr) >> 2));
+        return;
+    }
     if (s & 1u)                                     /* lies a quarter frame from it, towards f + 1 or f - 1 */
         q = f + 1u < n ? p + 2 : p;
     else
@@ -391,14 +404,13 @@ static inline void pb_loop(uint32_t rp, uint32_t len, uint32_t n, int32_t *l, in
 /* record the pair into frame f (the mean, >> 1: headroom) */
 static inline uint32_t pb_rec(uint32_t f, int32_t l, int32_t r)
 {
-    if (!pf.odd) {
-        pf.hl = l;
-        pf.hr = r;
-        pf.odd = 1;
+    pf.hl += l;                                     /* (V10.59: 1 << q samples a frame, their mean >> 1) */
+    pf.hr += r;
+    if (++pf.odd < (1u << pf.q))
         return f;
-    }
     pf.odd = 0;
-    pb_put(f, (pf.hl + l) >> 2, (pf.hr + r) >> 2);
+    pb_put(f, pf.hl >> (pf.q + 1u), pf.hr >> (pf.q + 1u));
+    pf.hl = pf.hr = 0;
     return f + 1u;
 }
 
