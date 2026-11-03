@@ -258,6 +258,9 @@ static int32_t menu_scroll_max(void)
  *          chips (the one set framed; COLOR: each palette's colours, live)
  * The knobs, ALGORITHM, PRESETS, OCT-/+ as before (V10.27: KNOB k its card's row; OCT-/+ the selected row's value; PRESETS its row, on MENU
  * the tab). The drawing redone whole on a change (menu_sig) */
+/* (V10.58) the panel's top: under the cards (COLORS, AIR), or, BOTTOM and HUD (their cards at the foot), right under the
+ * tabs (the panel at COLORS' place covered BOTTOM's and HUD's cards and left a blank band over it) */
+static uint32_t menu_py(void) { return lz_low() && ux.skin != SKIN_AIR ? LB_GRAPH_Y : LZ_GRAPH_Y; }
 static int menu_large(void) { return (ui_prefs & PREF_LARGE) != 0u; }
 static uint32_t menu_tab(void) { return MI_TAB[ui.menu_sel % MI_COUNT]; }
 static uint32_t menu_set(void) { return (ui.menu_sel - mtab_first(menu_tab())) / 4u; }   /* ROWS 1-4: 0, 5-6: 1 */
@@ -496,7 +499,7 @@ static void draw_menu(void)
         return;
     }
     if (ui.force) {                                    /* (0.9.0) round its tabs, cards, panel and footer, not under them */
-        int16_t R[7][4] = {{0, LT_Y, 240, (int16_t)(lz_low() ? LB_TAB_H : LT_H)}, {0, LZ_GRAPH_Y, 240, LZ_GRAPH_H},
+        int16_t R[7][4] = {{0, LT_Y, 240, (int16_t)(lz_low() ? LB_TAB_H : LT_H)}, {0, (int16_t)menu_py(), 240, LZ_GRAPH_H},
                            {0, (int16_t)foot_y(), 240, (int16_t)foot_h()}};
         uint32_t c;
         for (c = 0; c < 4u; c++) {
@@ -516,7 +519,7 @@ static void draw_menu(void)
         bt_prox_panel(&AF_X, &AF_M, &AF_S);            /* (V10.14) */
     else
         menu_panel();
-    cv_blit(0, LZ_GRAPH_Y);
+    cv_blit(0, menu_py());
     draw_foot();
 }
 static void enc_drop(void)                             /* knob turns nobody takes */

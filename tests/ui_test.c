@@ -13454,10 +13454,37 @@ static int test_string_excite(void)
     ok &= TSEL->p[P_E4] == 99;
     return check("STRING EXCITE FDBK: GAIN heard at once, each side's EDIT 2 kept (V10.23)", ok);
 }
+static int test_eq_tape_load(void)
+{
+    int bad = 0;
+    {   /* (V10.58, a user's report) the master's EQ and TAPE: a project read (a slot checked, a section listed) leaves the
+         * ones playing alone; a load brings the project's; a project with none loads flat */
+        static project_store_t st;
+        static project_t r;
+        int ok;
+        ui_power_on();
+        eq_v[0] = 6; eq_v[1] = -4; eq_v[2] = 3; eq_v[3] = 1; tape_v[0] = 40; tape_v[1] = 20;
+        project_capture(&r);
+        ok = proj_pack(&st, &r);
+        eq_v[0] = eq_v[1] = eq_v[2] = eq_v[3] = 0; tape_v[0] = tape_v[1] = 0;
+        ok &= proj_import(&r, &st, sizeof st);
+        ok &= !eq_v[0] && !tape_v[0] && r.eq[0] == 6 && r.eq[1] == -4 && r.tp[0] == 40;
+        ok &= !project_restore_runtime(&r) && eq_v[0] == 6 && eq_v[1] == -4 && eq_v[2] == 3 && eq_v[3] == 1 && tape_v[0] == 40 && tape_v[1] == 20;
+        eq_v[0] = eq_v[1] = eq_v[2] = eq_v[3] = 0; tape_v[0] = tape_v[1] = 0;
+        project_capture(&r);
+        ok &= proj_pack(&st, &r);
+        eq_v[0] = 5; tape_v[0] = 30;
+        ok &= proj_import(&r, &st, sizeof st) && eq_v[0] == 5 && tape_v[0] == 30;
+        ok &= !project_restore_runtime(&r) && !eq_v[0] && !tape_v[0];
+        bad += check("V10.58 EQ / TAPE: a read leaves the master's playing, a load brings the project's (none: flat)", ok);
+    }
+    return bad;
+}
 int main(void)
 {
     setvbuf(stdout, NULL, _IONBF, 0);
     int bad = 0;
+    bad += test_eq_tape_load();
     bad += test_comp_cards();
     bad += test_string_excite();
     bad += test_presets_back();

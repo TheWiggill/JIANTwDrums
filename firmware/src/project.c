@@ -132,6 +132,9 @@ typedef struct {
                                                 * sounds' DXM_LANE in the second) */
     uint8_t dx_mot[4];                         /* (0.5.1) the kit's X-MOD (eng_drum.c), in its reserved bytes 3..6 */
     uint8_t dx_acoustic; /* ADD15: optional final DA extension, 0 in older projects. */
+    int8_t eq[4];                              /* (V10.58) the master's EQ and TAPE as stored: applied when the project is */
+    uint8_t tp[2];                             /* loaded (project_restore_runtime), never by a read (until V10.57 every read
+                                                * of a slot, a section's name, a check, set the EQ and TAPE playing) */
     uint8_t scene[4];                          /* (V10.31) SCL > SCENE: ON, then the six roles a nibble each (seq.c
                                                 * scn_on scn_role): FUNC's 'S' 'C' block after 'D' 'A', none before */
     uint8_t dx_tone;                           /* (0.6.36) the kit's TONE (drumx_voice.c: BP, FEEDBK), its byte 7 */
@@ -263,43 +266,43 @@ static void proj_rtype_room(int16_t *g) { g[G_RTYPE] = 0; }
 static __attribute__((noinline)) uint32_t proj_tp(const project_t *q, const uint8_t *bc, uint32_t pos, uint32_t room)
 {
     uint8_t *b = (uint8_t *)(uintptr_t)bc;               /* (written only when writing: room 0) */
-    (void)q;
+    project_t *w = (project_t *)(uintptr_t)q;           /* (V10.58: into the project, not the master playing) */
     if (!room) {
-        if (!tape_v[0] && !tape_v[1]) return 0;
+        if (!q->tp[0] && !q->tp[1]) return 0;
         if (b) {
             b[pos] = 'T'; b[pos + 1u] = 'P';
-            b[pos + 2u] = (uint8_t)tape_v[0]; b[pos + 3u] = (uint8_t)tape_v[1];
+            b[pos + 2u] = q->tp[0]; b[pos + 3u] = q->tp[1];
         }
         return 4u;
     }
     if (pos + 4u > room || b[pos] != 'T' || b[pos + 1u] != 'P') {
-        tape_v[0] = tape_v[1] = 0;
+        w->tp[0] = w->tp[1] = 0;
         return 0;
     }
-    tape_v[0] = b[pos + 2u] > 100u ? 100 : b[pos + 2u];
-    tape_v[1] = b[pos + 3u] > 100u ? 100 : b[pos + 3u];
+    w->tp[0] = b[pos + 2u] > 100u ? 100 : b[pos + 2u];
+    w->tp[1] = b[pos + 3u] > 100u ? 100 : b[pos + 3u];
     return 4u;
 }
 
 /* (p9) the master's EQ: 'E' 'Q' and its four gains (-12 .. 12, a byte each), when any is set; a project without it
  * opens flat (as proj_tp) */
-static __attribute__((noinline)) uint32_t proj_eq(const uint8_t *bc, uint32_t pos, uint32_t room)
+static __attribute__((noinline)) uint32_t proj_eq(project_t *q, const uint8_t *bc, uint32_t pos, uint32_t room)
 {
     uint8_t *b = (uint8_t *)(uintptr_t)bc;
     uint32_t k;
     if (!room) {
-        if (!eq_v[0] && !eq_v[1] && !eq_v[2] && !eq_v[3]) return 0;
+        if (!q->eq[0] && !q->eq[1] && !q->eq[2] && !q->eq[3]) return 0;
         if (b) {
             b[pos] = 'E'; b[pos + 1u] = 'Q';
-            for (k = 0; k < 4u; k++) b[pos + 2u + k] = (uint8_t)(eq_v[k] + 12);
+            for (k = 0; k < 4u; k++) b[pos + 2u + k] = (uint8_t)(q->eq[k] + 12);
         }
         return 6u;
     }
     if (pos + 6u > room || b[pos] != 'E' || b[pos + 1u] != 'Q') {
-        eq_v[0] = eq_v[1] = eq_v[2] = eq_v[3] = 0;
+        memset(q->eq, 0, sizeof q->eq);
         return 0;
     }
-    for (k = 0; k < 4u; k++) eq_v[k] = (int16_t)(b[pos + 2u + k] > 24u ? 0 : b[pos + 2u + k] - 12);
+    for (k = 0; k < 4u; k++) q->eq[k] = (int8_t)(b[pos + 2u + k] > 24u ? 0 : b[pos + 2u + k] - 12);
     return 6u;
 }
 
@@ -611,6 +614,8 @@ static void proj_fm6_init(project_t *q)
     q->dx_mute = 0;
     memset(q->dx_mot, 0, sizeof q->dx_mot);
     q->dx_acoustic = 0;
+    memset(q->eq, 0, sizeof q->eq);
+    memset(q->tp, 0, sizeof q->tp);
     memset(q->scene, 0, sizeof q->scene);
     q->dx_tone = 0;
     q->dx_hands = 0;
@@ -895,7 +900,7 @@ static uint32_t proj_packed_size(const project_t *q)
     if (q->g[G_DDRV])                                   /* (snd2) the delay's DRIVE, when on */
         n += 3u;
     n += proj_tp(q, 0, 0, 0);                           /* (snd8) the master's TAPE, when on */
-    n += proj_eq(0, 0, 0);                              /* (p9) its EQ, when set */
+    n += proj_eq((project_t *)(uintptr_t)q, 0, 0, 0);   /* (p9) its EQ, when set */
     if (q->g[G_DMOD] != GP[G_DMOD].def)                 /* (0.6.86) the delay's MOD's, when not the default */
         n += 3u;
     if (q->g[G_DTYPE] || q->g[G_DPING])                 /* (0.6.90) its TYPE and PING-PONG's */
@@ -1069,7 +1074,7 @@ static int proj_pack(project_store_t *out, const project_t *q)
         b[pos++] = 'D'; b[pos++] = 'D'; b[pos++] = (uint8_t)clamp(q->g[G_DDRV], 0, 100);
     }
     pos += proj_tp(q, b, pos, 0);                       /* (0.9.9-snd8) the master's TAPE, when on (after DRIVE's) */
-    pos += proj_eq(b, pos, 0);
+    pos += proj_eq((project_t *)(uintptr_t)q, b, pos, 0);
     if(q->dx_acoustic) { b[pos++]='D';b[pos++]='A';b[pos++]=q->dx_acoustic&127u; }                          /* (p9) its EQ, when set */
     if (proj_sc_used(q)) {                              /* (V10.31) SCENE, when on or a role set (last: before, it stops here) */
         b[pos++] = 'S'; b[pos++] = 'C';
@@ -1365,7 +1370,7 @@ static int proj_unpack_c(project_t *q, const uint8_t *b)
         pos += 3u;
     }
     pos += proj_tp(q, b, pos, room);                    /* (0.9.9-snd8) the master's TAPE (else 0) */
-    pos += proj_eq(b, pos, room);
+    pos += proj_eq(q, b, pos, room);
     if(pos+3u<=room && b[pos]=='D' && b[pos+1u]=='A') { q->dx_acoustic=b[pos+2u]&127u; pos += 3u; }        /* (p9) its EQ (else flat) */
     memset(q->scene, 0, sizeof q->scene);
     if (pos + 2u + sizeof q->scene <= room && b[pos] == 'S' && b[pos + 1u] == 'C') {   /* (V10.31) SCENE (else OFF, all KEEP) */
@@ -1655,6 +1660,11 @@ static void project_capture(project_t *p)
     p->dx_mute = dx_mute;
     memcpy(p->dx_mot, dx_mot, sizeof p->dx_mot);
     p->dx_acoustic = dx_acoustic;
+    {                                                   /* (V10.58) the master's EQ and TAPE */
+        uint32_t k;
+        for (k = 0; k < 4u; k++) p->eq[k] = (int8_t)eq_v[k];
+        p->tp[0] = (uint8_t)tape_v[0]; p->tp[1] = (uint8_t)tape_v[1];
+    }
     {                                                   /* (V10.31) SCENE */
         uint32_t i;
         memset(p->scene, 0, sizeof p->scene);
@@ -1870,6 +1880,11 @@ static int project_restore_runtime(const project_t *input)
     dx_mute_set(p->dx_mute);
     memcpy(dx_mot, p->dx_mot, sizeof dx_mot);           /* (0.5.1: the kit's X-MOD) */
     dx_acoustic = p->dx_acoustic & 127u;
+    {                                                   /* (V10.58) the master's EQ and TAPE, as stored (was set by the read) */
+        uint32_t k;
+        for (k = 0; k < 4u; k++) eq_v[k] = clamp(p->eq[k], -12, 12);
+        tape_v[0] = p->tp[0] > 100u ? 100 : p->tp[0]; tape_v[1] = p->tp[1] > 100u ? 100 : p->tp[1];
+    }
     {                                                   /* (V10.31) SCENE */
         uint32_t i;
         scn_on = p->scene[0] & 1u;
