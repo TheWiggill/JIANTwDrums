@@ -690,9 +690,18 @@ static void pr_heads(const track_t *t, int32_t top, int32_t bot, uint32_t dr)
         cv_rect(x, top, k && cur_page()->graph == GR_FUGUE && k - 1u == fg_ui % FG_HEADS ? 2 : 1, bot - top, pr_head_col(k));
     }
 }
+/* (V10.47) the roll and the grid follow the playhead (a user's ask: 64 steps, the view stayed on the first 16): while
+ * it plays and nothing was touched for 3 s, the bar shown is the one playing; a key or a knob stops it there for 3 s
+ * (what is shown is what the keys edit) */
+static void pr_follow_bar(const track_t *t)
+{
+    uint32_t s = pr_head_step(t, 0);
+    if (song.playing && (int32_t)(fm1_ms - scrn.idle) > 3000 && s < NSTEP && (uint32_t)t->p[P_SLEN] > 16u)
+        ui.bank = (uint8_t)(s / 16u);
+}
 static void graph_roll(const track_t *t, uint16_t c)
 {
-    uint32_t i, len = (uint32_t)t->p[P_SLEN], base = ui.bank * 16u, ncol, mask = scale_mask(t), held = pr_held();
+    uint32_t i, len = (uint32_t)t->p[P_SLEN], base = (pr_follow_bar(t), ui.bank * 16u), ncol, mask = scale_mask(t), held = pr_held();
     uint64_t locks = motion_lock_steps(trk_index(t));
     int32_t r, ybot, trw = 0, note_pg = cur_page()->id[0] == 4u;
     char tb[16];
@@ -798,7 +807,7 @@ static void graph_roll(const track_t *t, uint16_t c)
  * over it, the lanes 15 px under it */
 static void graph_grid(const track_t *t, uint16_t c)
 {
-    uint32_t l, i, len = (uint32_t)t->p[P_SLEN], base = ui.bank * 16u;
+    uint32_t l, i, len = (uint32_t)t->p[P_SLEN], base = (pr_follow_bar(t), ui.bank * 16u);
     uint64_t locks = motion_lock_steps(trk_index(t));
     int s = lens_strip();
     int32_t y0 = s ? 19 : 6, lp = s ? 15 : 14, hy = 2;   /* (a lane's pitch; its hits' row in it) */
