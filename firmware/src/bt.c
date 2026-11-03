@@ -159,10 +159,19 @@ static struct {
     uint8_t mn[12], mx[12], src, lock, seen;            /* (V10.18) each reading's range on this link; the one used; kept
                                                          * (a point stored); a link seen */
 } bp;
+/* (V10.61, the user's ask: shorter distances, a quicker response) [20] ZONE 0..9: the part of FAR .. NEAR that moves
+ * PROX, the near end's (0 all of it, 9 the nearest tenth: PROX moves only close to the antenna); [21] SPEED 0..4: the
+ * level's smoothing 1/32 (as before, ~0.3 s) 1/16 1/8 1/4 1/2 (the fastest, the noisiest). 0 and 0 as V10.60 */
+#define BT_TUNE (&favorites.factory[6][20])
+#define BT_ZONE() ((uint32_t)(BT_TUNE[0] > 9u ? 0u : BT_TUNE[0]))
+#define BT_SPEED() ((uint32_t)(BT_TUNE[1] > 4u ? 0u : BT_TUNE[1]))
 BTAPP_FN static int32_t bt_prox_map(int32_t lvl)
 {
-    int32_t f = (int32_t)BT_CAL[0] << 7, n = (int32_t)BT_CAL[1] << 7;
-    return f == n ? 0 : clamp((lvl - f) * 32767 / (n - f), 0, 32767);
+    int32_t f = (int32_t)BT_CAL[0] << 7, n = (int32_t)BT_CAL[1] << 7, z = 10 - (int32_t)BT_ZONE(), p;
+    if (f == n)
+        return 0;
+    p = clamp((lvl - f) * 32767 / (n - f), 0, 32767);
+    return clamp((p - 32767 * (10 - z) / 10) * 10 / z, 0, 32767);
 }
 BTAPP_FN static void bt_prox_step(const uint16_t *w, uint32_t n, uint32_t conn, uint32_t now)
 {
@@ -181,7 +190,7 @@ BTAPP_FN static void bt_prox_step(const uint16_t *w, uint32_t n, uint32_t conn, 
                 m[q] = m[q - 1u];
             m[q] = x;
         }
-        bp.lvl = bp.have ? bp.lvl + ((int32_t)(m[k / 2u] << 8) - bp.lvl) / 32 : (int32_t)(m[k / 2u] << 8);   /* (V10.20:
+        bp.lvl = bp.have ? bp.lvl + ((int32_t)(m[k / 2u] << 8) - bp.lvl) / (32 >> BT_SPEED()) : (int32_t)(m[k / 2u] << 8);   /* (V10.20:
                                                          * the median of nine, ~32 packets: ~0.3 s; was five, ~6: on
                                                          * the hardware a random sample and hold, the channels' hops) */
         bp.have = 1;
@@ -194,7 +203,7 @@ BTAPP_FN static void bt_prox_step(const uint16_t *w, uint32_t n, uint32_t conn, 
     if (now - bp.t > 1000u)
         bp.t = now - 1000u;
     for (; now - bp.t >= 10u; bp.t += 10u)
-        mod_prox = (int16_t)(mod_prox - (mod_prox + 31) / 32);
+        mod_prox = (int16_t)(mod_prox - (mod_prox + (31 >> BT_SPEED())) / (32 >> BT_SPEED()));
 }
 /* (V10.18) twelve readings of a packet: each of its four words as V10.14's level ((w & 63) + (w >> 8 & 63)), its low
  * byte / 2, its high byte / 2. (V10.20) The one used is fixed again: word 0 (RSSI2 / 3 by the buffer) as the level, the
