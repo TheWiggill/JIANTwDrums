@@ -386,9 +386,10 @@ static void fm1_main(void)
         } else if (uh.want || uh.on)
             uh_task(fm1_ms);                            /* (V10.41) USB > HOST: the keyboard found, kept, lost */
         if (uh.msg) {
-            static const char *const UHM[7] = {"", "USB HOST: PLUG A MIDI KEYBOARD", "USB HOST OFF", "USB MIDI KEYBOARD READY",
-                                               "NOT A USB MIDI KEYBOARD", "LOW SPEED: NOT SUPPORTED", "USB KEYBOARD LOST"};
-            ui_message(UHM[uh.msg % 7u]);
+            static const char *const UHM[8] = {"", "USB HOST: PLUG A MIDI KEYBOARD", "USB HOST OFF", "USB MIDI KEYBOARD READY",
+                                               "NOT USB MIDI OR AUDIO 16BIT 44.1K", "LOW SPEED: NOT SUPPORTED", "USB DEVICE LOST",
+                                               "USB AUDIO IN READY (LAST TRACK)"};   /* (V10.53) */
+            ui_message(UHM[uh.msg % 8u]);
             uh.msg = 0;
         }
 #endif

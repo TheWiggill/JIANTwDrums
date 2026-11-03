@@ -148,6 +148,8 @@ static uint32_t ui_ring[UI_N] __attribute__((section(".pool")));   /* (2 KiB) */
 static volatile uint32_t ui_w, ui_r;
 static uint32_t ep4rx[UI_MAXF + 2u] __attribute__((aligned(4)));
 static volatile uint8_t usb_duplex;                      /* the device presents the audio output too (usb_duplex_switch) */
+static volatile uint8_t uh_aud_on;                       /* (V10.53) USB > HOST: an audio interface's input plays into the
+                                                         * ring, as IN+OUT's host does (usb_host.c uh_poll) */
 static struct {
     volatile uint8_t alt;        /* the output's streaming setting: 1 = the host plays to us */
     uint8_t go;                  /* the reader runs (primed: UI_TARGET frames were in hand) */
@@ -1705,7 +1707,7 @@ static __attribute__((noinline)) void uac_in_fill(uint32_t n)
 {
     uint32_t r = ui_r, fill = ui_w - r, i, need, ph = uin.ph;
     int32_t step = uin.step, g = uin.g;
-    if (!uin.alt || !usb.config) {
+    if (!uh_aud_on && (!uin.alt || !usb.config)) {     /* (V10.53: or an audio interface on the host port) */
         uin.go = 0;
         uin_on = 0;
         return;

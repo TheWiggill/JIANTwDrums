@@ -188,7 +188,7 @@ run "BLE-MIDI packets (the stack's codec, firmware/bt/ble/ble_midi.c)" "$OUT/ble
 $CC -o "$OUT/ble_aes_test" tests/ble_aes_test.c
 run "BLE pairing's crypto (V10.32: AES-128, c1 / s1, the LL's AES-CCM: firmware/bt/ble/ble_aes.c)" "$OUT/ble_aes_test"
 $CC -o "$OUT/usb_host_desc_test" tests/usb_host_desc_test.c
-run "USB > HOST (V10.41): a keyboard's MIDI IN found, a stick / an output-only synth refused, the event filter" "$OUT/usb_host_desc_test"
+run "USB > HOST (V10.41): a keyboard's MIDI IN found, a stick / an output-only synth refused, the event filter; (V10.53) an audio interface's 16-bit 44.1 capture" "$OUT/usb_host_desc_test"
 $CC -o "$OUT/bt_midi_test" tests/bt_midi_test.c
 run "BLE-MIDI to and from JIANT's MIDI rings (firmware/bt/bt_midi.h, V10.13)" "$OUT/bt_midi_test"
 

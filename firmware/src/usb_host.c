@@ -18,7 +18,7 @@
 #include "usb_host_desc.h"
 
 enum { S_DEVCTL = 15, S_RXTYPE = 26, S_RXINTERVAL = 27 };
-enum { UH_MSG_NONE, UH_MSG_ON, UH_MSG_OFF, UH_MSG_MIDI, UH_MSG_NOMIDI, UH_MSG_LOW, UH_MSG_LOST };
+enum { UH_MSG_NONE, UH_MSG_ON, UH_MSG_OFF, UH_MSG_MIDI, UH_MSG_NOMIDI, UH_MSG_LOW, UH_MSG_LOST, UH_MSG_AUDIO };
 #define UH_FIRST_ADDR 1u
 /* (JIANT: the app slot is full) everything of the main loop here lives in the Bluetooth segment (app.ld .btapp.text,
  * as bt.c's BTAPP_FN): run only once bt_hw_seg() said the segment is this build's (main.c); uh_poll (TIMER5) stays */
@@ -26,7 +26,8 @@ enum { UH_MSG_NONE, UH_MSG_ON, UH_MSG_OFF, UH_MSG_MIDI, UH_MSG_NOMIDI, UH_MSG_LO
 #define UH_MAX_ERRORS 16u
 
 static uint8_t uh_rx[64 + 4] __attribute__((aligned(4)));
-static uint8_t uh_cfg[320];                                  /* a configuration, cut short if longer */
+static uint8_t uh_cfg[512];                                  /* a configuration, cut short if longer (V10.53: 512, an
+                                                              * audio interface's is long) */
 static struct {
     uint8_t want;                                       /* the menu (main loop) */
     uint8_t on;                                         /* the port is a host */
@@ -36,6 +37,7 @@ static struct {
     uint8_t hub_addr, hub_mps, hub_ports, hub_poll_port;
     uint8_t line_idle;
     uint8_t msg;                                        /* one UH_MSG_* for the main loop to show */
+    uint8_t aud;                                        /* (V10.53) the device is an audio interface: its channels (1, 2) */
     volatile uint8_t errors;
     uint32_t t_ms, retry_ms, hub_poll_ms;
     volatile uint32_t pkts, events;
@@ -122,6 +124,38 @@ UH_SEG static int uh_ctl(uint8_t addr, uint8_t rt, uint8_t rq, uint16_t val, uin
     return r < 0 ? r : (int)got;
 }
 
+#if FELUCCA_UAC
+/* (V10.53) a control transfer with a short OUT data stage (SET_CUR: an audio interface's sample rate): SETUP, the data,
+ * the status (a zero-length IN). 0 done, < 0 a stall / error / timeout */
+UH_SEG static int uh_ctl_out(uint8_t addr, uint8_t rt, uint8_t rq, uint16_t val, uint16_t idx, const uint8_t *data,
+                             uint32_t len)
+{
+    uint32_t i;
+    int r;
+    sie_wr(S_FADDR, addr);
+    sie_wr(S_INDEX, 0);
+    ep0buf[0] = rt; ep0buf[1] = rq;
+    ep0buf[2] = (uint8_t)val; ep0buf[3] = (uint8_t)(val >> 8);
+    ep0buf[4] = (uint8_t)idx; ep0buf[5] = (uint8_t)(idx >> 8);
+    ep0buf[6] = (uint8_t)len; ep0buf[7] = 0;
+    fm1_usb_ep0_send(ep0buf, 8);
+    sie_wr(S_CSR0, 0x0Au);                              /* SetupPkt | TxPktRdy */
+    if ((r = uh_csr0(0, 0x02u)) < 0)
+        return r;
+    for (i = 0; i < len; i++)
+        ep0buf[i] = data[i];
+    fm1_usb_ep0_send(ep0buf, len);
+    sie_wr(S_CSR0, 0x02u);                              /* TxPktRdy: the data */
+    if ((r = uh_csr0(0, 0x02u)) < 0)
+        return r;
+    sie_wr(S_CSR0, 0x60u);                              /* status: StatusPkt | ReqPkt (zero-length IN) */
+    r = uh_csr0(0x01u, 0);
+    if (r >= 0)
+        sie_wr(S_CSR0, 0);
+    return r < 0 ? r : 0;
+}
+#endif
+
 static int uh_hub_probe(uint8_t addr, uint8_t mps, uint8_t cfgval, uh_midi_t *m);
 
 /* The device at address 0 (just reset): an address, its configuration, and if it has a USB-MIDI streaming IN endpoint
@@ -153,8 +187,29 @@ UH_SEG static int uh_probe(uint8_t depth, uh_midi_t *m)
     }
     if (cls == 9u)                                      /* a hub */
         return depth == 0u ? uh_hub_probe(addr, mps, uh_cfg[5], m) : 0;
-    if (!uh_parse_midi(uh_cfg, total, m) || !m->in_ep)  /* (JIANT: input only) */
+    uh.aud = 0;
+    if (!uh_parse_midi(uh_cfg, total, m) || !m->in_ep) {   /* (JIANT: input only) */
+#if FELUCCA_UAC
+        uh_aud_t a;                                     /* (V10.53) not MIDI: an audio interface's input? */
+        static const uint8_t F441[3] = {0x44, 0xAC, 0x00};
+        if (!uh_parse_uac(uh_cfg, total, &a))
+            return 0;
+        if (uh_ctl(addr, 0x00, 9, a.cfg, 0, 0, 0, mps) < 0 ||   /* SET_CONFIGURATION, SET_INTERFACE (the capture alt) */
+            uh_ctl(addr, 0x01, 11, a.alt, a.iface, 0, 0, mps) < 0)
+            return 0;
+        if (a.setf)                                     /* SET_CUR SAMPLING_FREQ_CONTROL: 44,100 (a refusal: tried as is) */
+            uh_ctl_out(addr, 0x22, 1, 0x0100, (uint16_t)(0x80u | a.ep), F441, 3);
+        *m = (uh_midi_t){0};
+        m->in_ep = a.ep;
+        m->in_type = 1;                                 /* isochronous */
+        m->in_mps = a.mps;
+        uh.aud = a.ch;
+        uh.dev = addr;
+        return 1;
+#else
         return 0;
+#endif
+    }
     if (uh_ctl(addr, 0x00, 9, m->cfg, 0, 0, 0, mps) < 0)   /* SET_CONFIGURATION */
         return 0;
     if (m->alt && uh_ctl(addr, 0x01, 11, m->alt, m->iface, 0, 0, mps) < 0)   /* SET_INTERFACE */
@@ -230,23 +285,31 @@ UH_SEG static void uh_start_ep(const uh_midi_t *m)
 {
     sie_wr(S_FADDR, uh.dev);
     sie_wr(S_INDEX, 1);
+#if FELUCCA_UAC
+    if (uh.aud) {                                       /* (V10.53) an audio interface: its packets into IN+OUT's buffer */
+        fm1_usb_ep_rxbuf(1, ep4rx);
+        uin.gen++;                                      /* (the reader drops what the ring held: a new stream) */
+    } else
+#endif
     fm1_usb_ep_rxbuf(1, uh_rx);
     sie_wr(S_RXMAXP, 0xFF);
     sie_wr(S_RXCSR1, 0x90);                             /* clear data toggle, flush */
     sie_wr(S_RXCSR2, 0);
     sie_wr(S_RXTYPE, (uint32_t)(m->in_type << 4 | m->in_ep));
-    sie_wr(S_RXINTERVAL, m->in_type == 3u ? m->in_interval : 0u);
+    sie_wr(S_RXINTERVAL, m->in_type == 3u ? m->in_interval : m->in_type == 1u ? 1u : 0u);   /* (iso: every frame) */
     sie_wr(S_RXCSR1, 0x20u);                            /* ReqPkt */
     fm1_usb_ep_enable(1u << 1);
     uh.errors = 0;
     uh.fault = 0;
     RING_PUBLISH();
     uh.run = 1;
+    uh_aud_on = uh.aud != 0u;                           /* (V10.53: audio.c reads the ring) */
 }
 
 UH_SEG static void uh_session_end(void)                        /* the input stops: every note it held let go */
 {
     uh.run = 0;
+    uh_aud_on = 0;
     RING_PUBLISH();
     midi_in_overflow = 1;                               /* (seq.c: every note off, the ring emptied) */
 }
@@ -287,7 +350,7 @@ UH_SEG static void uh_connect(void)                            /* a device on th
     uh.next_addr = UH_FIRST_ADDR;
     if (uh_probe(0, &m)) {
         uh_start_ep(&m);
-        uh.msg = UH_MSG_MIDI;
+        uh.msg = uh.aud ? UH_MSG_AUDIO : UH_MSG_MIDI;
         uh.tried = 0;
     } else {
         if (!uh.tried)
@@ -355,7 +418,7 @@ UH_SEG static void uh_task(uint32_t now)
                 uh_wait(100);
                 if (uh_hub_status(p, b) && uh_hub_port_probe(p, (uint32_t)(b[0] | b[1] << 8), &m)) {
                     uh_start_ep(&m);
-                    uh.msg = UH_MSG_MIDI;
+                    uh.msg = uh.aud ? UH_MSG_AUDIO : UH_MSG_MIDI;
                     uh.tried = 0;
                 }
             }
@@ -390,6 +453,33 @@ static void uh_poll(void)                               /* TIMER5 ISR, 2 kHz, wh
         uh_fail();
         return;
     }
+#if FELUCCA_UAC
+    if (uh.aud) {                                       /* (V10.53) an audio interface: a packet each frame into the ring
+                                                         * (usb.c uin_take, as IN+OUT's), a mono one doubled; an
+                                                         * isochronous error is a lost packet, never a fault */
+        if (csr & 0x01u) {
+            n = sie_rd(S_RXCOUNT1) | (sie_rd(S_RXCOUNT2) << 8);
+            if (n > sizeof ep4rx)
+                n = sizeof ep4rx;
+            fm1_usb_rx_sync();
+            if (uh.aud == 1u) {
+                const uint16_t *m16 = (const uint16_t *)ep4rx;
+                uint32_t f = n / 2u > UI_MAXF ? UI_MAXF : n / 2u;
+                for (i = f; i--;)
+                    ep4rx[i] = (uint32_t)m16[i] | (uint32_t)m16[i] << 16;
+                n = f * 4u;
+            }
+            uin_take(ep4rx, n);
+            uh.pkts++;
+            sie_wr(S_RXCSR1, 0x10u);
+            sie_wr(S_RXCSR1, 0x20u);
+            return;
+        }
+        if ((csr & 0x0Cu) || !(csr & 0x20u))
+            sie_wr(S_RXCSR1, 0x20u);
+        return;
+    }
+#endif
     if (csr & 0x0Cu) {                                  /* Error / DataError */
         if (++uh.errors >= UH_MAX_ERRORS) {
             uh_fail();

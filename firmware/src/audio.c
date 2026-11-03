@@ -32,7 +32,8 @@ static void audio_block(int32_t *out, uint32_t n)       /* mix (fx.c), then Q15 
 {
     uint32_t i;
 #if FELUCCA_UAC && defined(UAC_UIN)
-    if (USB_DUPLEX)                                     /* (0.7.5) MENU > USB IN+OUT: the host's audio, for the mix */
+    if (USB_DUPLEX || uh_aud_on)                        /* (0.7.5) MENU > USB IN+OUT: the host's audio, for the mix;
+                                                         * (V10.53) USB > HOST: an audio interface's input */
         uac_in_fill(n);
     else
         uin_on = 0;

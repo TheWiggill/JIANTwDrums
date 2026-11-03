@@ -82,3 +82,65 @@ static uint32_t uh_midi_ok(uint32_t pkt)
         return pkt;
     return 0u;
 }
+
+/* (JIANT V10.53) a USB audio class 1.0 capture interface (an audio interface's input: Behringer UM2 / UCA, ...): the
+ * first AudioStreaming alternate setting with an isochronous IN endpoint whose format is PCM type I, 16-bit, mono or
+ * stereo, and whose sample rates take 44,100 Hz (the FM-1's own: no conversion). setf: more than one rate (or a range):
+ * the rate must be set (SET_CUR to the endpoint) */
+typedef struct {
+    uint8_t found, cfg, iface, alt;
+    uint8_t ep;                  /* endpoint number (without the direction bit) */
+    uint8_t ch, setf;
+    uint16_t mps;
+} uh_aud_t;
+
+static int uh_parse_uac(const uint8_t *d, uint32_t len, uh_aud_t *a)
+{
+    uint32_t i = 0;
+    uint8_t cfg = 0, as = 0, fmt_ok = 0, ch = 0, setf = 0, iface = 0, alt = 0;
+    *a = (uh_aud_t){0};
+    while (i + 2u <= len) {
+        uint32_t l = d[i];
+        if (l < 2u || i + l > len)
+            break;
+        if (d[i + 1] == 2u && l >= 9u) {
+            cfg = d[i + 5];
+        } else if (d[i + 1] == 4u && l >= 9u) {         /* an interface: AudioStreaming, an alternate setting with data */
+            as = d[i + 5] == 1u && d[i + 6] == 2u && d[i + 3] != 0u;
+            iface = d[i + 2];
+            alt = d[i + 3];
+            fmt_ok = 0;
+        } else if (d[i + 1] == 0x24u && l >= 8u && as && d[i + 2] == 2u) {   /* FORMAT_TYPE */
+            uint32_t ft = d[i + 7], k, has = 0;
+            if (d[i + 3] == 1u && (d[i + 4] == 1u || d[i + 4] == 2u) && d[i + 5] == 2u && d[i + 6] == 16u) {
+                if (!ft && l >= 14u) {                  /* a continuous range */
+                    uint32_t lo = d[i + 8] | d[i + 9] << 8 | (uint32_t)d[i + 10] << 16;
+                    uint32_t hi = d[i + 11] | d[i + 12] << 8 | (uint32_t)d[i + 13] << 16;
+                    has = lo <= 44100u && hi >= 44100u;
+                }
+                for (k = 0; ft && k < ft && 8u + 3u * k + 3u <= l; k++)
+                    has |= (d[i + 8 + 3 * k] | d[i + 9 + 3 * k] << 8 | (uint32_t)d[i + 10 + 3 * k] << 16) == 44100u;
+            }
+            fmt_ok = (uint8_t)has;
+            ch = d[i + 4];
+            setf = ft != 1u;
+        } else if (d[i + 1] == 5u && l >= 7u && as && fmt_ok && !a->found) {
+            uint8_t ea = d[i + 2];
+            uint16_t mps = (uint16_t)(d[i + 4] | d[i + 5] << 8);
+            if ((ea & 0x80u) && (ea & 15u) && (d[i + 3] & 3u) == 1u && mps >= 88u && mps <= 192u) {
+                a->found = 1;
+                a->cfg = cfg;
+                a->iface = iface;
+                a->alt = alt;
+                a->ep = ea & 15u;
+                a->ch = ch;
+                a->setf = setf;
+                a->mps = mps;
+                if (ch == 2u)                           /* (stereo: taken; a mono one is kept looking past) */
+                    break;
+            }
+        }
+        i += l;
+    }
+    return a->found;
+}
