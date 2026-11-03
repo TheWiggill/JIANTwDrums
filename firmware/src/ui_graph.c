@@ -172,11 +172,13 @@ static void graph_lfo(const track_t *t, uint16_t c)
  * height; under it the two waves it is between */
 /* (0.6.48) EDIT > IMAGE (a DRUM track): the eight sounds from left to right as IMAGE places them (as wide as DRV,
  * DIST and the FILTER let it play: dx_img_k), a row each, the kick on top, on a line from the middle */
-static uint32_t vx_on_mask(const track_t *t)            /* (V10.49) the part's voices sounding, a bit each */
+static uint32_t vx_on_mask(const track_t *t)            /* (V10.49) the part's voices sounding, a bit each; (V10.52) their
+                                                         * levels (a step each 1/8) and notes: the blobs move */
 {
     uint32_t m = 0, i;
     for (i = 0; i < NVOICE; i++)
-        m |= (uint32_t)(t->v[i].active != 0) << i;
+        if (t->v[i].active)
+            m = (m ^ (1u << i) ^ (uint32_t)(clamp(t->v[i].env_out, 0, 32767) >> 12) << (i * 3u % 24u) ^ t->v[i].note << 8) * 16777619u;
     return m;
 }
 static void graph_dximg(const track_t *t)
@@ -184,22 +186,45 @@ static void graph_dximg(const track_t *t)
     static const char *const AB[DV_NLANE] = {"BD", "SD", "CP", "CH", "OH", "TM", "RS", "CB"};
     int32_t img = clamp(t->p[P_DXIMG], 0, 127), k = img ? dx_img_k(t) : 0, cx = PANEL_X0 + PANEL_W / 2;
     uint32_t l;
-    cv_rect(cx, 0, 1, 96, T_RAISE);
-    if (trk_eng(t) != ENGI_DRUM) {                       /* (V10.49) a synth: its eight voices' places, lit while they sound
-                                                          * (voice.c: POLY only) */
+    if (trk_eng(t) != ENGI_DRUM) {                       /* (V10.52) a synth: the stereo field, L .. R; each voice sounding a
+                                                          * blob at its place (IMAGE: voice.c), its size its level now, its
+                                                          * note over it; the silent ones a tick where they would sit; the
+                                                          * span IMAGE opens as a bar under the field (POLY only) */
         static const int8_t VP[8] = {-64, 64, -32, 32, -48, 48, -16, 16};
         int poly = t->p[P_VOICE] == V_POLY;
-        img = 127 - clamp(t->p[P_SIMG], 0, 127);         /* (P_SIMG: stored inverted) */
-        for (l = 0; l < 8u; l++) {
-            int32_t x = cx + (poly ? VP[l] * img / 127 : 0) * (PANEL_W / 2 - 14) / 64, y = (int32_t)l * 12;
-            char b[2] = {(char)('1' + l), 0};
-            uint16_t c = l < NVOICE && t->v[l].active ? heat_col(160u + l * 10u) : T_RAISE;
-            cv_rrect(x - 8, y, 16, 11, 2, c, T_SURF);
-            cv_text_in(x - 8, y + CAP_IN(S, 11), 16, &AF_S, b, T_INK, c);
+        int32_t half = PANEL_W / 2 - 16, fy = 62, sp;
+        char b[8];
+        img = poly ? 127 - clamp(t->p[P_SIMG], 0, 127) : 0;   /* (P_SIMG: stored inverted) */
+        sp = img * half / 127;
+        cv_text(PANEL_X0, 4 - AF_S_CAP_Y, &AF_S, "L", T_DIM);
+        cv_text_r(PANEL_X0 + PANEL_W, 4 - AF_S_CAP_Y, &AF_S, "R", T_DIM, T_SURF);
+        cv_rect(PANEL_X0 + 6, fy, PANEL_W - 12, 1, T_LINE);   /* the field */
+        cv_rect(cx, fy - 22, 1, 44, T_RAISE);                  /* the middle */
+        if (sp)
+            cv_rect(cx - sp, fy + 26, 2 * sp + 1, 3, heat_col(60u + (uint32_t)img));   /* the span */
+        for (l = 0; l < 8u && l < NVOICE; l++) {
+            const voice_t *v = &t->v[l];
+            int32_t x = cx + VP[l] * sp / 64;
+            if (!v->active) {
+                cv_rect(x, fy + 3, 1, 4, T_RAISE);
+                continue;
+            }
+            {
+                int32_t a = clamp(v->env_out, 0, 32767), r = 3 + a * 9 / 32767;
+                uint16_t c = heat_col(110u + (uint32_t)(a >> 8));
+                cv_rrect(x - r, fy - r, 2 * r + 1, 2 * r + 1, r, c, T_SURF);
+                note_name(b, v->note);
+                if (sp)                                  /* (in the middle, IMAGE 0: the notes in a row over it) */
+                    cv_text_in(x - 14, fy - r - 12, 28, &AF_S, b, T_TEXT, T_SURF);
+                else
+                    cv_text_in(PANEL_X0 + 6 + (int32_t)l * 26, 22, 26, &AF_S, b, T_TEXT, T_SURF);
+            }
         }
-        if (!poly) cv_text(PANEL_X0, 100, &AF_S, "POLY ONLY", T_DIM);
+        cv_text(PANEL_X0, 100 - AF_S_CAP_Y, &AF_S, poly ? (img ? "IMAGE: VOICES SPREAD" : "IMAGE 0: ALL CENTRED") : "POLY ONLY",
+                poly && img ? T_MID : T_DIM);
         return;
     }
+    cv_rect(cx, 0, 1, 96, T_RAISE);
     for (l = 0; l < DV_NLANE; l++) {
         int32_t p = img ? dx_img_pan(l, img) * k >> 8 : 0, y = (int32_t)l * 12;
         int32_t x = cx + p * (PANEL_W / 2 - 14) / 64;

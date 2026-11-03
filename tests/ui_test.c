@@ -2033,8 +2033,11 @@ static int test_save(void)
 static void go_title(const char *title)
 {
     uint32_t i;
-    for (i = 0; i < NPAGES && !str_eq(PAGES[i].title, title); i++)
-        ;
+    for (i = 0; i < NPAGES && !(str_eq(PAGES[i].title, title) && page_visible(i)); i++)
+        ;                                       /* (V10.52: two pages of a title, STEREO: the one this track shows) */
+    if (i == NPAGES)
+        for (i = 0; i < NPAGES && !str_eq(PAGES[i].title, title); i++)
+            ;
     if (i == NPAGES) {                          /* (0.6.80: a page renamed under a script; it read past PAGES) */
         fprintf(stderr, "go_title: no page \"%s\"\n", title);
         exit(2);
