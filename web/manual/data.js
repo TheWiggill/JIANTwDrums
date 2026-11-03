@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.51", items: [
+    ["Arreglo: el roll que sigue al playhead (V10.47) no hacía nada en el FM-1: la pantalla no se redibujaba mientras el playhead estaba fuera de los 16 pasos visibles. Ahora sí lo sigue.", "Fix: the roll following the playhead (V10.47) did nothing on the FM-1: the panel was never redrawn while the playhead was outside the 16 steps shown. Now it follows."]]},
   {v: "V10.50", items: [
     ["Arreglo: en VOICE, la página STEREO de V10.49 mostraba y movía LYRIC en vez de IMAGE (compartían lugar). IMAGE de los sintes ahora es un parámetro propio en su propia página (proyectos viejos: 0 %).", "Fix: on VOICE, V10.49's STEREO page showed and moved LYRIC instead of IMAGE (they shared a slot). A synth's IMAGE is now its own parameter on its own page (old projects: 0 %)."],
     ["Orden de EDIT: primero las páginas del sonido (FILTER, MORPH, RETRIG, ROTOR, WORDS, STEREO), después FOCUS y al final VOICE y VOICE 2, en su propia pestaña (FM6: FILTER, STEREO, los operadores y después VOICE).", "EDIT order: the sound's pages first (FILTER, MORPH, RETRIG, ROTOR, WORDS, STEREO), then FOCUS, then VOICE and VOICE 2 last, in a tab of their own (FM6: FILTER, STEREO, the operators, then VOICE)."]]},
