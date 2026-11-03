@@ -4286,9 +4286,9 @@ static int test_layer(void)
             ok &= i == 1u || ((a ^ b2) >> white(i)) & 1u;
         ok &= !((a | b2) >> white(15) & 1u);                          /* G5: no effect, dark */
         ok &= ((a ^ b2) >> key_at(1, 0)) & 1u && ((a ^ b2) >> key_at(1, 6)) & 1u;   /* a mute breathes, (snd2) LOOP 3 too */
-        song.g[G_BPM] = 72;
+        song.g[G_BPM] = 36;                                         /* (V10.59: 72 plays at 11 kHz) */
         a = leds_at(0); b2 = leds_at(250);
-        ok &= !((a | b2) >> white(0) & 1u);                          /* 1/8: too long at 72 */
+        ok &= !((a | b2) >> white(0) & 1u);                          /* 1/8: too long at 36 even at 11 kHz */
         ok &= ((a ^ b2) >> white(2)) & 1u;                            /* 1/32 still blinks */
         song.g[G_BPM] = 120;
     }
