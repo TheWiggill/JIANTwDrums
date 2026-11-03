@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.56).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.58).
 
 ## Reporting a crash
 
@@ -428,6 +428,18 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.58 (beta)
+- **The master EQ (and TAPE) no longer go back to flat on their own** (a user's report since V10.44): every read of a
+  stored project or section, as some GLO pages do, set the EQ playing to the stored one. They change only when a
+  project is loaded now.
+- **FX › EQ with MENU › DISPLAY › SCOPE ON**: the master's scope live behind the EQ curve (OFF: the curve alone).
+- **MENU in BOTTOM and HUD**: the four cards show at the foot (they were hidden under the panel, a blank band above).
+- **AIR's HOME**: the beings swim under the cards (they crossed the tabs and the values).
+
+### V10.57 (beta)
+- **USB audio interfaces at 48 kHz on HOST** (OP-Z and the many interfaces without 44.1 kHz): set to 48 kHz and
+  converted as they are read. The refusal now reads "NOT USB MIDI OR AUDIO 16BIT 44.1-48K".
 
 ### V10.56 (beta)
 - **USB IN+OUT without feedback**: the computer's or the phone's audio no longer plays through the last track by

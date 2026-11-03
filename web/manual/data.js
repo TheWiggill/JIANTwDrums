@@ -628,6 +628,13 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.58", items: [
+    ["El EQ del master (y el TAPE) ya no vuelven a cero solos (reporte de un usuario, desde V10.44): cada lectura de un proyecto o sección guardada, como hacen algunas páginas de GLO, pisaba el EQ que sonaba. Ahora solo cambian al cargar un proyecto."],
+    ["FX › EQ con MENU › DISPLAY › SCOPE ON: el osciloscopio del master en vivo detrás de la curva del EQ (OFF: la curva sola)."],
+    ["MENU en BOTTOM y HUD: las cuatro tarjetas se ven abajo (quedaban tapadas por el panel, con una franja vacía arriba)."],
+    ["HOME en AIR: los bichos nadan debajo de las tarjetas (pasaban por encima de las pestañas y los valores)."]]},
+  {v: "V10.57", items: [
+    ["Placas de audio USB a 48 kHz en HOST (OP-Z y muchas placas sin 44,1 kHz): se ponen en 48 kHz y se convierten al leerlas. Si no sirve, el cartel dice \"NOT USB MIDI OR AUDIO 16BIT 44.1-48K\"."]]},
   {v: "V10.56", items: [
     ["USB IN+OUT sin feedback: el audio de la compu o del celular ya no suena solo por la última pista (al grabar en una app que monitorea su entrada, como Koala, se armaba un feedback digital). La entrada se escucha en una pista con el motor INPUT; STEMS+IN sigue como antes."]]},
   {v: "V10.55", items: [
