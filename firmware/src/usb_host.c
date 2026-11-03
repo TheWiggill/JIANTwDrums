@@ -304,12 +304,14 @@ UH_SEG static void uh_start_ep(const uh_midi_t *m)
     RING_PUBLISH();
     uh.run = 1;
     uh_aud_on = uh.aud != 0u;                           /* (V10.53: audio.c reads the ring) */
+    uin_feed = (uint8_t)(usb_duplex | uh_aud_on);
 }
 
 UH_SEG static void uh_session_end(void)                        /* the input stops: every note it held let go */
 {
     uh.run = 0;
     uh_aud_on = 0;
+    uin_feed = usb_duplex;
     RING_PUBLISH();
     midi_in_overflow = 1;                               /* (seq.c: every note off, the ring emptied) */
 }

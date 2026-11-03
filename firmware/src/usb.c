@@ -150,6 +150,8 @@ static uint32_t ep4rx[UI_MAXF + 2u] __attribute__((aligned(4)));
 static volatile uint8_t usb_duplex;                      /* the device presents the audio output too (usb_duplex_switch) */
 static volatile uint8_t uh_aud_on;                       /* (V10.53) USB > HOST: an audio interface's input plays into the
                                                          * ring, as IN+OUT's host does (usb_host.c uh_poll) */
+static volatile uint8_t uin_feed;                        /* (V10.53) usb_duplex | uh_aud_on, set where either changes: the
+                                                         * audio ISR tests one byte (its cost as before) */
 static struct {
     volatile uint8_t alt;        /* the output's streaming setting: 1 = the host plays to us */
     uint8_t go;                  /* the reader runs (primed: UI_TARGET frames were in hand) */
@@ -1995,5 +1997,6 @@ static __attribute__((unused)) void usb_duplex_switch(uint32_t on)
     uin.alt = 0;
     uin.gen++;
     usb_duplex = (uint8_t)on;
+    uin_feed = (uint8_t)(on | uh_aud_on);
 }
 #endif

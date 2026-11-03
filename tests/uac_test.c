@@ -183,7 +183,7 @@ static void test_duplex(void)
     int ac_ok = 0, it3 = 0, ot4 = 0, asg = 0, fmt = 0, ep = 0, cs_total = 0, in_ac = 0, ac_wt = 0;
     int32_t fmin, fmax, jump;
     double snr;
-    usb_duplex = 1;
+    usb_duplex = 1; uin_feed = usb_duplex;
     get_desc(0x0200, &d, &l);
     check("in+out: the configuration is the duplex one, its length as declared, 4 interfaces",
           d == CFG_DESC_DUP && l == sizeof CFG_DESC_DUP && le16(d + 2) == l && d[4] == 4);
@@ -229,7 +229,7 @@ static void test_duplex(void)
     uin.alt = 0;
     uac_in_fill(32u);
     check("in+out: alt 0: nothing in the mix", !uin_on && !uin.go);
-    usb_duplex = 0;
+    usb_duplex = 0; uin_feed = usb_duplex;
     get_desc(0x0200, &d, &l);
     check("in+out off: the configuration as before", d != CFG_DESC_DUP);
     usb.config = 0;
@@ -1055,7 +1055,7 @@ static void test_ring48(void)
 static void test_stems_in(void)
 {
     const uint8_t *d; uint16_t l; uint32_t off, i, n, it_ok = 0, fmt_ok = 0, epi = 0, epo = 0, nif = 0, pk[UA_MAXF * UA_W];
-    t_stems = 2; usb_stems = 1; usb_duplex = 1;
+    t_stems = 2; usb_stems = 1; usb_duplex = 1; uin_feed = usb_duplex;
     get_desc(0x0200, &d, &l);
     check("stems+in: the 10-channel configuration with the output, its length as declared, 4 interfaces",
           d == CFG_DESC_STIN && l == sizeof CFG_DESC_STIN && le16(d + 2) == l && d[4] == 4);
@@ -1105,7 +1105,7 @@ static void test_stems_in(void)
         }
         check("stems+in: the 409-frame ring round 18 times: every frame once and in order", !bad && want > 7000u && !uac.overruns);
     }
-    t_stems = 0; usb_stems = 0; usb_duplex = 0;
+    t_stems = 0; usb_stems = 0; usb_duplex = 0; uin_feed = usb_duplex;
     get_desc(0x0200, &d, &l);
     check("stems+in off: the configuration as before", d != CFG_DESC_STIN && d != CFG_DESC_PLAIN8);
     memset(&uac, 0, sizeof uac);

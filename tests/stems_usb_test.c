@@ -280,7 +280,7 @@ static void reset(uint32_t ch, double ppm, uint32_t maxp)
     nch = ch;
     t_stems = ch == 10u ? 2u : 1u;
     usb_stems = 1;
-    usb_duplex = ch == 10u;
+    usb_duplex = ch == 10u; uin_feed = usb_duplex;
     usb.config = 1;
     uac_rate_set(44100);
     uac_stream(1);
