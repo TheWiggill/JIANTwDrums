@@ -2332,7 +2332,10 @@ static inline __attribute__((always_inline)) void mix_part(track_t *t, uint32_t 
         }
     }
     mod_begin(t);                                       /* the matrix's per-block values into t->p (mod.c) */
-    int uin = uin_on && !ain_any && (uint32_t)(t - trk) + 1u == trk_live;   /* (V10.54: none INPUT) */   /* (0.7.5) USB IN+OUT: the host's audio comes in here */
+    /* (0.7.5) USB IN+OUT: the host's audio came in on the last live track. (V10.56) Only in STEMS+IN now: on IN+OUT an app
+     * that monitors what it records (KOALA) sent the FM-1's own output back, mixed in again: a digital feedback loop. The
+     * input is heard where an INPUT track takes it (eng_input.c) */
+    int uin = uin_on && fx_stems == 2u && !ain_any && (uint32_t)(t - trk) + 1u == trk_live;
     if (track_render(t, b, n))
         t->tail = (uint8_t)(512u / CTL);                /* blocks of DIST state to run out after the last voice */
     else if (!uin && (!t->tail || !t->p[P_DIST] || !--t->tail)) {

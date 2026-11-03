@@ -303,22 +303,26 @@ static void input_engine(void)
 static void usb_in(void)
 {
     double l, r, w, l0, r0, w0;
+    uin_run(100, 0, 0, 0, 1, &l0, &r0, &w0);           /* (V10.56) IN+OUT: no track takes it (an app monitoring its
+                                                         * recording sent the FM-1's output back: a feedback loop) */
+    check("USB IN+OUT: the host's audio not mixed by itself (an INPUT track takes it): no feedback loop", l0 < 1.0 && r0 < 1.0);
+    fx_stems = 2;                                       /* (STEMS+IN keeps the last track's mix, below) */
     uin_run(100, 0, 0, 0, 1, &l, &r, &w);
     printf("audio: USB IN on the last track: L %.0f R %.0f wet %.0f\n", l, r, w);
-    check("USB IN+OUT: the host's audio sounds through the last live track (both sides, centred), no send: no wet",
+    check("USB STEMS+IN: the host's audio sounds through the last live track (both sides, centred), no send: no wet",
           l > 500.0 && fabs(20.0 * log10(l / r)) < 0.1 && w == 0.0);
     uin_run(100, 0, 0, 0, 0, &l0, &r0, &w0);
-    check("USB IN+OUT: nothing when no audio comes in (uin_on clear)", l0 < 1.0 && r0 < 1.0);
+    check("USB STEMS+IN: nothing when no audio comes in (uin_on clear)", l0 < 1.0 && r0 < 1.0);
     uin_run(100, 0, 1, 0, 1, &l0, &r0, &w0);
-    check("USB IN+OUT: the track's MUTE silences it", l0 < 1.0 && r0 < 1.0);
+    check("USB STEMS+IN: the track's MUTE silences it", l0 < 1.0 && r0 < 1.0);
     uin_run(0, 0, 0, 0, 1, &l0, &r0, &w0);             /* (twice: the master's DC block settles after the run before) */
     uin_run(0, 0, 0, 0, 1, &l0, &r0, &w0);
-    check("USB IN+OUT: the track's LEVEL 0 silences it", l0 < 1.0 && r0 < 1.0);
+    check("USB STEMS+IN: the track's LEVEL 0 silences it", l0 < 1.0 && r0 < 1.0);
     uin_run(100, -64, 0, 0, 1, &l0, &r0, &w0);
-    check("USB IN+OUT: PAN full left: the right side out", l0 > 500.0 && r0 < l0 * 0.02);
+    check("USB STEMS+IN: PAN full left: the right side out", l0 > 500.0 && r0 < l0 * 0.02);
     uin_run(100, 0, 0, 127, 1, &l0, &r0, &w0);
     printf("audio: USB IN with REVERB 127: wet %.0f\n", w0);
-    check("USB IN+OUT: the track's REVERB send takes it into the reverb", w0 > 100.0);
+    check("USB STEMS+IN: the track's REVERB send takes it into the reverb", w0 > 100.0);
     {   /* (0.8.0) STEMS+IN (fx_stems 2): the host's audio in a stem of its own, not in the last track's; IN+OUT with
          * the 8 stems (fx_stems 1): in the track's, as before */
         double ms = 0, ts = 0;
@@ -331,7 +335,7 @@ static void usb_in(void)
         uin_run(100, 0, 0, 0, 1, &l0, &r0, &w0);
         ms = ts = 0;
         for (i = 0; i < 32u; i++) { ms += fabs((double)stem_buf[NPART][i]); ts += fabs((double)stem_buf[t][i]); }
-        check("USB IN+OUT with the 8 stems: the host's audio in the last track's stem (as 0.7.5)", ts > 32.0 * 1000.0 && ms == 0.0);
+        check("USB IN+OUT with the 8 stems: the host's audio in no stem (V10.56: an INPUT track takes it)", ts < 32.0 && ms == 0.0);
         fx_stems = 0;
     }
 }
