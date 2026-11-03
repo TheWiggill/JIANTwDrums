@@ -628,6 +628,8 @@ recipes: [
 
 // ------------------------------------------------------------------------------------------- what's new (README's changelog, digested)
 news: [
+  {v: "V10.48", items: [
+    ["Lugar para lo que viene: las animaciones de LOFI, ANIMAL y STRING pasaron a la zona de Bluetooth del flash y liberan ~6 KB en el firmware principal (le quedaban ~100 bytes). En pantalla no cambia nada.", "Room for what comes next: the LOFI, ANIMAL and STRING animations moved to the Bluetooth part of the flash, freeing ~6 KB in the main firmware (it had ~100 bytes left). Nothing changes on screen."]]},
   {v: "V10.47", items: [
     ["El roll sigue al playhead (pedido de un usuario): con una secuencia de más de 16 pasos, mientras suena y si no tocaste nada en 3 segundos, SEQ › STEP (el piano roll y la grilla de batería) muestra los 16 pasos que se están tocando. Al tocar una tecla o una perilla la vista se queda donde está 3 segundos, así lo que ves es lo que editan las teclas.", "The roll follows the playhead (a user's ask): with a sequence longer than 16 steps, while it plays and nothing was touched for 3 seconds, SEQ › STEP (the piano roll and the drum grid) shows the 16 steps playing. Touching a key or a knob holds the view for 3 seconds, so what you see is what the keys edit."]]},
   {v: "V10.46", items: [
