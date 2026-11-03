@@ -78,7 +78,7 @@ data USB cable straight into the computer, and keep it connected until the page 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.52).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.53).
 
 ## Reporting a crash
 
@@ -428,6 +428,13 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
 
 ## Changelog
+
+### V10.53 (beta)
+- **USB audio interface input** (experimental, a user's ask): with MENU › SYSTEM › USB › HOST, a class compliant USB
+  audio interface on a **powered hub** (the FM-1 does not power the port) is recognised besides MIDI keyboards: its
+  input (16-bit, mono or stereo, 44.1 kHz among its rates — Behringer UM2 / UCA and the like) plays into the FM-1 through
+  the last track, like USB IN+OUT's computer audio (its LEVEL, PAN and effect sends). Not yet tried on hardware;
+  interfaces that need USB high speed or only do 24-bit / 48 kHz are not supported.
 
 ### V10.52 (beta)
 - **IMAGE you can see**: a synth's EDIT › STEREO page draws the stereo field from L to R. Each voice sounding is a
