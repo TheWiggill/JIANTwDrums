@@ -1,0 +1,132 @@
+name: Publish verified VOICE and SPLIT beta
+on:
+  push:
+    branches: [main]
+    paths: [web/SPLIT_BETA.json]
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Candidate pin
+        id: pin
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json,os,re,urllib.request
+          from pathlib import Path
+          m=json.loads(Path('web/SPLIT_BETA.json').read_text())
+          assert re.fullmatch('[0-9a-f]{40}',m['source'])
+          assert Path('web/PREVIEW').read_text().strip()==m['source']
+          req=urllib.request.Request(f'https://api.github.com/repos/{os.environ["GITHUB_REPOSITORY"]}/actions/runs/{m["run_id"]}',headers={'Authorization':'Bearer '+os.environ['GH_TOKEN']})
+          run=json.load(urllib.request.urlopen(req))
+          assert run['status']=='completed' and run['conclusion']=='success','candidate checks failed'
+          assert run['head_sha']==m['source'] and run['head_branch']=='codex/voice-user-lyrics','candidate provenance mismatch'
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+              f.write('source='+m['source']+'\n')
+              f.write('run_id='+str(m['run_id'])+'\n')
+          PY
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pin.outputs.source }}
+          path: build/candidate
+          persist-credentials: false
+      - name: Frozen published site
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          run-id: 41751815977
+          github-token: ${{ github.token }}
+          path: build/released
+      - name: Exact tested firmware
+        uses: actions/download-artifact@v4
+        with:
+          name: voice-user-candidate
+          run-id: ${{ steps.pin.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: build/candidate
+      - name: Exact package and beta only
+        run: |
+          mkdir -p build/pages
+          tar -xf build/released/artifact.tar -C build/pages
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs';import {Package,crc16} from './web/fm1pkg.js';
+          const fw='build/pages/preview/firmware/';
+          const oldv=JSON.parse(fs.readFileSync(fw+'versions.json'))[0];
+          const old=new Package(fs.readFileSync(fw+oldv.file));
+          const p=new Package(fs.readFileSync('build/candidate/build/felucca.fwsc'));
+          if(p.product!==old.product||p.flashSize!==old.flashSize||p.app.size!==old.app.size||p.sfcEnd>p.flashSize)throw Error('Unexpected package layout');
+          if(crc16(p.dec.subarray(p.appOff,p.appOff+p.app.size))!==p.app.dcrc)throw Error('Bad application CRC');
+          for(const type of [100]){
+            const a=p.entries.find(e=>e.type===type),b=old.entries.find(e=>e.type===type);
+            if(!a||!b||a.size!==b.size||!Buffer.from(p.raw.subarray(a.dataOff+p.skew,a.dataOff+p.skew+a.size)).equals(Buffer.from(old.raw.subarray(b.dataOff+old.skew,b.dataOff+old.skew+b.size))))throw Error('Update loader changed');
+          }
+          const bt=p.entries.find(e=>e.type===200);
+          if(!bt||!Buffer.from(p.raw.subarray(bt.dataOff+p.skew,bt.dataOff+p.skew+bt.size)).equals(fs.readFileSync('build/candidate/build/bt.bin')))throw Error('Packaged segment differs from linked build');
+          console.log('PASS package CRC, layout, unchanged update loader, exact linked segment');
+          JS
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,re,shutil,sys,struct,zlib
+          sys.path.insert(0,'web');import make_site
+          m=json.loads(Path('web/SPLIT_BETA.json').read_text())
+          seg=Path('build/candidate/build/bt.bin').read_bytes()
+          magic,length,crc=struct.unpack_from('<III',seg)
+          assert magic==0x3154424A and length==len(seg)-32 and crc==zlib.crc32(seg[32:]),'invalid segment CRC'
+          assert struct.pack('<III',0x544E5742,length,crc) in Path('build/candidate/build/felucca.bin').read_bytes(),'app/segment pairing mismatch'
+          pages=Path('build/pages');fw=pages/'preview/firmware'
+          def digest(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+          def protected():
+              return {p.relative_to(pages).as_posix():digest(p) for p in pages.rglob('*') if p.is_file() and not p.relative_to(pages).as_posix().startswith(('preview/firmware/','preview/webapp/installer/'))}
+          before=protected()
+          prior=json.loads((fw/'versions.json').read_text())
+          old={v['file']:digest(fw/v['file']) for v in prior}
+          v=re.search(r'^#define FELUCCA_VERSION "([^"]+)"',Path('build/candidate/firmware/src/felucca.c').read_text(),re.M).group(1)
+          assert m['version']==v+'-'+m['source'][:7]+'-preview'
+          edition_path=Path('web/EDITIONS.json')
+          editions=json.loads(edition_path.read_text())
+          editions[m['version']]={'edition':'ADDITIVE / SPLIT','status':'beta'}
+          edition_path.write_text(json.dumps(editions))
+          make_site.main('build/candidate/build/felucca.fwsc',m['version'],'build/new-preview',str(fw))
+          for sub in ('firmware','webapp/installer'):
+              shutil.rmtree(pages/'preview'/sub)
+              shutil.copytree(Path('build/new-preview')/sub,pages/'preview'/sub)
+          fw=pages/'preview/firmware';versions=json.loads((fw/'versions.json').read_text())
+          assert len(versions)==len(prior)+1 and versions[0]['version']==m['version']
+          for name,h in old.items():assert digest(fw/name)==h,'previous beta package changed'
+          (fw/'SOURCE_COMMIT').write_text(m['source']+'\n')
+          (fw/'SHA256SUMS').write_text(''.join(digest(p)+'  '+p.name+'\n' for p in sorted(fw.glob('felucca-*.fwsc'))))
+          assert before==protected(),'a public, emulator or editor file changed'
+          print('PASS previous beta bytes preserved; every file outside beta preserved')
+          print('Published versions:',[x['version'] for x in versions])
+          print('New package SHA256:',digest(fw/versions[0]['file']))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: voice-split-beta
+          path: build/candidate/build/felucca.fwsc
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/pages
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
