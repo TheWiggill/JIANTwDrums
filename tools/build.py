@@ -295,7 +295,7 @@ LATE_SRC = ("gen.c", "favorites.c")   # (0.9.9-snd5: favorites.c fav_rows_new, o
 
 def late_fns():
     # REC arming is UI-only; keep its undo checkpoint out of the pinned DSP gaps.
-    names = {"rec_tap", "ly_keyname"}
+    names = {"rec_tap", "ly_keyname", "fm1_irq_on"}
     for f in LATE_SRC:
         names |= set(re.findall(r"^static [^;=()]*?\b(\w+)\((?![^)]*\)\s*;)", (FW / "src" / f).read_text(), flags=re.M))
     return names
