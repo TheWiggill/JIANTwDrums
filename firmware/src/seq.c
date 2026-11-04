@@ -1934,7 +1934,11 @@ static uint32_t seq_early(const track_t *t, uint32_t period, uint32_t len)
     if (s->time != ST_NOTE || (!s->n && !s->hit))       /* (nothing to play there: never early) */
         return 0;
     m = ST_MICRO(s);
-    return m < 0 ? (uint32_t)-m * step_samples(t, period, ni) / 64u : 0u;   /* (0.9.1: 64ths) */
+    if (m < 0) {
+        uint32_t early = fit_scale_samples(step_samples(t, period, ni), (uint32_t)-m, 6u);
+        return (t->seq_fit & 128u) && early > 65535u ? 65535u : early;
+    }
+    return 0u;   /* (0.9.1: 64ths) */
 }
 static const step_t *comp_lane(track_t *t, const step_t *s)
 {
@@ -2248,7 +2252,7 @@ static int lm_once(const step_t *s, uint32_t l, uint32_t kit)
 static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint32_t period, uint32_t skip)
 {
     uint32_t unit = t->seq_fit & 128u ? step_samples(t, period, t->seq_idx) : period;
-    uint32_t i, j, gate = unit * (uint32_t)t->p[P_SGATE] / 128u;
+    uint32_t i, j, gate = fit_scale_samples(unit, (uint32_t)t->p[P_SGATE], 7u);
     uint32_t vel = (s->flags & SF_ACCENT) ? 127u : (s->vel ? s->vel : 96u);
     uint32_t slide_in = t->seq_hold && t->seq_n && !(skip & SEQ_REP);
     uint32_t len = t->p[P_SLEN] ? (uint32_t)t->p[P_SLEN] : 1u;
@@ -2312,7 +2316,8 @@ static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint
     if (CT_LEN(s))                                  /* (0.6.82) LEN: the step's own gate, n/16 */
         gate = unit * CT_LEN(s) / 16u;
     if (hits > 1u) {                                /* RATCH: the gate of a part, no slide or tie out */
-        gate = step_samples(t, period, t->seq_idx) / div * (CT_LEN(s) ? CT_LEN(s) * 8u : (uint32_t)t->p[P_SGATE]) / 128u;
+        gate = fit_scale_samples(step_samples(t, period, t->seq_idx) / div,
+                                CT_LEN(s) ? CT_LEN(s) * 8u : (uint32_t)t->p[P_SGATE], 7u);
         if (!(skip & SEQ_REP))
             t->rat_left = (uint8_t)(hits - 1u);
         if (!arp && t->cx_rat && t->cx_dec) {       /* (seq2d) RATCHET's DECAY: each part softer (1) or louder (2)
@@ -2415,7 +2420,7 @@ static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint
             hdel = d < cap ? d : cap;
         }
         if (t->mic > 0 && hits == 1u && !bend && !slide_in && !(skip & SEQ_REP))   /* (0.6.88) TIMING late: on top */
-            hdel += (uint32_t)t->mic * step_samples(t, period, t->seq_idx) / 64u;   /* (0.9.1: 64ths) */
+            hdel += fit_scale_samples(step_samples(t, period, t->seq_idx), (uint32_t)t->mic, 6u);   /* (0.9.1: 64ths) */
     }
     sk0 = sk;                                       /* (the notes the step sounds, strummed or not: seq_notes) */
     if (!kit && !arp && m > 1u && t->p[P_CSTR] > 0 && t->p[P_VOICE] == V_POLY) {   /* (0.6.84) STRUM: the chord in

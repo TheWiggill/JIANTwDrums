@@ -9,12 +9,17 @@ static uint32_t fit_value_span(uint32_t value)
     uint32_t span = fit_valid(value) & 127u;
     return span ? span : 16u;
 }
+/* Exact fractional duration without overflowing the intermediate product for very slow fitted loops. */
+static __attribute__((always_inline)) inline uint32_t fit_scale_samples(uint32_t duration, uint32_t amount, uint32_t shift)
+{
+    return (duration >> shift) * amount + (((duration & ((1u << shift) - 1u)) * amount) >> shift);
+}
 static uint32_t fit_span(const track_t *t) { return fit_value_span(t->seq_fit); }
 static __attribute__((noinline)) uint32_t fit_step_samples(const track_t *t, uint32_t period, uint32_t idx)
 {
     uint32_t len = (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP);
     uint32_t total = period * fit_span(t), base = total / len, rem = total % len;
-    uint32_t sw = base * (uint32_t)track_swing(t) / 250u, duration;
+    uint32_t sw = len > 1u ? base * (uint32_t)track_swing(t) / 250u : 0u, duration;
     if (idx >= len) idx %= len;
     duration = base + (((idx * rem) % len) + rem >= len);
     /* Pairwise swing conserves the loop, including odd LEN: the last unpaired step is straight. */

@@ -1204,8 +1204,10 @@ static void focus_knob(uint32_t slot, int32_t steps)
  * This runs only on a knob turn, outside the audio ISR. */
 static void fit_ui_edit(track_t *t, int16_t *param, int16_t value)
 {
-    uint32_t old, now;
+    uint32_t old, now, ti = trk_index(t), oldghost = 0;
     fm1_irq_off();
+    if (LV_ON(ti) && lv.gpos[ti] < 0x7FFFFFFFu)
+        oldghost = step_samples(t, div_samples((uint32_t)t->p[P_SDIV]), lv.gidx[ti]);
     old = step_samples(t, div_samples((uint32_t)t->p[P_SDIV]), t->seq_idx);
     if (param) *param = value;
     else t->seq_fit = fit_valid((uint8_t)value);
@@ -1215,6 +1217,12 @@ static void fit_ui_edit(track_t *t, int16_t *param, int16_t value)
         uint32_t pos = old ? (uint32_t)((uint64_t)t->seq_pos * now / old) : 0u;
         t->seq_pos = pos < now ? pos : now - 1u;
         t->ext = 0;
+    }
+    if (oldghost) {
+        lv.gidx[ti] %= (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP);
+        now = step_samples(t, div_samples((uint32_t)t->p[P_SDIV]), lv.gidx[ti]);
+        uint32_t pos = (uint32_t)((uint64_t)lv.gpos[ti] * now / oldghost);
+        lv.gpos[ti] = pos < now ? pos : now - 1u;
     }
     fm1_irq_on();
 }

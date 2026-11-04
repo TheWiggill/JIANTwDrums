@@ -43,6 +43,9 @@ int main(void)
     fit_check("FIT OFF: the previous clock is sample-identical, including odd lengths and swing", off_same);
     printf("fit combinations checked: %u\n", checked);
 
+    fit_check("long-step gates avoid 32-bit intermediate overflow", fit_scale_samples(67737600u, 127u, 7u) == (uint32_t)(67737600ull * 127u / 128u));
+    fit_check("long-step microtiming avoids intermediate overflow", fit_scale_samples(67737600u, 64u, 6u) == 67737600u);
+
     ui_power_on();
     song.g[G_BPM] = 123;
     song.g[G_SWING] = 0;
@@ -107,6 +110,11 @@ int main(void)
     t->seq_pos = 1000000;
     fit_ui_set(t, 128u | 1u);
     fit_check("live ratio change cannot leave a huge catch-up queue", t->seq_pos < step_samples(t, div_samples(t->p[P_SDIV]), t->seq_idx));
+    lv.act = 1u; lv.gidx[0] = 0; lv.gpos[0] = 1000000u;
+    fit_ui_set(t, 128u | 1u);
+    fit_check("LIVE ghost also rescales safely on a ratio change", lv.gpos[0] < step_samples(t, div_samples(t->p[P_SDIV]), lv.gidx[0]));
+    lv.act = 0;
+
 
     ui_power_on();
     trk[0].seq_fit = 128u | 16u;

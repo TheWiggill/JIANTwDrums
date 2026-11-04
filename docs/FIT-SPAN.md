@@ -24,7 +24,9 @@ keeps fractional progress within its current step, preventing a burst of catch-u
 After changing loop relationships during playback, STOP/PLAY establishes a common origin.
 JUMP, REV, HOLD, LIVE rates and extra PLAYHEADS can deliberately change the traversal or
 timing; FIT does not override them. Extra PLAYHEADS retain their own DIV-based clock.
-Very dense ratios request more note events and can raise CPU/voice demand.
+Very dense ratios request more note events and can raise CPU/voice demand. On exceptionally
+long steps, negative microtiming is capped at 65535 samples to fit the existing early-offset
+counter while keeping the loop duration intact.
 
 Settings are per track and per saved section, including arrangement track-source selection,
 project reload, undo, autosave, backups and SAVE SONG AS. The optional `RF` extension adds
