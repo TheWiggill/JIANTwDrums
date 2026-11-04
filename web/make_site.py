@@ -35,7 +35,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 BLOCKS, BLK, KEEP = 20, 0x30, 0x2F
-KEEP_OLD = 8                                    # (0.9.9-beta4) the milestones in web/CLASSIC
+KEEP_OLD = 12                                    # (0.9.9-beta4) the milestones in web/CLASSIC
 SAFE = re.compile(r"felucca-[A-Za-z0-9.-]+\.fwsc")
 
 

@@ -4,6 +4,7 @@
 # (0.9.9-beta4) one milestone per line of the history, so anyone can pick the version they liked.
 # (2026-10-30) JIANT FM V10 is the new base. (2026-11-02) a pick of earlier versions back, a user's ask: anyone can
 # install the one they want.
+43b8ea8111949c990bf76523c7d4f4e77b715114  # V10.60 before public V10.6c (USB INPUT fixes)
 5db7ffcd2185030ca776404c990c58f2ed54f822  # JIANT FM V10.26 (2026-11-01): the public version before V10.35
 4b5f5c666f8bbfdb5450629aff132cf7412075a7  # JIANT FM V10 (2026-10-30): the first V10 (TIMELINE, VAR, ADD), before EUCLID and Bluetooth
 527c7e462a1542cbbde2c2cbf6b4bf151954127d  # JIANT 0.9.9-par12 (2026-10-27): the last public 0.9.9
