@@ -295,11 +295,9 @@ LATE_SRC = ("gen.c", "favorites.c")   # (0.9.9-snd5: favorites.c fav_rows_new, o
 
 def late_fns():
     # REC arming is UI-only; keep its undo checkpoint out of the pinned DSP gaps.
-    names = {"rec_tap", "ly_keyname", "fm1_irq_on",
-             # Song-save UI changes may grow; place only these main-loop functions after pinned audio.
-             "large_kind", "page_entered", "act_cols", "act_name", "act_ready", "nav_go",
-             "graph_lib", "graph_signature", "draw_columns", "edit_param", "act_do",
-             "confirm_text", "name_open", "name_ok", "nm_title", "nm_draw_field", "lib_scan", "song_switch", "draw_confirm", "foot_hint", "draw_column", "lib_poll", "vx_analog"}
+    names = {"rec_tap", "ly_keyname",
+             # Only the overflowing UI gaps move: keep all audio addresses pinned without wasting large holes.
+             "fm1_irq_on", "large_kind", "draw_confirm", "vx_analog"}
     for f in LATE_SRC:
         names |= set(re.findall(r"^static [^;=()]*?\b(\w+)\((?![^)]*\)\s*;)", (FW / "src" / f).read_text(), flags=re.M))
     return names
