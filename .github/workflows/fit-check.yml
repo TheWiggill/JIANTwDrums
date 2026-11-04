@@ -72,4 +72,3 @@ jobs:
             build/layout.ld
             build/felucca.map
             tools/audio_layout.txt
-

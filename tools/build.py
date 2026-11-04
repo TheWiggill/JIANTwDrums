@@ -457,6 +457,13 @@ def build_app():
             # addresses recorded anew: the sound moves by what grew before it, not by the compiler's new order (=1: the
             # compiler's order, which a change elsewhere can reshuffle by tens of KB)
             keep = [n for _, f, n in layout_read() if f in "@a-"] if repin == "keep" and LAYOUT.exists() else []
+            if keep and (FW / "src" / "seq_fit.c").exists():
+                # FIT's new out-of-line clock is called from RAM audio code: keep it near seq_step,
+                # not among new functions after the tables, beyond pi32v2's short-call reach.
+                clocks = ["fit_valid", "fit_value_span", "fit_span", "fit_step_samples", "step_samples"]
+                keep = [name for name in keep if name not in clocks]
+                at = keep.index("seq_step") if "seq_step" in keep else 0
+                keep[at:at] = clocks
             compile_hot([])
             LAYOUT_LD.write_text("".join(f"*(.text.{n})\n" for n in keep) + "*(.text*)\n")
             mapt, syms = link()
@@ -794,3 +801,4 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
