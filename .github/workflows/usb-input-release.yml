@@ -74,6 +74,13 @@ jobs:
             "/tmp/uac-$CDC"
           done
           python3 tools/build.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: usb-input-candidate
+          path: |
+            build/candidate/build/felucca.fwsc
+            build/candidate/build/bt.bin
+            build/candidate/build/felucca.bin
       - name: Exact package and beta only
         run: |
           mkdir -p build/pages
@@ -86,17 +93,23 @@ jobs:
           const p=new Package(fs.readFileSync('build/candidate/build/felucca.fwsc'));
           if(p.product!==old.product||p.flashSize!==old.flashSize||p.app.size!==old.app.size||p.sfcEnd>p.flashSize)throw Error('Unexpected package layout');
           if(crc16(p.dec.subarray(p.appOff,p.appOff+p.app.size))!==p.app.dcrc)throw Error('Bad application CRC');
-          for(const type of [100,200]){
+          for(const type of [100]){
             const a=p.entries.find(e=>e.type===type),b=old.entries.find(e=>e.type===type);
-            if(!a||!b||a.size!==b.size||!Buffer.from(p.raw.subarray(a.dataOff+p.skew,a.dataOff+p.skew+a.size)).equals(Buffer.from(old.raw.subarray(b.dataOff+old.skew,b.dataOff+old.skew+b.size))))throw Error('Loader or Bluetooth segment changed');
+            if(!a||!b||a.size!==b.size||!Buffer.from(p.raw.subarray(a.dataOff+p.skew,a.dataOff+p.skew+a.size)).equals(Buffer.from(old.raw.subarray(b.dataOff+old.skew,b.dataOff+old.skew+b.size))))throw Error('Update loader changed');
           }
-          console.log('PASS package CRC, layout, unchanged loader and Bluetooth');
+          const bt=p.entries.find(e=>e.type===200);
+          if(!bt||!Buffer.from(p.raw.subarray(bt.dataOff+p.skew,bt.dataOff+p.skew+bt.size)).equals(fs.readFileSync('build/candidate/build/bt.bin')))throw Error('Packaged segment differs from linked build');
+          console.log('PASS package CRC, layout, unchanged update loader, exact linked segment');
           JS
           python3 - <<'PY'
           from pathlib import Path
-          import hashlib,json,re,shutil,sys
+          import hashlib,json,re,shutil,sys,struct,zlib
           sys.path.insert(0,'web');import make_site
           m=json.loads(Path('web/USB_INPUT_RELEASE.json').read_text())
+          seg=Path('build/candidate/build/bt.bin').read_bytes()
+          magic,length,crc=struct.unpack_from('<III',seg)
+          assert magic==0x3154424A and length==len(seg)-32 and crc==zlib.crc32(seg[32:]),'invalid segment CRC'
+          assert struct.pack('<III',0x544E5742,length,crc) in Path('build/candidate/build/felucca.bin').read_bytes(),'app/segment pairing mismatch'
           pages=Path('build/pages');fw=pages/'preview/firmware'
           def digest(p):return hashlib.sha256(p.read_bytes()).hexdigest()
           def protected():
