@@ -103,6 +103,9 @@ int main(void)
         if (FIT_PAGE(&PAGES[p])) { ui.home = 0; ui.page = p; page_entered(); break; }
     frame();
     fit_check("SEQ > LENGTH has RHYTHM with default SPAN 16 / FIT OFF", FIT_PAGE(cur_page()) && fit_span(TSEL) == 16 && !TSEL->seq_fit);
+    t->seq_pos = 123; t->ext = 42;
+    fit_ui_set(t, 16);
+    fit_check("editing SPAN while FIT is OFF preserves phase and pending microtiming", t->seq_pos == 123 && t->ext == 42);
     turn(EN_K2, 2); turn(EN_K3, 1);
     fit_check("SPAN and FIT knobs set the selected track without changing DIV or another track", fit_span(TSEL) == 18 && (TSEL->seq_fit & 128u) && !trk[1].seq_fit);
     turn(EN_K3, -1);
@@ -111,7 +114,7 @@ int main(void)
     fit_ui_set(t, 128u | 1u);
     fit_check("live ratio change cannot leave a huge catch-up queue", t->seq_pos < step_samples(t, div_samples(t->p[P_SDIV]), t->seq_idx));
     lv.act = 1u; lv.gidx[0] = 0; lv.gpos[0] = 1000000u;
-    fit_ui_set(t, 128u | 1u);
+    fit_ui_set(t, 128u | 2u);
     fit_check("LIVE ghost also rescales safely on a ratio change", lv.gpos[0] < step_samples(t, div_samples(t->p[P_SDIV]), lv.gidx[0]));
     lv.act = 0;
 

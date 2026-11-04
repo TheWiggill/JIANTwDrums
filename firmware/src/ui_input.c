@@ -1205,6 +1205,11 @@ static void focus_knob(uint32_t slot, int32_t steps)
 static void fit_ui_edit(track_t *t, int16_t *param, int16_t value)
 {
     uint32_t old, now, ti = trk_index(t), oldghost = 0;
+    if (param ? *param == value : t->seq_fit == fit_valid((uint8_t)value)) return;
+    if (!param && !(t->seq_fit & 128u) && !((uint8_t)value & 128u)) {
+        t->seq_fit = fit_valid((uint8_t)value);          /* editing an inactive SPAN must not disturb microtiming */
+        return;
+    }
     fm1_irq_off();
     if (LV_ON(ti) && lv.gpos[ti] < 0x7FFFFFFFu)
         oldghost = step_samples(t, div_samples((uint32_t)t->p[P_SDIV]), lv.gidx[ti]);
