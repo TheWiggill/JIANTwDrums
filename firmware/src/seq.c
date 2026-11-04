@@ -1660,6 +1660,7 @@ static __attribute__((noinline)) const step_t *comp_run(track_t *t, const step_t
     uint32_t i, n = 0, k, acted = 0, rep = 0, rq = 0, rb = 0, arp = 0, av = 0, mute = 0, ti = trk_index(t) % NTRK, cnt;
     uint32_t g = 0, gm = 0, ps, grep = 0, chord = 0;
     const step_t *src = s;
+    uint8_t probability = s->probability;   /* save before cvs can replace an aliased C.LEN input */
     t->cx_deg = t->cx_oct = 0;
     t->cx_rnd = t->cx_rat = t->cx_dec = t->cx_tch = t->cx_bend = t->cx_arp = t->cx_lock = 0;
     cx_jump[ti] = 0;
@@ -1777,10 +1778,10 @@ static __attribute__((noinline)) const step_t *comp_run(track_t *t, const step_t
     }
     if (src != &t->cvs)
         t->cvs = *src;
-    if (rep) {                                      /* (the step it replaces: its own place, its own chance gone) */
+    if (rep) {                                      /* the replacement keeps this position's timing and probability */
         t->cvs.cwhen = s->cwhen;
         t->cvs.flags = (uint8_t)((t->cvs.flags & ~SF_MFINE) | (s->flags & SF_MFINE));
-        t->cvs.probability = 0;
+        t->cvs.probability = probability;
         if (rep == 2u) { t->cvs.time = ST_REST; t->cvs.n = 0; t->cvs.hit = 0; }
     }
     /* CHORD changes the rendered copy only. The track's CHORD page, root and source stay intact. */

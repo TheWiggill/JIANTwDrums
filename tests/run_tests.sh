@@ -315,6 +315,8 @@ if [ -f build/gen/felucca_tables.h ]; then
     run "metronome and count-in: beats sample for sample (internal and external clock), accent, level, MASTER, not in USB, count-in timing, notes onto step 1" "$OUT/click_test"
     $CC -O1 -w -Ibuild/gen -Ifirmware/src -o "$OUT/fit_test" tests/fit_test.c -lm
     run "FIT: exact loop spans, live controls, projects and arrangement" "$OUT/fit_test"
+    $CC -O1 -w -Ibuild/gen -Ifirmware/src -o "$OUT/probability_component_test" tests/probability_component_test.c -lm
+    run "step probability with SEQ and STUTTER components" "$OUT/probability_component_test"
     $CC -w -Ibuild/gen -Ifirmware/src -o "$OUT/persistence_test" tests/persistence_test.c -lm
     run "persistence: deferred settings, retry and failed-save rollback" "$OUT/persistence_test"
     $CC -w -Ibuild/gen -Ifirmware/src -o "$OUT/startup_test" tests/startup_test.c -lm

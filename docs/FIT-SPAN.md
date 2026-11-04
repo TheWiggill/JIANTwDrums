@@ -45,3 +45,11 @@ Validation:
 Unlike a screen-only change, this changes the sequencer's audio code. The candidate build
 records a new layout in the existing code order (`FELUCCA_REPIN=keep`); hardware CPU and
 polyphony validation is still needed. The public installer is not changed by this branch.
+
+## Step probability correction
+
+SEQ and STUTTER previously replaced a step's probability with legacy 100%, so a 0% step
+could always play. The rendered replacement now keeps the probability configured for its
+current pattern position. `probability_component_test.c` exercises the actual sequencer at
+0%, 25%, 50% and 100%, for ordinary, SEQ and STUTTER steps on ANALOG and DRUM.
+No punch-in FX change is included: the user confirmed recording works in the emulator.

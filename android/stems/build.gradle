@@ -1,9 +1,0 @@
-// The plugins on the root classpath (one class loader for the Android and the Kotlin plugins); without the Android
-// plugin when only :core is built (-PcoreOnly: the JVM tests on a machine with no Android SDK)
-buildscript {
-    repositories { mavenCentral(); google() }
-    dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24"
-        if (!project.hasProperty("coreOnly")) classpath "com.android.tools.build:gradle:8.5.2"
-    }
-}

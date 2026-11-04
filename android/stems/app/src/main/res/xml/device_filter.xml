@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- the FM-1 by its USB product name ("JIANT" since p1 / main 0.9.12, on string index 4; "JIANT FM" 0.7.0 .. 0.9.11,
-     "Felucca" before) -->
-<resources>
-    <usb-device product-name="FM-1" />
-    <usb-device product-name="JIANT" />
-    <usb-device product-name="JIANT FM" />
-    <usb-device product-name="Felucca" />
-</resources>
