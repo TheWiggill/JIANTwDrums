@@ -55,7 +55,7 @@ typedef struct {
 typedef struct {
     uint32_t magic;
     uint16_t ver, nslot;                         /* 1, UP_SLOTS */
-    uint32_t used;                               /* bit k: e[k] holds a patch */
+    uint32_t used;                               /* bit k: e[k] holds an FM6 patch or VOICE lyric */
     uint32_t rsv;
     upf_ent_t e[UP_SLOTS];
 } upf_t;
@@ -195,14 +195,50 @@ static void upf_boot(void)                       /* up_boot, after the user pres
 #endif
 }
 
+/* VOICE uses the same per-slot auxiliary payload as FM6 (the engine and record tag distinguish them).
+ * No extra sectors, RAM bank or record-size change. Old VOICE slots have no text and load an empty lyric. */
+_Static_assert(4u + LYR_LEN <= UPF_PK, "VOICE lyric fits the existing auxiliary payload");
+static const char *upf_lyric(uint32_t k)
+{
+    const uint8_t *text;
+    uint32_t i;
+    if (k >= UP_SLOTS || !upf_valid(&upf) || !((upf.used >> k) & 1u) || !up_used(k) ||
+        up_rec(k)->engine != ENGI_VOICE || upf.e[k].tag != upf_tag(up_rec(k)) ||
+        memcmp(upf.e[k].pk, "LYR1", 4u)) return "";
+    text = upf.e[k].pk + 4u;
+    for (i = 0; i < LYR_LEN; i++) {
+        if (!text[i]) return (const char *)text;
+        if (text[i] < 32u || text[i] > 126u) return "";
+    }
+    return "";
+}
+static int upf_lyric_store(uint32_t k, uint32_t tr)
+{
+    upf_ent_t old;
+    uint32_t used;
+    int rc;
+    if (k >= UP_SLOTS || tr >= NTRK) return 2;
+    if (!upf_valid(&upf)) upf_empty();
+    old = upf.e[k]; used = upf.used;
+    memset(upf.e[k].pk, 0, UPF_PK);
+    memcpy(upf.e[k].pk, "LYR1", 4u);
+    memcpy(upf.e[k].pk + 4u, lyr_get(tr), LYR_LEN);
+    upf.e[k].tag = upf_tag(up_rec(k));
+    upf.used |= 1u << k;
+    rc = upf_save();
+    if (rc == 2) { upf.e[k] = old; upf.used = used; }
+    return rc;
+}
+
 /* up_load: track t (its values just loaded from slot k) gets the record's patch; without one, as before 1.0.3:
  * SLOT F n that factory patch, OWN the init voice. SLOT then shows F n or OWN (fm6_adopt) */
 static void upf_track_load(track_t *t, uint32_t k)
 {
     uint8_t pk[FM6_PACKED], v[FP_SIZE + 1u];
     uint32_t tr = (uint32_t)(t - trk);
-    if (tr >= NTRK || t->eng_req != ENGI_FM6)
-        return;
+    if (tr >= NTRK) return;
+    if (t->eng_req == ENGI_VOICE) { lyr_set(tr, upf_lyric(k)); return; }
+    if (t->eng_req != ENGI_FM6) return;
     if (upf_get(k, pk)) {
         int32_t s = t->p[P_E7];
         memcpy(pk, s >= 0 && s < (int32_t)FM6_NFACTORY ? FM6_FACTORY[s] : FM6_INIT, FM6_PACKED);
@@ -220,3 +256,4 @@ static int upf_store(uint32_t k, uint32_t tr)
     upf_set(k, pk);
     return upf_save();
 }
+

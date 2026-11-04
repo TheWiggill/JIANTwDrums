@@ -398,6 +398,9 @@ static int up_store(uint32_t k, const char *name)
             int u = upf_store(k, (uint32_t)(TSEL - trk));
             if (u == 2)
                 rc = 2;
+        } else if ((rc == 0 || rc == 3) && r.engine == ENGI_VOICE) {
+            int u = upf_lyric_store(k, (uint32_t)(TSEL - trk));
+            if (u == 2) rc = 2;
         }
         return rc;
     }
@@ -565,3 +568,4 @@ static void up_ui_named(uint32_t op, uint32_t k, const char *name)   /* 0 load, 
 }
 static void up_ui(uint32_t op, uint32_t k) { up_ui_named(op, k, 0); }
 #endif
+

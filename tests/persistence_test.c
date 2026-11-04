@@ -503,6 +503,7 @@ static int songs_test(void)
 
 #include "song_save_cases.h"
 #include "fit_storage_cases.h"
+#include "voice_user_cases.h"
 
 int main(void)
 {
@@ -839,6 +840,7 @@ int main(void)
     bad += songs_test();
     bad += song_save_test();
     bad += fit_storage_test();
+    bad += voice_user_test();
     printf("%s\n", bad ? "PERSISTENCE TEST FAILED" : "persistence test passed");
     return bad != 0;
 }
