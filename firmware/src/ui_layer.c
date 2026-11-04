@@ -219,7 +219,7 @@ static int16_t *mom_vp(uint32_t k, const param_desc_t **d)
             return 0;
         *d = home_param(k, &vp);
     } else {
-        if (pg->scope == SC_STEP || pg->scope == SC_TRK || ((act_cols() >> k) & 1u) || g == GR_COMP || g == GR_GCOMP || g == GR_SHAPE ||
+        if (FIT_PAGE(pg) || pg->scope == SC_STEP || pg->scope == SC_TRK || ((act_cols() >> k) & 1u) || g == GR_COMP || g == GR_GCOMP || g == GR_SHAPE ||
             g == GR_FUGUE || g == GR_CHANCE || g == GR_DXSND || g == GR_FOCUS || (g == GR_STAGE && k < 2u) ||
             g == GR_EVENTS || g == GR_MOTION || g == GR_SONG || g == GR_BROWSE || g == GR_TOOLS || g == GR_SLOTS ||
             g == GR_SONGSAVE || g == GR_USER || g == GR_PATS || DX_KIT3(pg) || fop_page(g) ||

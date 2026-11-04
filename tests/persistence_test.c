@@ -502,6 +502,7 @@ static int songs_test(void)
 
 
 #include "song_save_cases.h"
+#include "fit_storage_cases.h"
 
 int main(void)
 {
@@ -837,6 +838,7 @@ int main(void)
     bad += autosave_test();
     bad += songs_test();
     bad += song_save_test();
+    bad += fit_storage_test();
     printf("%s\n", bad ? "PERSISTENCE TEST FAILED" : "persistence test passed");
     return bad != 0;
 }

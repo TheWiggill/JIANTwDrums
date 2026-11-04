@@ -93,7 +93,8 @@ static struct {
     int16_t slg[G_SL_N];              /* .. (0.6.3) its SLICER (the globals G_SLMODE ..) */
     volatile uint8_t ready;           /* main: staged; ISR: taken (0) */
     uint8_t row, section;             /* the song row it is for (SEC_LIVE: a live jump), the section (0..3) */
-} sec_stage __attribute__((section(".lowbuf")));   /* (0.6.78: app.ld LOWBUF) */
+} sec_stage __attribute__((section(".lowbuf")));
+static uint8_t sec_stage_fit[NTRK] __attribute__((section(".pool")));   /* (0.6.78: app.ld LOWBUF) */
 static struct {
     chain_config_t config;
     volatile uint8_t armed, running, row, remaining;   /* remaining: the bars of the row still to play */
@@ -152,3 +153,4 @@ static int chain_valid(const chain_config_t *c)
     return 1;
 }
 static const step_t *seq_steps(const track_t *t) { return t->step; }   /* (a section's steps are the track's) */
+

@@ -763,7 +763,9 @@ static const page_t PAGES[] = {
                                                          * source (SRC ENV2) */   /* (V10.16) EUCLID's
                                                          * mutations on the bar: EVERY AMOUNT MODE WHAT */
     {"SAVE SONG AS", FAM_SAVE, SC_GLOBAL, GR_SONGSAVE, {0xFF, 0xFF, 0xFF, G_SAVE}},
+    {"RHYTHM", FAM_SEQ, SC_TRACK, GR_STEPS, {P_SLEN, 0xFF, 0xFF, P_SDIV}},
 };
+#define FIT_PAGE(pg) ((pg)->fam == FAM_SEQ && (pg)->id[0] == P_SLEN && (pg)->id[1] == 0xFFu)
 #define BAR_PAGE(pg) ((pg)->graph == GR_STEPS && (pg)->id[0] == 0xFFu)
 #define NPAGES (sizeof(PAGES) / sizeof(PAGES[0]))
 static uint8_t mod_ui_slot;      /* the MOD page: the matrix slot (0..3) KNOB 2..4 edit */

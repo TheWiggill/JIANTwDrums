@@ -15,6 +15,7 @@ static void sec_apply(void)
         motion_restore(t);
         if (t->eng_req != s->engine)
             panic_req |= (uint8_t)(1u << i);              /* (another engine: what the keys hold ends too) */
+        t->seq_fit = sec_stage_fit[i];
         t->eng_req = s->engine;
         t->preset = s->preset;
         t->user = 0;
@@ -210,3 +211,4 @@ static void chain_tick(uint32_t n)
             srec_add(live.cur);
     }
 }
+

@@ -151,6 +151,7 @@ typedef struct {
     uint8_t gl[GL_N][5];                       /* (0.9.9-seq2f) GLO > COMPS, the global lane (seq.c glane): FUNC's 'G' 'C'
                                                 * block, empty before */
     char name[PROJ_NAME_LEN];                  /* the project's name: upper-case ASCII 32..126, 0-padded; "" = none */
+    uint8_t fit[NTRK];                         /* FIT/SPAN per track; optional RF extension */
     uint32_t sum;
 } project_t;
 _Static_assert(sizeof(gcomp_t) == 5u, "the global lane as stored");
@@ -924,6 +925,8 @@ static uint32_t proj_packed_size(const project_t *q)
         for (i = 0; i < NSTEP; i++)
             n += proj_step_empty(&q->t[t].step[i]) ? 0u : proj_step_size(&q->t[t].step[i]);
     }
+    for (t = 0; t < NTRK; t++)
+        if (q->fit[t]) { n += 2u + NTRK; break; }
     return n;
 }
 static int proj_pack(project_store_t *out, const project_t *q)
@@ -931,7 +934,7 @@ static int proj_pack(project_store_t *out, const project_t *q)
     uint8_t *b = out->raw; uint32_t pos = 68u, t, i; uint32_t magic = PROJ_MAGIC, size = PROJ_STORE_SIZE, sum;
     proj_full = 0;
     for (t = 0; t < NTRK; t++) {                        /* the values first: out untouched when one is wrong */
-        if (q->t[t].engine >= NENGINES) return 0;
+        if ((q->fit[t] & 127u) > 64u || q->t[t].engine >= NENGINES) return 0;
         for (i = 0; i < FM6_PACKED; i++)
             if (q->fm6[t][i] > 127u) return 0;
         for (i = 0; i < P_COUNT; i++)
@@ -1083,6 +1086,11 @@ static int proj_pack(project_store_t *out, const project_t *q)
     }
     if (q->g[G_DRTIM]) {                                /* (V10.49) the delay's R TIME, when set (the last: before, it stops here) */
         b[pos++] = 'D'; b[pos++] = 'R'; b[pos++] = (uint8_t)clamp(q->g[G_DRTIM], 0, 6);
+    }
+    for (t = 0; t < NTRK && !q->fit[t]; t++) {}
+    if (t < NTRK) {
+        b[pos++] = 'R'; b[pos++] = 'F';
+        for (t = 0; t < NTRK; t++) b[pos++] = fit_valid(q->fit[t]);
     }
     memcpy(b + PROJC_PFX_OFF, q->pfx_lane, sizeof q->pfx_lane);
     b[PROJC_PFX_OFF + sizeof q->pfx_lane] = q->pfx_ltgt > 2u ? 0u : q->pfx_ltgt;
@@ -1382,6 +1390,15 @@ static int proj_unpack_c(project_t *q, const uint8_t *b)
         q->g[G_DRTIM] = (int16_t)(b[pos + 2u] > 6u ? 0u : b[pos + 2u]);
         pos += 3u;
     }
+    memset(q->fit, 0, sizeof q->fit);
+    if (pos + 2u <= room && b[pos] == 'R' && b[pos + 1u] == 'F') {
+        if (pos + 2u + NTRK > room) return 0;
+        for (t = 0; t < NTRK; t++) {
+            uint32_t v = b[pos + 2u + t];
+            if ((v & 127u) > 64u) return 0;
+            q->fit[t] = (uint8_t)v;
+        }
+    }
     proj_new_tracks(q, nt);                             /* (a FUNC of fewer tracks: the rest at power-on) */
     for (t = nt; t < NTRK; t++)
         memcpy(q->fm6[t], FM6_INIT, FM6_PACKED);
@@ -1653,6 +1670,7 @@ static void project_capture(project_t *p)
     p->chain = chain_config;
     for (i = 0; i < NTRK; i++) {
         for (uint32_t j = 0; j < P_COUNT; j++) p->t[i].p[j] = motion_base_value(&trk[i], j);
+        p->fit[i] = fit_valid(trk[i].seq_fit);
         p->t[i].engine = trk[i].eng_req;
         p->t[i].preset = trk[i].preset;
         memcpy(p->t[i].step, trk[i].step, sizeof trk[i].step);
@@ -1925,6 +1943,7 @@ static int project_restore_runtime(const project_t *input)
             song.g[i] = (int16_t)clamp(p->g[i], GP[i].min, GP[i].max);
     for (k = 0; k < NTRK; k++) {
         track_t *t = &trk[k];
+        t->seq_fit = fit_valid(p->fit[k]);
         const proj_trk_t *s = &p->t[k];
         uint32_t e = s->engine;                         /* (< NENGINES: proj_engines_ok) */
         t->eng_req = (uint8_t)e;
@@ -2009,6 +2028,7 @@ static __attribute__((noinline)) void system_init(void)   /* (snd8: out of its c
     memset(song_idx.tvar[song_cur], 0, sizeof song_idx.tvar[song_cur]);
     memset(pfx_lane, 0, sizeof pfx_lane);
     for (i = 0; i < 4u; i++) macro_v[i] = 0;
+    for (i = 0; i < NTRK; i++) trk[i].seq_fit = 0;
     for (i = 0; i < NTRK; i++) lyr_set(i, "");          /* (0.8.5) no lyrics */
     memset(glane, 0, sizeof glane);                     /* (0.9.9-seq2f) no global component, POLY */
     gl_mono = 0;
@@ -2287,6 +2307,7 @@ static uint32_t autosave_sig(void)
             int16_t v = motion_base_value(t, j);
             h = as_mix(h, &v, sizeof v);
         }
+        h = as_mix(h, &t->seq_fit, 1);
         h = as_mix(h, &t->eng_req, 1);
         h = as_mix(h, &t->preset, 1);
         h = as_mix(h, t->step, sizeof t->step);

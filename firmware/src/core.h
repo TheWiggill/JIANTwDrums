@@ -803,8 +803,7 @@ typedef struct track {
     uint16_t ext;                /* (0.6.88) TIMING: samples the playing step began before its place (it is early) */
     int8_t mic;                  /* .. the playing step's own TIMING (ST_MICRO), late: seq_step queues its notes */
     int8_t hum_env;              /* (0.6.92) HUMAN: the next notes' DEC / REL move (seq_step sets it, voice_start takes it) */
-    uint8_t pfx_half;            /* (p2: unused, kept for track_t's size: 1/2 TEMPO and LOOP are LIVE's now, seq_live.c,
-                                  * its ghost where the track would be) */
+    uint8_t seq_fit;             /* FIT: bit 7 ON; SPAN 1..64 (0 = 16), in an unused byte: track_t stays the same size */
     uint8_t pfx_rs;
     uint16_t pfx_idx0;
     uint32_t pfx_pos0, pfx_el;
@@ -870,3 +869,4 @@ static int bt_hw_seg(void);                             /* bt_hw.c */
 #define BTAPP_FN
 static int bt_hw_seg(void) { return 1; }                /* (the host: everything in the one image) */
 #endif
+

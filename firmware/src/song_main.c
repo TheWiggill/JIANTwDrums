@@ -141,6 +141,7 @@ static int song_stage(uint32_t s, uint32_t row)
             uint32_t e = eng_live(t->engine);
             if (srcs[k] != sec)
                 continue;
+            sec_stage_fit[k] = fit_valid(p->fit[k]);
             d->engine = (uint8_t)e;
             d->preset = (uint8_t)(ENGINES[e]->npresets ? (t->preset >= PROJ_DEF_KEEP ? 0u : t->preset) % ENGINES[e]->npresets
                                                        : 0u);
@@ -191,7 +192,8 @@ static uint32_t section_bars(uint32_t s)
         return 1;
     for (k = 0; k < NTRK; k++) {
         uint32_t len = (uint32_t)clamp(p->t[k].p[P_SLEN], 1, NSTEP);
-        uint32_t b = (len * div_samples((uint32_t)p->t[k].p[P_SDIV]) + bar - 1u) / bar;
+        uint32_t span = p->fit[k] & 128u ? fit_value_span(p->fit[k]) : len;
+        uint32_t b = (span * div_samples((uint32_t)p->t[k].p[P_SDIV]) + bar - 1u) / bar;
         bars = b > bars ? b : bars;
     }
     return bars > CHAIN_BARS ? CHAIN_BARS : bars;

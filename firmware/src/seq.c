@@ -618,8 +618,10 @@ static void arp_tick(track_t *t, uint32_t n) { arp_step(t, n, n); }
 /* -------------------------------------------------------- note input --- */
 /* the length of step idx in samples: SWING (the track's + the global, at most 100) makes the even steps longer
  * and the odd ones shorter, so every odd step starts late */
-static uint32_t step_samples(const track_t *t, uint32_t period, uint32_t idx)
+#include "seq_fit.c"
+static __attribute__((noinline)) uint32_t step_samples(const track_t *t, uint32_t period, uint32_t idx)
 {
+    if (t->seq_fit & 128u) return fit_step_samples(t, period, idx);
     return swing_step_len(t, period, idx);   /* core.h: own + global, at most 100 */
 }
 
@@ -2245,7 +2247,8 @@ static int lm_once(const step_t *s, uint32_t l, uint32_t kit)
 }
 static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint32_t period, uint32_t skip)
 {
-    uint32_t i, j, gate = period * (uint32_t)t->p[P_SGATE] / 128u;
+    uint32_t unit = t->seq_fit & 128u ? step_samples(t, period, t->seq_idx) : period;
+    uint32_t i, j, gate = unit * (uint32_t)t->p[P_SGATE] / 128u;
     uint32_t vel = (s->flags & SF_ACCENT) ? 127u : (s->vel ? s->vel : 96u);
     uint32_t slide_in = t->seq_hold && t->seq_n && !(skip & SEQ_REP);
     uint32_t len = t->p[P_SLEN] ? (uint32_t)t->p[P_SLEN] : 1u;
@@ -2280,7 +2283,7 @@ static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint
         vel = (s->flags & SF_ACCENT) ? 127u : (s->vel ? s->vel : 96u);
     } else if (s->time == ST_TIE) {
         if (t->seq_n) {
-            t->seq_off = gate + period / 2u + ev_off;
+            t->seq_off = gate + unit / 2u + ev_off;
             t->seq_hold = (s->flags & SF_SLIDE) != 0 || next_tie || chord_auto(t, len);   /* chains hold at any GATE /
                                                          * swing; (0.6.81) GLIDE on POLY: to the next chord */
         }
@@ -2307,7 +2310,7 @@ static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint
         ac = aa & CV_ARP_SCALE ? CP_ARPS : CP_ARPN;
     }
     if (CT_LEN(s))                                  /* (0.6.82) LEN: the step's own gate, n/16 */
-        gate = period * CT_LEN(s) / 16u;
+        gate = unit * CT_LEN(s) / 16u;
     if (hits > 1u) {                                /* RATCH: the gate of a part, no slide or tie out */
         gate = step_samples(t, period, t->seq_idx) / div * (CT_LEN(s) ? CT_LEN(s) * 8u : (uint32_t)t->p[P_SGATE]) / 128u;
         if (!(skip & SEQ_REP))
@@ -2319,6 +2322,7 @@ static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint
             if (vel < 8u) vel = 8u;
         }
     }
+    if ((t->seq_fit & 128u) && !gate) gate = 1u;
     for (i = 0; i < (arp ? 1u : s->n) && i < 4u && !(kit && arp); i++) {
         uint32_t x = arp ? cp_arp_note(t, arp, ac, aa, t->arp_k++) : s->note[i];
         x = (uint32_t)clamp((int32_t)x + up, 0, 127);
@@ -2407,7 +2411,7 @@ static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint
         if (hg && hits == 1u)
             gate = (uint32_t)clamp((int32_t)gate + (int32_t)gate / 100 * hum_pm(hg * 40u / 127u), 16, 0x7FFFFFFF);
         if (ht && hits == 1u && !bend && !slide_in) {   /* (late, never early: the step can't play before it starts) */
-            uint32_t d = hum_rnd() % (HUM_TMAX * ht / 127u + 1u), cap = period / 3u;
+            uint32_t d = hum_rnd() % (HUM_TMAX * ht / 127u + 1u), cap = unit / 3u;
             hdel = d < cap ? d : cap;
         }
         if (t->mic > 0 && hits == 1u && !bend && !slide_in && !(skip & SEQ_REP))   /* (0.6.88) TIMING late: on top */
@@ -2952,4 +2956,5 @@ static void events_block(uint32_t n)
 }
 
 #include "song_play.c"                           /* the song: the ISR's part (song_chain.c) */
+
 

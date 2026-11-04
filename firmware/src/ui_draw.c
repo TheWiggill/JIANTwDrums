@@ -1622,6 +1622,14 @@ static void draw_columns(void)
         empty_column(3);
         return;
     }
+    if (FIT_PAGE(cur_page())) {
+        pf_column(0, "LEN", &TP[P_SLEN], TSEL->p[P_SLEN], T_TEXT, ICON_AUTO);
+        fmt_int(val, (int32_t)fit_span(TSEL));
+        hot_gauge_column(1, "SPAN", val, (int32_t)(fit_span(TSEL) - 1u) * 1000 / 63);
+        hot_text_column(2, "FIT", TSEL->seq_fit & 128u ? "ON" : "OFF");
+        pf_column(3, "DIV", &TP[P_SDIV], TSEL->p[P_SDIV], T_TEXT, ICON_AUTO);
+        return;
+    }
     if (cur_page()->graph == GR_SONGSAVE) {
         fmt_int(val, (int32_t)song_save_target + 1);
         hot_gauge_column(0, "DEST", val, song_save_target * 1000 / (NSONG - 1u));

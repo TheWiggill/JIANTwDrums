@@ -1200,6 +1200,26 @@ static void focus_knob(uint32_t slot, int32_t steps)
     d = track_desc(TSEL, P_M1SRC + 3u * (uint32_t)j + (slot == 2u ? 0u : 2u));
     *p = (int16_t)param_turn(d, *p, slot == 2u ? (steps > 0 ? 1 : -1) : accel(EN_K1 + 3u, steps, d->max - d->min));
 }
+/* Preserve fractional progress when FIT/SPAN changes during playback; never catch up thousands of tiny steps.
+ * This runs only on a knob turn, outside the audio ISR. */
+static void fit_ui_edit(track_t *t, int16_t *param, int16_t value)
+{
+    uint32_t old, now;
+    fm1_irq_off();
+    old = step_samples(t, div_samples((uint32_t)t->p[P_SDIV]), t->seq_idx);
+    if (param) *param = value;
+    else t->seq_fit = fit_valid((uint8_t)value);
+    if (t->seq_pos < 0x7FFFFFFFu) t->seq_idx %= (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP);
+    now = step_samples(t, div_samples((uint32_t)t->p[P_SDIV]), t->seq_idx);
+    if (t->seq_pos < 0x7FFFFFFFu) {
+        uint32_t pos = old ? (uint32_t)((uint64_t)t->seq_pos * now / old) : 0u;
+        t->seq_pos = pos < now ? pos : now - 1u;
+        t->ext = 0;
+    }
+    fm1_irq_on();
+}
+static void fit_ui_set(track_t *t, uint8_t value) { fit_ui_edit(t, 0, value); }
+
 static void edit_param(uint32_t slot, int32_t steps)
 {
     int16_t *vp;
@@ -1399,6 +1419,14 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.act = (uint8_t)(a + 1);
         return;
     }
+    if (FIT_PAGE(pg) && (slot == 1u || slot == 2u)) {
+        uint32_t v = TSEL->seq_fit, span = fit_span(TSEL);
+        if (slot == 1u) span = (uint32_t)clamp((int32_t)span + steps, 1, 64);
+        else v = (v & 127u) | (steps > 0 ? 128u : 0u);
+        fit_ui_set(TSEL, (uint8_t)((v & 128u) | span));
+        ui.force = 1;
+        return;
+    }
     if (pg->graph == GR_SONGSAVE && slot == 0u) {
         song_save_target = (uint8_t)clamp((int32_t)song_save_target + steps, 0, NSONG - 1);
         return;
@@ -1457,7 +1485,9 @@ sect:
     v = param_turn(d, *vp, accel(EN_K1 + slot, steps, d->fmt == F_ENUM ? 0 : d->max - d->min));
     {
         int32_t was = *vp;
-        *vp = (int16_t)v;
+        if ((TSEL->seq_fit & 128u) && (vp == &TSEL->p[P_SLEN] || vp == &TSEL->p[P_SDIV]))
+            fit_ui_edit(TSEL, vp, (int16_t)v);
+        else *vp = (int16_t)v;
         excite_turn(TSEL, vp, was);
     }
     if (vp >= sc_v && vp < sc_v + 3) {                  /* (V10.25) SCENE's SCENE TRACK ROLE */
@@ -2837,7 +2867,7 @@ static void ui_input_frame(void)
         if (ui.home || pg->scope == SC_STEP || pg->scope == SC_TRK || page_desc(pg, k, &hv) ||
             ((pg->graph == GR_USER || pg->graph == GR_MOD || pg->graph == GR_MSEQ || pg->graph == GR_PATS || BAR_PAGE(pg)) &&
              k == 0u)
-            || pg->graph == GR_SONG || pg->graph == GR_DXSND || pg->graph == GR_FOCUS || pg->graph == GR_STAGE ||
+            || FIT_PAGE(pg) || pg->graph == GR_SONG || pg->graph == GR_DXSND || pg->graph == GR_FOCUS || pg->graph == GR_STAGE ||
             pg->graph == GR_GCOMP || pg->graph == GR_LIVE) {   /* (not an empty column) */
             ui.hot_col = (uint8_t)k;
             ui.hot_t = 40, ui.knob_ms = fm1_ms;

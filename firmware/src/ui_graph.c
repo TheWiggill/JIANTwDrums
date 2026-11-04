@@ -1460,6 +1460,7 @@ static uint32_t graph_signature(void)
             h = (h ^ (uint32_t)song.g[G_SLMODE + i]) * 16777619u;
     if (pg->graph == GR_SLPIT)
         h ^= (sl_ui_step + 1u) * 40503u;
+    if (FIT_PAGE(pg)) h ^= (t->seq_fit + 1u) * 104729u;
     if (pg->graph == GR_SONGSAVE) h ^= (song_save_target + 1u) * 2654435761u;
     if (pg->graph == GR_TOOLS)                       /* (0.6.12) the action picked, the song's row */
         h ^= ui.act * 7919u + ui.song_row * 104729u + (tl_t0 ? (fm1_ms - tl_t0 + 1u) / 40u + 1u : 0u) * 2654435761u;
