@@ -7531,7 +7531,7 @@ static void tl_drum(void)
  * the level's other set, SAVE from elsewhere always USER, PRESETS the slot / project) */
 static int test_save_lens(void)
 {
-    static const char *const CH[7] = {"TIMELINE", "SECTIONS", "PROJECTS", "ARRANGE", "TOOLS", "USER", "PRESETS"};
+    static const char *const CH[8] = {"TIMELINE", "SECTIONS", "PROJECTS", "ARRANGE", "TOOLS", "SAVE SONG AS", "USER", "PRESETS"};
     static const char *const TP[2] = {"PROJECTS", "USER"};
     int bad = 0, ok;
     uint32_t pr;
@@ -7540,10 +7540,10 @@ static int test_save_lens(void)
     press(B_SAVE); frame();
     ok = save_on() && save_level() == SV_PROJ && SONG_TRK(cur_page()) && ui.act == 0u && lz_on() &&
          card_y() == LZ_CARD_Y && graph_y() == LZ_GRAPH_Y && foot_y() == LZ_FOOT_Y && lz_tab_lit(0) &&
-         lz_crumb_is("SAVE \xB7 SONG \xB7 TIMELINE") && lz_count_is("1/7");
-    bad += check("V10.1 SAVE from HOME at power-on: SONG's TIMELINE; the tabs (SONG lit), the crumb, 1/7", ok);
-    bad += check("V10.1 SAVE: one chain TIMELINE SECTIONS PROJECTS ARRANGE TOOLS USER PRESETS; a SAVE tap the next group, round",
-                 chain_walk(B_SAVE, CH, 7, TP, 2));
+         lz_crumb_is("SAVE \xB7 SONG \xB7 TIMELINE") && lz_count_is("1/8");
+    bad += check("V10.1 SAVE from HOME at power-on: SONG's TIMELINE; the tabs (SONG lit), the crumb, 1/8", ok);
+    bad += check("V10.1 SAVE: one chain TIMELINE SECTIONS PROJECTS ARRANGE TOOLS SAVE SONG AS USER PRESETS; a SAVE tap the next group, round",
+                 chain_walk(B_SAVE, CH, 8, TP, 2));
     ui_power_on(); go_home(); frame(); press(B_SAVE); frame();
     turn(EN_SELECT, 3); frame();                                             /* ARRANGE, left there */
     go_home(); frame(); press(B_SAVE); frame();
@@ -11859,7 +11859,7 @@ static int test_lz_home(void)
     uint32_t c, k;
     ui_power_on(); frame();
     ok = ui.home && lz_on() && lz_fam() == LZ_HOME && home_level() == 0u && !home_set() && lz_tab_lit(0) && lz_tabs() == 3u &&
-         lz_crumb_is("HOME \xB7 ECO \xB7 ECO") && lz_count_is("1/7");
+         lz_crumb_is("HOME \xB7 ECO \xB7 ECO") && lz_count_is("1/8");
     press(B_HOME); frame();                                         /* a HOME tap: BEING (the next group) */
     ok &= ui.home && home_level() == 1u && !home_set() && lz_tab_lit(1) && lz_crumb_is("HOME \xB7 BEING \xB7 BEING") &&
           lz_count_is("3/7");
@@ -13480,10 +13480,17 @@ static int test_eq_tape_load(void)
     }
     return bad;
 }
+
+#include "song_save_ui_cases.h"
+
 int main(void)
 {
+#ifdef SONG_SAVE_ONLY
+    return test_song_save_ui() + test_save_lens();
+#endif
     setvbuf(stdout, NULL, _IONBF, 0);
     int bad = 0;
+    bad += test_song_save_ui();
     bad += test_eq_tape_load();
     bad += test_comp_cards();
     bad += test_string_excite();
@@ -13688,3 +13695,4 @@ static int test_card_heat(void)
     ui_power_on();
     return bad;
 }
+

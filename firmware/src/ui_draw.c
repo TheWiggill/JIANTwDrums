@@ -1622,6 +1622,14 @@ static void draw_columns(void)
         empty_column(3);
         return;
     }
+    if (cur_page()->graph == GR_SONGSAVE) {
+        fmt_int(val, (int32_t)song_save_target + 1);
+        hot_gauge_column(0, "DEST", val, song_save_target * 1000 / (NSONG - 1u));
+        empty_column(1);
+        empty_column(2);
+        draw_act_column(3, "SAVE SONG", T_THEME, ICON_AUTO);
+        return;
+    }
     if (cur_page()->graph == GR_SLOTS) {                 /* (0.6.12) PROJECT, SECT A-D, then LOAD and SAVE */
         uint32_t k = (uint32_t)song.g[G_SLOT] - 1u;
         int used = graph_project_used(k);
@@ -2103,6 +2111,12 @@ static void confirm_text(char *a, char *b)
         str_cpy(a, "CLEAR TRACK 1?", 24);
         a[12] = (char)('1' + k % NTRK);
         break;
+    case CF_OVR_SONG:
+        str_cpy(a, "REPLACE WHOLE SONG ", 24);
+        fmt_int(a + str_len(a), (int32_t)k + 1);
+        str_cpy(a + str_len(a), "?", 2);
+        str_cpy(b, "ALL A-D + ARRANGEMENT", 24);
+        break;
     case CF_OVR_PROJ:
         str_cpy(a, "OVERWRITE PROJECT A?", 24);
         a[18] = (char)('A' + (k & 3u));
@@ -2528,4 +2542,5 @@ static void ui_draw_body(uint32_t counting)
         draw_tabs();
     ui.force = 0;
 }
+
 

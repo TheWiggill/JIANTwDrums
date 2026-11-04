@@ -29,10 +29,11 @@ static void graph_lib(void)
     for (i = 0; i < NSONG; i++) {
         int32_t x = LZ_TX(i % 4u), y = (int32_t)(i / 4u) * 70;
         int cur = i == song_cur;
-        uint16_t bg = cur ? T_TINT : T_RAISE;
+        int pick = cur_page()->graph == GR_SONGSAVE ? i == song_save_target : cur;
+        uint16_t bg = pick ? T_TINT : T_RAISE;
         char b[4], nm[13];
         cv_rect(x, y, 56, 66, bg);
-        if (cur)
+        if (pick)
             cv_frame(x, y, 56, 66, T_THEME);
         fmt_int(b, (int32_t)i + 1);
         GFX_HOOK_ALIGN(0, y + 3, 0, y + 12, AL_V | AL_PASS, "library tile number");
@@ -345,9 +346,11 @@ static void graph_lz_presets(void)
 static void graph_save_lz(const page_t *pg)
 {
     uint32_t lv = save_level();
-    if (pg->graph == GR_TOOLS) graph_lz_tools();
+    if (pg->graph == GR_SONGSAVE) graph_lib();
+    else if (pg->graph == GR_TOOLS) graph_lz_tools();
     else if (pg->graph == GR_SONG) graph_proj(SONG_TRK(pg) ? 2 : 1);
     else if (pg->graph == GR_SLOTS) { if (lv == SV_PROJ) graph_proj(0); else graph_lib(); }
     else if (pg->graph == GR_USER) graph_sound();
     else graph_lz_presets();
 }
+

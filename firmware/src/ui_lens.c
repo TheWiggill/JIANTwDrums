@@ -101,7 +101,7 @@ static const nv_t CE_ARP[] = {NV("ARP", 0, 0, 2), NV("ARP 2", 0, 0, 2)};
 static const ng_t CG_ARP[] = {{"ARP", 0}};
 enum { SV_LIB, SV_PROJ, SV_SOUND };
 static const nv_t CE_SAVE[] = {NV("TIMELINE", 0, 0, SV_PROJ), NV("PROJECT", "SECTIONS", 0, SV_PROJ),   /* (V10.1) composing first */
-                               NV("PROJECT", "PROJECTS", 1, SV_LIB), NV("ARRANGE", 0, 1, SV_PROJ), NV("TOOLS", 0, 1, SV_LIB),
+                               NV("PROJECT", "PROJECTS", 1, SV_LIB), NV("ARRANGE", 0, 1, SV_PROJ), NV("TOOLS", 0, 1, SV_LIB), NV("SAVE SONG AS", 0, 1, SV_PROJ),
                                NV("USER", 0, 2, SV_SOUND), NV("PRESETS", 0, 2, SV_SOUND)};
 static const ng_t CG_SAVE[] = {{"SONG", 0}, {"PROJECT", 0}, {"SOUND", 0}};
 #define CH(e, g) {e, g, (uint8_t)NELEM(e), (uint8_t)NELEM(g)}
@@ -246,6 +246,7 @@ static void nav_go(uint32_t sec, uint32_t e, int outside)
     ui.page = (uint8_t)i;
     ui.home = 0;
     page_entered();
+    if (PAGES[i].graph == GR_SONGSAVE) ui.act = 4u;
     if (PAGES[i].graph == GR_USER || PAGES[i].graph == GR_SLOTS)
         ui.act = outside && (PAGES[i].graph == GR_USER || c->e[e].lv == SV_PROJ) ? 4u : 0u;
     page_flash();
@@ -379,4 +380,5 @@ static int32_t focus_slot(uint32_t k)
             return (int32_t)j;
     return -1;
 }
+
 

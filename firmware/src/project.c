@@ -2196,6 +2196,7 @@ static uint32_t lib_scan(uint32_t n, char *b)
             continue;
         m |= 1u << k;
         c = vb && (!va || (hb.seq != ha.seq && hb.seq - ha.seq < 0x80000000u));
+        if (!(c ? hb.len : ha.len)) { m &= ~(1u << k); continue; }
         if (!k && (c ? hb.len : ha.len) == PROJ_STORE_SIZE) {
             uint8_t nm[PROJ_NAME_LEN];
             if (!st_read(st_sector(obj, (uint32_t)c) + ST_PAYLOAD_OFF + PROJ_NAME_OFF, nm, sizeof nm))
@@ -2412,4 +2413,5 @@ _Static_assert(sizeof(project_store_t) <= ST_PAYLOAD_MAX, "project does not fit 
 _Static_assert(sizeof(persist_t) <= ST_PAYLOAD_MAX, "settings do not fit one flash sector");
 #endif
 #endif /* PROJ_HOST */
+
 

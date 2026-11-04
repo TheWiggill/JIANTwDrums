@@ -390,6 +390,9 @@ static int song_index_save(void)
     song_idx_dirty = 0;
     return 0;
 }
+
+#include "song_save.c"
+
 /* song n (0..NSONG - 1) in, stopped only: the current one kept first, then n's sections and rows; load_a: its
  * section A becomes the music (an empty song: the music stays, a new song to store sections into); else (JIANT 0.6.12,
  * SAVE > PROJECT) the music stays as it is, to be stored into one of n's sections or replaced by one. 0 done */
@@ -430,6 +433,7 @@ static int song_switch(uint32_t n, int load_a)
         proj_cur = PROJ_NO_SLOT;
     ui.force = 1;
     if (load_a) {
+        if ((chain_config.rsv[2] & 0xFEu) == SONG_MODE_TAG) live.mode = chain_config.rsv[2] & 1u;
         song_name(nm);
         ui_say(nm, "");
     } else {                                          /* PROJECT n, then its section A's name */
@@ -515,3 +519,4 @@ static void song_poll(void)
     song_idx_dirty = 0;
 #endif
 }
+

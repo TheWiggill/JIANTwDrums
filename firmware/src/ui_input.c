@@ -1399,6 +1399,10 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.act = (uint8_t)(a + 1);
         return;
     }
+    if (pg->graph == GR_SONGSAVE && slot == 0u) {
+        song_save_target = (uint8_t)clamp((int32_t)song_save_target + steps, 0, NSONG - 1);
+        return;
+    }
     if (pg->graph == GR_SLOTS && save_on() && save_level() == SV_PROJ) {   /* (0.8.5) SAVE > PROJECT's SECTIONS: KNOB 1
                                                          * the section, KNOB 2 its name (shown; EDIT renames it) */
         if (slot == 1u) {                                 /* (V10.17) KNOB 2 ERASE: right picks it, left drops it */
@@ -1569,6 +1573,16 @@ static void act_do(void)
             confirm_open(CF_OVR_USER, ui.uslot);
         else
             name_open(NK_USER_SAVE, ui.uslot);
+        return;
+    }
+    if (cur_page()->graph == GR_SONGSAVE) {
+        char title[13];
+        ui.act = 0;
+        if (transport_busy()) ui_message("STOP TO SAVE");
+        else if (song_save_target == song_cur) ui_message("CHOOSE ANOTHER PROJECT");
+        else if (lib_scan(song_save_target, title) || song_idx.rows[song_save_target].count)
+            confirm_open(CF_OVR_SONG, song_save_target);
+        else name_open(NK_SONG_SAVE, song_save_target);
         return;
     }
     if (cur_page()->graph == GR_SLOTS && c == 1u) {     /* (V10.17) SECTIONS: ERASE, the dialog first */
@@ -2496,11 +2510,13 @@ static void ui_input_frame(void)
             uint32_t kind = ui.confirm;
             ui.confirm = 0;
             ui.force = 1;
-            if (kind != CF_OVR_PROJ && kind != CF_OVR_USER && kind != CF_ERASE_USER && kind != CF_ERASE_SECT && kind != CF_DICE_ALL &&
+            if (kind != CF_OVR_PROJ && kind != CF_OVR_USER && kind != CF_ERASE_USER && kind != CF_ERASE_SECT && kind != CF_OVR_SONG && kind != CF_DICE_ALL &&
                 !dice_kind(kind) && kind != CF_DEL_ROW && kind != CF_CLEAR_SONG && !chain_busy())
                 undo_mark();                            /* (0.6.21) the music before a clear, INIT, RECALL, pattern */
             if (kind == CF_OVR_PROJ) {                  /* overwrite: the NAME screen writes it */
                 name_open(NK_PROJ_SAVE, ui.confirm_trk & 3u);
+            } else if (kind == CF_OVR_SONG) {
+                name_open(NK_SONG_SAVE, ui.confirm_trk);
             } else if (kind == CF_OVR_USER) {
                 name_open(NK_USER_SAVE, ui.confirm_trk);
             } else if (kind == CF_ERASE_USER) {
@@ -2930,4 +2946,5 @@ timeout:
 }
 
 #include "ui_dx.c"                                  /* EDIT > SOUND / SOUND 2: the DRUM-X kit */
+
 
