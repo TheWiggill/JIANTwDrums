@@ -299,7 +299,7 @@ def late_fns():
              # Song-save UI changes may grow; place only these main-loop functions after pinned audio.
              "large_kind", "page_entered", "act_cols", "act_name", "act_ready", "nav_go",
              "graph_lib", "graph_signature", "draw_columns", "edit_param", "act_do",
-             "confirm_text", "name_open", "name_ok", "nm_title", "nm_draw_field", "lib_scan", "song_switch"}
+             "confirm_text", "name_open", "name_ok", "nm_title", "nm_draw_field", "lib_scan", "song_switch", "draw_confirm", "foot_hint", "draw_column", "lib_poll"}
     for f in LATE_SRC:
         names |= set(re.findall(r"^static [^;=()]*?\b(\w+)\((?![^)]*\)\s*;)", (FW / "src" / f).read_text(), flags=re.M))
     return names
