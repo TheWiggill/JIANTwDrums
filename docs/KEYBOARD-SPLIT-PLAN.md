@@ -20,6 +20,12 @@ Normal split notes take priority over SCENE multi-track fan-out. Names, shortcut
 
 Each held physical/MIDI note retains the track and sounding note until release, even when split, track, octave, cut or selected track changes. Sustain, bend, wheel and channel aftertouch reach the split destinations. Notes share the existing synthesis voice/CPU budget.
 
-Configuration is stored per project/section in the optional KS extension. Older projects decode OFF; disabling split does not discard its configuration. Existing firmware parameter IDs and flash map stay unchanged. MIDI sounding-note ownership uses pool RAM, including constant-time held-note reference counts to handle clamped/overlapping notes.
+Configuration is stored per project/section in the optional KS extension. Older projects decode OFF; disabling split does not discard its configuration. Existing firmware parameter IDs and flash map stay unchanged. MIDI sounding-note ownership uses a dense, bounded LOWBUF remap list only for transposed presses, preserving the pool safety reserve. Up to 128 transposed presses retain their original sounding note; further transposed note-ons are refused until a key is released. Normal untransposed input keeps the existing channel/key ownership table.
 
 Automated coverage includes both zones, sustain, changing split while held, clamped duplicate notes, CC120/123, pitch bend, SCENE priority, UI knob editing, NOR project round trips, legacy OFF, autosave signatures and invalid destinations. Existing MIDI/clock, persistence, backup, FIT and USB regressions run with the candidate. Hardware validation is still required before promoting this beta.
+
+## General regression review
+
+The full UI suite was run against the verified FIT base f5f6b1b and this candidate. Both runs report the same 18 failures (14 distinct checks); the split candidate adds no failing checks after updating the GLO page counts for its two added pages. These existing failures include assertions for older REC/SELECT navigation and page chains. This comparison is not a claim that the full legacy UI suite is clean.
+
+The MIDI/clock integration suite, including split-specific cases, also ran with AddressSanitizer and bounds checks. The persistence and legacy project-format suites passed. Firmware checks separately enforce flash, RAM, pool and short-call reach limits. Six sparse MIDI controller dispatch routines use size optimization; synthesis, clocks, DMA and note ownership/release retain their existing optimization.

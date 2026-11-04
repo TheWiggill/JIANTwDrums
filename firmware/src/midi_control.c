@@ -22,8 +22,31 @@ static void mn_set(uint32_t ch, uint32_t note, uint32_t v)
     uint32_t sh = (note & 1u) * 4u;
     *b = (uint8_t)((*b & ~(15u << sh)) | (v & 15u) << sh);
 }
-static uint8_t midi_sound[16][128] __attribute__((section(".pool")));
-static uint16_t midi_refs[NTRK][128] __attribute__((section(".pool")));
+/* Dense remaps only for transposed keys; normal MIDI keeps its existing nibble table.
+ * At most 128 transposed presses, each retaining original channel/key until release.
+ * LOWBUF has linker-checked room; preserve the pool's 8 KiB safety reserve. */
+static struct {
+    uint16_t n;
+    struct { uint16_t key; uint8_t note, rsv; } row[128];
+} midi_map __attribute__((section(".lowbuf")));
+static uint32_t midi_mapped(uint32_t ch, uint32_t note, uint32_t forget)
+{
+    uint32_t key=(ch<<7)|note;
+    for(uint32_t i=0;i<midi_map.n;i++) if(midi_map.row[i].key==key) {
+        note=midi_map.row[i].note;
+        if(forget) midi_map.row[i]=midi_map.row[--midi_map.n];
+        break;
+    }
+    return note;
+}
+static int midi_remap(uint32_t ch,uint32_t note,uint32_t sound)
+{
+    if(note==sound) return 1;
+    if(midi_map.n==128u) return 0; /* bounded admission; never lose a stored note-off */
+    midi_map.row[midi_map.n].key=(uint16_t)((ch<<7)|note);
+    midi_map.row[midi_map.n++].note=(uint8_t)sound;
+    return 1;
+}
 static uint16_t midi_owners[NTRK];           /* avoids rescanning all 2048 entries for CC123 */
 #define MIDI_PEDAL_NOTE 0x8u
 
@@ -65,7 +88,12 @@ static void midi_expression_channel(uint32_t ch)
 /* a MIDI note of track t sounds note */
 static int midi_note_held(const track_t *t, uint32_t note)
 {
-    return note < 128u && midi_refs[trk_index(t)][note] != 0u;
+    uint32_t id=trk_index(t)+1u;
+    for(uint32_t ch=0;ch<16u;ch++)
+        if((mn_get(ch,note)&7u)==id && midi_mapped(ch,note,0)==note) return 1;
+    for(uint32_t i=0;i<midi_map.n;i++)
+        if(midi_map.row[i].note==note && (mn_get(midi_map.row[i].key>>7,midi_map.row[i].key&127u)&7u)==id) return 1;
+    return 0;
 }
 
 /* a key held on track t sounds note */
@@ -86,10 +114,9 @@ static void midi_release(uint32_t ch, uint32_t note)
 {
     uint32_t id = mn_get(ch, note) & 0x7u;
     uint32_t source = note;
-    note = midi_sound[ch][source];
+    note = midi_mapped(ch, source, 1);
     mn_set(ch, source, 0);
     if (id) {
-        if (midi_refs[id - 1u][note]) midi_refs[id - 1u][note]--;
         midi_owners[id - 1u]--;
         if (!--midi_ch[ch].owned[id - 1u])
             midi_ch[ch].targets &= (uint8_t)~(1u << (id - 1u));
@@ -126,13 +153,12 @@ static void midi_note_event(uint32_t ch, uint32_t note, uint32_t vel)
         /* Repeated notes replace the previous press, including a pedal-held one. */
         if (id)
             midi_release(ch, note);
+        if (!midi_remap(ch, note, sound)) return;
         midi_expression(t, c);
         if (t != TSEL)
             midi_hint = (uint8_t)(trk_index(t) + 1u);
         c->targets |= (uint8_t)(1u << trk_index(t));
         midi_play(t, ch, sound, vel);
-        midi_sound[ch][note] = (uint8_t)sound;
-        midi_refs[trk_index(t)][sound]++;
         mn_set(ch, note, (uint8_t)(trk_index(t) + 1u));
         midi_owners[trk_index(t)]++;
         c->owned[trk_index(t)]++;
@@ -162,13 +188,14 @@ static void __attribute__((noinline)) midi_forget_track(uint32_t track)
         if (!(midi_ch[ch].targets & (1u << track)))
             continue;
         for (note = 0; note < 128u; note++)
-            if ((mn_get(ch, note) & 0x7u) == track + 1u)
+            if ((mn_get(ch, note) & 0x7u) == track + 1u) {
+                midi_mapped(ch, note, 1);
                 mn_set(ch, note, 0);
+            }
         midi_ch[ch].targets &= (uint8_t)~(1u << track);
         midi_ch[ch].owned[track] = 0;
     }
     midi_owners[track] = 0;
-    memset(midi_refs[track], 0, sizeof midi_refs[track]);
     midi_bend_q8[track] = midi_bend_target[track] = 0;
 }
 

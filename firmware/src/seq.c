@@ -2868,7 +2868,7 @@ static void events_block(uint32_t n)
         memset(midi_sel_on, 0, sizeof midi_sel_on);
         memset(midi_ch, 0, sizeof midi_ch);
         memset(midi_owners, 0, sizeof midi_owners);
-        memset(midi_refs, 0, sizeof midi_refs);
+        memset(&midi_map, 0, sizeof midi_map);
         midi_hint = 0;
         for (i = 0; i < NTRK; i++) {
             trk[i].rh_n = trk[i].rskip_n = 0;

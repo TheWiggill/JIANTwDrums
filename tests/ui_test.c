@@ -175,6 +175,7 @@ static int check(const char *what, int ok)
 static void ui_power_on(void)
 {
     uint32_t i;
+    memset(split_cfg, 0, sizeof split_cfg); memset(&midi_map, 0, sizeof midi_map);
     if (!lyb_ok)
         sing_init();                              /* (0.9.0: as felucca_init, VOICE's English generator words) */
     memset(trk, 0, sizeof trk);

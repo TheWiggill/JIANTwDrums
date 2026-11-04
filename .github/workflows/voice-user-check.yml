@@ -41,6 +41,24 @@ jobs:
           python3 tests/uac_input_irq_test.py > build/song-check/usb-input.log
           cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/midi_control_test.c -lm -o build/song-check/midi
           build/song-check/midi | tee build/song-check/midi.log
+      - name: Verified pre-split baseline for UI regression comparison
+        uses: actions/checkout@v4
+        with:
+          ref: f5f6b1bde3a2eefa14444ad2212626c7aa4d46a8
+          path: build/ui-baseline
+          persist-credentials: false
+      - name: Full UI comparison against known baseline
+        run: |
+          set -euo pipefail
+          cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/ui_test.c -lm -o build/song-check/ui-full
+          cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ibuild/ui-baseline/firmware/src build/ui-baseline/tests/ui_test.c -lm -o build/song-check/ui-base
+          set +e
+          build/song-check/ui-full > build/song-check/ui-full.log
+          FULL_RC=$?
+          build/song-check/ui-base > build/song-check/ui-base.log
+          BASE_RC=$?
+          set -e
+          python3 tests/ui_baseline_compare.py build/song-check/ui-base.log build/song-check/ui-full.log "$BASE_RC" "$FULL_RC"
       - name: JieLi toolchain cache
         uses: actions/cache@v4
         with:
