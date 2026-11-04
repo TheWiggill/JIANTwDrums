@@ -1751,14 +1751,14 @@ static __attribute__((noinline)) void uac_in_fill(uint32_t n)
         return;
     }
     for (i = 0; i < n; i++) {
-        uint32_t a = ui_ring[r & (UI_N - 1u)], b = ui_ring[(r + 1u) & (UI_N - 1u)], f = ph & 0xFFFFu;
+        uint32_t a = ui_ring[r & (UI_N - 1u)], b = ui_ring[(r + 1u) & (UI_N - 1u)], f = ph >> 1;
         int32_t al = (int16_t)a, ar = (int16_t)(a >> 16), bl = (int16_t)b, br = (int16_t)(b >> 16);
         /* Full-scale neighbours differ by up to 65535: multiplying by Q16 f
          * overflows signed 32-bit above half phase, producing a 65536-LSB jump.
          * Q15 phase keeps both products in int32, with < 2 LSB interpolation error
          * and no 64-bit multiplies in the audio ISR. */
-        int32_t frac = (int32_t)(f >> 1);
-        int32_t l = al + (((bl - al) * frac) >> 15), rr = ar + (((br - ar) * frac) >> 15);
+        /* ph is kept in 0..65535 at every iteration; f is its Q15 fraction. */
+        int32_t l = al + (((bl - al) * (int32_t)f) >> 15), rr = ar + (((br - ar) * (int32_t)f) >> 15);
         if (g < 32767)
             g = g + 1024 < 32767 ? g + 1024 : 32767;    /* (a fade in over ~32 frames) */
         uin_l[i] = (l * g) >> 15;
