@@ -20,6 +20,7 @@ jobs:
         run: python3 -c "import sys;sys.path.insert(0,'tools');import build;build.generate()"
       - name: Song persistence and UI
         run: |
+          set -euo pipefail
           mkdir -p build/song-check
           cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/persistence_test.c -lm -o build/song-check/persistence
           build/song-check/persistence | tee build/song-check/persistence.log
@@ -61,3 +62,5 @@ jobs:
             build/felucca.fwsc
             build/felucca.bin
             build/bt.bin
+            build/layout.ld
+            build/felucca.map
