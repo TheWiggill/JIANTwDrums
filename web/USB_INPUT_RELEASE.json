@@ -1,7 +1,5 @@
 {
-  "source": "8b13fcd7a9985fd22801478b5697afaa3637df61",
-  "version": "V10.61-fix-codex-8b13fcd-preview",
-  "sha256": "1344edd5e7a90b38c790d38361e4ab5a035d8292829894d11b774134af11567b",
-  "validated_run": 41743635478,
-  "released_site_run": 41724556988
+  "source": "a87301bb99a689f8f62c289657e63050bedd684b",
+  "version": "V10.61-fix-codex2-a87301b-preview",
+  "released_site_run": 41745149049
 }

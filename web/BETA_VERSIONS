@@ -1,2 +1,3 @@
-# Previous beta retained for comparison with the USB INPUT fix.
-6c48e2a8e7049c31ab77c57b97c3ef6790d24090 # V10.61 before fix codex
+# Previous betas retained for USB input comparison.
+8b13fcd7a9985fd22801478b5697afaa3637df61 # V10.61-fix-codex
+6c48e2a8e7049c31ab77c57b97c3ef6790d24090 # V10.61
