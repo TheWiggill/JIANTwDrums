@@ -151,6 +151,7 @@ typedef struct {
     uint8_t gl[GL_N][5];                       /* (0.9.9-seq2f) GLO > COMPS, the global lane (seq.c glane): FUNC's 'G' 'C'
                                                 * block, empty before */
     char name[PROJ_NAME_LEN];                  /* the project's name: upper-case ASCII 32..126, 0-padded; "" = none */
+    uint8_t split[8];                         /* optional KS extension, absent = OFF */
     uint8_t fit[NTRK];                         /* FIT/SPAN per track; optional RF extension */
     uint32_t sum;
 } project_t;
@@ -927,12 +928,19 @@ static uint32_t proj_packed_size(const project_t *q)
     }
     for (t = 0; t < NTRK; t++)
         if (q->fit[t]) { n += 2u + NTRK; break; }
+    for (i = 0; i < sizeof q->split; i++) if (q->split[i]) { n += 2u + sizeof q->split; break; }
     return n;
+}
+static int proj_split_ok(const uint8_t *s)
+{
+    return s[0] <= 1u && s[1] <= 26u && s[2] < NTRK && s[3] < NTRK &&
+        (int8_t)s[4] >= -4 && (int8_t)s[4] <= 4 && (int8_t)s[5] >= -4 && (int8_t)s[5] <= 4 && s[6] < 16u && s[7] < 128u;
 }
 static int proj_pack(project_store_t *out, const project_t *q)
 {
     uint8_t *b = out->raw; uint32_t pos = 68u, t, i; uint32_t magic = PROJ_MAGIC, size = PROJ_STORE_SIZE, sum;
     proj_full = 0;
+    if (!proj_split_ok(q->split)) return 0;
     for (t = 0; t < NTRK; t++) {                        /* the values first: out untouched when one is wrong */
         if ((q->fit[t] & 127u) > 64u || q->t[t].engine >= NENGINES) return 0;
         for (i = 0; i < FM6_PACKED; i++)
@@ -1092,6 +1100,8 @@ static int proj_pack(project_store_t *out, const project_t *q)
         b[pos++] = 'R'; b[pos++] = 'F';
         for (t = 0; t < NTRK; t++) b[pos++] = fit_valid(q->fit[t]);
     }
+    for (i = 0; i < sizeof q->split && !q->split[i]; i++) {}
+    if (i < sizeof q->split) { b[pos++] = 'K'; b[pos++] = 'S'; memcpy(b + pos, q->split, sizeof q->split); pos += sizeof q->split; }
     memcpy(b + PROJC_PFX_OFF, q->pfx_lane, sizeof q->pfx_lane);
     b[PROJC_PFX_OFF + sizeof q->pfx_lane] = q->pfx_ltgt > 2u ? 0u : q->pfx_ltgt;
     for (i = 0; i < 4u; i++)
@@ -1398,6 +1408,13 @@ static int proj_unpack_c(project_t *q, const uint8_t *b)
             if ((v & 127u) > 64u) return 0;
             q->fit[t] = (uint8_t)v;
         }
+        pos += 2u + NTRK;
+    }
+    memset(q->split, 0, sizeof q->split);
+    if (pos + 2u <= room && b[pos] == 'K' && b[pos + 1u] == 'S') {
+        if (pos + 2u + sizeof q->split > room) return 0;
+        memcpy(q->split, b + pos + 2u, sizeof q->split);
+        if (!proj_split_ok(q->split)) return 0;
     }
     proj_new_tracks(q, nt);                             /* (a FUNC of fewer tracks: the rest at power-on) */
     for (t = nt; t < NTRK; t++)
@@ -1664,6 +1681,7 @@ static void project_capture(project_t *p)
     for (i = 0; i < G_COUNT; i++)
         p->g[i] = mom_base(MOM_G, i, song.g[i]);       /* (0.9.9-seq2e: a MOMENTARY value: the one kept) */
     p->g[G_DJF] = mom_base(MOM_G, G_DJF, motion_djf_value());                   /* (0.9.1) the knob's, not what its automation set */
+    memcpy(p->split, split_cfg, sizeof split_cfg);
     p->sel = song.sel;
     p->parts = NPART;
     p->phys = PROJ_PHYS;
@@ -1908,6 +1926,7 @@ static int project_restore_runtime(const project_t *input)
     }
     {                                                   /* (V10.31) SCENE */
         uint32_t i;
+        memcpy(split_cfg, p->split, sizeof split_cfg);
         scn_on = p->scene[0] & 1u;
         for (i = 0; i < NTRK; i++) {
             uint32_t r = (p->scene[1u + i / 2u] >> (4u * (i & 1u))) & 15u;
@@ -2036,6 +2055,7 @@ static __attribute__((noinline)) void system_init(void)   /* (snd8: out of its c
     memcpy(dx_kit, DX_KIT_DEF, sizeof dx_kit);
     memset(dx_mot, 0, sizeof dx_mot);
     dx_acoustic = 0;
+    memset(split_cfg, 0, sizeof split_cfg);
     scn_on = 0; memset(scn_role, 0, sizeof scn_role);   /* (V10.31) SCENE */
     dx_tone = 0;
     dx_hands = 0;
@@ -2301,6 +2321,7 @@ static uint32_t as_mix(uint32_t h, const void *p, uint32_t n)   /* FNV-1a, conti
 static uint32_t autosave_sig(void)
 {
     uint32_t h = 2166136261u, i, j;
+    h = as_mix(h, split_cfg, sizeof split_cfg);
     for (i = 0; i < NTRK; i++) {
         const track_t *t = &trk[i];
         for (j = 0; j < P_COUNT; j++) {

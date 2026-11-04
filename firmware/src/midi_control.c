@@ -22,6 +22,8 @@ static void mn_set(uint32_t ch, uint32_t note, uint32_t v)
     uint32_t sh = (note & 1u) * 4u;
     *b = (uint8_t)((*b & ~(15u << sh)) | (v & 15u) << sh);
 }
+static uint8_t midi_sound[16][128] __attribute__((section(".pool")));
+static uint16_t midi_refs[NTRK][128] __attribute__((section(".pool")));
 static uint16_t midi_owners[NTRK];           /* avoids rescanning all 2048 entries for CC123 */
 #define MIDI_PEDAL_NOTE 0x8u
 
@@ -38,7 +40,9 @@ static midi_channel_t *midi_channel(uint32_t ch)
 
 static uint32_t midi_targets(uint32_t ch)
 {
-    return midi_channel(ch)->targets | (1u << trk_index(midi_track(ch)));
+    uint32_t mask = midi_channel(ch)->targets | (1u << trk_index(midi_track(ch)));
+    if (split_cfg[0] && ch == split_cfg[6]) mask |= (1u << split_track(0)) | (1u << split_track(1));
+    return mask;
 }
 
 static void midi_expression(track_t *t, const midi_channel_t *c)
@@ -60,11 +64,7 @@ static void midi_expression_channel(uint32_t ch)
 /* a MIDI note of track t sounds note */
 static int midi_note_held(const track_t *t, uint32_t note)
 {
-    uint32_t ch, id = trk_index(t) + 1u;
-    for (ch = 0; ch < 16u; ch++)
-        if ((mn_get(ch, note) & 0x7u) == id)
-            return 1;
-    return 0;
+    return note < 128u && midi_refs[trk_index(t)][note] != 0u;
 }
 
 /* a key held on track t sounds note */
@@ -84,14 +84,17 @@ static int midi_local_held(const track_t *t, uint32_t note)
 static void midi_release(uint32_t ch, uint32_t note)
 {
     uint32_t id = mn_get(ch, note) & 0x7u;
-    mn_set(ch, note, 0);
+    uint32_t source = note;
+    note = midi_sound[ch][source];
+    mn_set(ch, source, 0);
     if (id) {
+        if (midi_refs[id - 1u][note]) midi_refs[id - 1u][note]--;
         midi_owners[id - 1u]--;
         if (!--midi_ch[ch].owned[id - 1u])
             midi_ch[ch].targets &= (uint8_t)~(1u << (id - 1u));
     }
     if (id && drum_track(&trk[id - 1u]) && drum_oct_of(note)) {   /* (0.8.5) a band of the kit's octaves */
-        dxo_off(&trk[id - 1u], DXO_MIDI + (ch << 7) + note);
+        dxo_off(&trk[id - 1u], DXO_MIDI + (ch << 7) + source);
         if (!midi_local_held(&trk[id - 1u], drum_oct_base(note)))
             input_off(&trk[id - 1u], drum_oct_base(note));
     } else if (id && !midi_local_held(&trk[id - 1u], note))
@@ -115,7 +118,10 @@ static void midi_note_event(uint32_t ch, uint32_t note, uint32_t vel)
     midi_channel_t *c = midi_channel(ch);
     uint32_t id = mn_get(ch, note) & 0x7u;
     if (vel) {
-        track_t *t = midi_track(ch);
+        uint32_t high = note >= split_cut(1), sound = note;
+        int split = split_cfg[0] && ch == split_cfg[6];
+        track_t *t = split ? &trk[split_track(high)] : midi_track(ch);
+        if (split && !drum_track(t)) sound = (uint32_t)clamp((int32_t)note + 12 * split_oct(high), 0, 127);
         /* Repeated notes replace the previous press, including a pedal-held one. */
         if (id)
             midi_release(ch, note);
@@ -123,7 +129,9 @@ static void midi_note_event(uint32_t ch, uint32_t note, uint32_t vel)
         if (t != TSEL)
             midi_hint = (uint8_t)(trk_index(t) + 1u);
         c->targets |= (uint8_t)(1u << trk_index(t));
-        midi_play(t, ch, note, vel);
+        midi_play(t, ch, sound, vel);
+        midi_sound[ch][note] = (uint8_t)sound;
+        midi_refs[trk_index(t)][sound]++;
         mn_set(ch, note, (uint8_t)(trk_index(t) + 1u));
         midi_owners[trk_index(t)]++;
         c->owned[trk_index(t)]++;
@@ -159,6 +167,7 @@ static void __attribute__((noinline)) midi_forget_track(uint32_t track)
         midi_ch[ch].owned[track] = 0;
     }
     midi_owners[track] = 0;
+    memset(midi_refs[track], 0, sizeof midi_refs[track]);
     midi_bend_q8[track] = midi_bend_target[track] = 0;
 }
 
@@ -397,7 +406,7 @@ static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint3
         midi_song_req = (uint8_t)(d1 + 1u);
         return;
     }
-    if (ch >= NPART && !song.g[G_ROUTE])
+    if (ch >= NPART && !song.g[G_ROUTE] && !(split_cfg[0] && ch == split_cfg[6]) && !midi_channel(ch)->targets)
         return;
     if (st == 0x90u || st == 0x80u)
         midi_note_event(ch, d1, st == 0x90u ? d2 : 0);
@@ -405,10 +414,12 @@ static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint3
         midi_channel(ch)->bend = (int16_t)((int32_t)(d1 | (d2 << 7)) - 8192);
         midi_expression_channel(ch);
     } else if (st == 0xB0u) {
-        mod_midi(midi_track(ch), st, d1, d2);
+        uint32_t mask = split_cfg[0] && ch == split_cfg[6] ? midi_targets(ch) : 1u << trk_index(midi_track(ch));
+        for (uint32_t i = 0; i < NTRK; i++) if (mask & (1u << i)) mod_midi(&trk[i], st, d1, d2);
         midi_control(ch, d1, d2);
     } else if (st == 0xD0u)
         mod_midi(midi_track(ch), st, d1, d2);
     else if (st == 0xC0u)                          /* (0.6.72) PROGRAM CHANGE: the UI loads it (ui.c midi_pc_poll) */
         midi_pc_req[trk_index(midi_track(ch)) % NTRK] = (uint8_t)(d1 + 1u);
 }
+

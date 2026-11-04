@@ -1,5 +1,11 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+/* Optional keyboard split. Kept in the pool so DSP globals retain their addresses.
+ * on, physical cut (0=13), low/high track, low/high signed octaves, MIDI channel, MIDI cut (0=60). */
+static uint8_t split_cfg[8] __attribute__((section(".pool")));
+static uint32_t split_cut(uint32_t midi) { return split_cfg[midi ? 7 : 1] ? split_cfg[midi ? 7 : 1] : (midi ? 60u : 13u); }
+static uint32_t split_track(uint32_t high) { return split_cfg[2u + high] % NTRK; }
+static int32_t split_oct(uint32_t high) { return (int8_t)split_cfg[4u + high]; }
 static uint8_t shift_valid[2][NTRK];
 /* Keyboard, scale, arpeggiator, sequencer and transport.
  * Everything here runs in the audio ISR, once per CTL-sample block (64 samples since 0.9.9 ctl64; the note-ons it
@@ -1285,12 +1291,17 @@ static void keyboard_block(void)
                     lv.kb |= 1u << k;
             } else if (song.grid)                   /* the DRUM grid: a lane key plays its lane, the rest are the UI's */
                 kb_note[k] = key_black(k) && key_place(k) < NLANE ? DRUM_LANE_NOTE[key_place(k)] : KB_SILENT;
-            else
+            else {
+                uint32_t high = k >= split_cut(0);
+                if (split_cfg[0]) kb_trk[k] = (uint8_t)split_track(high);
                 kb_note[k] = (uint8_t)kb_map(&trk[kb_trk[k]], k);
-            kb_oct[k] = (int8_t)(!song.grid && drum_track(&trk[kb_trk[k]]) ? song.octave : 0);   /* (0.8.5) */
+                if (split_cfg[0] && kb_note[k] != KB_SILENT && !drum_track(&trk[kb_trk[k]]))
+                    kb_note[k] = (uint8_t)clamp((int32_t)kb_note[k] + 12 * split_oct(high), 0, 127);
+            }
+            kb_oct[k] = (int8_t)(!song.grid && drum_track(&trk[kb_trk[k]]) ? song.octave + (split_cfg[0] ? split_oct(k >= split_cut(0)) : 0) : 0);   /* split drum octave retained until release */
             if (kb_note[k] == KB_SILENT)
                 continue;
-            if (scn_on && !song.grid) {           /* (V10.25) SCENE: every track with a role */
+            if (scn_on && !song.grid && !split_cfg[0]) {           /* (V10.25) SCENE: every track with a role */
                 scn_keys |= 1u << k;
                 scene_fp(k, 1);
                 continue;
@@ -2857,6 +2868,7 @@ static void events_block(uint32_t n)
         memset(midi_sel_on, 0, sizeof midi_sel_on);
         memset(midi_ch, 0, sizeof midi_ch);
         memset(midi_owners, 0, sizeof midi_owners);
+        memset(midi_refs, 0, sizeof midi_refs);
         midi_hint = 0;
         for (i = 0; i < NTRK; i++) {
             trk[i].rh_n = trk[i].rskip_n = 0;
@@ -2962,5 +2974,6 @@ static void events_block(uint32_t n)
 }
 
 #include "song_play.c"                           /* the song: the ISR's part (song_chain.c) */
+
 
 

@@ -85,7 +85,7 @@ static const ng_t CG_FX[] = {{"TRACK", "TRK"}, {"BUSES", "BUS"}, {"DELAY", "DLY"
                              {"SLICER", "SLC"}, {"PUNCH", "PCH"}, {"MASTER", "MST"}};
 static const nv_t CE_GLO[] = {NV("MANO", 0, 0, 0), NV("RIELES", 0, 0, 0), NV("MIXER", 0, 1, 0), NV("SENDS", 0, 1, 0),
                               NV("COMPS", 0, 2, 3), NV("COMPS 2", 0, 2, 3), NV("GLOBAL", 0, 3, 1),
-                              NV("SYSTEM", 0, 4, 2), NV("SYSTEM 2", 0, 4, 2)};   /* (V10.37) the performing pages first, the
+                              NV("SYSTEM", 0, 4, 2), NV("SYSTEM 2", 0, 4, 2), NV("KEY SPLIT", 0, 4, 2), NV("KEY SPLIT 2", 0, 4, 2)};   /* (V10.37) the performing pages first, the
                                                          * settings (GLOBAL, SYSTEM) last */   /* (0.9.9-seq2f) the global lane; (p2) LIVE first
                                                          * (ui_live.c) */
 static const ng_t CG_GLO[] = {{"LIVE", 0}, {"MIX", 0}, {"COMPS", "CMP"}, {"GLOBAL", 0}, {"SYSTEM", 0}};
