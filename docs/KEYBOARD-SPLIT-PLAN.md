@@ -29,3 +29,5 @@ Automated coverage includes both zones, sustain, changing split while held, clam
 The full UI suite was run against the verified FIT base f5f6b1b and this candidate. Both runs report the same 18 failures (14 distinct checks); the split candidate adds no failing checks after updating the GLO page counts for its two added pages. These existing failures include assertions for older REC/SELECT navigation and page chains. This comparison is not a claim that the full legacy UI suite is clean.
 
 The MIDI/clock integration suite, including split-specific cases, also ran with AddressSanitizer and bounds checks. The persistence and legacy project-format suites passed. Firmware checks separately enforce flash, RAM, pool and short-call reach limits. Six sparse MIDI controller dispatch routines use size optimization; synthesis, clocks, DMA and note ownership/release retain their existing optimization.
+
+Target validation (repin candidate a8b34914): application 584008 / 584336 B; RAM data/BSS 97884 / 98304 B; pool reserve 8224 B; RAM code 32632 / 34816 B. The final source commits the recorded audio layout and is rebuilt without repinning before beta publication.
