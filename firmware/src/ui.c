@@ -14,7 +14,7 @@ static const engine_t *trk_engp(const track_t *t) { return ENGINES[trk_eng(t)]; 
 static int project_save(uint32_t slot);
 static int song_save_as(uint32_t target, const char *name);
 static void song_name(char *b);
-static uint8_t song_save_target;                   /* destination picker: never opens the project */
+static uint8_t song_save_target __attribute__((section(".pool")));                   /* destination picker: never opens the project */
 static void panel_setup(void);
 static void project_load(uint32_t slot);
 static int section_jump(uint32_t s);    /* (song_main.c: 0.6.80, channel 16's PROGRAM CHANGE) */
