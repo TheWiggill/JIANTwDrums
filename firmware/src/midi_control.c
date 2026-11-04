@@ -376,6 +376,7 @@ static void __attribute__((noinline)) midi_route_ch14(void)
 {
     uint32_t ch, note;
     for (ch = NPART; ch < 16u; ch++) {
+        if (split_cfg[0] && ch == split_cfg[6]) continue;
         midi_channel_t *c = midi_channel(ch);
         for (note = 0; note < 128u; note++)
             if (mn_get(ch, note))
@@ -407,7 +408,7 @@ static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint3
         midi_song_req = (uint8_t)(d1 + 1u);
         return;
     }
-    if (ch >= NPART && !song.g[G_ROUTE] && !(split_cfg[0] && ch == split_cfg[6]) && !midi_channel(ch)->targets)
+    if (ch >= NPART && !song.g[G_ROUTE] && !(split_cfg[0] && ch == split_cfg[6]) && (!midi_channel(ch)->targets || (st == 0x90u && d2)))
         return;
     if (st == 0x90u || st == 0x80u)
         midi_note_event(ch, d1, st == 0x90u ? d2 : 0);

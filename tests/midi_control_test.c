@@ -437,8 +437,11 @@ static int split_test(void)
     queued(0x90,48,100,1); queued(0x90,72,100,1); queued(0xB0,120,0,1);
     bad += check("MIDI split: CC120 clears both zones and ownership", !midi_owners[0] && !midi_owners[1] && !midi_refs[0][0] && !midi_refs[1][120]);
     split_cfg[4]=0; split_cfg[5]=0;
+    song.sel=2; midi_bend_target[2]=0;
     queued(0xE0,127,127,1);
-    bad += check("MIDI split: bend reaches both configured zones before note-on", midi_bend_target[0]==512 && midi_bend_target[1]==512);
+    bad += check("MIDI split: bend reaches both configured zones, not an unrelated selected track", midi_bend_target[0]==512 && midi_bend_target[1]==512 && !midi_bend_target[2]);
+    queued(0xB0,1,91,1);queued(0xD0,73,0,1);
+    bad += check("MIDI split: wheel and aftertouch reach both zones only", trk[0].mw==91 && trk[1].mw==91 && trk[0].at==73 && trk[1].at==73 && !trk[2].mw && !trk[2].at);
     midi_test_reset();
     split_cfg[0]=1;split_cfg[2]=0;split_cfg[3]=1;split_cfg[4]=(uint8_t)-1;split_cfg[5]=1;
     scn_on=1; /* split has priority over SCENE for normal keyboard notes */

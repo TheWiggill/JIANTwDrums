@@ -97,7 +97,10 @@ def isr_reach(ir, with_globals=False):
 def main(src, dst):
     ir = Path(src).read_text()
     isr = isr_reach(ir)
-    names, hit = size_names() - isr, set()
+    # Sparse MIDI control dispatch runs per received message, never per rendered sample.
+    # Keep synthesis, clocks, DMA, note release and ownership queries at -Os.
+    input_size = {"midi_event", "midi_control", "midi_cc_map", "midi_cc_set", "midi_learned", "midi_route_ch14"}
+    names, hit = (size_names() - isr) | input_size, set()
 
     def mark(m):
         if m.group(2) not in names:
@@ -112,3 +115,4 @@ def main(src, dst):
 
 if __name__ == "__main__":
     sys.exit(main(*sys.argv[1:3]))
+
