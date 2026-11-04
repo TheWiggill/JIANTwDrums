@@ -448,7 +448,7 @@ static int split_test(void)
     fm1_in.notes=0;events_block(CTL);
     bad += check("physical split: changing split keeps original note-off ownership", !kb_on[7] && !kb_on[19]);
     scn_on=0;
-    for(uint32_t i=0;i<NPAGES;i++) if(PAGES[i].graph==GR_SPLIT && !PAGES[i].id[0]) {ui.home=0;ui.page=i;break;}
+    for(uint32_t i=0;i<NPAGES;i++) if(PAGES[i].graph==GR_SPLIT) {ui.home=0;ui.page=i;break;}
     edit_param(0,1);edit_param(1,1);edit_param(2,1);edit_param(3,1);
     bad += check("split page knobs configure ON, tracks and physical cut", split_cfg[0]==1 && split_cfg[2]==3 && split_cfg[3]==4 && split_cut(0)==14);
     midi_test_reset();

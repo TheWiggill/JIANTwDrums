@@ -934,7 +934,7 @@ static uint32_t proj_packed_size(const project_t *q)
 static int proj_split_ok(const uint8_t *s)
 {
     return s[0] <= 1u && s[1] <= 26u && s[2] < NTRK && s[3] < NTRK &&
-        (int8_t)s[4] >= -4 && (int8_t)s[4] <= 4 && (int8_t)s[5] >= -4 && (int8_t)s[5] <= 4 && s[6] < 16u && s[7] < 128u;
+        (uint32_t)((int8_t)s[4]+4) <= 8u && (uint32_t)((int8_t)s[5]+4) <= 8u && s[6] < 16u && s[7] < 128u;
 }
 static int proj_pack(project_store_t *out, const project_t *q)
 {

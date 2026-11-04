@@ -12200,7 +12200,7 @@ static int test_lz_glo(void)
     ui_power_on(); frame();
     press(B_GLO); frame();
     ok = pd_on() && lz_fam() == LZ_GLO && pd_level() == 0u && str_eq(cur_page()->title, "MIXER") && lz_tab_lit(1) &&
-         lz_crumb_is("GLO \xB7 MIX \xB7 MIXER") && lz_count_is("3/9");   /* (snd8: SYSTEM 2; p2: LIVE's two first) */
+         lz_crumb_is("GLO \xB7 MIX \xB7 MIXER") && lz_count_is("3/11");   /* (snd8: SYSTEM 2; p2: LIVE's two first) */
     turn(EN_SELECT, 1); frame();
     ok &= str_eq(cur_page()->title, "SENDS") && lz_crumb_is("GLO \xB7 MIX \xB7 SENDS");
     v = TSEL->p[P_DLY];
@@ -12213,7 +12213,7 @@ static int test_lz_glo(void)
     frames(320); press(B_GLO); frame();
     ok &= pd_level() == 2u && str_eq(cur_page()->title, "SYSTEM") && lz_tab_lit(4) && lz_crumb_is("GLO \xB7 SYSTEM \xB7 SYSTEM");
     frames(320); press(B_GLO); frame();
-    ok &= str_eq(cur_page()->title, "MANO") && lz_tab_lit(0) && lz_crumb_is("GLO \xB7 LIVE \xB7 MANO") && lz_count_is("1/9");
+    ok &= str_eq(cur_page()->title, "MANO") && lz_tab_lit(0) && lz_crumb_is("GLO \xB7 LIVE \xB7 MANO") && lz_count_is("1/11");
     frames(320); press(B_GLO); frame();                 /* (p2: LIVE first in the chain; at power-on GLO opens MIXER) */
     ok &= pd_level() == 0u && str_eq(cur_page()->title, "MIXER");
     turn(EN_SELECT, 3); frame();

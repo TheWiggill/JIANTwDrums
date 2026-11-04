@@ -1622,12 +1622,11 @@ static void draw_columns(void)
         empty_column(3);
         return;
     }
-    if (cur_page()->graph == GR_SPLIT) {
-        static const uint8_t fields[8] = {0, 2, 3, 1, 4, 5, 6, 7};
+    if (SPLIT_PAGE(cur_page())) {
         static const char *const labels[8] = {"SPLIT", "LOW TRK", "HIGH TRK", "KEY CUT", "LOW OCT", "HIGH OCT", "MIDI CH", "MIDI CUT"};
         for (uint32_t c = 0; c < 4; c++) {
-            uint32_t x = cur_page()->id[0] + c, f = fields[x];
-            int32_t v = f == 1u ? (int32_t)split_cut(0) + 1 : f == 7u ? (int32_t)split_cut(1) : f == 4u || f == 5u ? (int8_t)split_cfg[f] : split_cfg[f] + (f == 2u || f == 3u || f == 6u);
+            uint32_t x = (cur_page()->graph == GR_SPLIT2 ? 4u : 0u) + c, f = split_field(c);
+            int32_t v = split_value(f) + (f == 1u || f == 2u || f == 3u || f == 6u);
             fmt_int(val, v);
             hot_text_column(c, labels[x], f ? val : split_cfg[0] ? "ON" : "OFF");
         }

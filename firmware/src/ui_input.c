@@ -1432,15 +1432,7 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.act = (uint8_t)(a + 1);
         return;
     }
-    if (pg->graph == GR_SPLIT) {
-        static const uint8_t fields[8] = {0, 2, 3, 1, 4, 5, 6, 7};
-        uint32_t f = fields[pg->id[0] + slot];
-        int32_t v = f == 1u ? (int32_t)split_cut(0) : f == 7u ? (int32_t)split_cut(1) : f == 4u || f == 5u ? (int8_t)split_cfg[f] : split_cfg[f];
-        int32_t lo = f == 1u || f == 7u ? 1 : f == 4u || f == 5u ? -4 : 0;
-        int32_t hi = f == 0u ? 1 : f == 1u ? 26 : f == 2u || f == 3u ? NTRK - 1 : f == 4u || f == 5u ? 4 : f == 6u ? 15 : 127;
-        split_cfg[f] = (uint8_t)clamp(v + steps, lo, hi);
-        ui.force = 1; return;
-    }
+    if (SPLIT_PAGE(pg)) { split_edit(slot, steps); return; }
     if (FIT_PAGE(pg) && (slot == 1u || slot == 2u)) {
         uint32_t v = TSEL->seq_fit, span = fit_span(TSEL);
         if (slot == 1u) span = (uint32_t)clamp((int32_t)span + steps, 1, 64);
@@ -2889,7 +2881,7 @@ static void ui_input_frame(void)
         if (ui.home || pg->scope == SC_STEP || pg->scope == SC_TRK || page_desc(pg, k, &hv) ||
             ((pg->graph == GR_USER || pg->graph == GR_MOD || pg->graph == GR_MSEQ || pg->graph == GR_PATS || BAR_PAGE(pg)) &&
              k == 0u)
-            || FIT_PAGE(pg) || pg->graph == GR_SPLIT || pg->graph == GR_SONG || pg->graph == GR_DXSND || pg->graph == GR_FOCUS || pg->graph == GR_STAGE ||
+            || FIT_PAGE(pg) || SPLIT_PAGE(pg) || pg->graph == GR_SONG || pg->graph == GR_DXSND || pg->graph == GR_FOCUS || pg->graph == GR_STAGE ||
             pg->graph == GR_GCOMP || pg->graph == GR_LIVE) {   /* (not an empty column) */
             ui.hot_col = (uint8_t)k;
             ui.hot_t = 40, ui.knob_ms = fm1_ms;

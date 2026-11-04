@@ -40,8 +40,9 @@ static midi_channel_t *midi_channel(uint32_t ch)
 
 static uint32_t midi_targets(uint32_t ch)
 {
-    uint32_t mask = midi_channel(ch)->targets | (1u << trk_index(midi_track(ch)));
+    uint32_t mask = midi_channel(ch)->targets;
     if (split_cfg[0] && ch == split_cfg[6]) mask |= (1u << split_track(0)) | (1u << split_track(1));
+    else mask |= 1u << trk_index(midi_track(ch));
     return mask;
 }
 
@@ -413,12 +414,11 @@ static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint3
     else if (st == 0xE0u) {
         midi_channel(ch)->bend = (int16_t)((int32_t)(d1 | (d2 << 7)) - 8192);
         midi_expression_channel(ch);
-    } else if (st == 0xB0u) {
+    } else if (st == 0xB0u || st == 0xD0u) {
         uint32_t mask = split_cfg[0] && ch == split_cfg[6] ? midi_targets(ch) : 1u << trk_index(midi_track(ch));
         for (uint32_t i = 0; i < NTRK; i++) if (mask & (1u << i)) mod_midi(&trk[i], st, d1, d2);
-        midi_control(ch, d1, d2);
-    } else if (st == 0xD0u)
-        mod_midi(midi_track(ch), st, d1, d2);
+        if (st == 0xB0u) midi_control(ch, d1, d2);
+    }
     else if (st == 0xC0u)                          /* (0.6.72) PROGRAM CHANGE: the UI loads it (ui.c midi_pc_poll) */
         midi_pc_req[trk_index(midi_track(ch)) % NTRK] = (uint8_t)(d1 + 1u);
 }

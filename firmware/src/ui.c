@@ -2025,3 +2025,20 @@ static int act_ready(void)
 }
 
 
+
+
+/* Shared split-card conversion, UI only: no parameter IDs or DSP globals added. */
+static uint32_t split_field(uint32_t slot) { static const uint8_t f[8]={0,2,3,1,4,5,6,7}; return f[(cur_page()->graph == GR_SPLIT2 ? 4u : 0u)+slot]; }
+static int32_t split_value(uint32_t f)
+{
+    if (f==1u || f==7u) return (int32_t)split_cut(f==7u);
+    return f==4u || f==5u ? (int8_t)split_cfg[f] : split_cfg[f];
+}
+static void split_edit(uint32_t slot,int32_t steps)
+{
+    static const int8_t lo[8]={0,1,0,0,-4,-4,0,1};
+    static const int8_t hi[8]={1,26,NTRK-1,NTRK-1,4,4,15,127};
+    uint32_t f=split_field(slot);
+    split_cfg[f]=(uint8_t)clamp(split_value(f)+steps,lo[f],hi[f]);
+    ui.force=1;
+}
