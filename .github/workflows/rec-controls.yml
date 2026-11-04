@@ -1,0 +1,114 @@
+name: ADD15 private candidate validation
+on:
+  push:
+    branches: [codex/add15-private]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    env:
+      AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
+      JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.jieli
+            ~/fw-AC79_AIoT_SDK/cpu/wl82/tools
+          key: jieli-ac79-v1.2.1
+      - name: Toolchain and SDK
+        run: |
+          retry() { for d in 0 5 15 30 60; do sleep $d; "$@" && return 0; done; return 1; }
+          T=$HOME/fw-AC79_AIoT_SDK/cpu/wl82/tools
+          [ -e "$HOME/.jieli/toolchain" ] || retry sh tools/get_toolchain.sh "$HOME/.jieli"
+          if [ ! -s "$T/uboot.boot" ] || [ ! -s "$T/cfg_tool.bin" ] || [ ! -s "$T/cfg/eq_cfg_hw.bin" ]; then
+            rm -rf "$HOME/fw-AC79_AIoT_SDK"
+            retry git clone --filter=blob:none --no-checkout https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git "$HOME/fw-AC79_AIoT_SDK"
+            cd "$HOME/fw-AC79_AIoT_SDK"
+            git sparse-checkout set --no-cone /cpu/wl82/tools/uboot.boot /cpu/wl82/tools/cfg_tool.bin /cpu/wl82/tools/cfg/eq_cfg_hw.bin
+            retry git checkout d179b4484759423312073f5fbb232501aa491047
+          fi
+      - name: Whole sequence clipboard
+        run: |
+          python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
+          mkdir -p build/rec
+          cc -O1 -w -fsanitize=bounds -fno-sanitize-recover=bounds -Ibuild/gen -Ifirmware/src -Itests tests/seq_clipboard_test.c -lm -o build/rec/seq_clipboard
+          build/rec/seq_clipboard | tee build/rec/seq-clipboard.log
+      - name: Components, acoustic storage and audio
+        run: |
+          for t in step_extensions acoustic_store drum_acoustic string_add project; do
+            cc -O1 -w -fsanitize=bounds -fno-sanitize-recover=bounds -Ibuild/gen -Ifirmware/src -Itests tests/${t}_test.c -lm -o build/rec/$t
+            build/rec/$t | tee build/rec/$t.log
+          done
+      - name: Target image, memory and DSP budgets
+        run: |
+          python3 tools/build.py
+          git worktree add --detach /tmp/rec-base "$(cat tests/REC_BASE)"
+          (cd /tmp/rec-base && python3 tools/build.py)
+          mkdir -p build/rec
+          BUDGET_UPDATE=1 python3 tests/target_budget.py /tmp/rec-base/build/felucca.dis /tmp/rec-base-budget.txt
+          # STRING restores the already implemented par12 feedback algorithm. Compare that
+          # engine to its donor; all other engines keep the exact ADD public baseline budget.
+          git worktree add --detach /tmp/string-base 527c7e4
+          (cd /tmp/string-base && python3 tools/build.py)
+          python3 - <<'PYCODE'
+          import runpy
+          from pathlib import Path
+          mod=runpy.run_path('tests/target_budget.py',run_name='target_cost_helpers')
+          value=mod['cost'](mod['functions']('/tmp/string-base/build/felucca.dis')['string_render'])['cost']
+          p=Path('/tmp/rec-base-budget.txt');lines=p.read_text().splitlines()
+          p.write_text('\n'.join(f'string_render {value}' if x.startswith('string_render ') else x for x in lines)+'\n')
+          print('STRING donor budget:',value,'(same +10% tolerance; other engines unchanged)')
+          PYCODE
+          python3 tests/target_budget.py build/felucca.dis /tmp/rec-base-budget.txt
+      - name: REC gesture and undo regression tests
+        run: |
+          mkdir -p build/rec
+          cc -O1 -w -Ibuild/gen -Ifirmware/src -Itests tests/rec_workflow_test.c -lm -o build/rec/rec_workflow
+          build/rec/rec_workflow | tee build/rec/controls.log
+      - name: Timing compared against exact base
+        run: |
+          cc -O1 -w -Ibuild/gen -I/tmp/rec-base/firmware/src -I/tmp/rec-base/tests /tmp/rec-base/tests/micro_test.c -lm -o build/rec/micro_base
+          cc -O1 -w -Ibuild/gen -Ifirmware/src -Itests tests/micro_test.c -lm -o build/rec/micro_new
+          set +e
+          build/rec/micro_base > build/rec/timing-base.log
+          rec_base_exit=$?
+          build/rec/micro_new > build/rec/timing-new.log
+          rec_new_exit=$?
+          set -e
+          test "$rec_base_exit" = "$rec_new_exit"
+          cmp build/rec/timing-base.log build/rec/timing-new.log
+          cat build/rec/timing-new.log
+          test "$rec_new_exit" -le 1
+          echo "Timing output and exit status match the original firmware exactly."
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 6.0.11
+      - name: Fresh and stored-project boot in WASM
+        run: |
+          sh web/emu/build.sh
+          node tests/add15_boot_test.mjs build/emu/felucca.wasm
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rec-firmware
+          path: |
+            build/felucca.fwsc
+            build/felucca.check.txt
+            build/felucca.map
+            build/layout.ld
+            build/felucca.o
+            build/felucca.dis
+            tools/audio_layout.txt
+            build/rec/*.log
+
+

@@ -1,0 +1,12 @@
+// JIANT Stems (phase 1 of the stems app, android/README.md): record the FM-1's USB stems, line them up, export.
+// :core is plain Kotlin (WAV, latency, mix, ZIP: the JVM tests); :app is the Android app on top of it.
+// `gradle -p android/stems -PcoreOnly :core:test` runs the tests without the Android SDK.
+pluginManagement {
+    repositories { mavenCentral(); google(); gradlePluginPortal() }
+}
+dependencyResolutionManagement {
+    repositories { mavenCentral(); google() }
+}
+rootProject.name = "jiant-stems"
+include ":core"
+if (!startParameter.projectProperties.containsKey("coreOnly")) include ":app"

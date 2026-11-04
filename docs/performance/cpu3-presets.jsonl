@@ -1,0 +1,139 @@
+{"engine": 0, "preset": 0, "name": "SAW LEAD", "ns": 49.5281, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 1, "name": "SOFT PAD", "ns": 36.8033, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 2, "name": "SQR BASS", "ns": 50.8494, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 3, "name": "PWM STR", "ns": 35.5467, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 4, "name": "ACID", "ns": 43.5343, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 5, "name": "SINE KEY", "ns": 39.5443, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 6, "name": "RAVE", "ns": 49.5745, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 7, "name": "SUB BASS", "ns": 56.3875, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 8, "name": "PLUCK", "ns": 29.0196, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 9, "name": "BRASS", "ns": 44.1295, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 10, "name": "WIND", "ns": 38.2266, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 11, "name": "STRINGS", "ns": 28.2611, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 12, "name": "SYNC LEAD", "ns": 47.9383, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 13, "name": "RING BELL", "ns": 45.1002, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 14, "name": "FAT BASS", "ns": 54.6942, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 15, "name": "JUNO PAD", "ns": 42.4556, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 16, "name": "REESE", "ns": 52.1972, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 17, "name": "HOOVER", "ns": 51.852, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 18, "name": "DUB STAB", "ns": 50.7406, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 19, "name": "CELLO", "ns": 57.3325, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 20, "name": "ARP PLUCK", "ns": 35.3044, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 21, "name": "MOOG LEAD", "ns": 46.5149, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 22, "name": "DARK PAD", "ns": 55.2221, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 23, "name": "GLASS KEYS", "ns": 38.993, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 0, "preset": 24, "name": "ORGAN SQR", "ns": 49.7522, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 2, "preset": 0, "name": "BRASS", "ns": 41.6912, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 2, "preset": 1, "name": "ORGAN", "ns": 43.5035, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 2, "preset": 2, "name": "STRING", "ns": 49.685, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 2, "preset": 3, "name": "RESO", "ns": 54.4458, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 2, "preset": 4, "name": "BELL", "ns": 52.4386, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 2, "preset": 5, "name": "WIRE", "ns": 49.3978, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 2, "preset": 6, "name": "GROWL", "ns": 43.2064, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 2, "preset": 7, "name": "FB BASS", "ns": 35.8553, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 2, "preset": 8, "name": "CZ PIANO", "ns": 45.5956, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 2, "preset": 9, "name": "GLASS PAD", "ns": 49.8938, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 2, "preset": 10, "name": "DIGI STAB", "ns": 40.2821, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 2, "preset": 11, "name": "SYN BASS", "ns": 35.2823, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 2, "preset": 12, "name": "VOX PAD", "ns": 48.7154, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 2, "preset": 13, "name": "HARP", "ns": 43.9601, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 2, "preset": 14, "name": "PD LEAD", "ns": 49.6185, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 2, "preset": 15, "name": "RING KEYS", "ns": 41.9751, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 3, "preset": 0, "name": "BYTEBEAT", "ns": 48.5396, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 3, "preset": 1, "name": "BYTE VAR", "ns": 48.6073, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 3, "preset": 2, "name": "BYTE BENT", "ns": 58.6604, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 3, "preset": 3, "name": "PULSE LD", "ns": 36.3144, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 3, "preset": 4, "name": "WAVE BASS", "ns": 28.4652, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 3, "preset": 5, "name": "8BIT KEYS", "ns": 45.9297, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 3, "preset": 6, "name": "WAVE LEAD", "ns": 34.9891, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 3, "preset": 7, "name": "STEP LEAD", "ns": 36.3464, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 3, "preset": 8, "name": "BYTE TONE", "ns": 48.0261, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 3, "preset": 9, "name": "FLOAT FM", "ns": 58.0888, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 3, "preset": 10, "name": "FLOAT ARP", "ns": 51.1375, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 3, "preset": 11, "name": "FLOAT PAD", "ns": 65.2212, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 3, "preset": 12, "name": "CHIP PAD", "ns": 30.9898, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 3, "preset": 13, "name": "GB ARP", "ns": 31.8576, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 3, "preset": 14, "name": "TRI BASS", "ns": 30.2416, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 3, "preset": 15, "name": "SOFT CHIP", "ns": 31.9753, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 3, "preset": 16, "name": "SAW CHIP", "ns": 29.3707, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 5, "preset": 0, "name": "CHOIR AAH", "ns": 73.3119, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 5, "preset": 1, "name": "VOX LEAD", "ns": 69.7193, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 5, "preset": 2, "name": "WOW BASS", "ns": 69.5765, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 5, "preset": 3, "name": "WHISPER", "ns": 77.61, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 5, "preset": 4, "name": "OOH PAD", "ns": 77.6431, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 5, "preset": 5, "name": "CHANT", "ns": 76.3086, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 5, "preset": 6, "name": "TALK BOX", "ns": 85.8654, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 5, "preset": 7, "name": "CANTOR ES", "ns": 87.3199, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 5, "preset": 8, "name": "CANTORA ES", "ns": 81.8403, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 5, "preset": 9, "name": "SINGER EN", "ns": 80.7161, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 5, "preset": 10, "name": "UTA JA", "ns": 83.6014, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 5, "preset": 11, "name": "WORD CHOIR", "ns": 79.6089, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 5, "preset": 12, "name": "SCAT EN", "ns": 83.8228, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 5, "preset": 13, "name": "ROBOT EN", "ns": 74.5623, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 5, "preset": 14, "name": "WHISPER JA", "ns": 78.9846, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 7, "preset": 0, "name": "FULL ORGAN", "ns": 67.9681, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 7, "preset": 1, "name": "JAZZ PERC", "ns": 38.9143, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 7, "preset": 2, "name": "GOSPEL", "ns": 41.3072, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 7, "preset": 3, "name": "SOFT FLUTE", "ns": 24.8792, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 7, "preset": 4, "name": "ROCK DRIVE", "ns": 51.9077, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 7, "preset": 5, "name": "DUB ORGAN", "ns": 36.0506, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 7, "preset": 6, "name": "SOFT KEYS", "ns": 27.4157, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 7, "preset": 7, "name": "CHURCH", "ns": 31.0432, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 7, "preset": 8, "name": "WAVE ORGAN", "ns": 47.5658, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 7, "preset": 9, "name": "REED BASS", "ns": 36.0677, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 10, "preset": 0, "name": "DRUM-X", "ns": 33.3643, "live_end": [3, 3, 3], "active_ops": []}
+{"engine": 10, "preset": 1, "name": "909 CLUB", "ns": 36.7193, "live_end": [3, 3, 3], "active_ops": []}
+{"engine": 10, "preset": 2, "name": "808 BOOM", "ns": 39.3847, "live_end": [3, 3, 3], "active_ops": []}
+{"engine": 10, "preset": 3, "name": "LOFI DUST", "ns": 36.0312, "live_end": [3, 3, 3], "active_ops": []}
+{"engine": 10, "preset": 4, "name": "INDUSTRIAL", "ns": 37.7768, "live_end": [3, 3, 3], "active_ops": []}
+{"engine": 10, "preset": 5, "name": "ACOUSTIC", "ns": 35.4511, "live_end": [3, 3, 3], "active_ops": []}
+{"engine": 10, "preset": 6, "name": "DUB ROOTS", "ns": 37.484, "live_end": [3, 3, 3], "active_ops": []}
+{"engine": 10, "preset": 7, "name": "TECHNO RAW", "ns": 37.17, "live_end": [3, 3, 3], "active_ops": []}
+{"engine": 10, "preset": 8, "name": "BREAKS", "ns": 38.5889, "live_end": [3, 3, 3], "active_ops": []}
+{"engine": 11, "preset": 0, "name": "WIND", "ns": 55.9096, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 11, "preset": 1, "name": "RAIN", "ns": 55.3497, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 11, "preset": 2, "name": "ARCADE", "ns": 46.7068, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 11, "preset": 3, "name": "METAL", "ns": 40.8316, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 11, "preset": 4, "name": "SEA", "ns": 53.9116, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 11, "preset": 5, "name": "HISS PAD", "ns": 53.3405, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 11, "preset": 6, "name": "CRACKLE", "ns": 54.1327, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 11, "preset": 7, "name": "TAPE AIR", "ns": 59.8247, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 12, "preset": 0, "name": "TINE EP", "ns": 84.7241, "live_end": [4, 4, 4], "active_ops": [6, 6, 6]}
+{"engine": 12, "preset": 1, "name": "BELL", "ns": 58.9458, "live_end": [4, 4, 4], "active_ops": [6, 6, 6]}
+{"engine": 12, "preset": 2, "name": "FM BASS", "ns": 44.2082, "live_end": [4, 4, 4], "active_ops": [4, 4, 4]}
+{"engine": 12, "preset": 3, "name": "BRASS", "ns": 76.037, "live_end": [4, 4, 4], "active_ops": [6, 6, 6]}
+{"engine": 12, "preset": 4, "name": "PAD", "ns": 75.4641, "live_end": [4, 4, 4], "active_ops": [6, 6, 6]}
+{"engine": 12, "preset": 5, "name": "MARIMBA", "ns": 27.486, "live_end": [4, 4, 4], "active_ops": [1, 1, 1]}
+{"engine": 12, "preset": 6, "name": "ORGAN", "ns": 55.6705, "live_end": [4, 4, 4], "active_ops": [6, 6, 6]}
+{"engine": 12, "preset": 7, "name": "PLUCK", "ns": 45.3774, "live_end": [4, 4, 4], "active_ops": [4, 4, 4]}
+{"engine": 12, "preset": 8, "name": "ICE BELL", "ns": 60.4014, "live_end": [4, 4, 4], "active_ops": [6, 6, 6]}
+{"engine": 12, "preset": 9, "name": "DX KEYS", "ns": 79.4002, "live_end": [4, 4, 4], "active_ops": [6, 6, 6]}
+{"engine": 12, "preset": 10, "name": "FM PLUCK", "ns": 53.3868, "live_end": [4, 4, 4], "active_ops": [5, 5, 5]}
+{"engine": 12, "preset": 11, "name": "SOFT BELL", "ns": 59.4621, "live_end": [4, 4, 4], "active_ops": [6, 6, 6]}
+{"engine": 12, "preset": 12, "name": "FM STRINGS", "ns": 78.4692, "live_end": [4, 4, 4], "active_ops": [6, 6, 6]}
+{"engine": 12, "preset": 13, "name": "HARD BASS", "ns": 68.8949, "live_end": [4, 4, 4], "active_ops": [5, 5, 5]}
+{"engine": 12, "preset": 14, "name": "WOOD", "ns": 26.5183, "live_end": [4, 4, 4], "active_ops": [1, 1, 1]}
+{"engine": 14, "preset": 0, "name": "CMOS BIRD", "ns": 13.4074, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 1, "name": "CMOS TRILL", "ns": 11.7857, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 2, "name": "CMOS MONKEY", "ns": 26.8019, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 3, "name": "CMOS BUG", "ns": 10.058, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 4, "name": "CRICKET", "ns": 12.451, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 5, "name": "TREE CRICKT", "ns": 18.0729, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 6, "name": "KATYDID", "ns": 27.39, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 7, "name": "CICADA", "ns": 27.5652, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 8, "name": "TREEFROG", "ns": 18.5564, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 9, "name": "TOAD", "ns": 18.7209, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 10, "name": "BULLFROG", "ns": 28.2986, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 11, "name": "CANARY", "ns": 26.2821, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 12, "name": "CARDINAL", "ns": 27.4252, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 13, "name": "DOVE", "ns": 25.4964, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 14, "name": "OWL", "ns": 26.4323, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 15, "name": "PEEPER", "ns": 28.0609, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 16, "name": "BAT", "ns": 21.1771, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 17, "name": "MOSQUITO", "ns": 16.8501, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 18, "name": "BEE", "ns": 18.7651, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 19, "name": "FLY", "ns": 16.8116, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 20, "name": "WOLF", "ns": 48.3015, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 21, "name": "DOG BARK", "ns": 48.2342, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 22, "name": "ROAR", "ns": 49.6064, "live_end": [4, 4, 4], "active_ops": []}
+{"engine": 14, "preset": 23, "name": "PURR", "ns": 48.0608, "live_end": [4, 4, 4], "active_ops": []}

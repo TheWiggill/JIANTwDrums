@@ -1,0 +1,25 @@
+{"scene": "ANALOG", "before_ns": 45.1283, "after_ns": 43.4453, "delta_pct": -3.7293671598531253, "checksum": "76190", "live_end": [4], "repeats": 9}
+{"scene": "PHASE", "before_ns": 41.4665, "after_ns": 41.7727, "delta_pct": 0.7384274052548268, "checksum": "181218", "live_end": [4], "repeats": 9}
+{"scene": "LOFI", "before_ns": 49.7623, "after_ns": 46.1392, "delta_pct": -7.280812984930362, "checksum": "19432", "live_end": [4], "repeats": 9}
+{"scene": "VOICE vowels", "before_ns": 77.4931, "after_ns": 77.0125, "delta_pct": -0.6201842486621367, "checksum": "4294890784", "live_end": [4], "repeats": 9}
+{"scene": "VOICE words", "before_ns": 80.7697, "after_ns": 83.0618, "delta_pct": 2.837821608845892, "checksum": "144816", "live_end": [4], "repeats": 9}
+{"scene": "WHEEL", "before_ns": 63.7033, "after_ns": 63.7041, "delta_pct": 0.0012558219118830038, "checksum": "77410", "live_end": [4], "repeats": 9}
+{"scene": "DRUM", "before_ns": 33.5316, "after_ns": 33.0907, "delta_pct": -1.3148790991184378, "checksum": "4294924290", "live_end": [3], "repeats": 9}
+{"scene": "NOISE", "before_ns": 52.1723, "after_ns": 51.4793, "delta_pct": -1.3282910663321323, "checksum": "4294919931", "live_end": [4], "repeats": 9}
+{"scene": "FM6", "before_ns": 88.6016, "after_ns": 86.3713, "delta_pct": -2.517223165270155, "checksum": "4294841544", "live_end": [4], "repeats": 9}
+{"scene": "ANIMAL", "before_ns": 14.4724, "after_ns": 13.8084, "delta_pct": -4.588043448218682, "checksum": "4294949301", "live_end": [4], "repeats": 9}
+{"scene": "FM6 6 operators", "before_ns": 60.385, "after_ns": 61.6298, "delta_pct": 2.0614390991140263, "checksum": "4294862000", "live_end": [4], "repeats": 9}
+{"scene": "FM6 4 operators", "before_ns": 44.6398, "after_ns": 45.9547, "delta_pct": 2.9455777131617955, "checksum": "6211", "live_end": [4], "repeats": 9}
+{"scene": "FM6 2 operators", "before_ns": 33.3472, "after_ns": 33.6898, "delta_pct": 1.0273726129929939, "checksum": "5727", "live_end": [4], "repeats": 9}
+{"scene": "FX no input", "before_ns": 34.8742, "after_ns": 24.4531, "delta_pct": -29.88197578725821, "checksum": "0", "live_end": [0], "repeats": 9}
+{"scene": "FX chorus input", "before_ns": 32.0948, "after_ns": 31.6135, "delta_pct": -1.4996198761170088, "checksum": "3271", "live_end": [0], "repeats": 9}
+{"scene": "FX delay input", "before_ns": 31.4998, "after_ns": 20.5297, "delta_pct": -34.825935402764465, "checksum": "3152", "live_end": [0], "repeats": 9}
+{"scene": "FX ROOM", "before_ns": 31.5754, "after_ns": 21.4083, "delta_pct": -32.199433736389715, "checksum": "2837", "live_end": [0], "repeats": 9}
+{"scene": "FX SPRING", "before_ns": 46.1338, "after_ns": 34.0267, "delta_pct": -26.243448404423663, "checksum": "352", "live_end": [0], "repeats": 9}
+{"scene": "FX SHIMMER", "before_ns": 41.1145, "after_ns": 30.0441, "delta_pct": -26.925780442422987, "checksum": "5390", "live_end": [0], "repeats": 9}
+{"scene": "FX RESO", "before_ns": 37.4783, "after_ns": 25.3294, "delta_pct": -32.415824623849, "checksum": "22164", "live_end": [0], "repeats": 9}
+{"scene": "FX CLOUD", "before_ns": 47.8188, "after_ns": 35.0948, "delta_pct": -26.608781483433297, "checksum": "4294909837", "live_end": [0], "repeats": 9}
+{"scene": "mixer idle", "before_ns": 60.9353, "after_ns": 48.4899, "delta_pct": -20.423957870068744, "checksum": "0", "live_end": [0], "repeats": 9}
+{"scene": "six FM6 tracks dry", "before_ns": 339.2495, "after_ns": 313.5414, "delta_pct": -7.5779330551703055, "checksum": "4294950880", "live_end": [12], "repeats": 9}
+{"scene": "six VOICE tracks dry", "before_ns": 334.6676, "after_ns": 303.6911, "delta_pct": -9.255900481552437, "checksum": "8615", "live_end": [12], "repeats": 9}
+{"scene": "four ANALOG tracks all sends", "before_ns": 177.1538, "after_ns": 167.9166, "delta_pct": -5.2142262824732, "checksum": "1598", "live_end": [8], "repeats": 9}
