@@ -1,0 +1,75 @@
+name: Publish verified USB input beta
+on:
+  push:
+    branches: [main]
+    paths: [web/USB_INPUT_RELEASE.json]
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  preserve:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Released site before the USB fix
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          run-id: 41724556988
+          github-token: ${{ github.token }}
+          path: build/released
+      - name: Successfully built and tested fix
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          run-id: 41743635478
+          github-token: ${{ github.token }}
+          path: build/tested
+      - name: Preserve release bytes, add beta only
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import tarfile,shutil,json,hashlib
+          m=json.loads(Path('web/USB_INPUT_RELEASE.json').read_text())
+          def digest(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+          def protected(root):
+              return {p.relative_to(root).as_posix():digest(p) for p in root.rglob('*') if p.is_file() and p.relative_to(root).parts[0]!='preview'}
+          pages=Path('build/pages');tested=Path('build/tested-site')
+          pages.mkdir();tested.mkdir()
+          with tarfile.open('build/released/artifact.tar') as t:t.extractall(pages,filter='data')
+          with tarfile.open('build/tested/artifact.tar') as t:t.extractall(tested,filter='data')
+          before=protected(pages)
+          original=json.loads((pages/'preview/firmware/versions.json').read_text())[0]
+          original_bytes=(pages/'preview/firmware'/original['file']).read_bytes()
+          prior_hash=hashlib.sha256(original_bytes).hexdigest()
+          shutil.rmtree(pages/'preview');shutil.copytree(tested/'preview',pages/'preview')
+          fw=pages/'preview/firmware';versions=json.loads((fw/'versions.json').read_text())
+          assert len(versions)==2
+          assert versions[0]['version']==m['version']
+          assert digest(fw/versions[0]['file'])==m['sha256'],'tested fix differs'
+          assert (fw/'SOURCE_COMMIT').read_text().strip()==m['source']
+          assert versions[1]['version'].startswith('V10.61-6c48e2a')
+          (fw/versions[1]['file']).write_bytes(original_bytes)
+          assert digest(fw/versions[1]['file'])==prior_hash
+          (fw/'SHA256SUMS').write_text(''.join(digest(p)+'  '+p.name+'\n' for p in sorted(fw.glob('felucca-*.fwsc'))))
+          assert before==protected(pages),'a file outside beta changed'
+          print('PASS: exact tested USB fix; previous beta byte-identical; all public files and emulator byte-identical to released site')
+          print('Versions:',[v['version'] for v in versions])
+          PY
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/pages
+  deploy:
+    needs: preserve
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
