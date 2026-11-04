@@ -18,7 +18,7 @@ extern uint32_t _low_start[], _low_end[];                /* (0.6.78) main-loop b
  * and counts ms; USB and UART polls wait for the first tick after the render, as they always did,
  * and the time spent nested is handed to the audio ISR so its load figures stay render-only.
  * The USB audio stream cannot wait for the render (one packet per 1 ms frame, a render takes up to
- * ~5 ms): uac_service also runs nested. It touches only EP4 (INDEX is set on every access) and the
+ * ~5 ms): uac_service and EP4 OUT reception also run nested. They touch only EP4 (INDEX is set on every access) and the
  * consumer side of the audio ring, and usb_poll never runs nested, so the two never interleave.
  * (0.9.10) uac_service runs on every tick, nested or not (in usb_poll on its ticks), not every 5th: a
  * stems packet is on the wire up to ~0.65 ms, the next must be queued in the ~0.35 ms after it (usb.c). */
@@ -50,6 +50,10 @@ void fm1_timer5_irq(void)
         felucca_dbg.nested++;
 #if FELUCCA_UAC
         uac_service();
+        /* The host's OUT packets cannot wait for a render either. Only EP4 RX,
+         * on its 2 kHz slot; full USB/control/MIDI polling stays outside audio. */
+        if (usb_due && usb.up && usb.config && uin.alt)
+            uin_rx();
 #endif
         t5_nested_ticks += fm1_ticks() - t0;
         return;
@@ -557,3 +561,4 @@ void fm1_cstart(void)
     for (;;)
         ;
 }
+
