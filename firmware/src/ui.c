@@ -2017,6 +2017,8 @@ static int act_ready(void)
         return c == 3u ? !song.playing : up_used(ui.uslot) && (c == 1u || !song.playing);
     if (cur_page()->graph == GR_SLOTS && c == 1u)       /* (V10.17) SECTIONS: ERASE a stored section, stopped */
         return !transport_busy() && (save_level() == SV_LIB || project_used((uint32_t)song.g[G_SLOT] - 1u));
+    if (cur_page()->graph == GR_SLOTS && c == 2u && save_level() == SV_LIB && song_draft)
+        return !transport_busy();
     id = cur_page()->id[c & 3u];
     if (id == G_LOAD)
         return project_used((uint32_t)song.g[G_SLOT] - 1u);

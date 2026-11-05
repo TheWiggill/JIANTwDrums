@@ -410,6 +410,7 @@ static int song_draft_begin(void)
         song_save_target = song_cur;
     }
     song_draft = 1;
+    dice_secs = 0;
     live.dirty = 0; live.cur = live.req = -1; sec_stage.ready = 0;
     proj_cur = PROJ_NO_SLOT; proj_name[0] = 0;
     memset(proj_slot, 0, sizeof proj_slot);

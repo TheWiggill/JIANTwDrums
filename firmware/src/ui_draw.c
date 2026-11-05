@@ -1660,7 +1660,7 @@ static void draw_columns(void)
             hot_gauge_column(0, "PROJECT", val, (int32_t)(song_draft ? song_save_target : song_cur) * 1000 / (int32_t)(NSONG - 1u));
             draw_act_column(1, "ERASE", T_THEME, ICON_AUTO);
         }
-        draw_act_column(2, "LOAD", used ? T_THEME : T_DIM, ICON_AUTO);
+        draw_act_column(2, "LOAD", used || (save_level() == SV_LIB && song_draft) ? T_THEME : T_DIM, ICON_AUTO);
         draw_act_column(3, "SAVE", T_THEME, ICON_AUTO);
         return;
     }

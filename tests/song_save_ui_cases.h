@@ -54,5 +54,33 @@ static int test_song_save_ui(void)
         ui.force = 1;
         frame();
     }
+    ui_power_on();
+    nav_put(SEC_SAVE, "SAVE SONG AS"); frame();
+    turn(EN_K2, 1); frame();
+    song_idx.rows[song_save_target].count = 1;
+    press(B_OCTUP); frame();
+    confirm_text(a, b);
+    bad += check("LOOP overwrite explains replacement of A and clearing B-D",
+                 song_save_loop && ui.confirm == CF_OVR_SONG && strstr(b, "CLEAR B-D") != 0);
+    press(B_OCTDN); frame();
+    ui_power_on();
+    song_draft = 1; song_save_target = song_cur;
+    nav_put(SEC_SAVE, "PROJECTS"); frame();
+    target = song_cur;
+    turn(EN_K1, 1); frame();
+    bad += check("PROJECTS destination browsing preserves the playing draft buffers",
+                 song_draft && song_cur == target && song_save_target == target + 1u);
+    turn(EN_K3, 1); frame();
+    bad += check("PROJECTS LOAD availability depends on transport, not the draft's selected part", act_ready());
+    turn(EN_K2, 1); press(B_OCTUP); frame();
+    bad += check("PROJECTS ERASE targets the selected saved project and can be cancelled",
+                 ui.confirm == CF_ERASE_SONG && ui.confirm_trk == song_save_target);
+    press(B_OCTDN); frame();
+    song.playing = 1;
+    turn(EN_K2, 1); press(B_OCTUP); frame();
+    bad += check("PROJECTS ERASE refuses during playback without discarding the draft",
+                 !ui.confirm && song_draft && strstr(ui.msg, "STOP TO ERASE") != 0);
+    song.playing = 0;
+    song_draft = 0;
     return bad;
 }

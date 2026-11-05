@@ -81,6 +81,12 @@ int main(void)
     nav_put(SEC_SAVE,"SAVE SONG AS");frame();turn(EN_K2,1);frame();
     bad += check("SAVE scope selects LOOP without changing the live song", song_save_loop && chain_config.count>=4);
     song_save_loop=0;
+    seq_stop(); song_poll();
+    gp.form = 0; gen_go();
+    bad += check("SONG to LOOP generation leaves only draft A and no old arrangement",
+                 song_draft && !live.mode && !chain_config.count && dice_secs == 1 && project_used(0) &&
+                 !project_used(1) && !project_used(2) && !project_used(3));
+    gp.form = 2; gen_go();
     /* Draft arrangements intentionally do not overwrite the saved boot index. */
     song_draft=0;song_poll();
     live.mode=0;song_index_boot();

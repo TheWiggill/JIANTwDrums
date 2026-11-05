@@ -5,20 +5,22 @@ Only the preview installer is intended to receive this candidate after target ch
 
 ## Song generator
 
-GEN 1 now displays the actual arrangement when it exists: sections, bar lengths,
+All three GEN pages display the actual arrangement when it exists: sections, bar lengths,
 current row, remaining bars and play position. The display refreshes at bar
 boundaries. A generated SONG can have 16- or 32-bar sections, so hearing the same
 phrase for several bars does not itself mean the arranger is stuck.
 
-SAVE from GEN opens SAVE SONG AS. Choose a destination project, confirm an
-existing destination if needed, then name it. This uses the existing complete
-song save path: sections A–D, arrangement, scenes and per-track source/variation
-metadata are copied together. Stop playback before saving.
+SAVE from GEN opens SAVE SONG AS. Choose LOOP or SONG and a destination project, confirm an
+existing destination if needed, then name it. SONG copies sections A–D, arrangement,
+scenes and per-track source/variation metadata. LOOP writes the current music to A,
+clearing B–D and the arrangement at that destination. The current project can be
+overwritten explicitly. Stop playback before saving.
 
-If A–D contain protected user sections, PARTS/SONG generation now refuses before
-changing the music or clearing the arrangement. It reports A-D SAVED / USE AN
-EMPTY PROJECT. Previously the guard ran after making a loop and clearing the
-arrangement, which could silently leave a requested SONG as a loop.
+GEN now uses a RAM draft; saved A–D no longer block generation. Subsequent
+generations do not overwrite saved projects. MAKE during playback stops,
+regenerates and resumes the new draft. Projects and individual sections can be
+erased explicitly from SAVE. See [draft and save behavior](GENERATOR-DRAFT-SAVE.md)
+for the complete flow and persistence limits.
 Explicit SONG/LOOP mode is restored from the existing tagged project index field;
 legacy projects without the tag retain their default behavior.
 
@@ -58,9 +60,8 @@ is displayed as IN ENV to distinguish it from track envelopes.
   sources selectable without trying to stack 24 source labels on the screen.
 - Loading a project clears previous track envelope state.
 
-Decorative pseudo-note previews are replaced with density bars. This reduces
-display work and flash use
-without removing sound controls or the actual arrangement display.
+Decorative pseudo-note previews are replaced by real stored sections or the
+actual arrangement on every GEN page, without removing sound controls.
 
 No existing matrix source was removed. No new step-component opcode is added:
 the existing component encoding is full. Resonance was not appended as a matrix
@@ -69,9 +70,9 @@ destination because the existing 32-bit destination masks are now full.
 ## Validation
 
 Host checks cover generated parts across 45 genre choices, traversal through all
-six arrangement rows and wrap, real playhead invalidation, SAVE entry, protected
-sections and saved playback mode. Separate NOR/persistence tests cover complete
-song saves, rollback and round-tripping the new matrix IDs.
+six arrangement rows and wrap, real playhead invalidation, SAVE entry, regeneration
+during playback and saved playback mode. Separate NOR/persistence tests cover both
+save scopes, draft preservation, failure/retry, erase and round-tripping matrix IDs.
 
 The matrix tests cover inactive INPUT, ended FM6 ENV2, cutoff mappings, restored
 parameters, silent tracks, opposite-polarity stereo signals, one-block snapshots,
