@@ -323,7 +323,8 @@ def layout_ld(rows, fills=None):
     out, k, late = [], 0, late_fns()
     for off, flag, name in rows:
         if flag == "@":
-            out += [f"*(.rodata.n.{f})" for f in (fills or {}).get(k, [])]
+            out += [f"*(.text.{f[1:]})" if f.startswith("@") else f"*(.rodata.n.{f})"
+                    for f in (fills or {}).get(k, [])]
             out += [f"_lay_gap{k} = .;", f". = {off:#x};"]
             k += 1
         if flag in "@a" or (flag == "-" and name not in late):
@@ -331,11 +332,22 @@ def layout_ld(rows, fills=None):
     LAYOUT_LD.write_text("\n".join(out) + "\n")
 
 
-def layout_fills(rows, symt, ins, aligns):
+def layout_fills(rows, symt, ins, aligns, reach=()):
     """the holes before the pinned runs filled with the UI's tables, largest first (best fit)"""
     pins = [off for off, flag, _ in rows if flag == "@"]
     holes = [(k, symt[f"_lay_gap{k}"], APP_XIP + off) for k, off in enumerate(pins) if f"_lay_gap{k}" in symt]
     items = sorted(((sz, n[10:]) for n, a, sz, o in ins if n.startswith(".rodata.n.")), reverse=True)
+    recorded = {name for _, flag, name in rows if flag in "@a-"}
+    cold = size_fns.size_names() - set(reach)
+    # Main-loop functions omitted from the recorded order can use stranded
+    # gaps too. Code read by an ISR, hot RAM and fixed audio tables never enter
+    # this candidate set. A four-byte boundary satisfies pi32v2 text alignment.
+    for section, address, size, obj in ins:
+        name = section[6:] if section.startswith(".text.") else ""
+        if name in cold and (name not in recorded or name in late_fns()) and obj.endswith("felucca.o"):
+            key = "@" + name
+            items.append((size, key)); aligns[key] = 4
+    items.sort(reverse=True)
     fills, used, lost = {}, set(), 0
     for k, lo, hi in holes:
         pos = lo
@@ -508,7 +520,7 @@ def build_app():
         layout_room(rows, objs)
         layout_ld(rows)
         mapt, syms = link(probe=True)
-        fills, hole, lost = layout_fills(rows, sym_table(syms), map_inputs(mapt), aligns)
+        fills, hole, lost = layout_fills(rows, sym_table(syms), map_inputs(mapt), aligns, reach)
         print(f"layout packing: {hole} B gaps, {lost} B padding, {sum(map(len, fills.values()))} UI tables/strings packed", flush=True)
         print("UI string candidates:", sum(1 for n in aligns if n.startswith(".str")), flush=True)
         layout_ld(rows, fills)
