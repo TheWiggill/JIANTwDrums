@@ -41,6 +41,14 @@ static __attribute__((noinline, used)) void ui_fill_bytes(void *d, unsigned char
     (void)align; (void)vol;
     memset(d, c, n);
 }
+static __attribute__((noinline, used)) void *ui_copy(void *d, const void *s, unsigned n)
+{
+    return memcpy(d, s, n);
+}
+static __attribute__((noinline, used)) void *ui_fill(void *d, int c, unsigned n)
+{
+    return memset(d, c, n);
+}
 
 static int str_eq(const char *a, const char *b)
 {

@@ -118,7 +118,7 @@ def main(src, dst):
     def share(m):
         nonlocal copies
         fn = m.group(1)
-        if fn not in names or fn in isr or fn in {"ui_copy_bytes", "ui_fill_bytes"}:
+        if fn not in names or fn in isr or fn in {"ui_copy_bytes", "ui_fill_bytes", "ui_copy", "ui_fill"}:
             return m.group(0)
         def copy(c):
             nonlocal copies
@@ -127,7 +127,15 @@ def main(src, dst):
                 return c.group(0)
             copies += 1
             return re.sub(r"@llvm\.(memcpy|memset)[\w.]*", "@ui_copy_bytes" if c[1] == "memcpy" else "@ui_fill_bytes", c[0])
-        return re.sub(r"call void @llvm\.(memcpy|memset)[\w.]*\([^\n]*\)", copy, m[0])
+        def plain(c):
+            nonlocal copies
+            length = re.search(r", i32 (\d+)\)$", c[0])
+            if not length or not 16 <= int(length[1]) <= 256:
+                return c[0]
+            copies += 1
+            return c[0].replace("@" + c[1] + "(", "@ui_copy(" if c[1] == "memcpy" else "@ui_fill(")
+        body = re.sub(r"call void @llvm\.(memcpy|memset)[\w.]*\([^\n]*\)", copy, m[0])
+        return re.sub(r"call i8\* @(memcpy|memset)\([^\n]*\)", plain, body)
     ir = IR_BODY.sub(share, ir)
     Path(dst).write_text(IR_DEF.sub(mark, ir))
     print(f"size: {len(hit)} main-loop functions built for size ({len(names) - len(hit)} not in this build; "
