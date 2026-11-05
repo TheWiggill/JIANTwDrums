@@ -414,7 +414,7 @@ static __attribute__((noinline)) void mod_midi(track_t *t, uint32_t st, uint32_t
 }
 
 /* Selection policy only: stored IDs and DSP semantics never change here. */
-static int mod_dst_ok(const track_t *t, uint32_t d)
+BTAPP_FN static int mod_dst_ok(const track_t *t, uint32_t d)
 {
     uint32_t e = eng_idx(t->eng_req), k;
     if (d >= MD_N) return 0;
@@ -436,13 +436,20 @@ static int mod_dst_ok(const track_t *t, uint32_t d)
 }
 
 /* Hide exact aliases and composite legacy controls from new routes. */
-static int mod_dst_offer(const track_t *t, uint32_t d)
+BTAPP_FN static int mod_dst_offer_bt(const track_t *t, uint32_t d)
 {
     uint32_t e = eng_idx(t->eng_req);
     if (!mod_dst_ok(t, d)) return 0;
     if (d == MD_CUT && (e == ENGI_WHEEL || e == ENGI_DRUM || e == ENGI_STRING || e == ENGI_INPUT || e == ENGI_ANIMAL)) return 0;
     if (d == MD_SHP && (e == ENGI_PHASE || e == ENGI_FM6 || (e == ENGI_STRING && t->p[P_E0] == SX_FDBK))) return 0;
     return d != MD_FCUT || e != ENGI_ANALOG; /* ANALOG already offers its actual CUT parameter. */
+}
+
+/* UI policy lives in the existing checked cold-code bank. Incomplete old
+ * packages retain the generic selector; never call an unmatched segment. */
+static int mod_dst_offer(const track_t *t, uint32_t d)
+{
+    return bt_hw_seg() ? mod_dst_offer_bt(t, d) : d < MD_N;
 }
 
 /* Bounded, clamped navigation. An old unavailable route survives until edited. */
@@ -467,7 +474,7 @@ static char mod_dst_scope(const track_t *t, uint32_t d)
     return 'T';
 }
 
-static const char *mod_dst_name(const track_t *t, int32_t v)
+BTAPP_FN static const char *mod_dst_name_bt(const track_t *t, int32_t v)
 {
     uint32_t e = eng_idx(t->eng_req), k;
     v = clamp(v, 0, MD_N - 1);
@@ -488,4 +495,9 @@ static const char *mod_dst_name(const track_t *t, int32_t v)
         return track_desc(t, k)->label;
     }
     return N_MDST[v];
+}
+
+static const char *mod_dst_name(const track_t *t, int32_t v)
+{
+    return bt_hw_seg() ? mod_dst_name_bt(t, v) : N_MDST[clamp(v, 0, MD_N - 1)];
 }

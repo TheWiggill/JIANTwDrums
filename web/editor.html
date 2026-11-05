@@ -3037,6 +3037,11 @@ async function load(d) {
 async function getDescOrNull(s, i, d = dev) { try { return await getDesc(s, i, d); } catch (e) { if (e.message === "closed") throw e; return null; } }
 
 /* rebuilds the controls only when the engine or its parameters changed (a slider being dragged survives) */
+function matrixContextId(d, id) {
+  const e = d.info.engines[d.dump.engine], off = id - d.info.pe0;
+  return off === 0 || (e === "LOFI" && off === 1) || (e === "INPUT" && off === 3) || /^(?:DEST|DST)\d$/.test(d.pdesc[id]?.label || "") || d.pdesc[id]?.label === "LANG";
+}
+
 async function rereadEngineDesc(d = dev) {
   assertSession(d);
   const pe0 = d.info.pe0;
@@ -3331,7 +3336,7 @@ async function sendSet(s, id, k) {
       showValue(k, r.value, false);
       mixFromDump();
     }
-    if (!s && dev && (id === dev.info.pe0 || (dev.info.engines[dev.dump.engine] === "LOFI" && id === dev.info.pe0 + 1) || (dev.info.engines[dev.dump.engine] === "INPUT" && id === dev.info.pe0 + 3) || /^(?:DEST|DST)\d$/.test(dev.pdesc[id]?.label || "") || dev.pdesc[id]?.label === "LANG")) { dev.dump = await getDump(); await rereadEngineDesc(); refreshAll(); }   /* (V10.40) WAVE / EXCITE / MODE:
+    if (!s && dev && matrixContextId(dev, id)) { dev.dump = await getDump(); await rereadEngineDesc(); refreshAll(); }   /* (V10.40) WAVE / EXCITE / MODE:
                                                          * some knobs change name and range (ANALOG SAW3's INT 3, STRING FDBK) */
   } catch (e) { if (e.message !== "closed") console.warn(e); }
 }
@@ -3884,6 +3889,7 @@ function onPush(f) {
       showValue(k, c.value, false);
       blink(k);
       mixFromDump();
+      if (!c.scope && old !== c.value && matrixContextId(d, c.id)) needReload = true;
       if (!c.scope && c.id === pSlen() && old !== c.value) { $("steptables").dataset.len = ""; renderSteps(); }
     } else if (f.cmd === CMD.RELOAD) {
       d.sel = parse[CMD.RELOAD](f.a).track;          /* v3: another track may be selected on the device */
@@ -3969,7 +3975,7 @@ setInterval(async () => {
     const dump = await getDump();
     if (d !== dev) return;
     const soundChanged = dump.engine !== d.dump.engine || dump.preset !== d.dump.preset;
-    const engineChanged = dump.engine !== d.dump.engine || dump.p[d.info.pe0] !== d.dump.p[d.info.pe0];   /* (V10.40: or its
+    const engineChanged = dump.engine !== d.dump.engine || dump.p.some((v, i) => v !== d.dump.p[i] && matrixContextId(d, i));   /* (V10.40: or its
                                                          * WAVE / MODE, whose knobs can change: rereadEngineDesc rebuilds only if they did) */
     const oldLen = d.dump.p[pSlen()];
     for (const [k, c] of ctl) {

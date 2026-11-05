@@ -11,11 +11,12 @@ def fn(name):
     return js[a:js.index('\n}',a)+2]
 test='''import assert from 'node:assert/strict';
 let builds=0, mode=0, calls=[];
-let dev={info:{pe0:4,pcount:12},dump:{engine:0},built:0,pdesc:Array.from({length:12},(_,i)=>({label:i<4?(i===1?'DST2':'DEST'+(i+1)):'P'+i,names:['OFF']}))};
+let dev={info:{pe0:4,pcount:12,engines:['INPUT']},dump:{engine:0},built:0,pdesc:Array.from({length:12},(_,i)=>({label:i<4?(i===1?'DST2':'DEST'+(i+1)):'P'+i,names:['OFF']}))};
 function assertSession(d){assert.equal(d,dev);}
 async function getDescOrNull(s,i){calls.push(i);return {...dev.pdesc[i],names:["OFF",mode?'T:MOVE':'T:POS']};}
 function buildGroups(){builds++;}
-'''+fn('rereadEngineDesc')+'\n'+fn('modDst')+'''
+'''+fn('matrixContextId')+'\n'+fn('rereadEngineDesc')+'\n'+fn('modDst')+'''
+assert(matrixContextId(dev,4));assert(matrixContextId(dev,7));assert(matrixContextId(dev,0));assert(!matrixContextId(dev,6));
 await rereadEngineDesc(); assert.equal(calls.length,12);assert.equal(builds,1);
 mode=1;calls=[];await rereadEngineDesc();assert.equal(calls.filter(i=>i<4).length,4);assert.equal(builds,2);
 await rereadEngineDesc();assert.equal(builds,2);
