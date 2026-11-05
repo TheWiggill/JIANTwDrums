@@ -28,6 +28,20 @@ int memcmp(const void *a, const void *b, unsigned n)
     return 0;
 }
 
+/* Main-loop constant-size copies share these out-of-line bodies (size_fns.py).
+ * Sound/IRQ copies and volatile accesses keep the compiler's original code.
+ * The final two arguments match LLVM 4's memory-intrinsic signature. */
+static __attribute__((noinline, used)) void ui_copy_bytes(void *d, const void *s, unsigned n, unsigned align, _Bool vol)
+{
+    (void)align; (void)vol;
+    memcpy(d, s, n);
+}
+static __attribute__((noinline, used)) void ui_fill_bytes(void *d, unsigned char c, unsigned n, unsigned align, _Bool vol)
+{
+    (void)align; (void)vol;
+    memset(d, c, n);
+}
+
 static int str_eq(const char *a, const char *b)
 {
     while (*a && *a == *b) {
@@ -85,3 +99,4 @@ static uint32_t rng(void)
     rng_state ^= rng_state << 5;
     return rng_state;
 }
+

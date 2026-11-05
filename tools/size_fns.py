@@ -114,9 +114,24 @@ def main(src, dst):
             return m.group(0)
         hit.add(m.group(2))
         return m.group(1) + " minsize" + m.group(3)
+    copies = 0
+    def share(m):
+        nonlocal copies
+        fn = m.group(1)
+        if fn not in names or fn in isr or fn in {"ui_copy_bytes", "ui_fill_bytes"}:
+            return m.group(0)
+        def copy(c):
+            nonlocal copies
+            length = re.search(r", i32 (\d+), i32 \d+, i1 false\)$", c.group(0))
+            if not length or not 16 <= int(length[1]) <= 256:
+                return c.group(0)
+            copies += 1
+            return re.sub(r"@llvm\.(memcpy|memset)[\w.]*", "@ui_copy_bytes" if c[1] == "memcpy" else "@ui_fill_bytes", c[0])
+        return re.sub(r"call void @llvm\.(memcpy|memset)[\w.]*\([^\n]*\)", copy, m[0])
+    ir = IR_BODY.sub(share, ir)
     Path(dst).write_text(IR_DEF.sub(mark, ir))
     print(f"size: {len(hit)} main-loop functions built for size ({len(names) - len(hit)} not in this build; "
-          f"{len(size_names() & isr)} reached from an interrupt kept -Os)")
+          f"{len(size_names() & isr)} reached from an interrupt kept -Os); {copies} main-loop copies shared")
     return 0
 
 
