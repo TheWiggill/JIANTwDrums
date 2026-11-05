@@ -75,18 +75,21 @@ jobs:
           build/song-check/midi | tee build/song-check/midi.log
       - name: Generator song progress and whole-song save regression
         run: |
+          set -euo pipefail
           cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/song_generator_test.c -lm -o build/song-check/generator
           build/song-check/generator | tee build/song-check/generator.log
           cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/song_draft_test.c -lm -o build/song-check/draft
           build/song-check/draft | tee build/song-check/draft.log
       - name: Matrix and track follower regression
         run: |
+          set -euo pipefail
           cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/mod_test.c -lm -o build/song-check/mod
           build/song-check/mod > build/song-check/mod.log
           cc -O1 -g -w -Wno-implicit-function-declaration -fsanitize=address,bounds -Ibuild/gen -Ifirmware/src tests/track_follow_test.c -lm -o build/song-check/follow
           ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 build/song-check/follow | tee build/song-check/follow.log
       - name: Contextual destinations, legacy routes and editor protocol
         run: |
+          set -euo pipefail
           cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/matrix_context_test.c -lm -o build/song-check/context
           build/song-check/context | tee build/song-check/context.log
           cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/matrix_editor_test.c -lm -o build/song-check/context-editor
