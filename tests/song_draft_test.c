@@ -24,6 +24,12 @@ static int saved_note(unsigned n,unsigned s)
 int main(void)
 {
  song_fixture();
+ memcpy(draft_before,proj_slot,sizeof draft_before);
+ erase_error=1;
+ assert(song_draft_begin()&&!song_draft&&!memcmp(draft_before,proj_slot,sizeof draft_before));
+ erase_error=0;
+ transport_req=1;assert(song_draft_begin()&&!song_draft);transport_req=0;
+ puts("draft: failed checkpoint and pending PLAY preserve the original workspace");
  assert(!song_draft_begin()&&song_draft);
  memcpy(old_flash,nor+0x97000,sizeof old_flash);
  assert(st_load(OBJ_SONGIDX,&saved_index,sizeof saved_index)==sizeof saved_index);
@@ -54,9 +60,13 @@ int main(void)
  puts("draft: same-project overwrite is explicit; failed saves retain the draft for retry");
  assert(!song_erase_parts(1,0));for(unsigned n=0;n<4;n++)assert(saved_note(1,n)==-1);
  assert(song_draft&&!memcmp(draft_before,proj_slot,sizeof draft_before));
+ assert(!song_erase_parts(song_cur,0)&&song_draft&&chain_config.count==4);
+ assert(!memcmp(draft_before,proj_slot,sizeof draft_before));
+ for(unsigned n=0;n<4;n++)assert(saved_note(0,n)==-1);
+ song.playing=1;assert(song_select(3)&&song_draft);song.playing=0;
  writes=erases;assert(!project_erase(1));assert(!project_used(1)&&erases==writes);
  for(unsigned r=0;r<chain_config.count;r++)assert(chain_config.row[r].slot!=1);
- puts("erase: saved project deletion preserves the draft; deleting a draft part is RAM-only");
+ puts("erase: deleting either saved project preserves the draft; draft part deletion is RAM-only");
  assert(!song_select(3)&&!song_draft&&song_cur==3&&chain_config.count==4);
  assert(!song_erase_parts(3,0)&&!song_draft&&!chain_config.count);
  for(unsigned n=0;n<4;n++)assert(!project_used(n)&&saved_note(3,n)==-1);

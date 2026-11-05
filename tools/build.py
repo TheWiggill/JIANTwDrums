@@ -342,9 +342,10 @@ def layout_fills(rows, symt, ins, aligns, reach=()):
     # Main-loop functions omitted from the recorded order can use stranded
     # gaps too. Code read by an ISR, hot RAM and fixed audio tables never enter
     # this candidate set. A four-byte boundary satisfies pi32v2 text alignment.
+    late_code = late_fns()
     for section, address, size, obj in ins:
         name = section[6:] if section.startswith(".text.") else ""
-        if name in cold and (name not in recorded or name in late_fns()) and obj.endswith("felucca.o"):
+        if name in cold and (name not in recorded or name in late_code) and obj.endswith("felucca.o"):
             key = "@" + name
             items.append((size, key)); aligns[key] = 4
     items.sort(reverse=True)

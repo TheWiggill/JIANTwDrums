@@ -40,6 +40,13 @@ with `FELUCCA_CONSOLE_VERBOSE=1`; their source is retained. Such builds still
 have to meet the target memory limits. No audio/IRQ optimization policy changes
 or memory-copy rewriting are used to make this release fit.
 
+The linker now fills unused gaps with eligible main-loop functions as well as
+UI tables and long UI-only strings. Interrupt-reachable code, fixed audio tables
+and the radio object are excluded from code packing. Existing address, short-call
+reach, application/segment size and RAM reserve guards remain mandatory. A
+synthetic packing regression checks those exclusions and the audio anchors;
+the final release must pass an ordinary build with its recorded layout.
+
 Validation: native NOR tests cover source preservation, both scopes, same-project
 overwrite, failure/retry, project erase and dependent-row cleanup. Generator UI
 tests cover 45 genre choices, distinct parts, playback traversal, regeneration
