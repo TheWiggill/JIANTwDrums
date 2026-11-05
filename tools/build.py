@@ -466,7 +466,10 @@ def build_app():
                 keep[at:at] = clocks
             compile_hot([])
             LAYOUT_LD.write_text("".join(f"*(.text.{n})\n" for n in keep) + "*(.text*)\n")
-            mapt, syms = link()
+            # This preliminary link has not packed UI tables into the audio
+            # layout's holes yet. Use the same enlarged probe as below; the
+            # final link and package budgets still enforce the real app slot.
+            mapt, syms = link(probe=True)
             layout_record(mapt, syms, reach)
             rows = layout_read()          # (the merged constants' place once the UI's tables have left .rodata)
             compile_hot(rows)
