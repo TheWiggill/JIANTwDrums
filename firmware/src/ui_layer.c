@@ -690,7 +690,7 @@ static void macro_dice(uint32_t mode)
             for (tries = 0; tries < 16u; tries++) {     /* a destination the sound has, not used on this track */
                 const param_desc_t *pd;
                 d = DST[rng() % sizeof DST];
-                if ((used >> d) & 1u)
+                if (((used >> d) & 1u) || !mod_dst_offer(t, d))
                     continue;
                 if (d >= MD_E1 && d < MD_E1 + 8u &&
                     ((pd = track_desc(t, P_E0 + (d - MD_E1))) == 0 || pd->max <= pd->min || pd->label[0] == '-' ||

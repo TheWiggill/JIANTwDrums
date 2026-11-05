@@ -52,23 +52,27 @@ static const char *const N_AN_GROUP[] = {"HOLD", "TRILL", "1+1", "1+3", "2+2", "
                                          "6+6", "8+8", "8+24", "12+12", "16+16", "32+32"};
 static const uint8_t AN_GROUP[16][2] = {{1, 0}, {1, 0}, {1, 1}, {1, 3}, {2, 2}, {2, 6}, {3, 3}, {3, 9}, {4, 4}, {4, 12},
                                         {6, 6}, {8, 8}, {8, 24}, {12, 12}, {16, 16}, {32, 32}};
-static const param_desc_t AN_DESC[AN_NMODE][8] = {
-    [AN_CMOS] = {{0}, {"TOUCH", F_PCT, 0, 127, 100, 0, 0}, {"COUPLE", F_PCT, 0, 127, 0, 0, 0},
-                 {"CAP", F_PCT, 0, 127, 64, 0, 0}, {"HYST", F_BIPCT, -64, 63, 0, 0, 0}, {0},
-                 {"GROUP", F_INT, 0, 15, 0, 0, 0}, {"FM", F_INT, 0, 40, 22, 0, 0}},
-    [AN_PULSE] = {{0}, {"CLICK", F_PCT, 0, 127, 100, 0, 0}, {"Q", F_PCT, 0, 127, 0, 0, 0}, {0},
-                  {"DETUNE", F_BIPCT, -64, 63, 0, 0, 0}},
-    [AN_WING] = {{0}, {"BUZZ", F_PCT, 0, 127, 100, 0, 0}, {"DRIFT", F_PCT, 0, 127, 0, 0, 0}, {0},
-                 {"DOPPLR", F_BIPCT, -64, 63, 0, 0, 0}},
-    [AN_GLOTT] = {{0}, {"MOUTH", F_PCT, 0, 127, 100, 0, 0}, {"ROUGH", F_PCT, 0, 127, 0, 0, 0}, {0}, {0}, {0}, {0},
-                  {"AIR", F_INT, 0, 40, 22, 0, 0}},
+/* Sparse overrides: the old 5x8 table held 25 empty descriptors. */
+static const param_desc_t AN_DESC[] = {
+    {"TOUCH", F_PCT, 0, 127, 100, 0, 0}, {"COUPLE", F_PCT, 0, 127, 0, 0, 0},
+    {"CAP", F_PCT, 0, 127, 64, 0, 0}, {"HYST", F_BIPCT, -64, 63, 0, 0, 0},
+    {"GROUP", F_INT, 0, 15, 0, 0, 0}, {"FM", F_INT, 0, 40, 22, 0, 0},
+    {"CLICK", F_PCT, 0, 127, 100, 0, 0}, {"Q", F_PCT, 0, 127, 0, 0, 0},
+    {"DETUNE", F_BIPCT, -64, 63, 0, 0, 0},
+    {"BUZZ", F_PCT, 0, 127, 100, 0, 0}, {"DRIFT", F_PCT, 0, 127, 0, 0, 0},
+    {"DOPPLR", F_BIPCT, -64, 63, 0, 0, 0},
+    {"MOUTH", F_PCT, 0, 127, 100, 0, 0}, {"ROUGH", F_PCT, 0, 127, 0, 0, 0},
+    {"AIR", F_INT, 0, 40, 22, 0, 0}
 };
-
+static const uint8_t AN_DMAP[AN_NMODE][8] = {
+    [AN_CMOS] = {0,1,2,3,4,0,5,6}, [AN_PULSE] = {0,7,8,0,9},
+    [AN_WING] = {0,10,11,0,12}, [AN_GLOTT] = {0,13,14,0,0,0,0,15}
+};
 static uint32_t an_mode(const int16_t *p) { return (uint32_t)clamp(p[P_E0], 0, AN_NMODE - 1); }
 static const param_desc_t *animal_desc(const track_t *t, uint32_t k)
 {
-    const param_desc_t *d = &AN_DESC[an_mode(t->p)][k & 7u];
-    return d->label ? d : 0;
+    uint32_t n = AN_DMAP[an_mode(t->p)][k & 7u];
+    return n ? &AN_DESC[n - 1u] : 0;
 }
 
 /* 2^(x / 4096) for x <= 0 (Q12 octaves), Q15 (FM6_EXP2: 2^(i / 1024) - 1, Q30) */
@@ -562,3 +566,4 @@ static const engine_t ENG_ANIMAL = {
     .amp = animal_amp,
     .desc = animal_desc,
 };
+

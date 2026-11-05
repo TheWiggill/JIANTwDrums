@@ -82,6 +82,17 @@ static uint32_t mod_param(uint32_t d)
     return d >= MD_E1 ? P_E0 + d - MD_E1 : ID[d];
 }
 
+/* The mode's parameter range, not its engine's generic fallback descriptor. */
+static const param_desc_t *mod_track_desc(const track_t *t, uint32_t id)
+{
+    if (id >= P_E0) {
+        const engine_t *e = ENGINES[eng_idx(t->engine)];
+        const param_desc_t *d = e->desc ? e->desc(t, id - P_E0) : 0;
+        return d ? d : &e->edit[id - P_E0];
+    }
+    return &TP[id];
+}
+
 typedef struct {                 /* the part in mix_part (one at a time) */
     uint8_t on;                  /* a slot is active: track_render calls mod_voice */
     uint8_t amp;                 /* an AMP slot: the voice gain applies */
@@ -266,7 +277,7 @@ static __attribute__((noinline)) int mod_begin(track_t *t)
         }
         {                                               /* per block: AMT 64 = the whole range */
             uint32_t id = d == MD_FCUT && t->engine == ENGI_ANALOG ? P_E4 : mod_param(d);
-            const param_desc_t *pd = id >= P_E0 ? &ENGINES[t->engine]->edit[id - P_E0] : &TP[id];
+            const param_desc_t *pd = mod_track_desc(t, id);
             x = mod_tsrc(t, s, lfo);
             for (j = 0; j < mp->nk && mp->kid[j] != id; j++)
                 ;
@@ -282,7 +293,7 @@ static __attribute__((noinline)) int mod_begin(track_t *t)
     }
     for (j = 0; j < mp->nk; j++) {
         uint32_t id = mp->kid[j];
-        const param_desc_t *pd = id >= P_E0 ? &ENGINES[t->engine]->edit[id - P_E0] : &TP[id];
+        const param_desc_t *pd = mod_track_desc(t, id);
         int32_t lo = pd->min, hi = pd->max;
         if (id == P_LRATE)                              /* (0.6.51) the LFO's RATE moved within its kind: free / in time */
             lo = mp->keep[j] < 0 ? lo : 0, hi = mp->keep[j] < 0 ? -1 : hi;
@@ -402,16 +413,79 @@ static __attribute__((noinline)) void mod_midi(track_t *t, uint32_t st, uint32_t
     }
 }
 
-/* the name of destination value v for track t (UI, <= 5 characters): E1..E8 by the engine's labels (of the
- * engine the UI shows), "E5" for a parameter the engine does not use */
+/* Selection policy only: stored IDs and DSP semantics never change here. */
+static int mod_dst_ok(const track_t *t, uint32_t d)
+{
+    uint32_t e = eng_idx(t->eng_req), k;
+    if (d >= MD_N) return 0;
+    if (d == MD_CUT) {
+        if (e == ENGI_ADD || (e == ENGI_VOICE && t->p[P_VLANG])) return 0;
+        if (e == ENGI_ANIMAL) return t->p[P_E0] == AN_PULSE || t->p[P_E0] >= AN_WING;
+    }
+    if (d == MD_SHP && (e == ENGI_DRUM || e == ENGI_ANIMAL || e == ENGI_INPUT)) return 0;
+    if (d == MD_PITCH && e == ENGI_DRUM) return 0;
+    if (e == ENGI_INPUT && !t->p[P_E3] && (d == MD_PITCH || d == MD_AMP || d == MD_VIB)) return 0;
+    if (d >= MD_E1 && d < MD_CLIP) {
+        const param_desc_t *pd = track_desc(t, P_E0 + (k = d - MD_E1));
+        if (!pd->label || !pd->label[0] || pd->label[0] == '-' || pd->max - pd->min <= 1) return 0;
+        if (e == ENGI_FM6 && (k == 7u || k == 3u || k == 5u)) return 0;  /* SLOT requires a bank load, not a parameter offset. */
+        if (e == ENGI_STRING && k == 3u && t->p[P_E0] != SX_FDBK) return 0; /* POS is excitation-only. */
+        if (e == ENGI_INPUT && (k == 3u || (k == 5u && !t->p[P_E3]) || (k == 4u && (t->p[P_E0] != AIN_ST || t->p[P_E3])))) return 0;
+    }
+    return 1;
+}
+
+/* Hide exact aliases and composite legacy controls from new routes. */
+static int mod_dst_offer(const track_t *t, uint32_t d)
+{
+    uint32_t e = eng_idx(t->eng_req);
+    if (!mod_dst_ok(t, d)) return 0;
+    if (d == MD_CUT && (e == ENGI_WHEEL || e == ENGI_DRUM || e == ENGI_STRING || e == ENGI_INPUT || e == ENGI_ANIMAL)) return 0;
+    if (d == MD_SHP && (e == ENGI_PHASE || e == ENGI_FM6 || (e == ENGI_STRING && t->p[P_E0] == SX_FDBK))) return 0;
+    return d != MD_FCUT || e != ENGI_ANALOG; /* ANALOG already offers its actual CUT parameter. */
+}
+
+/* Bounded, clamped navigation. An old unavailable route survives until edited. */
+static int32_t mod_dst_turn(const track_t *t, int32_t d, int32_t steps)
+{
+    int32_t dir = steps > 0 ? 1 : -1, v, n;
+    d = clamp(d, 0, MD_N - 1); steps = clamp(steps, -MD_N, MD_N);
+    n = steps > 0 ? steps : -steps;
+    while (n-- > 0) {
+        for (v = d + dir; v > 0 && v < MD_N - 1 && !mod_dst_offer(t, (uint32_t)v); v += dir) ;
+        if (v < 0 || v >= MD_N || !mod_dst_offer(t, (uint32_t)v)) break;
+        d = v;
+    }
+    return d;
+}
+
+static char mod_dst_scope(const track_t *t, uint32_t d)
+{
+    uint32_t e = eng_idx(t->eng_req);
+    if (d >= MD_CLIP && d < MD_MASTER_END) return 'M';
+    if (d && d <= MD_AMP && !(d == MD_CUT && (e == ENGI_WHEEL || e == ENGI_DRUM || e == ENGI_STRING || e == ENGI_INPUT))) return 'V';
+    return 'T';
+}
+
 static const char *mod_dst_name(const track_t *t, int32_t v)
 {
+    uint32_t e = eng_idx(t->eng_req), k;
     v = clamp(v, 0, MD_N - 1);
-    if (v >= MD_E1 && v < MD_CLIP) {
-        const char *l = track_desc(t, P_E0 + (uint32_t)(v - MD_E1))->label;
-        if (l && l[0] && l[0] != '-')
-            return l;
+    if (!mod_dst_ok(t, (uint32_t)v)) return "N/A";
+    if (v >= MD_E1 && v < MD_CLIP) return track_desc(t, P_E0 + (uint32_t)v - MD_E1)->label;
+    if (v == MD_CUT) {
+        static const uint8_t CUT_ID[NENGINES] = {P_E4, P_FCUT, P_E2, P_FCUT, P_FCUT, P_E0, P_FCUT, P_FCUT,
+                                                P_FCUT, P_FCUT, P_FCUT, P_E2, P_E2, P_FCUT, P_FCUT, P_FCUT};
+        if (e == ENGI_WHEEL || e == ENGI_DRUM || e == ENGI_STRING || e == ENGI_INPUT) return N_MDST[MD_FCUT];
+        return track_desc(t, CUT_ID[e])->label;
+    }
+    if (v == MD_SHP) {
+        static const uint8_t SHP_ID[NENGINES] = {P_MORPH, P_MORPH, P_E2, P_MORPH, P_MORPH, P_E4, P_MORPH, P_E6,
+                                                P_E2, P_MORPH, P_MORPH, P_E1, P_MORPH, P_E5, P_MORPH, P_MORPH};
+        if (e == ENGI_FM6) return "FB+MOD";
+        if (e == ENGI_STRING && t->p[P_E0] == SX_FDBK) return "BR+SIZE";
+        k = e == ENGI_LOFI && t->p[P_E1] >= RW_BYTE ? P_E3 : SHP_ID[e];
+        return track_desc(t, k)->label;
     }
     return N_MDST[v];
 }
-

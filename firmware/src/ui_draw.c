@@ -1718,7 +1718,7 @@ static void draw_columns(void)
         fmt_int(val, (int32_t)mod_ui_slot + 1);
         draw_column(0, "SLOT", val, "/4", VAL(0u), (int32_t)mod_ui_slot * 1000 / 3, mod_src_icon(MS_OFF));   /* (the mod icon) */
         text_column(1, "SRC", N_MSRC[clamp(s, 0, MS_N - 1)], s ? VAL(1u) : T_DIM);
-        text_column(2, "DEST", mod_dst_name(t, d), d ? VAL(2u) : T_DIM);
+        text_column(2, mod_dst_scope(t, d) == 'M' ? "MASTER" : mod_dst_scope(t, d) == 'V' ? "VOICE" : "TRACK", mod_dst_name(t, d), d ? VAL(2u) : T_DIM);
         pf_column(3, "AMT", &TP[id + 2u], a, a ? VAL(3u) : T_DIM, mod_src_icon(MS_OFF));
         return;
     }

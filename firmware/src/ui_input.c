@@ -1181,6 +1181,9 @@ static void focus_knob(uint32_t slot, int32_t steps)
         excite_turn(TSEL, &TSEL->p[P_E0 + k], was);
         return;
     }
+    if (slot == 2u && j < 0 && !mod_dst_offer(TSEL, MD_E1 + k)) {
+        ui_message("NO MOD DEST"); return;
+    }
     if (slot == 2u && j < 0) {                          /* (no slot aims at it: a free one, turned up) */
         uint32_t m;
         if (steps <= 0)
@@ -1491,6 +1494,12 @@ sect:
     }
     if (pg->graph == GR_MOD && slot == 0u) {             /* MOD: KNOB 1 the slot, 2..4 its SRC DST AMT */
         mod_ui_slot = (uint8_t)clamp((int32_t)mod_ui_slot + (steps > 0 ? 1 : -1), 0, 3);
+        return;
+    }
+    if (pg->graph == GR_MOD && slot == 2u) {
+        int16_t *dst = &TSEL->p[P_M1DST + 3u * mod_ui_slot];
+        *dst = (int16_t)mod_dst_turn(TSEL, *dst, steps);
+        knob_cap(TSEL, P_M1DST + 3u * mod_ui_slot);
         return;
     }
     d = page_desc(pg, slot, &vp);

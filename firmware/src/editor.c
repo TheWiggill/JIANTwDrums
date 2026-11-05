@@ -486,8 +486,11 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
         ed_str(d->label, 8);
         ed_str(d->unit, 8);
         if (d->fmt == F_ENUM && d->names)                  /* up to 32 (0.7.0: the matrix DST has 30; was 24) */
-            for (i = 0; i <= (uint32_t)(d->max - d->min) && i < 32u; i++)
-                ed_str(d->names[i], 8);
+            for (i = 0; i <= (uint32_t)(d->max - d->min) && i < 32u; i++) {
+                int dst = d->names == N_MDST, show = dst && (mod_dst_offer(TSEL, i) || i == (uint32_t)*vp);
+                if (show && i) { ed_b(mod_dst_scope(TSEL, i)); ed_b(':'); }
+                ed_str(dst ? (show ? mod_dst_name(TSEL, (int32_t)i) : N_MDST[0]) : d->names[i], show && i ? 6u : 8u);
+            }
         break;
     case ED_STEP_GET:
     case ED_STEP_SET: {
@@ -830,3 +833,4 @@ static void ed_service(void)
         ed_handle(f, k);
     }
 }
+

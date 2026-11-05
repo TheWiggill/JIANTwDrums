@@ -119,12 +119,9 @@ static void graph_mod_net(const track_t *t)
         const char *u = "";
         cv_text(6, sy - AF_X_CAP_Y, &AF_X, N_MSRC[clamp(p[0], 0, MS_N - 1)], on ? T_TEXT : T_DIM);
         if (on) {
-            og_quad_a(48 * 16, sy * 16, 110 * 16, sy * 16, 158 * 16, (y + 11) * 16, lc, 16u, 256);
-            if (sel && !ANIM_OFF()) {
-                int32_t q = (int32_t)(anim_fr * 6u % 256u), r = 256 - q;
-                og_node((48 * r * r + 2 * 110 * r * q + 158 * q * q) >> 12, (sy * r * r + 2 * sy * r * q + (y + 11) * q * q) >> 12,
-                        2, T_TEXT);
-            }
+            cv_rect(58, sy, 100, 1, lc);
+            if (sel && !ANIM_OFF())
+                og_node((58 + (int32_t)(anim_fr * 3u % 100u)) * 16, sy * 16, 2, T_TEXT);
         } else
             cv_text(124, y + 9 - AF_X_CAP_Y, &AF_X, "----", T_DIM);
         cv_rect(160, y, 72, 26, bg);
@@ -132,7 +129,7 @@ static void graph_mod_net(const track_t *t)
             cv_rect(160, y, 72, 1, T_THEME); cv_rect(160, y + 25, 72, 1, T_THEME);
             cv_rect(160, y, 1, 26, T_THEME); cv_rect(231, y, 1, 26, T_THEME);
         }
-        b[0] = 'D'; b[1] = (char)('1' + k); b[2] = ' '; b[3] = 0;
+        b[0] = mod_dst_scope(t, (uint32_t)p[1]); b[1] = (char)('1' + k); b[2] = ' '; b[3] = 0;
         str_cpy(b + 3, on ? mod_dst_name(t, p[1]) : "OFF", 13);
         cv_clip_text(165, y + 5 - AF_X_CAP_Y, &AF_X, b, on ? T_TEXT : T_DIM, bg, 64);
         param_format(&TP[P_M1AMT], p[2], b, &u);
