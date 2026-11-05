@@ -1,4 +1,4 @@
-name: Publish verified VOICE and SPLIT beta
+name: Publish verified ADD beta
 on:
   push:
     branches: [main]
@@ -47,7 +47,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: github-pages
-          run-id: 41751815977
+          run-id: 41930632844
           github-token: ${{ github.token }}
           path: build/released
       - name: Exact tested firmware
@@ -97,7 +97,7 @@ jobs:
           assert m['version']==v+'-'+m['source'][:7]+'-preview'
           edition_path=Path('web/EDITIONS.json')
           editions=json.loads(edition_path.read_text())
-          editions[m['version']]={'edition':'ADDITIVE / SPLIT','status':'beta'}
+          editions[m['version']]={'edition':'ADDITIVE / MOD','status':'beta'}
           edition_path.write_text(json.dumps(editions))
           make_site.main('build/candidate/build/felucca.fwsc',m['version'],'build/new-preview',str(fw))
           for sub in ('firmware','webapp/installer'):
