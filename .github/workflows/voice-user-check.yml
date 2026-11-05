@@ -41,6 +41,7 @@ jobs:
           test -s "$T/uboot.boot" && test -s "$T/cfg_tool.bin" && test -s "$T/cfg/eq_cfg_hw.bin"
       - name: FM-1 package and target budgets
         env:
+          FELUCCA_REPIN: keep
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
           JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
         run: |

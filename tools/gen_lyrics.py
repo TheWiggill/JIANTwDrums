@@ -146,19 +146,50 @@ def huff_decode(table, bits, pos):
     raise AssertionError("no code")
 
 
+def phone_pairs(recs):
+    """Lossless byte-pair coding of phones only. 128 recursive pairs, maximum
+    depth 8. Word-block size and bounded dictionary search are unchanged."""
+    from collections import Counter
+    seq = [tuple(b & 0x7f for b in ph) for _, _, ph in recs]
+    pairs, depth = [], [0] * 256
+    for symbol in range(128, 256):
+        counts = Counter(pair for row in seq for pair in zip(row, row[1:])
+                         if max(depth[pair[0]], depth[pair[1]]) < 8)
+        if not counts:
+            break
+        pair, count = max(counts.items(), key=lambda kv: (kv[1], kv[0]))
+        if count < 8:
+            break
+        pairs.append(pair)
+        depth[symbol] = 1 + max(depth[pair[0]], depth[pair[1]])
+        for k, row in enumerate(seq):
+            out, i = [], 0
+            while i < len(row):
+                if row[i:i+2] == pair:
+                    out.append(symbol)
+                    i += 2
+                else:
+                    out.append(row[i])
+                    i += 1
+            seq[k] = tuple(out)
+    return seq, pairs
+
+
 def en_dict_pack(recs):
     """recs: [(shared, rest, phoneme bytes)] in order -> (blob, idx, tables, codes): each EN_BLK-th word (pre 0) starts
     a block at a
     byte (idx: its offset); a word is its shared count (code P), its letters then LY_END (code L, 'a' .. 'z' as 0 ..
     25), its phoneme bytes & 0x7F then LY_END (code H)"""
     from collections import Counter
+    phones, pairs = phone_pairs(recs)
     cp, cl, ch = Counter(), Counter(), Counter()
     for pre, rest, ph in recs:
         cp[pre] += 1
         cl.update(ord(c) - 97 for c in rest)
         cl[LY_END] += 1
-        ch.update(b & 0x7F for b in ph)
         ch[LY_END] += 1
+    for ph in phones:
+        ch.update(ph)
     (kp, tp), (kl, tl), (kh, th) = huff_code(cp), huff_code(cl), huff_code(ch)
     blob, idx, bits = bytearray(), [], []
 
@@ -179,15 +210,15 @@ def en_dict_pack(recs):
         for c in rest:
             put(kl, ord(c) - 97)
         put(kl, LY_END)
-        for b in ph:
-            put(kh, b & 0x7F)
+        for b in phones[k]:
+            put(kh, b)
         put(kh, LY_END)
     flush()
     blob += bytes(4)                                 # (sing.c ly_fill reads up to 4 bytes ahead)
-    return blob, idx, (tp, tl, th), (kp, kl, kh)
+    return blob, idx, (tp, tl, th), (kp, kl, kh), pairs
 
 
-def en_dict_unpack(blob, idx, tables, n):
+def en_dict_unpack(blob, idx, tables, n, pairs):
     """the words back from en_dict_pack's blob, as sing.c sy_en_find reads them: [(word, phoneme bytes)]"""
     bits = [(b >> (7 - i)) & 1 for b in blob for i in range(8)]
     tp, tl, th = tables
@@ -206,7 +237,13 @@ def en_dict_unpack(blob, idx, tables, n):
             s, pos = huff_decode(th, bits, pos)
             if s == LY_END:
                 break
-            ph.append(0x80 | s)
+            def expand(v):
+                if v < 128:
+                    ph.append(0x80 | v)
+                else:
+                    for child in pairs[v - 128]:
+                        expand(child)
+            expand(s)
         out.append((w, bytes(ph)))
     return out
 
@@ -431,14 +468,16 @@ def main():
             p16 += 1
         plain += 1 + len(w) - p16 + len(ph) + 2 * (k % 16 == 0)
         prev = w
-    blob, idx, (tp, tl, th), codes = en_dict_pack(recs)
-    if en_dict_unpack(blob, idx, (tp, tl, th), len(words)) != [(w, r[2]) for w, r in zip(words, recs)]:
+    blob, idx, (tp, tl, th), codes, pairs = en_dict_pack(recs)
+    if en_dict_unpack(blob, idx, (tp, tl, th), len(words), pairs) != [(w, r[2]) for w, r in zip(words, recs)]:
         raise SystemExit("gen_lyrics: the dictionary does not decode back")
     assert len(blob) < 65536
     L.append(f"#define LY_EN_N {len(words)}u")
     L.append(f"#define LY_END {LY_END}u")
     # (JIANT V10.15) the dictionary and its index where the includer puts them (sing.c LY_DICT_SEC: the Bluetooth segment)
     L.append("#ifndef LY_DICT_SEC\n#define LY_DICT_SEC\n#endif")
+    L.append(f"static const uint8_t LY_EN_PAIR[{len(pairs)}][2] LY_DICT_SEC = {{\n" +
+             ",\n".join("    {"+c_bytes(pair)+"}" for pair in pairs) + "\n};")
     L.append(f"static const uint8_t LY_EN_DICT[{len(blob)}] LY_DICT_SEC = {{\n    {c_bytes(blob)}}};")
     L.append(f"static const uint16_t LY_EN_IDX[{len(idx)}] LY_DICT_SEC = {{\n    {c_bytes(idx)}}};")
     L.append(f"#define LY_EN_BLK {EN_BLK}u")
@@ -478,12 +517,19 @@ def main():
         counts[lang] = n
         U = lang.upper()
         L.append(f"#define LY_{U}_NW {n}u")
-        L.append(f"static const char LY_{U}_TXT[{len(txt)}] = {{\n    {c_bytes(txt)}}};")
+        # Exact alphabet packing: 0 is word terminator, 1..26 a..z.
+        # Sparse offsets remain every 16 words, now measured in bits.
+        assert all(b == 0 or 97 <= b <= 122 for b in txt)
+        bits = ''.join(f'{0 if b == 0 else b-96:05b}' for b in txt)
+        bits += '0' * (-len(bits) % 8)
+        packed = bytes(int(bits[i:i+8],2) for i in range(0,len(bits),8)) + b'\0'
+        L.append(f"static const uint8_t LY_{U}_TXT[{len(packed)}] = {{\n    {c_bytes(packed)}}};")
         offs = offs[::16]                            # (0.9.0) each 16th word's place (sing.c ly_word: then the 0s)
-        L.append(f"static const uint16_t LY_{U}_OFF[{len(offs)}] = {{\n    {c_bytes(offs)}}};")
+        L.append(f"static const uint16_t LY_{U}_OFF[{len(offs)}] = {{\n    {c_bytes(o*5 for o in offs)}}};")
         L.append(f"static const uint8_t LY_{U}_META[{n}] = {{\n    {c_bytes(meta)}}};")
-        rows_c = ",\n    ".join("{" + ", ".join(f"{{{a}, {b}}}" for a, b in t) + "}" for t in grp)
-        L.append(f"static const uint16_t LY_{U}_GRP[{len(THEMES)}][{len(CATS)}][2] = {{\n    {rows_c}}};")
+        assert all(a < 512 and b < 128 for t in grp for a,b in t)
+        rows_c = ",\n    ".join("{" + ", ".join(str(a | b<<9) for a, b in t) + "}" for t in grp)
+        L.append(f"static const uint16_t LY_{U}_GRP[{len(THEMES)}][{len(CATS)}] = {{\n    {rows_c}}};")
     out.write_text("\n".join(L) + "\n")
     print(f"lyrics: {len(PHONEMES)} phonemes; English dictionary {len(words)} words, "
           f"{len(blob) + 2 * len(idx) + len(tp) + len(tl) + len(th) + nlut} B (Huffman; {plain} B as bytes); "
@@ -492,3 +538,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

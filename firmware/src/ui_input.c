@@ -1312,6 +1312,12 @@ static void edit_param(uint32_t slot, int32_t steps)
         dx_kit3_knob(slot, steps);
         return;
     }
+    if(pg->graph==GR_LYRSTEP) {
+        if(!slot) cursor_set((int32_t)ui.cursor+steps);
+        if(slot==1u) {lyric_word=(uint8_t)clamp((int32_t)lyric_word+steps,0,31);lyric_syl=1;}
+        if(slot==2u) lyric_syl=(uint8_t)clamp((int32_t)lyric_syl+steps,0,19);
+        return;
+    }
     if (pg->graph == GR_EVENTS) {                         /* AUTO LIST (ui_events.c) */
         ev_knob(slot, steps);
         return;
@@ -1578,6 +1584,17 @@ static void act_do(void)
     }
     if (cur_page()->graph == GR_LYRIC) {                /* (0.8.5) WORDS: the lyric, typed (the NAME screen) */
         name_open(NK_LYRIC, song.sel);
+        return;
+    }
+    if(cur_page()->graph==GR_LYRSTEP) {
+        char label[20];uint32_t pos=lyric_pick(label);
+        if(chain_busy()) {ui_message("SONG PLAYS: STOP IT TO EDIT");return;}
+        if(!label[0]) {ui_message("TYPE A LYRIC FIRST");return;}
+        undo_mark();
+        uint32_t err=motion_set_lock(TSEL,ui.cursor,P_E0,(int16_t)pos);
+        if(err) {ui_message(err==2u?"AUTOMATION FULL":"CANNOT PLACE LYRIC");return;}
+        TSEL->p[P_VLYR]=LYR_FIXED;
+        ui_message(pos?"SYLLABLE PLACED":"AUTO ADVANCE PLACED");
         return;
     }
     if (cur_page()->graph == GR_PUNCH) {                /* (0.6.99) the punch-in lane cleared (a dialog) */
@@ -2792,7 +2809,7 @@ static void ui_input_frame(void)
             else
                 song.octave += b == B_OCTDN ? (song.octave > -3 ? -1 : 0) : (song.octave < 3 ? 1 : 0);
             if (drum_track(TSEL) && !song.grid)         /* (0.8.5) the kit's octaves: what this one does */
-                ui_message(drum_oct_name(song.octave));
+                ui_message(drum_oct_label(TSEL,song.octave));
             break;
         }
         default:                                        /* page buttons (GLO SCL ENV LFO EDIT ARP): when let go */

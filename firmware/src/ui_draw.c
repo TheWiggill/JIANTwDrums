@@ -1622,6 +1622,14 @@ static void draw_columns(void)
         empty_column(3);
         return;
     }
+    if(cur_page()->graph==GR_LYRSTEP) {
+        char label[20];uint32_t pos=lyric_pick(label);
+        fmt_int(val,(int32_t)ui.cursor+1);hot_text_column(0,"STEP",val);
+        hot_text_column(1,"WORD",label[0]?label:"NO TEXT");
+        fmt_int(val,lyric_syl);hot_text_column(2,"SYLLABLE",pos?val:"AUTO");
+        draw_act_column(3,"PLACE",T_THEME,ICON_AUTO);
+        return;
+    }
     if (SPLIT_PAGE(cur_page())) {
         static const char *const labels[8] = {"SPLIT", "LOW TRK", "HIGH TRK", "KEY CUT", "LOW OCT", "HIGH OCT", "MIDI CH", "MIDI CUT"};
         for (uint32_t c = 0; c < 4; c++) {

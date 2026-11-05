@@ -152,8 +152,43 @@ static const uint8_t DRUM_LANE_NOTE[NLANE] = {36, 38, 39, 42, 46, 45, 37, 56};
 /* the lane a note strikes */
 static uint32_t drum_lane(uint32_t note) { return (uint32_t)DRUM_GM[drum_gm_ix(note)][0]; }
 
+/* Extended note namespace is active only on an opted-in DRUM track. GM 35..81
+ * remains unchanged. 0..12 are chromatic kick, 13..26 chromatic tom; twelve
+ * per-hit effect sounds use 27..34 and 82..85. Other upper notes are live
+ * performance controls, expanded into ordinary, recordable GM hits by seq.c. */
+#define DXF_REV 8u
+#define DXF_DLY 16u
+#define DXF_LONG 32u
+#define DXF_FB 64u
+#define DXF_FOLD 128u
+#define DXF_NOISE 256u
+static const uint16_t DX_EXT_FX[12] = {
+    DV_KICK|DXF_REV|DXF_LONG, DV_SNARE|DXF_DLY|DXF_LONG, DV_CLAP|DXF_REV,
+    DV_HATC|DXF_FB|DXF_FOLD, DV_HATO|DXF_REV|DXF_LONG, DV_TOM|DXF_DLY|DXF_LONG|DXF_FB,
+    DV_RIM|DXF_DLY|DXF_FB, DV_BELL|DXF_REV|DXF_LONG, DV_KICK|DXF_FB|DXF_LONG,
+    DV_SNARE|DXF_REV|DXF_NOISE, DV_TOM|DXF_LONG|DXF_FB|DXF_FOLD, DV_BELL|DXF_DLY|DXF_FB|DXF_LONG
+};
+static uint32_t drum_ext(const track_t *t) { return t->p[P_DKEYMODE] == 1; }
+static const char *drum_oct_label(const track_t *t, int32_t o)
+{
+    if(drum_ext(t)) {
+        static const char *const names[7]={"FLAM","FX KIT","KICK / TOM","DRUM-X KIT","FILLS","RATCH SETS","RATCH SETS"};
+        return names[clamp(o,-3,3)+3];
+    }
+    return drum_oct_name(o);
+}
+static uint32_t drum_fx_note(uint32_t k) { k %= 12u; return k < 8u ? 27u+k : 82u+k-8u; }
+static uint32_t drum_fx_id(uint32_t note) { return note>=27u&&note<=34u ? note-26u : note>=82u&&note<=85u ? note-73u : 0u; }
+static uint32_t drum_note_lane(const track_t *t, uint32_t note)
+{
+    uint32_t fx = drum_ext(t) ? drum_fx_id(note) : 0u;
+    if (drum_ext(t) && note < 27u) return note < 13u ? DV_KICK : DV_TOM;
+    return fx ? DX_EXT_FX[fx-1u]&7u : drum_lane(note);
+}
+
 /* a note of a muted group (dx_mute): voice.c trk_note_on drops it */
 static int drum_muted(uint32_t note) { return dx_lane_muted(drum_lane(note)); }
+static int drum_muted_t(const track_t *t, uint32_t note) { return dx_lane_muted(drum_note_lane(t,note)); }
 
 /* the lane's name (5 characters at most) */
 static const char *drum_lane_name(const track_t *t, uint32_t l)
@@ -229,7 +264,7 @@ static drum_lane_t *drum_lane_of(track_t *t, const voice_t *v)
 static voice_t *drum_reuse(track_t *t, uint32_t note)
 {
     drum_lane_t *K = drum_kit_of(t);
-    uint32_t lane = drum_lane(note), owner = K ? K[lane].owner : 0;
+    uint32_t lane = drum_note_lane(t,note), owner = K ? K[lane].owner : 0;
     voice_t *v;
     if (!owner || owner > NVOICE)
         return 0;
@@ -243,13 +278,16 @@ static void drum_note_on(track_t *t, voice_t *v)
     uint32_t i = (uint32_t)(v - t->v), lane;
     if (!K || i >= NVOICE)
         return;
-    lane = drum_lane(v->note);
+    lane = drum_note_lane(t,v->note);
     L = &K[(uint32_t)v->s[0] & (DV_NLANE - 1u)];
     if (L->owner == i + 1u)                              /* this voice played another lane: it stops there */
         L->owner = 0;
     L = &K[lane];
     L->st = (int8_t)clamp(DRUM_GM[drum_gm_ix(v->note)][1] + t->pfx_rpit / 16 + t->dpit, -60, 60);   /* (pfx.c RANDOM;
                                                           * 0.6.82: the step's components, seq.c) */
+    if (drum_ext(t) && v->note < 27u)
+        L->st = (int8_t)clamp((int32_t)v->note-(v->note<13u?6:19)+t->pfx_rpit/16+t->dpit,-60,60);
+    else if (drum_ext(t) && drum_fx_id(v->note)) L->st = (int8_t)clamp(t->pfx_rpit/16+t->dpit,-60,60);
     L->bc = 0;                                           /* (0.6.82) its BEND, from the step */
     L->bd = t->dbend;
     L->bs = (int16_t)(t->dbend ? ((t->dbend < 0 ? -t->dbend : t->dbend) + t->dbt) / (t->dbt ? t->dbt : 1u) : 0);
@@ -262,6 +300,7 @@ static void drum_note_on(track_t *t, voice_t *v)
         if (L->dm == 3u)
             L->fl = (uint8_t)(DXO_FLAM + 1u);            /* (FLAM: the grace hit now, the hit DXO_FLAM blocks on, drum_render) */
     }
+    if (drum_ext(t)) L->dm |= (uint8_t)(drum_fx_id(v->note)<<2);
     v->s[0] = (int32_t)lane;
     v->env_out = v->vel * 258;                           /* the hit starts at its level (no ramp from 0) */
     v->env = 1 << 24;                                    /* the ADSR held at full from here, not from drum_amp:
@@ -335,6 +374,17 @@ static int32_t drum_amp(track_t *t, voice_t *v, int32_t adsr)
 #define DXS_BUS(s) ((uint32_t)(s) >> 6)                  /* 0 none, 1 CHORUS, 2 DELAY, 3 REVERB */
 #define DXS_AMT(s) ((int32_t)(s) & 63)                   /* 0..63 */
 static uint8_t dx_snd[DV_NLANE];
+static uint32_t drum_hit_fx(const drum_lane_t *L)
+{
+    uint32_t i=L->dm>>2;
+    return i && i<=NELEM(DX_EXT_FX) ? DX_EXT_FX[i-1u] : 0u;
+}
+static uint32_t drum_send(const track_t *t, uint32_t l)
+{
+    drum_lane_t *K=drum_kit_of(t);
+    uint32_t f=K&&K[l&7u].owner ? drum_hit_fx(&K[l&7u]) : 0;
+    return f&DXF_REV ? 255u : f&DXF_DLY ? 191u : dx_snd[l&7u];
+}
 /* (JIANT 0.7.8) a core's own (mod.c's mod_c the same way): the two cores render two parts at once (fx.c mix_block), and
  * with one set the other core's part cleared dx_xon and the sides mid-render: the image on and off block by block (a
  * grit at the block rate, like a downsampling) and clicks on the side a sound leaned to. A core renders its parts one
@@ -413,8 +463,9 @@ static __attribute__((noinline)) void drum_side_begin(const track_t *t, uint32_t
         dc->lpan[l] = (int8_t)p;
         if (p || p0)
             on |= 1u;
-        if (DXS_BUS(dx_snd[l]) && DXS_AMT(dx_snd[l]))
-            on |= 1u << DXS_BUS(dx_snd[l]);
+        uint32_t send=drum_send(t,l);
+        if (DXS_BUS(send) && DXS_AMT(send))
+            on |= 1u << DXS_BUS(send);
     }
     dc->xon = (uint8_t)on;
     if (n > CTL)
@@ -431,11 +482,18 @@ static __attribute__((noinline)) void drum_side_begin(const track_t *t, uint32_t
  * g[0..3]: what it gives up of the left at the block's start and end, of the right at its start and end (a pan crossing
  * the middle within a block fades out of one side into the other) */
 static int32_t dx_dump[CTL];                             /* (the bus not fed: a sink, so the loop has no branch) */
-static __attribute__((noinline)) int drum_side_of(dx_core_t *dc, uint32_t l, int32_t *g, int32_t **d2, int32_t *a)
+static __attribute__((noinline)) int drum_side_of(dx_core_t *dc, uint32_t l, uint32_t send, int32_t *g, int32_t **d2, int32_t *a)
 {
     int32_t p0 = dc->lpan0[l & 7u], p1 = dc->lpan[l & 7u];
-    uint32_t b = DXS_BUS(dx_snd[l & 7u]);
-    *a = b ? DXS_AMT(dx_snd[l & 7u]) : 0;
+    uint32_t b = DXS_BUS(send);
+    *a = b ? DXS_AMT(send) : 0;
+    /* A note can start inside the render, after side_begin. Clear a newly
+     * requested bus before its first write, on this core only. */
+    if(*a && !(dc->xon&(1u<<b))) {
+        uint32_t i;
+        for(i=0;i<CTL;i++) dc->sb[b-1u][i]=0;
+        dc->xon|=(uint8_t)(1u<<b);
+    }
     if (!(dc->xon & 1u))
         p0 = p1 = 0;
     g[0] = p0 > 0 ? p0 : 0; g[1] = p1 > 0 ? p1 : 0;
@@ -534,9 +592,12 @@ static void drum_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const 
     dx_lane_t acoustic_patch;
     const dx_lane_t *patch=&dx_kit[(uint32_t)v->s[0] & (DV_NLANE-1u)];
     if(dx_acoustic) { dx_acoustic_patch(&acoustic_patch,patch,(uint32_t)v->s[0],v->vel);patch=&acoustic_patch; }
-    dx_run(patch, &L->x, p[P_E0] + dx_mot_v + L->rm + lfo_shp,
+    uint32_t hitfx=drum_hit_fx(L);
+    dx_run_fx(patch, &L->x, p[P_E0] + dx_mot_v + L->rm + lfo_shp,
            L->st * 16 + L->rt + L->bc + (p[P_E1] - 64) * 3 + t->pfx_pit + lfo_pit,
-           p[P_E3] - 64 + DXO_DEC[L->dm & 3u], p[P_E2] - 64 + DXO_TON[L->dm & 3u], p[P_E4] - 64, p[P_E6], p[P_E5], y, n);
+           p[P_E3] - 64 + DXO_DEC[L->dm & 3u] + ((hitfx&DXF_LONG)?36:0),
+           p[P_E2] - 64 + DXO_TON[L->dm & 3u], p[P_E4] - 64 + ((hitfx&DXF_NOISE)?32:0),
+           (hitfx&DXF_FOLD)&&p[P_E6]<80 ? 80 : p[P_E6], p[P_E5], y, n, (hitfx&DXF_FB)?6u:0u);
     {                                                    /* PUNCH: the boost before the knee (driven into it, as
                                                           * Drum Buss), the tail's cut on the amplitude ramp */
         int32_t pu = pnch_eff;
@@ -567,7 +628,7 @@ static void drum_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const 
         int32_t *d2, g[4], a;
         dx_core_t *dc = &DXC;                            /* (0.7.8: this core's, read once) */
         uint32_t vo = vo_off_c[MC_CPU() & 1u];           /* (ctl64) the voice's first sample in the part's block */
-        if (dc->xon && drum_side_of(dc, (uint32_t)v->s[0], g, &d2, &a)) {   /* (0.6.48) IMAGE, SEND: the same loop */
+        if (drum_side_of(dc, (uint32_t)v->s[0], drum_send(t,(uint32_t)v->s[0]), g, &d2, &a)) {   /* IMAGE, SEND: the same loop */
             if (g[0] != g[1] || g[2] != g[3])
                 drum_side_ramp(dc->sl + vo, dc->sr + vo, y, out, n, m, g, d2 + vo, a);
             else
@@ -715,4 +776,5 @@ static const engine_t ENG_DRUM = {
     .oneshot = 1,
     .keys = drum_keys,
 };
+
 

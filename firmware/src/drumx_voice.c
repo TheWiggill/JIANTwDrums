@@ -204,15 +204,15 @@ static __attribute__((noinline)) int32_t dx_hands_step(dx_voice_t *v, uint32_t n
     *g1 = (int32_t)(mul64(*g1, 4096 + s) >> 12);
     return (int32_t)(mul64(gn, 4096 + s0) >> 12);
 }
-static __attribute__((noinline)) void dx_run(const dx_lane_t *L, dx_voice_t *v, int32_t morph, int32_t tune16,
+static __attribute__((noinline)) void dx_run_fx(const dx_lane_t *L, dx_voice_t *v, int32_t morph, int32_t tune16,
                                              int32_t dofs, int32_t cofs, int32_t nofs, int32_t warp, int32_t fm, int32_t *y,
-                                             uint32_t n)
+                                             uint32_t n, uint32_t feedback)
 {
     int32_t q[DXP_N], p16, depth, ea1, en1, ep1, og, ng, ga, dga, gn, dgn, kd, inc, dinc;
     uint32_t i, k, wave = L->mode & 3u, flt = (L->mode >> 2) & 3u, ta, tn, tp, kb, inc1;
     tsvf_t c;
     uint32_t nf = n, ln = L >= dx_kit && L < dx_kit + 8 ? (uint32_t)(L - dx_kit) : 0u;
-    int32_t lay = (int32_t)DX_LAY_L(dx_lay[ln]), lfb = (int32_t)DX_TONE_FB(dx_tone) + (int32_t)DX_LAY_FB(dx_lay[ln]);
+    int32_t lay = (int32_t)DX_LAY_L(dx_lay[ln]), lfb = (int32_t)DX_TONE_FB(dx_tone) + (int32_t)DX_LAY_FB(dx_lay[ln]) + (int32_t)feedback;
     if (!v->live && !v->trig) {
         for (i = 0; i < n; i++)
             y[i] = 0;
@@ -589,3 +589,9 @@ static int dx_kit_ok(const dx_lane_t *k)
     }
     return 1;
 }
+
+
+/* Classic callers retain exactly the original feedback path. */
+static void dx_run(const dx_lane_t *L, dx_voice_t *v, int32_t morph, int32_t tune16,
+                   int32_t dofs, int32_t cofs, int32_t nofs, int32_t warp, int32_t fm, int32_t *y, uint32_t n)
+{ dx_run_fx(L,v,morph,tune16,dofs,cofs,nofs,warp,fm,y,n,0); }

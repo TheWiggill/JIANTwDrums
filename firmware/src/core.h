@@ -175,6 +175,7 @@ enum {                          /* per-track parameters */
 #define P_SIMG P_LN0                   /* (V10.49) a synth's EDIT > STEREO IMAGE, stored inverted (127 = 0 %: the lane level's
                                          * 127 every synth part holds); DRUM-X's lane 1 level there. (P_DXIMG is VOICE's LYRIC) */
 #define P_VLANG P_LRTRG
+#define P_DKEYMODE P_LRTRG        /* DRUM-X only: 0 classic, 1 extended performance octaves. */
 #define P_VLYR P_DXIMG
 /* (JIANT 0.6.9) AUTO PAN (fx.c mix_part), in the slots of the old per-track SLICER (one on a bus since 0.6.3, its
  * slots stored, never read but by proj_sl_migrate). Laid so what old stores hold means OFF: DPTH where SLCR was (0, or

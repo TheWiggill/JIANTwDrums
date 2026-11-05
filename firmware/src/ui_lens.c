@@ -69,7 +69,7 @@ static const nv_t CE_SEQ[] = {NV("STEP", 0, 0, LV_BAR), NV("PATTERN", "LENGTH", 
                               NV("EUCLID", 0, 2, LV_PAT), NV("MODES", 0, 2, LV_PAT), NV("MUTATE", 0, 2, LV_PAT),
                               NV("PLAYHEADS", 0, 3, LV_PAT), NV("STRETCH", 0, 4, LV_PAT),
                               NV("COMP", 0, 5, LV_STEP), NV("COMP 2", 0, 5, LV_STEP), NV("AUTOMATION", 0, 6, LV_BAR),
-                              NV("AUTO LIST", 0, 6, LV_BAR)};
+                              NV("AUTO LIST", 0, 6, LV_BAR), NV("LYRIC STEP",0,6,LV_BAR)};
 static const ng_t CG_SEQ[] = {{"STEP", 0}, {"LENGTH", "LEN"}, {"EUCLID", "EUCL"}, {"PLAYHEADS", "HEAD"}, {"STRETCH", "STR"},
                               {"COMP", 0}, {"AUTO", 0}};   /* (seven tabs: a short form of 4 letters at most fits one) */
 enum { FXL_TRACK, FXL_BUSES, FXL_EFFECT };

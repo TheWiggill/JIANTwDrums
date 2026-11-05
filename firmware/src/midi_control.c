@@ -121,7 +121,8 @@ static void midi_release(uint32_t ch, uint32_t note)
         if (!--midi_ch[ch].owned[id - 1u])
             midi_ch[ch].targets &= (uint8_t)~(1u << (id - 1u));
     }
-    if (id && drum_track(&trk[id - 1u]) && drum_oct_of(note)) {   /* (0.8.5) a band of the kit's octaves */
+    if(id && drum_track(&trk[id-1u])) dxo_off(&trk[id-1u],DXO_MIDI+(ch<<7)+source);
+    if (id && drum_track(&trk[id - 1u]) && !drum_ext(&trk[id-1u]) && drum_oct_of(note)) {   /* classic octave bands */
         dxo_off(&trk[id - 1u], DXO_MIDI + (ch << 7) + source);
         if (!midi_local_held(&trk[id - 1u], drum_oct_base(note)))
             input_off(&trk[id - 1u], drum_oct_base(note));
@@ -132,6 +133,10 @@ static void midi_release(uint32_t ch, uint32_t note)
 /* a MIDI note-on (ch, note) of track t. A note another key or MIDI note holds already sounds: not started again */
 static void midi_play(track_t *t, uint32_t ch, uint32_t note, uint32_t vel)
 {
+    if(drum_track(t)&&drum_ext(t)) {
+        dxo_on(t,note,0,vel,DXO_MIDI+(ch<<7)+note);
+        return;
+    }
     if (drum_track(t) && drum_oct_of(note)) {          /* (0.8.5) the kit in another octave: its sound, ratcheted /
                                                          * damped (seq.c dxo_on) */
         dxo_on(t, drum_oct_base(note), drum_oct_of(note), vel, DXO_MIDI + (ch << 7) + note);

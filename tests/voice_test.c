@@ -177,7 +177,8 @@ static void check_cache(void)
     uint32_t k, bad_b = 0, miss = 0, used = 0, ntok = 0, bad_t = 0, nocache = 0;
     sing_init();
     for (k = 0; k < LYB_N; k++) {
-        const char *q = k < LYB_SCAT ? ly_word(&LY_BANK[1], k) : k < LYB_N - 1u ? SCAT_EN[k - LYB_SCAT] : VOCABLE[1];
+        char word[20];
+        const char *q = k < LYB_SCAT ? ly_word(&LY_BANK[1], k, word) : k < LYB_N - 1u ? SCAT_EN[k - LYB_SCAT] : VOCABLE[1];
         if (!lyb_at[k]) miss++;
         else {
             bad_b += !entry_is(&lyb_ph[lyb_at[k] - 1u], q, 64u);
@@ -478,7 +479,8 @@ static void check_reading(void)
             for (k = 0; k < nwds; k++) {
                 uint8_t ph[SW_MAX];
                 char nw2[24];
-                const char *w = ly_word(bk, k);
+                char word[20];
+                const char *w = ly_word(bk, k, word);
                 (void)sy_word(l, nw2, sy_norm(w, (uint32_t)strlen(w), nw2, sizeof nw2), ph, &n);
                 tot++;
                 if (n != (bk->meta[k] & 15u)) {
@@ -572,7 +574,8 @@ static void check_generator(void)
                     n = (uint32_t)(q - p);
                     if (!n) break;
                     for (w = 0; w < nwds && !found; w++) {
-                        const char *t = ly_word(bk, w);
+                        char word[20];
+                        const char *t = ly_word(bk, w, word);
                         found = strlen(t) == n && (!strncmp(t, p, n) ||
                                                    (l == LG_ES && !strncmp(t, p, n - 1u) && t[n - 1u] == 'o' && p[n - 1u] == 'a'));
                     }
@@ -1371,3 +1374,4 @@ int main(int argc, char **argv)
     printf("voice: %s\n", bad ? "FAILED" : "all checks ok");
     return bad != 0;
 }
+

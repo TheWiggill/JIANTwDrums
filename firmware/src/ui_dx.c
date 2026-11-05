@@ -16,7 +16,7 @@ static void dx_follow(void)
 {
     if (last_note != dx_ui_seen) {
         if (dx_ui_seen != 0xFFu)                     /* (the first look only takes note of it) */
-            dx_ui_lane = (uint8_t)drum_lane(last_note);
+            dx_ui_lane = (uint8_t)drum_note_lane(TSEL,last_note);
         dx_ui_seen = last_note;
     }
 }
@@ -98,7 +98,11 @@ static void dx_knob(const page_t *pg, uint32_t k, int32_t s)
  * 4 GLUE (the bus's, eng_drum.c dx_glue: KIT 3's free knob) */
 static void dx_kit3_knob(uint32_t k, int32_t s)
 {
-    if(cur_page()->title[4]=='4') { if(!k) dx_acoustic=(uint8_t)clamp((int32_t)dx_acoustic+s,0,127); return; }
+    if(cur_page()->title[4]=='4') {
+        if(!k) dx_acoustic=(uint8_t)clamp((int32_t)dx_acoustic+s,0,127);
+        if(k==1u) TSEL->p[P_DKEYMODE]=(int16_t)clamp(TSEL->p[P_DKEYMODE]+s,0,1);
+        return;
+    }
     uint32_t bp = DX_TONE_BP(dx_tone), fb = DX_TONE_FB(dx_tone);
     if (k == 0u) bp = (uint32_t)clamp((int32_t)bp + (s > 0 ? 1 : -1), 0, 15);
     else if (k == 1u) fb = (uint32_t)clamp((int32_t)fb + (s > 0 ? 1 : -1), 0, 15);
@@ -111,7 +115,8 @@ static void dx_kit3_cards(void)
     if(cur_page()->title[4]=='4') {
         char v[12];uint32_t c;fmt_int(v,dx_acoustic*100/127);
         hot_unit_column(0,"ACOUST",dx_acoustic?v:"OFF",dx_acoustic?"%":"");
-        for(c=1;c<4;c++) empty_column(c);
+        hot_unit_column(1,"KEY MAP",drum_ext(TSEL)?"EXTENDED":"CLASSIC","");
+        for(c=2;c<4;c++) empty_column(c);
         return;
     }
     uint32_t bp = DX_TONE_BP(dx_tone), fb = DX_TONE_FB(dx_tone);
@@ -203,11 +208,12 @@ static uint32_t dx_sig(void)
     const dx_lane_t *L = &dx_kit[dx_ui_lane & 7u];
     uint32_t h = (uint32_t)dx_ui_lane * 31u + dx_ui_side * 977u + L->mode * 131u, i;
     h ^= (uint32_t)dx_mot[0] << 24 ^ (uint32_t)dx_mot[1] << 16 ^ (uint32_t)dx_mot[2] << 8 ^ dx_mot[3];   /* (X-MOD) */
-    h = (h ^ (uint32_t)dx_acoustic << 16 ^ dx_tone ^ (uint32_t)dx_hands << 8 ^ (uint32_t)dx_glue << 12) * 2654435761u;   /* (TONE, HANDS, GLUE) */
+    h = (h ^ (uint32_t)TSEL->p[P_DKEYMODE] << 24 ^ (uint32_t)dx_acoustic << 16 ^ dx_tone ^ (uint32_t)dx_hands << 8 ^ (uint32_t)dx_glue << 12) * 2654435761u;   /* (TONE, HANDS, GLUE) */
     for (i = 0; i < DV_NLANE; i++)                      /* (0.6.48) the SENDs, (0.6.49) the LAYERs */
         h = (h ^ dx_snd[i] ^ (uint32_t)dx_lay[i] << 8) * 16777619u;
     for (i = 0; i < DXP_N; i++)
         h = (h ^ (uint32_t)L->a[i] << 8 ^ L->b[i]) * 16777619u;
     return h;
 }
+
 

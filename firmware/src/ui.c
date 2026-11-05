@@ -584,7 +584,7 @@ static int page_visible(uint32_t i)
         return e == ENGI_ANALOG || ENGINES[e] == &ENG_PHASE ||   /* (0.6.81: every ANALOG WAVE) */
                (ENGINES[e] == &ENG_LOFI && TSEL->p[P_E1] < RW_BYTE);
     }
-    if (PAGES[i].graph == GR_LYRIC)                     /* (0.8.5) WORDS: VOICE's */
+    if (PAGES[i].graph == GR_LYRIC || PAGES[i].graph == GR_LYRSTEP)
         return trk_engp(TSEL) == &ENG_FORMANT;
     if (PAGES[i].graph == GR_PATS || PAGES[i].graph == GR_CHANCE)   /* (0.6.37) PHRASES, a step's CHANCE: out of the */
         return !ui.home && ui.page == i;               /* SEQ pages' cycle (only where code put the screen) */
@@ -1179,6 +1179,31 @@ static void cursor_fix(void)                           /* LEN got shorter: onto 
 {
     if (ui.cursor >= (uint32_t)TSEL->p[P_SLEN])
         cursor_set(TSEL->p[P_SLEN] - 1);
+}
+/* Main-loop lyric selection. All phones/counters are temporary, the result is
+ * an ordinary POS lock in the existing motion store, leaving both components. */
+static uint8_t lyric_word, lyric_syl=1;
+static uint32_t lyric_pick(char *label)
+{
+    const char *txt=lyr_get(song.sel);
+    uint32_t p=0,a,b,mel,w=0,base=0,ns=0;
+    char word[20],nw[24];uint8_t ph[SW_MAX];
+    label[0]=0;
+    while(sy_tok(txt,p,&a,&b,&mel)) {
+        uint32_t i,m=0;
+        for(i=a;i<b&&m<19u;i++) word[m++]=txt[i];word[m]=0;
+        if(mel) ns=1;
+        else sy_word((uint32_t)clamp(TSEL->p[P_VLANG],1,LG_N-1),nw,
+                     sy_norm_lang((uint32_t)TSEL->p[P_VLANG],word,m,nw,sizeof nw),ph,&ns);
+        if(w++>=lyric_word || !txt[b]) {
+            lyric_word=(uint8_t)(w-1u);
+            if(lyric_syl>ns) lyric_syl=(uint8_t)ns;
+            str_cpy(label,word,20);
+            return !lyric_syl?0u:(uint32_t)clamp((int32_t)(base+lyric_syl),1,127);
+        }
+        base+=ns;p=b;
+    }
+    return 0;
 }
 
 static void note_name(char *b, uint32_t n)
@@ -1939,7 +1964,7 @@ static uint32_t act_cols(void)                   /* the columns that are actions
     if (pg->graph == GR_MOTION || pg->graph == GR_PUNCH) return 8u;   /* (0.6.99) PUNCH: KNOB 4 CLEAR */
     if (pg->graph == GR_EVENTS) return 16u;     /* AUTO LIST: no knob is an action; OCT+ adds / toggles (ev_oct) */
     if (pg->graph == GR_TOOLS) return 15u;
-    if (pg->graph == GR_LYRIC) return 8u;       /* (0.8.5) WORDS: OCT+ TYPE (the lyric, ui_name.c) */
+    if (pg->graph == GR_LYRIC || pg->graph==GR_LYRSTEP) return 8u;
     if (pg->graph == GR_SONG)
         return 1u;                               /* (0.8.5) ADD a row (PLAY: the song) */
     if (pg->graph == GR_PATS)
@@ -1967,7 +1992,7 @@ static uint32_t act_col(void)
 {
     if (!ui.home && cur_page()->graph == GR_SONG) return 1u;
     if (!ui.home && cur_page()->graph == GR_EVENTS) return 5u;
-    if (!ui.home && cur_page()->graph == GR_LYRIC) return 4u;
+    if (!ui.home && (cur_page()->graph == GR_LYRIC || cur_page()->graph==GR_LYRSTEP)) return 4u;
     return !ui.home && cur_page()->graph == GR_PATS ? 2u : ui.act;
 }
 
@@ -1980,6 +2005,7 @@ static const char *act_name(uint32_t c)          /* column c's action (the foote
     if (cur_page()->graph == GR_MOTION) return "CLEAR";
     if (cur_page()->graph == GR_EVENTS) return ev_act_name();
     if (cur_page()->graph == GR_LYRIC) return "TYPE";
+    if (cur_page()->graph == GR_LYRSTEP) return "PLACE";
     if (cur_page()->graph == GR_TOOLS) {
         static const char *const actions[] = {"CLEAR", "INIT", "DELETE", "CLEAR", "INIT"};
         return actions[c < 5u ? c : 4u];
@@ -2006,6 +2032,7 @@ static int act_ready(void)
     if (cur_page()->graph == GR_MOTION) return !chain_busy() && motion_count(TSEL);
     if (cur_page()->graph == GR_EVENTS) return ev_act_ready();
     if (cur_page()->graph == GR_LYRIC) return 1;
+    if (cur_page()->graph == GR_LYRSTEP) return !chain_busy() && lyr_get(song.sel)[0];
     if (cur_page()->graph == GR_TOOLS)                  /* one case per column: CLEAR PAT, INIT, DELETE ROW, CLEAR SONG */
         return !chain_busy() && (c == 0u ? !seq_is_empty(TSEL) || motion_count(TSEL) : c == 1u || c >= 4u ? 1 :
                                  c == 2u ? ui.song_row < chain_config.count : chain_config.count != 0u);
