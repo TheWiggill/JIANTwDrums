@@ -1092,12 +1092,12 @@ static int black_held(uint32_t p)
 
 /* lane l of step s from now on is its hit alone: the step's lane notes become hits (nothing sounds different),
  * a note of another pitch on the lane (a low tom 41) becomes the lane's own */
-static void grid_own(step_t *s, uint32_t l)
+static void grid_own(track_t *t, step_t *s, uint32_t l)
 {
     uint32_t k, j = 0;
     step_to_grid(s);
     for (k = 0; k < s->n; k++)
-        if (drum_lane(s->note[k]) == l)
+        if (drum_note_lane(t,s->note[k]) == l)
             s->hit |= (uint8_t)(1u << l);
         else
             s->note[j++] = s->note[k];
@@ -1112,14 +1112,14 @@ static void grid_hit(track_t *t, uint32_t i, uint32_t l, uint32_t on)
     step_t *s = &t->step[i % NSTEP];
     uint32_t b = 1u << (l % NLANE);
     if (on == 2u)
-        on = !(step_lanes(s) & b);
+        on = !(step_lanes_of(t,s) & b);
     if (s->time != ST_NOTE) {                    /* a REST or a TIE: an empty step (nothing to turn off) */
         if (!on)
             return;
         step_clear(s);
         s->time = ST_NOTE;
     }
-    grid_own(s, l % NLANE);
+    grid_own(t,s, l % NLANE);
     if (on) {
         s->hit |= (uint8_t)b;
     } else {
@@ -1134,7 +1134,7 @@ static void grid_hit(track_t *t, uint32_t i, uint32_t l, uint32_t on)
 static const char *const GRID_HIT[LM_N + 1] = {"--", "ON", "x2", "x4", "x8", "SHORT", "GHOST", "FLAM"};
 static uint32_t grid_hit_of(const step_t *s, uint32_t l)
 {
-    return (step_lanes(s) >> (l % NLANE)) & 1u ? 1u + step_lmode(s, l) : 0u;
+    return (step_lanes_of(TSEL,s) >> (l % NLANE)) & 1u ? 1u + step_lmode(s, l) : 0u;
 }
 static void grid_hit_set(track_t *t, uint32_t i, uint32_t l, uint32_t v)
 {
@@ -1152,12 +1152,12 @@ static void grid_acc(track_t *t, uint32_t i, uint32_t l, uint32_t on)
     step_t *s = &t->step[i % NSTEP];
     uint32_t b = 1u << (l % NLANE);
     if (on == 2u)
-        on = !(step_accents(s) & b);
+        on = !(step_accents_of(t,s) & b);
     if (on)
         grid_hit(t, i, l, 1);
-    if (!(step_lanes(s) & b))
+    if (!(step_lanes_of(t,s) & b))
         return;
-    grid_own(s, l % NLANE);
+    grid_own(t,s, l % NLANE);
     if (s->flags & SF_ACCENT) {                  /* a step accent: each hit's own from now on */
         s->acc |= s->hit;
         s->flags &= (uint8_t)~SF_ACCENT;
@@ -1195,7 +1195,8 @@ static uint32_t lyric_pick(char *label)
         if(mel) ns=1;
         else sy_word((uint32_t)clamp(TSEL->p[P_VLANG],1,LG_N-1),nw,
                      sy_norm_lang((uint32_t)TSEL->p[P_VLANG],word,m,nw,sizeof nw),ph,&ns);
-        if(w++>=lyric_word || !txt[b]) {
+        uint32_t na,nb,nmel;
+        if(w++>=lyric_word || !sy_tok(txt,b,&na,&nb,&nmel)) {
             lyric_word=(uint8_t)(w-1u);
             if(lyric_syl>ns) lyric_syl=(uint8_t)ns;
             str_cpy(label,word,20);

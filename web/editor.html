@@ -196,8 +196,11 @@
       <p class="dim" data-t="lyricHelp"></p>
       <p class="bar"><label><span data-t="lyricLang"></span> <select id="lyrlang"></select></label>
         <label><span data-t="lyricSrc"></span> <select id="lyrsrc"></select></label></p>
-      <p class="bar"><input id="lyric" maxlength="63" size="56" autocomplete="off" spellcheck="false">
-        <button id="lyricsend" data-t="lyricSend"></button></p></div>
+      <p class="bar"><input id="lyric" maxlength="256" size="56" autocomplete="off" spellcheck="false">
+        <button id="lyricsend" data-t="lyricSend"></button></p>
+      <p class="dim" id="lyric-preview" aria-live="polite"></p>
+      <p class="dim">RU: transliteración automática / automatic transliteration. ZH: pinyin.
+        SEQ → LYRIC STEP: STEP, WORD, SYLLABLE, OCT+ PLACE. TEXT FIXED + POS repite la sílaba elegida / repeats the selected syllable. SYLLABLE 0 = AUTO.</p></div>
   </section>
 
   <section class="panel" id="p-fm6" data-tab="fm6" data-dev hidden>
@@ -601,9 +604,23 @@ const parse = {
 
 /* (JIANT 0.8.5) a lyric the device takes: printable ASCII, at most 63 characters; accents dropped (the device has none:
    stress is not marked in singing), the enye as "ny" (as the device reads it: sing.c sy_es) */
-function lyricText(s) {
-  return String(s ?? "").replace(/[ñÑ]/g, (c) => (c === "ñ" ? "ny" : "NY")).normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[¿¡]/g, "").replace(/[^\x20-\x7E]/g, " ").slice(0, 63);
+function lyricText(s, language = "") {
+  let text = String(s ?? "").replace(/[’‘]/g, "'");
+  if (language === "RU") {
+    const abc = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя";
+    const latin = ["a","b","v","g","d","e","yo","zh","z","i","y","k","l","m","n","o","p","r","s","t","u","f","kh","ts","ch","sh","shch","","y","","e","yu","ya"];
+    text = text.replace(/[а-яё]/gi, c => latin[abc.indexOf(c.toLowerCase())]);
+  }
+  if (language === "DE") text = text.replace(/[äöüß]/gi, c => ({ä:"ae",ö:"oe",ü:"ue",ß:"ss"})[c.toLowerCase()]);
+  if (language === "ZH") text = text.replace(/[üǖǘǚǜ]/gi, "v");
+  if (language === "FR") text = text.replace(/[é]/gi, "ei").replace(/[èê]/gi, "eh").replace(/[œ]/gi, "oe")
+    .replace(/(?:an|en)(?=[^aeiouy]|$)/gi,"a~").replace(/on(?=[^aeiouy]|$)/gi,"o~").replace(/(?:in|ain)(?=[^aeiouy]|$)/gi,"e~");
+  if (language === "PT" || language === "GN") text = text.normalize("NFD").replace(/([aeiouy])\u0303/gi,"$1~");
+  text = text.replace(/[çÇ]/g,"s").replace(/[ñÑ]/g, c => c === "ñ" ? "ny" : "NY").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[¿¡]/g, "");
+  if (language && /[^\x20-\x7E\r\n\t]/.test(text)) throw new Error("Usá letras latinas / Use Latin transliteration (ZH: pinyin).");
+  text = text.replace(/[\r\n\t]/g," ").replace(/[^\x20-\x7E]/g, " ");
+  if (language && text.length > 63) throw new Error(`${text.length}/63: acortá la letra transliterada / shorten the transliterated lyric.`);
+  return text.slice(0,63);
 }
 /* a name the device accepts: printable ASCII, 1..12 characters */
 function upName(s) { return String(s ?? "").replace(/[^\x20-\x7E]/g, "").trim().slice(0, UP.NAME_MAX) || "PATCH"; }
@@ -3120,18 +3137,25 @@ async function lyricRead(d = dev) {
 $("lyricsend").addEventListener("click", () => {
   if (!lyricShown()) return;
   op(async () => {
-    const r = parse[CMD.LYRIC](await rq(req.lyric(dev.sel || 0, $("lyric").value)));
+    const text = lyricText($("lyric").value, LYR_LANG[+$("lyrlang").value]);
+    const r = parse[CMD.LYRIC](await rq(req.lyric(dev.sel || 0, text)));
     $("lyric").value = r.text;
     sayK("lyricSent");
   });
 });
 /* LANG (P_VLANG, id 61) and LYRIC (P_VLYR, id 74): VOICE's words, in other engines' slots (sing.c) */
-const LYR_LANG = ["OFF", "ES", "EN", "JA"];
-const LYR_SRC = ["TEXT", ...Array.from({ length: 16 }, (_, i) => `W${i + 1}`), ...Array.from({ length: 8 }, (_, i) => `S${i + 1}`)];
+const LYR_LANG = ["OFF", "ES", "EN", "JA", "RU", "DE", "FR", "ZH", "PT", "GN"];
+const LYR_SRC = ["TEXT", ...Array.from({ length: 16 }, (_, i) => `W${i + 1}`), ...Array.from({ length: 8 }, (_, i) => `S${i + 1}`), "TEXT FIXED"];
+function lyricPreview() {
+  try { const text=lyricText($("lyric").value,LYR_LANG[+$("lyrlang").value]); $("lyric-preview").textContent=`${text.length}/63 · ${text}`; }
+  catch(e) { $("lyric-preview").textContent=e.message; }
+}
+$("lyric").addEventListener("input",lyricPreview);
 const LYR_ID = { lang: 61, src: 74 };
 for (const [id, names, key] of [["lyrlang", LYR_LANG, "lang"], ["lyrsrc", LYR_SRC, "src"]]) {
   $(id).replaceChildren(...names.map((n, i) => el("option", { value: i, text: n })));
   $(id).addEventListener("change", () => {
+    lyricPreview();
     if (!lyricShown()) return;
     op(async () => { parse[CMD.SET](await rq(req.set(0, LYR_ID[key], +$(id).value))); dev.dump = await getDump(); refreshAll(); });
   });
@@ -3141,8 +3165,8 @@ function updateBrowser() {
   const sel = $("engine");
   $("lyricbox").hidden = !lyricShown();
   if (lyricShown()) {
-    if (document.activeElement !== $("lyrlang")) $("lyrlang").value = String(Math.max(0, Math.min(3, dev.dump.p[LYR_ID.lang] | 0)));
-    if (document.activeElement !== $("lyrsrc")) $("lyrsrc").value = String(Math.max(0, Math.min(24, dev.dump.p[LYR_ID.src] | 0)));
+    if (document.activeElement !== $("lyrlang")) $("lyrlang").value = String(Math.max(0, Math.min(9, dev.dump.p[LYR_ID.lang] | 0)));
+    if (document.activeElement !== $("lyrsrc")) $("lyrsrc").value = String(Math.max(0, Math.min(25, dev.dump.p[LYR_ID.src] | 0)));
   }
   renderTrackbar();
   if (document.activeElement !== sel) sel.value = String(e);

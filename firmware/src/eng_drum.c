@@ -206,18 +206,21 @@ static const char *drum_lane_abbr(const track_t *t, uint32_t l)
 }
 
 /* the lanes step s strikes: its hits, and its notes on their lanes (a NOTE step only) */
-static uint32_t step_lanes(const step_t *s)
+static uint32_t step_lanes_of(const track_t *t, const step_t *s)
 {
     uint32_t m = 0, i;
     if (s->time != ST_NOTE)
         return 0;
     for (i = 0; i < s->n && i < 4u; i++)
-        m |= 1u << drum_lane(s->note[i]);
+        m |= 1u << (t&&t->engine==ENGI_DRUM?drum_note_lane(t,s->note[i]):drum_lane(s->note[i]));
     return m | s->hit;
 }
 
 /* .. and which of them are accented */
-static uint32_t step_accents(const step_t *s) { return s->flags & SF_ACCENT ? step_lanes(s) : s->acc & step_lanes(s); }
+static uint32_t step_lanes(const step_t *s) {return step_lanes_of(0,s);}
+static uint32_t step_accents_of(const track_t *t,const step_t *s)
+{return s->flags&SF_ACCENT?step_lanes_of(t,s):s->acc&step_lanes_of(t,s);}
+static uint32_t step_accents(const step_t *s) { return step_accents_of(0,s); }
 
 /* a step's notes that are a lane's note become that lane's hits (the same note, the same velocity: nothing
  * sounds different). Other notes (a low tom 41, a crash 49) stay notes, shown on their lane. A step accent
@@ -382,7 +385,8 @@ static uint32_t drum_hit_fx(const drum_lane_t *L)
 static uint32_t drum_send(const track_t *t, uint32_t l)
 {
     drum_lane_t *K=drum_kit_of(t);
-    uint32_t f=K&&K[l&7u].owner ? drum_hit_fx(&K[l&7u]) : 0;
+    const drum_lane_t *L=K?&K[l&7u]:0;
+    uint32_t f=L&&L->owner&&(L->x.live||L->x.trig||L->fl) ? drum_hit_fx(L) : 0;
     return f&DXF_REV ? 255u : f&DXF_DLY ? 191u : dx_snd[l&7u];
 }
 /* (JIANT 0.7.8) a core's own (mod.c's mod_c the same way): the two cores render two parts at once (fx.c mix_block), and

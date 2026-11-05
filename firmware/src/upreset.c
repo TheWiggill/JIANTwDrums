@@ -383,12 +383,12 @@ static int up_store(uint32_t k, const char *name)
     if (drum_track(TSEL)) {                             /* a DRUM track that strikes a lane: its grid */
         uint32_t any = 0;
         for (i = 0; i < 16u; i++)
-            any |= step_lanes(&TSEL->step[i]);
+            any |= step_lanes_of(TSEL,&TSEL->step[i]);
         if (any) {
             r.ver = UP_VER_GRID;
             for (i = 0; i < 16u; i++) {
-                r.note[i] = (uint8_t)step_lanes(&TSEL->step[i]);
-                r.flags[i] = (uint8_t)step_accents(&TSEL->step[i]);
+                r.note[i] = (uint8_t)step_lanes_of(TSEL,&TSEL->step[i]);
+                r.flags[i] = (uint8_t)step_accents_of(TSEL,&TSEL->step[i]);
             }
         }
     }

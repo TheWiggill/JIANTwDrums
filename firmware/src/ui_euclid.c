@@ -40,7 +40,7 @@ typedef struct { int16_t slen; step_t st[NSTEP]; } eu_bk_t;
 static eu_bk_t eu_bk __attribute__((section(".eu_keep")));
 static uint8_t eu_bk_k = 0xFF;                          /* the track eu_bk holds (0xFF: none) */
 static void eu_anchor(uint32_t k) { memcpy(eu_z[k % NTRK], (uint8_t *)&eu[k % NTRK] + EU_Z0, EU_ZN); eu_zs[k % NTRK] = eu[k % NTRK].seed; }
-static uint32_t eu_val(const track_t *t, const step_t *s) { return drum_track(t) ? step_lanes(s) & 0xFFu : s->time == ST_NOTE && s->n ? s->note[0] : 0u; }
+static uint32_t eu_val(const track_t *t, const step_t *s) { return drum_track(t) ? step_lanes_of(t,s) & 0xFFu : s->time == ST_NOTE && s->n ? s->note[0] : 0u; }
 
 static uint32_t eu_rnd(void) { eu_s ^= eu_s << 13; eu_s ^= eu_s >> 17; eu_s ^= eu_s << 5; return eu_s; }
 static uint32_t eu_ch(uint32_t pct) { return eu_rnd() % 100u < pct; }
@@ -88,7 +88,7 @@ static void eu_take(uint32_t k, eu_t *e)
         const step_t *s = &t->step[i];
         uint32_t v = 0;
         if (i < len && !(pat_last[k] && sg == pat_sig[k]))
-            v = dr ? step_lanes(s) & 0xFFu : s->time == ST_NOTE && s->n ? (uint32_t)clamp(s->note[0], 2, 127) | (s->n > 1u ? 0x80u : 0u)
+            v = dr ? step_lanes_of(t,s) & 0xFFu : s->time == ST_NOTE && s->n ? (uint32_t)clamp(s->note[0], 2, 127) | (s->n > 1u ? 0x80u : 0u)
               : i && s->time == ST_TIE && eu_src[k][i - 1u] ? 1u : 0u;
         eu_src[k][i] = (uint8_t)v;
         h += dr ? v != 0u : v > 1u;
@@ -275,7 +275,7 @@ static void eu_drums(track_t *t, eu_t *e, uint32_t only)
         }
     }
     for (i = 0; !only && i < len; i++)                   /* (ALL: the open hat chokes the closed one) */
-        if ((step_lanes(&t->step[i]) >> 4) & 1u) grid_hit(t, i, 3, 0);
+        if ((step_lanes_of(t,&t->step[i]) >> 4) & 1u) grid_hit(t, i, 3, 0);
 }
 
 /* (V10.28) note nt moved up k notes of the key */
@@ -519,8 +519,8 @@ static void eu_ring(const track_t *t, int32_t cx, int32_t cy, int32_t rad, uint3
         uint32_t a = i * 65536u / n + 49152u;
         int32_t x = cx + ((rad * og_cos(a)) >> 15), y = cy + ((rad * og_sin(a)) >> 15), r;
         const step_t *s = &t->step[base + i];
-        uint32_t hit = lane < NLANE ? (step_lanes(s) >> lane) & 1u : s->time == ST_NOTE && s->n;
-        uint32_t acc = lane < NLANE && hit && ((step_accents(s) >> lane) & 1u);
+        uint32_t hit = lane < NLANE ? (step_lanes_of(t,s) >> lane) & 1u : s->time == ST_NOTE && s->n;
+        uint32_t acc = lane < NLANE && hit && ((step_accents_of(t,s) >> lane) & 1u);
         if (!hit) { if (lit) cv_rect(x, y, 1, 1, T_DIM); continue; }
         r = acc ? 3 : n > 24u ? 1 : 2;
         cv_rect(x - r, y - r, 2 * r + 1, 2 * r + 1, i == now && lit ? T_TEXT : col);
@@ -676,3 +676,4 @@ static void graph_euclid(const track_t *t)
         cv_text_in(x0, y0 + rh + 6, w, &AF_X, b, e->src == 7u ? T_ACCENT : T_MID, T_SURF);
     }
 }
+

@@ -588,7 +588,7 @@ static uint32_t ly_char(const ly_bank_t *b, uint32_t bit)
     uint32_t byte=bit>>3;
     return ((uint32_t)b->txt[byte]<<8|b->txt[byte+1u])>>(11u-(bit&7u))&31u;
 }
-static const char *ly_word(const ly_bank_t *b, uint32_t j, char *out)
+static __attribute__((noinline)) const char *ly_word(const ly_bank_t *b, uint32_t j, char *out)
 {
     uint32_t bit=b->off[j>>4],c,m=0;
     for(j&=15u;j;j--) do {c=ly_char(b,bit);bit+=5u;} while(c);

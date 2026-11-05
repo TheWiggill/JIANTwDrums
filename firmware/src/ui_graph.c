@@ -616,9 +616,9 @@ static void bar_cell(const track_t *t, uint32_t b, int32_t x, int32_t y, int32_t
             continue;
         if (dr) {
             for (l = 0; l < NLANE; l++)
-                if ((step_lanes(st) >> l) & 1u)
+                if ((step_lanes_of(TSEL,st) >> l) & 1u)
                     cv_rect(sx, top + (int32_t)l * nh / (int32_t)NLANE, mw, nh / (int32_t)NLANE > 2 ? 2 : 1,
-                            lz_note(st, (step_accents(st) >> l) & 1u, c));
+                            lz_note(st, (step_accents_of(TSEL,st) >> l) & 1u, c));
             continue;
         }
         cv_rect(sx, top + nh - 2 - ((int32_t)st->note[0] - lo) * (nh - 2) / (hi - lo), mw, 2,
@@ -877,10 +877,10 @@ static void graph_grid(const track_t *t, uint16_t c)
             const step_t *st = &seq_steps(t)[base + i];
             uint32_t b = 1u << l;
             int32_t x = 40 + (int32_t)i * 12;
-            if ((step_lanes(st) & b) && step_ratchet(st) > 1u)
-                pr_split(x, y + hy, 10, 10, lz_note(st, step_accents(st) & b, c), step_ratchet(st));
-            else if (step_lanes(st) & b)
-                cv_rect(x, y + hy, 10, 10, lz_note(st, step_accents(st) & b, c));
+            if ((step_lanes_of(TSEL,st) & b) && step_ratchet(st) > 1u)
+                pr_split(x, y + hy, 10, 10, lz_note(st, step_accents_of(TSEL,st) & b, c), step_ratchet(st));
+            else if (step_lanes_of(TSEL,st) & b)
+                cv_rect(x, y + hy, 10, 10, lz_note(st, step_accents_of(TSEL,st) & b, c));
             else
                 cv_rect(x + 4, y + hy + 4, 2, 2, i % 4u == 0u || sel ? T_MID : T_DIM);
             if (sel && base + i == ui.cursor)          /* the cursor: a 1 px frame */

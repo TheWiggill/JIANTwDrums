@@ -47,12 +47,10 @@ static uint32_t sy_ext(uint32_t lang, const char *w, uint32_t n, uint8_t *tc, ui
             if(!r->s[k]) { a=r->a;b=r->b;break; }
         }
         if(j==NELEM(SY_RULES)) {
-            uint8_t c[SW_MAX],t[SW_MAX];
-            /* Shared single-letter consonants and vowels. Contextual soft c/g
-             * and silent h follow the established Spanish reader. */
+            static const uint8_t letters[26]={PH_A,PH_B,PH_K,PH_D,PH_E,PH_F,PH_G,0,PH_I,PH_X,
+                PH_K,PH_L,PH_M,PH_N,PH_O,PH_P,PH_K,PH_RT,PH_S,PH_T,PH_U,PH_V,PH_W,PH_S,PH_Y,PH_Z};
             k=1;
-            uint32_t z=sy_es_tok(w+i,1,c,t);
-            if(z) a=c[0];
+            if(w[i]>='a'&&w[i]<='z') a=letters[(uint32_t)(w[i]-'a')];
             if((lang==LG_FR||lang==LG_PT) && i+1u<n && (w[i+1u]=='e'||w[i+1u]=='i')) {
                 if(w[i]=='c') a=PH_S;
                 if(w[i]=='g') a=PH_ZH;
@@ -66,14 +64,13 @@ static uint32_t sy_ext(uint32_t lang, const char *w, uint32_t n, uint8_t *tc, ui
 }
 /* Two original seed words per theme; free TEXT is the intentional lyric mode.
  * No copied dictionaries, extra cache or phoneme inventory. */
-static const char *const SY_EXT_WORDS[] = {
- "lyubov\0serdtse\0noch\0luna\0more\0volna\0nebo\0zvezda\0mir\0pesnya\0doroga\0veter\0son\0mechta\0ogon\0iskra",
- "liebe\0herz\0nacht\0mond\0meer\0welle\0himmel\0stern\0welt\0lied\0weg\0wind\0traum\0schlaf\0feuer\0licht",
- "amour\0coeur\0nuit\0lune\0mer\0vague\0ciel\0soleil\0monde\0chanson\0route\0vent\0reve\0dormir\0feu\0flamme",
- "ai\0xin\0ye\0yue\0hai\0lang\0tian\0xing\0ren\0ge\0lu\0feng\0meng\0shui\0huo\0guang",
- "amor\0coracao~\0noite\0lua\0mar\0onda\0ceu\0estrela\0mundo\0canto\0caminho\0vento\0sonho\0dormir\0fogo\0luz",
- "mborayhu\0coraso~\0pyhare\0jasy\0para\0y\0yvaga\0mbyja\0ava\0purahei\0tape\0yvytu\0kerana\0ke\0tata\0tesape"
-};
+static const char SY_EXT_WORD_0[] LY_DICT_SEC = "lyubov\0serdtse\0noch\0luna\0more\0volna\0nebo\0zvezda\0mir\0pesnya\0doroga\0veter\0son\0mechta\0ogon\0iskra";
+static const char SY_EXT_WORD_1[] LY_DICT_SEC = "liebe\0herz\0nacht\0mond\0meer\0welle\0himmel\0stern\0welt\0lied\0weg\0wind\0traum\0schlaf\0feuer\0licht";
+static const char SY_EXT_WORD_2[] LY_DICT_SEC = "amour\0coeur\0nuit\0lune\0mer\0vague\0ciel\0soleil\0monde\0chanson\0route\0vent\0reve\0dormir\0feu\0flamme";
+static const char SY_EXT_WORD_3[] LY_DICT_SEC = "ai\0xin\0ye\0yue\0hai\0lang\0tian\0xing\0ren\0ge\0lu\0feng\0meng\0shui\0huo\0guang";
+static const char SY_EXT_WORD_4[] LY_DICT_SEC = "amor\0coracao~\0noite\0lua\0mar\0onda\0ceu\0estrela\0mundo\0canto\0caminho\0vento\0sonho\0dormir\0fogo\0luz";
+static const char SY_EXT_WORD_5[] LY_DICT_SEC = "mborayhu\0coraso~\0pyhare\0jasy\0para\0y\0yvaga\0mbyja\0ava\0purahei\0tape\0yvytu\0kerana\0ke\0tata\0tesape";
+static const char *const SY_EXT_WORDS[] = {SY_EXT_WORD_0, SY_EXT_WORD_1, SY_EXT_WORD_2, SY_EXT_WORD_3, SY_EXT_WORD_4, SY_EXT_WORD_5};
 #undef LR
 #undef LD
 #undef LF

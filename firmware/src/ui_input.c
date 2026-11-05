@@ -117,7 +117,7 @@ static uint32_t grid_leds(void)
         uint32_t p = key_place(k), on;
         if (!key_black(k)) {
             uint32_t i = ui.bank * 16u + p;
-            on = i < len && ((acc ? step_accents(&seq_steps(t)[i]) : step_lanes(&seq_steps(t)[i])) & b) != 0u;
+            on = i < len && ((acc ? step_accents_of(TSEL,&seq_steps(t)[i]) : step_lanes_of(TSEL,&seq_steps(t)[i])) & b) != 0u;
             on ^= (uint32_t)(p == ph);
         } else {
             on = p < NLANE ? p == ui.lane : p == GK_ACC ? acc : len > 16u;
@@ -141,7 +141,7 @@ static uint32_t grid_beats(void)
         uint32_t p = key_place(k), i = ui.bank * 16u + p;
         if (key_black(k) || p % 4u || i >= len || p == ph)
             continue;
-        m |= (uint32_t)(((acc ? step_accents(&seq_steps(t)[i]) : step_lanes(&seq_steps(t)[i])) & b) == 0u) << k;
+        m |= (uint32_t)(((acc ? step_accents_of(TSEL,&seq_steps(t)[i]) : step_lanes_of(TSEL,&seq_steps(t)[i])) & b) == 0u) << k;
     }
     return m;
 }
@@ -624,7 +624,7 @@ static void grid_keys(uint32_t pressed)
                 const step_t *st = &TSEL->step[i];
                 uint64_t b = (uint64_t)1 << i;
                 uint32_t acc = (uint32_t)black_held(GK_ACC);
-                if (((acc ? step_accents(st) : step_lanes(st)) >> ui.lane) & 1u) {
+                if (((acc ? step_accents_of(TSEL,st) : step_lanes_of(TSEL,st)) >> ui.lane) & 1u) {
                     ui.plk_rm |= b;
                     ui.plk_acc = acc ? ui.plk_acc | b : ui.plk_acc & ~b;
                     ui.plk_lane = ui.lane;
