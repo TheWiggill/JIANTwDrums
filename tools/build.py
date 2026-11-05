@@ -509,6 +509,8 @@ def build_app():
         layout_ld(rows)
         mapt, syms = link(probe=True)
         fills, hole, lost = layout_fills(rows, sym_table(syms), map_inputs(mapt), aligns)
+        print(f"layout packing: {hole} B gaps, {lost} B padding, {sum(map(len, fills.values()))} UI tables/strings packed", flush=True)
+        print("UI string candidates:", sum(1 for n in aligns if n.startswith(".str")), flush=True)
         layout_ld(rows, fills)
         mapt, syms = link()
         moved = layout_check(rows, mapt, sym_table(syms))
