@@ -297,7 +297,7 @@ def late_fns():
     # REC arming is UI-only; keep its undo checkpoint out of the pinned DSP gaps.
     names = {"rec_tap", "ly_keyname",
              # Only the overflowing UI gaps move: keep all audio addresses pinned without wasting large holes.
-             "fm1_irq_on", "large_kind", "draw_confirm", "vx_analog", "toast_clear", "draw_text_box"}
+             "fm1_irq_on", "large_kind", "draw_confirm", "vx_analog", "toast_clear", "draw_text_box", "as_mix"}
     for f in LATE_SRC:
         names |= set(re.findall(r"^static [^;=()]*?\b(\w+)\((?![^)]*\)\s*;)", (FW / "src" / f).read_text(), flags=re.M))
     return names
@@ -348,6 +348,24 @@ def layout_fills(rows, symt, ins, aligns):
                 pos = at + sz
         lost += hi - pos
     return fills, sum(hi - lo for _, lo, hi in holes), lost
+
+
+def layout_room(rows, objs):
+    """Report all grown pinned gaps before linking, without changing any addresses or guards."""
+    headers = tc("common/bin/objdump", "-h", *objs)
+    sections = {name: int(size, 16) for name, size in re.findall(
+        r"^\s*\d+\s+(\.text\.\S+)\s+([0-9a-fA-F]+)\s+", headers, re.M)}
+    pos, ui, late = 0, [], late_fns()
+    for off, flag, name in rows:
+        if flag == "@":
+            if pos > off:
+                print(f"layout gap: {name} exceeds pinned address by {pos - off} B; preceding UI: {', '.join(ui)}", flush=True)
+            pos, ui = off, []
+        if flag in "@a" or (flag == "-" and name not in late):
+            pos = (pos + 1) & ~1
+            pos += sections.get(".text." + name, 0)
+            if flag == "-" and ".text." + name in sections:
+                ui.append(name)
 
 
 def layout_check(rows, mapt, symt):
@@ -480,6 +498,7 @@ def build_app():
             layout_write([f"{(symt[n] - APP_XIP) if f in 'cr' and n in symt else o:06x} {f} {n}" for o, f, n in rows])
         rows = layout_read()
         aligns = compile_hot(rows)
+        layout_room(rows, objs)
         layout_ld(rows)
         mapt, syms = link(probe=True)
         fills, hole, lost = layout_fills(rows, sym_table(syms), map_inputs(mapt), aligns)
