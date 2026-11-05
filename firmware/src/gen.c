@@ -1745,7 +1745,7 @@ static void gen_parts(void)
     uint8_t pdeg[4], pq[4], pn = gs.pn;
     const uint8_t *ord;
     uint32_t nord;
-    if (form == FM_LOOP) return;
+    if (form == FM_LOOP) { section_store(0); dice_secs |= 1u; return; }
     gseed(GS_FORM);
     live.cur = -1;
     section_store(0);                                   /* A: the whole piece */
@@ -2463,18 +2463,17 @@ static void gen_go(void)
 {
     uint32_t k;
     char b[8];
+    uint32_t play = song.playing || chain_busy() || seq_counting();
+    if (play) {
+        fm1_irq_off(); seq_stop(); transport_req = 0; fm1_irq_on();
+        song_poll();
+    }
     gform_kept = 0;
-    /* Refuse before gen_clean: a requested SONG must not silently become a loop
-     * while also erasing the current arrangement. Never overwrite saved A-D. */
-    if (gp.form)
-        for (k = 0; k < 4u; k++)
-            if (project_used(k) && !((dice_secs >> k) & 1u)) {
-                gform_kept = 1;
-                ui_message("A-D SAVED");
-                str_cpy(ui.msg2, "USE AN EMPTY PROJECT", sizeof ui.msg2);
-                return;
-            }
     undo_mark();
+    if (song_draft_begin()) {
+        if (play) { if (live.mode) chain_play_ui(); else transport_req = 1; }
+        return;
+    }
     gen_make();
     str_cpy(gp.last, gs.g->name, sizeof gp.last);
     k = str_len(gp.last);
@@ -2483,6 +2482,7 @@ static void gen_go(void)
     str_cpy(gp.last + k, b, sizeof gp.last - k);
     ui_say("GEN: ", gp.last);
     str_cpy(ui.msg2, live.mode ? "PLAY: SONG / SAVE: ALL PARTS" : "UNDO: GLO + G4", sizeof ui.msg2);
+    if (play) { if (live.mode) chain_play_ui(); else transport_req = 1; }
     ui.force = 1;
 }
 static uint32_t gen_sig(void)                           /* the settings that make the piece */
@@ -2653,9 +2653,9 @@ static const char *dice_seq(track_t *t)
 }
 
 /* ------------------------------------------------------------------------------------------- the GEN screen --- */
-static const char *const GEN_LBL[3][4] = {{"GENRE", "SEED", "ENERGY", "FORM"}, {"DRUMS", "BASS", "CHORDS", "ARP"},
+static const char *const GEN_LBL[3][4] BTAPP_RO = {{"GENRE", "SEED", "ENERGY", "FORM"}, {"DRUMS", "BASS", "CHORDS", "ARP"},
                                           {"LEAD", "COMPLEX", "SWING", "HUMAN"}};
-static const char *const GEN_FORM[3] = {"LOOP", "PARTS", "SONG"};
+static const char *const GEN_FORM[3] BTAPP_RO = {"LOOP", "PARTS", "SONG"};
 static uint8_t gen_fresh;                               /* (0.6.96) the screen's first frame: the body cleared once */
 static void gen_open(void)
 {
@@ -2705,7 +2705,7 @@ static void gen_page_put(uint32_t p)                     /* (0.9.2) GEN 1..3: HO
     gp.page = (uint8_t)(p % 3u);
     ui.force = 1;
 }
-static void gen_value(uint32_t p, uint32_t k, char *b)
+BTAPP_FN static void gen_value(uint32_t p, uint32_t k, char *b)
 {
     uint32_t v;
     b[0] = 0;
@@ -2727,7 +2727,7 @@ static void gen_value(uint32_t p, uint32_t k, char *b)
 /* (0.8.5) GEN in HOME's lens (ui_lens.c, the mock-up's GEN level): its four settings on the cards, the panel the five
  * parts as rows (the ones the page's knobs weigh lit), each a preview of its density (its amount) and heat (ENERGY)
  * from the seed, the FORM's sections as chips, the last piece and OCT+ MAKE */
-static void gen_cards(void)
+BTAPP_FN static void gen_cards_bt(void)
 {
     uint32_t k;
     char v[16];
@@ -2744,18 +2744,21 @@ static void gen_cards(void)
         draw_column(k, GEN_LBL[p][k], v, "", VAL(k), r, ICON_NONE);
     }
 }
+static void gen_cards(void)
+{
+    if (bt_hw_seg()) gen_cards_bt();
+}
 static uint32_t gen_draw_sig(void)
 {
     return gen_sig() * 31u + gp.page * 7u + str_hash(gp.hot * 977u, gp.last) + ux.gen +
         chain_config.count * 7919u + live.mode * 13u + song.playing * 29u +
         (chain.running ? (chain.row + 1u) * 104729u + chain.remaining * 1299709u : 0u);
 }
-static void gen_panel(void)
+BTAPP_FN static void gen_panel_bt(void)
 {
-    static const char *const ROLE[5] = {"DRUMS", "BASS", "CHORDS", "ARP", "LEAD"};
-    uint32_t k, p = gp.page % 3u;
+    uint32_t k;
     char v[24];
-    if (p == 0u && chain_config.count) {
+    if (chain_config.count) {
         /* Reuse the actual arrangement, not FORM's illustrative BCADCA chips.
          * Progress refreshes per bar; no new high-rate animation or DSP work. */
         graph_proj(2);
@@ -2768,22 +2771,17 @@ static void gen_panel(void)
             fmt_int(v + str_len(v), chain.remaining);
         } else str_cpy(v, song.playing ? "PLAYING LOOP" : live.mode ? "SONG READY" : "LOOP MODE", sizeof v);
         cv_text(4, 128, &AF_X, v, T_TEXT);
-        cv_text_r(236, 128, &AF_X, "SAVE: SONG", T_ACCENT, T_SURF);
+        cv_text_r(236, 128, &AF_X, song_draft ? "DRAFT / SAVE" : "SAVE: SONG", T_ACCENT, T_SURF);
         return;
     }
-    /* Settings are shown numerically by the knob cards. The panel needs only
-     * their density bars; FORM is already labelled on GEN 1. */
-    for (k = 0; k < 5u; k++) {
-        int32_t y = 8 + (int32_t)k * 21;
-        uint32_t a = gp.amt[k] == GA_AUTO ? 55u : gp.amt[k];
-        uint16_t c = ((p == 1u && k < 4u) || (p == 2u && k == 4u)) ? T_THEME : T_MID;
-        cv_text(8, y, &AF_X, ROLE[k], c);
-        cv_rect(60, y + 3, 166, 4, T_LINE);
-        if (a) cv_rect(60, y + 3, (int32_t)a * 166 / 100, 4, c);
-    }
-    str_cpy(v, "LAST: ", sizeof v);
-    str_cpy(v + 6, gp.last[0] ? gp.last : "-", sizeof v - 6);
-    cv_clip_text(6, 126, &AF_X, v, T_MID, T_SURF, 150);
-    cv_text_r(234, 126, &AF_X, "OCT+ MAKE", T_ACCENT, T_SURF);
+    graph_proj(0);
+    cv_rect(0, 124, 240, 16, T_SURF);
+    cv_text(4, 128, &AF_X, song_draft ? "DRAFT LOOP" : "SAVED PARTS", T_TEXT);
+    cv_text_r(236, 128, &AF_X, "SAVE: LOOP/SONG", T_ACCENT, T_SURF);
 }
 
+
+static void gen_panel(void)
+{
+    if (bt_hw_seg()) gen_panel_bt(); else graph_proj(chain_config.count ? 2 : 0);
+}

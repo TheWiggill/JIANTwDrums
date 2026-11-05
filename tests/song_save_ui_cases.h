@@ -11,8 +11,8 @@ static int test_song_save_ui(void)
     live.cur = -1;
     name_close();
     nav_put(SEC_SAVE, "SAVE SONG AS"); frame();
-    ok = cur_page()->graph == GR_SONGSAVE && save_level() == SV_PROJ && ui.act == 4u && song_save_target != song_cur;
-    bad += check("SAVE SONG AS is a PROJECT page with SAVE armed and another destination", ok);
+    ok = cur_page()->graph == GR_SONGSAVE && save_level() == SV_PROJ && ui.act == 4u && song_save_target == song_cur;
+    bad += check("SAVE SONG AS is a PROJECT page with SAVE armed and the current destination", ok);
     target = song_save_target;
     turn(EN_K1, 1); frame();
     ok = song_save_target == target + 1u && song_cur == 0 && live.cur == -1;
@@ -28,7 +28,7 @@ static int test_song_save_ui(void)
     turn(EN_K4, 1); press(B_OCTUP); frame();
     ok = ui.confirm == CF_OVR_SONG && !name_on();
     confirm_text(a, b);
-    ok &= strstr(a, "REPLACE WHOLE SONG") != 0 && !strcmp(b, "ALL A-D + ARRANGEMENT");
+    ok &= strstr(a, "OVERWRITE PROJECT") != 0 && !strcmp(b, "ALL A-D + ARRANGEMENT");
     press(B_OCTDN); frame();
     ok &= !ui.confirm && !name_on();
     bad += check("occupied destination asks whole-song overwrite; cancel writes nothing", ok);
@@ -41,7 +41,9 @@ static int test_song_save_ui(void)
     bad += check("overwrite confirmation leads to naming; failed save keeps the name open", ok);
     song_save_target = song_cur;
     turn(EN_K4, 1); press(B_OCTUP); frame();
-    bad += check("current project is refused, so SAVE AS cannot overwrite its source", !name_on() && !ui.confirm && strstr(ui.msg, "ANOTHER PROJECT") != 0);
+    bad += check("current project is available as an explicit save destination", name_on() || ui.confirm == CF_OVR_SONG);
+    if (name_on()) { press(B_OCTDN); frame(); }
+    else if (ui.confirm) { press(B_OCTDN); frame(); }
     song_save_target = 2;
     song.playing = 1;
     turn(EN_K4, 1); press(B_OCTUP); frame();

@@ -1643,9 +1643,9 @@ static void draw_columns(void)
     if (cur_page()->graph == GR_SONGSAVE) {
         fmt_int(val, (int32_t)song_save_target + 1);
         hot_gauge_column(0, "DEST", val, song_save_target * 1000 / (NSONG - 1u));
-        empty_column(1);
+        text_column(1, "SCOPE", song_save_loop ? "LOOP" : "SONG", T_TEXT);
         empty_column(2);
-        draw_act_column(3, "SAVE SONG", T_THEME, ICON_AUTO);
+        draw_act_column(3, "SAVE", T_THEME, ICON_AUTO);
         return;
     }
     if (cur_page()->graph == GR_SLOTS) {                 /* (0.6.12) PROJECT, SECT A-D, then LOAD and SAVE */
@@ -1656,10 +1656,9 @@ static void draw_columns(void)
             hot_gauge_column(0, "SECT", val, (int32_t)(k & 3u) * 1000 / 3);
             draw_act_column(1, "ERASE", used ? T_THEME : T_DIM, ICON_AUTO);   /* (V10.17; the name: the card) */
         } else {
-            fmt_int(val, (int32_t)song_cur + 1);
-            hot_gauge_column(0, "PROJECT", val, (int32_t)song_cur * 1000 / (int32_t)(NSONG - 1u));
-            val[0] = (char)('A' + (k & 3u)); val[1] = 0;
-            hot_gauge_column(1, "SECT", val, (int32_t)(k & 3u) * 1000 / 3);
+            fmt_int(val, (int32_t)(song_draft ? song_save_target : song_cur) + 1);
+            hot_gauge_column(0, "PROJECT", val, (int32_t)(song_draft ? song_save_target : song_cur) * 1000 / (int32_t)(NSONG - 1u));
+            draw_act_column(1, "ERASE", T_THEME, ICON_AUTO);
         }
         draw_act_column(2, "LOAD", used ? T_THEME : T_DIM, ICON_AUTO);
         draw_act_column(3, "SAVE", T_THEME, ICON_AUTO);
@@ -2130,10 +2129,10 @@ static void confirm_text(char *a, char *b)
         a[12] = (char)('1' + k % NTRK);
         break;
     case CF_OVR_SONG:
-        str_cpy(a, "REPLACE WHOLE SONG ", 24);
+        str_cpy(a, "OVERWRITE PROJECT ", 24);
         fmt_int(a + str_len(a), (int32_t)k + 1);
         str_cpy(a + str_len(a), "?", 2);
-        str_cpy(b, "ALL A-D + ARRANGEMENT", 24);
+        str_cpy(b, song_save_loop ? "LOOP A; CLEAR B-D" : "ALL A-D + ARRANGEMENT", 24);
         break;
     case CF_OVR_PROJ:
         str_cpy(a, "OVERWRITE PROJECT A?", 24);
@@ -2191,6 +2190,10 @@ static void confirm_text(char *a, char *b)
         up_slot_label(a + str_len(a), k);
         str_cpy(a + str_len(a), "?", 2);
         up_name(k, b);                               /* the sound stored there */
+        break;
+    case CF_ERASE_SONG:
+        str_cpy(a, "ERASE PROJECT ", 24); fmt_int(a + str_len(a), (int32_t)k + 1); str_cpy(a + str_len(a), "?", 2);
+        str_cpy(b, "ALL A-D + ARRANGEMENT", 24);
         break;
     case CF_ERASE_SECT:                              /* (V10.17) SAVE > SECTIONS > ERASE */
         str_cpy(a, "ERASE SECT A?", 24);

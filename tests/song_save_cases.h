@@ -78,10 +78,10 @@ static int song_save_test(void)
     before = erases;
     song.playing = 1; ok = song_save_as(1, "X") != 0; song.playing = 0;
     transport_req = 1; ok &= song_save_as(1, "X") != 0; transport_req = 0;
-    ok &= song_save_as(0, "X") != 0 && song_save_as(8, "X") != 0;
+    ok &= song_save_as(8, "X") != 0;
     flash_ok = 0; ok &= song_save_as(1, "X") != 0; flash_ok = 1;
     ok &= erases == before;
-    bad += check("playing, pending PLAY, same slot, invalid slot and no flash refuse without writing", ok);
+    bad += check("playing, pending PLAY, invalid slot and no flash refuse without writing", ok);
 
     song_fixture();
     memset(&proj_slot[3], 0, sizeof proj_slot[3]);

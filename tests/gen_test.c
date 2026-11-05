@@ -521,8 +521,8 @@ int main(void)
             ok = live.mode == 1 && chain_config.count == 6u && (dice_secs & 15u) == 15u;
             section_store(1);
             gen_with(1, 33, 60, 2);
-            ok &= live.mode == 1 && chain_config.count == 6u && str_eq(ui.msg2, "USE AN EMPTY PROJECT");
-            bad += gcheck("FORM after a power cycle: the song written again; a section of the player's kept, and said", ok);
+            ok &= live.mode == 1 && chain_config.count == 6u && song_draft && !gform_kept;
+            bad += gcheck("FORM generates a complete draft even when prior parts were stored", ok);
         }
     }
     /* ---- (0.6.97) the kit's space, the top end's variety, Hook's register, the lead's envelope */

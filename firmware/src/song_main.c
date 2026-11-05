@@ -363,6 +363,7 @@ static void song_rec_toggle(void)
 static int song_flush(void)
 {
     uint32_t k;
+    if (song_draft) return 0;
 #if FELUCCA_FLASH
     if (!flash_ok)
         return 0;
@@ -384,6 +385,7 @@ static void song_idx_touch(void)
 /* the index into flash (the songs' rows, the current song): 0 done (or no flash) */
 static int song_index_save(void)
 {
+    if (song_draft) return 0;
     song_idx.rows[song_cur] = chain_config;
     song_idx.cur = song_cur;
 #if FELUCCA_FLASH
@@ -391,6 +393,27 @@ static int song_index_save(void)
         return 1;
 #endif
     song_idx_dirty = 0;
+    return 0;
+}
+
+/* Commit the old project before borrowing its four RAM buffers. All later
+ * generations are drafts until an explicit SAVE; no new audio storage. */
+static int song_draft_begin(void)
+{
+    if (!bt_hw_seg()) { ui_message("UPDATE PACKAGE"); return 1; }
+    if (transport_busy()) { ui_message("STOP TO GENERATE"); return 1; }
+#if FELUCCA_FLASH
+    if (!flash_ok) { ui_message("NO FLASH"); return 1; }
+#endif
+    if (!song_draft) {
+        if (song_flush() || song_index_save()) { ui_message("SAVE ERROR"); return 1; }
+        song_save_target = song_cur;
+    }
+    song_draft = 1;
+    live.dirty = 0; live.cur = live.req = -1; sec_stage.ready = 0;
+    proj_cur = PROJ_NO_SLOT; proj_name[0] = 0;
+    memset(proj_slot, 0, sizeof proj_slot);
+    proj_wire_gen++;
     return 0;
 }
 
@@ -403,17 +426,20 @@ static int song_switch(uint32_t n, int load_a)
 {
     char nm[PROJ_NAME_LEN + 1u];
     uint32_t k;
-    if (n >= NSONG || n == song_cur)
+    if (n >= NSONG || (n == song_cur && !song_draft))
         return 1;
     if (transport_busy()) {
         ui_message(load_a ? "STOP TO CHANGE SONG" : "STOP TO CHANGE PROJECT");
         return 1;
     }
-    if (song_flush()) {
-        ui_message("SAVE ERROR");
-        return 1;
+    if (song_draft) {
+        song_draft = 0; live.dirty = 0;
+        song_index_load();
+    } else {
+        if (song_flush()) { ui_message("SAVE ERROR"); return 1; }
+        song_idx.rows[song_cur] = chain_config;
     }
-    song_idx.rows[song_cur] = chain_config;           /* (the rows of the song left) */
+    /* The original index is restored before opening another saved project. */
     song_cur = (uint8_t)n;
     chain_config = song_idx.rows[n];
     if (song_index_save()) {                          /* (failed: written again by song_poll) */
@@ -504,6 +530,7 @@ static void song_poll(void)
             ui_message("SONG END");
         }
     }
+    if (song_draft) return;
     chain_config.rsv[2] = SONG_MODE_TAG | (live.mode ? 1u : 0u);
     if (memcmp(&chain_config, &song_idx.rows[song_cur], sizeof chain_config)) {   /* the rows or PLAY mode changed */
         song_idx.rows[song_cur] = chain_config;

@@ -103,7 +103,9 @@ def main(src, dst):
     # Sparse MIDI control dispatch runs per received message, never per rendered sample.
     # Keep synthesis, clocks, DMA, note release and ownership queries at -Os.
     input_size = {"midi_event", "midi_control", "midi_cc_map", "midi_cc_set", "midi_learned", "midi_route_ch14"}
-    names, hit = (size_names() - isr) | input_size, set()
+    cold_ui = {"mod_dst_ok", "mod_dst_offer_bt", "mod_dst_name_bt", "gen_value", "gen_cards_bt", "gen_panel_bt",
+               "song_index_target", "song_remove_parts"}
+    names, hit = ((size_names() | cold_ui) - isr) | input_size, set()
 
     def mark(m):
         if m.group(2) not in names:

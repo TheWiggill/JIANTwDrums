@@ -28,8 +28,8 @@ static void graph_lib(void)
     uint32_t i, j;
     for (i = 0; i < NSONG; i++) {
         int32_t x = LZ_TX(i % 4u), y = (int32_t)(i / 4u) * 70;
-        int cur = i == song_cur;
-        int pick = cur_page()->graph == GR_SONGSAVE ? i == song_save_target : cur;
+        int cur = i == song_cur && !song_draft;
+        int pick = cur_page()->graph == GR_SONGSAVE || song_draft ? i == song_save_target : cur;
         uint16_t bg = pick ? T_TINT : T_RAISE;
         char b[4], nm[13];
         cv_rect(x, y, 56, 66, bg);

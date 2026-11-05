@@ -1444,6 +1444,9 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
+    if (pg->graph == GR_SONGSAVE && slot == 1u) {
+        song_save_loop = (uint8_t)clamp((int32_t)song_save_loop + steps, 0, 1); return;
+    }
     if (pg->graph == GR_SONGSAVE && slot == 0u) {
         song_save_target = (uint8_t)clamp((int32_t)song_save_target + steps, 0, NSONG - 1);
         return;
@@ -1466,8 +1469,9 @@ static void edit_param(uint32_t slot, int32_t steps)
     }
 sect:
     if (pg->graph == GR_SLOTS && slot == 0u) {            /* (0.6.12) KNOB 1 the project: its sections, the music kept */
-        int32_t n = clamp((int32_t)song_cur + (steps > 0 ? 1 : -1), 0, (int32_t)NSONG - 1);
-        if ((uint32_t)n != song_cur) (void)song_open((uint32_t)n);
+        int32_t n = clamp((int32_t)(song_draft ? song_save_target : song_cur) + (steps > 0 ? 1 : -1), 0, (int32_t)NSONG - 1);
+        if (song_draft) song_save_target = (uint8_t)n;
+        else if ((uint32_t)n != song_cur) (void)song_open((uint32_t)n);
         return;
     }
     if (pg->graph == GR_USER) {                           /* KNOB 1 the slot */
@@ -1632,19 +1636,30 @@ static void act_do(void)
         char title[13];
         ui.act = 0;
         if (transport_busy()) ui_message("STOP TO SAVE");
-        else if (song_save_target == song_cur) ui_message("CHOOSE ANOTHER PROJECT");
-        else if (lib_scan(song_save_target, title) || song_idx.rows[song_save_target].count)
+        else if (lib_scan(song_save_target, title) || ((!song_draft || song_save_target != song_cur) && song_idx.rows[song_save_target].count))
             confirm_open(CF_OVR_SONG, song_save_target);
         else name_open(NK_SONG_SAVE, song_save_target);
+        return;
+    }
+    if (cur_page()->graph == GR_SLOTS && save_level() == SV_LIB) {
+        uint32_t target = song_draft ? song_save_target : song_cur;
+        if (c == 1u) {
+            ui.act = 0;
+            if (transport_busy()) ui_message("STOP TO ERASE");
+            else confirm_open(CF_ERASE_SONG, target);
+        } else if (c == 2u && song_draft) (void)song_select(target);
+        else if (c == 3u) nav_put(SEC_SAVE, "SAVE SONG AS");
+        else goto slot_action;
         return;
     }
     if (cur_page()->graph == GR_SLOTS && c == 1u) {     /* (V10.17) SECTIONS: ERASE, the dialog first */
         ui.act = 0;
         if (transport_busy()) ui_message("STOP TO ERASE");
         else if (!project_used(k)) ui_message("EMPTY SECTION");
-        else confirm_open(CF_ERASE_SECT, k);
+        else confirm_open(CF_ERASE_SECT, (song_cur << 2u) | (k & 3u));
         return;
     }
+slot_action:
     id = cur_page()->id[c & 3u];
     if (id != G_LOAD)
         ui.act = 0;
@@ -2563,7 +2578,7 @@ static void ui_input_frame(void)
             uint32_t kind = ui.confirm;
             ui.confirm = 0;
             ui.force = 1;
-            if (kind != CF_OVR_PROJ && kind != CF_OVR_USER && kind != CF_ERASE_USER && kind != CF_ERASE_SECT && kind != CF_OVR_SONG && kind != CF_DICE_ALL &&
+            if (kind != CF_OVR_PROJ && kind != CF_OVR_USER && kind != CF_ERASE_USER && kind != CF_ERASE_SECT && kind != CF_OVR_SONG && kind != CF_ERASE_SONG && kind != CF_DICE_ALL &&
                 !dice_kind(kind) && kind != CF_DEL_ROW && kind != CF_CLEAR_SONG && !chain_busy())
                 undo_mark();                            /* (0.6.21) the music before a clear, INIT, RECALL, pattern */
             if (kind == CF_OVR_PROJ) {                  /* overwrite: the NAME screen writes it */
@@ -2574,8 +2589,11 @@ static void ui_input_frame(void)
                 name_open(NK_USER_SAVE, ui.confirm_trk);
             } else if (kind == CF_ERASE_USER) {
                 up_ui(1u, ui.confirm_trk);
+            } else if (kind == CF_ERASE_SONG) {
+                song_erase_parts(ui.confirm_trk, 0);
             } else if (kind == CF_ERASE_SECT) {
-                project_erase(ui.confirm_trk & 3u);
+                if ((ui.confirm_trk >> 2u) == song_cur) project_erase(ui.confirm_trk & 3u);
+                else ui_message("PROJECT CHANGED");
             } else if (dice_kind(kind)) {               /* (0.6.65) OK: the diced part stays */
                 ui_message(dk.msg);
             } else if (kind == CF_LOAD_PAT) {
@@ -2798,7 +2816,7 @@ static void ui_input_frame(void)
         if (b & 1u)
             page_tap(panel_btn_of(id));
     if (gen_on() && (oct & 2u)) {                       /* (0.9.2) GEN, HOME's pages: OCT+ the piece (the screen stays, */
-        if (!chain_busy()) gen_press();                 /* OCT+ again: another), OCT- back to ECO */
+        gen_press();                 /* OCT+ again: another), OCT- back to ECO */
     } else if (gen_on() && (oct & 1u)) {
         nav_go(SEC_HOME, 0, 0);
     } else if (act_cols() && (oct & 2u)) {              /* action pages: OCT+ does the picked action, */

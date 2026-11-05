@@ -1752,7 +1752,7 @@ static int project_save_as(uint32_t slot, const char *name)
     if (!proj_pack(&proj_wire, p)) { ui_message(proj_full ? "SECTION FULL" : "SAVE FORMAT ERROR"); return 2; }
 
 #if FELUCCA_FLASH
-    if (flash_ok) {
+    if (flash_ok && !song_draft) {
         if (st_save(proj_obj(slot), &proj_wire, sizeof proj_wire)) {
             ui_message("SAVE ERROR");
             return 2;
@@ -1770,7 +1770,7 @@ static int project_save_as(uint32_t slot, const char *name)
     proj_name_get(proj_name, (const uint8_t *)p->name);
     proj_cur = (uint8_t)(slot & 3u);
     live.cur = (int8_t)(slot & 3u);
-    ui_message("SAVED (NO FLASH)");
+    ui_message(song_draft ? "PART STORED IN DRAFT" : "SAVED (NO FLASH)");
     return 0;
 }
 static int project_save(uint32_t slot) { return project_save_as(slot, 0); }
@@ -2193,23 +2193,7 @@ static int project_used(uint32_t slot) { return proj_import(&proj_scratch, &proj
  * erase). 0 done */
 static int project_erase(uint32_t slot)
 {
-    char b[8] = "SECT A";
-    slot &= 3u;
-    b[5] = (char)('A' + slot);
-    if (transport_busy()) { ui_message("STOP TO ERASE"); return 1; }
-    memset(&proj_slot[slot], 0, sizeof proj_slot[slot]);
-    live.dirty &= (uint8_t)~(1u << slot);               /* (nothing left to write) */
-    if (live.cur == (int8_t)slot) live.cur = -1;
-    proj_wire_gen++;                                    /* (the LIBRARY's picture again) */
-#if FELUCCA_FLASH
-    if (flash_ok && (st_erase(st_sector(proj_obj(slot), 0)) || st_erase(st_sector(proj_obj(slot), 1)))) {
-        ui_message("ERASE ERROR");
-        return 2;
-    }
-#endif
-    ui_say("ERASED ", b);
-    ui.force = 1;
-    return 0;
+    return song_erase_parts(song_cur, 1u << (slot & 3u));
 }
 
 /* (0.8.5) SAVE > LIBRARY: project n's sections stored (a bit each) and its section A's name (b, PROJ_NAME_LEN + 1),
@@ -2220,7 +2204,7 @@ static uint32_t lib_scan(uint32_t n, char *b)
 {
     uint32_t k, m = 0;
     b[0] = 0;
-    if (n == song_cur) {
+    if (n == song_cur && !song_draft) {
         for (k = 0; k < 4u; k++)
             m |= (uint32_t)project_used(k) << k;
         if (m & 1u)
@@ -2401,7 +2385,7 @@ static void autosave_poll(void)
     }
 #if FELUCCA_FLASH
     uint32_t sig;
-    if (!flash_ok || fm1_ms - as.poll < AS_POLL_MS)
+    if (song_draft || !flash_ok || fm1_ms - as.poll < AS_POLL_MS)
         return;
     as.poll = fm1_ms;
     sig = autosave_sig();

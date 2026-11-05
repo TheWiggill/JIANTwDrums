@@ -220,10 +220,6 @@ static void nav_go(uint32_t sec, uint32_t e, int outside)
     if (sec == SEC_HOME) {
         if (e >= 4u) {                                  /* GEN: the generator's screen, HOME's last group */
             if (!gen_on()) {
-                if (chain_busy()) {
-                    ui_message("SONG PLAYS: STOP IT TO EDIT");
-                    return;
-                }
                 confirm_open(CF_DICE_ALL, song.sel);
                 gen_open();
             }

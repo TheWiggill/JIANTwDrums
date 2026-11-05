@@ -61,26 +61,32 @@ int main(void)
     seq_stop(); song_poll(); frame();
     press(B_SAVE); frame();
     bad += check("SAVE from GEN opens whole-song destination without changing source",
-                 cur_page()->graph == GR_SONGSAVE && song_save_target != song_cur && !name_on());
+                 cur_page()->graph == GR_SONGSAVE && song_save_target == song_cur && !name_on());
 
-    /* Saved user sections must never cause SONG generation to degrade silently
-     * into a new loop while erasing the arrangement. */
+    /* A saved/non-generated section is no longer a dead end. GEN owns only
+     * the draft buffers and may replace them, even while the previous song plays. */
     make_song(1, 31);
-    section_store(1);
-    chain_config_t rows = chain_config;
-    uint32_t slots = proj_hash(proj_slot, sizeof proj_slot), music = dice_print();
-    gp.seed = 32; gen_go();
-    bad += check("protected A-D refuses before changing music, sections, mode or arrangement",
-                 gform_kept && live.mode && !memcmp(&rows, &chain_config, sizeof rows) &&
-                 music == dice_print() && slots == proj_hash(proj_slot, sizeof proj_slot) &&
-                 str_eq(ui.msg2, "USE AN EMPTY PROJECT"));
-
-    song_poll();
-    live.mode = 0; song_index_boot();
-    bad += check("saved SONG mode survives boot of the same project", live.mode == 1);
-    live.mode = 0; song_poll();
-    live.mode = 1; song_index_boot();
-    bad += check("explicit LOOP mode also survives boot", live.mode == 0);
+    section_store(1); live.mode = 1;
+    nav_put(SEC_HOME, "GEN 2"); frame();
+    press(B_PLAY); events_block(CTL); song_poll();
+    uint32_t before_seed = gp.seed; gp.sig = gen_sig();
+    press(B_OCTUP); events_block(CTL); song_poll(); frame();
+    bad += check("GEN 2 rerolls a playing song as a draft and resumes arrangement playback",
+                 song_draft && !gform_kept && chain_config.count >= 4 && song.playing && chain.running && gp.seed != before_seed);
+    screen_save("build/song-check", "generator-draft-page2");
+    nav_put(SEC_HOME, "GEN 3"); frame();
+    bad += check("GEN 3 keeps real parts visible while editing generator settings", gen_page()==2 && chain_config.count>=4);
+    screen_save("build/song-check", "generator-draft-page3");
+    seq_stop();song_poll();
+    nav_put(SEC_SAVE,"SAVE SONG AS");frame();turn(EN_K2,1);frame();
+    bad += check("SAVE scope selects LOOP without changing the live song", song_save_loop && chain_config.count>=4);
+    song_save_loop=0;
+    /* Draft arrangements intentionally do not overwrite the saved boot index. */
+    song_draft=0;song_poll();
+    live.mode=0;song_index_boot();
+    bad += check("committed SONG mode survives boot", live.mode==1);
+    live.mode=0;song_poll();live.mode=1;song_index_boot();
+    bad += check("committed LOOP mode survives boot", live.mode==0);
     chain_config_t old = chain_config;
     old.rsv[2] = 0; song_idx.rows[song_cur] = old;
     live.mode = 0; song_index_boot();

@@ -45,6 +45,8 @@ jobs:
         run: |
           cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/song_generator_test.c -lm -o build/song-check/generator
           build/song-check/generator | tee build/song-check/generator.log
+          cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/song_draft_test.c -lm -o build/song-check/draft
+          build/song-check/draft | tee build/song-check/draft.log
       - name: Matrix and track follower regression
         run: |
           cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/mod_test.c -lm -o build/song-check/mod

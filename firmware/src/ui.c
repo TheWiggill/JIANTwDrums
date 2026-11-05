@@ -13,6 +13,10 @@ static uint32_t trk_eng(const track_t *t) { return t->eng_req % NENGINES; }   /*
 static const engine_t *trk_engp(const track_t *t) { return ENGINES[trk_eng(t)]; }   /* .. its engine's table */
 static int project_save(uint32_t slot);
 static int song_save_as(uint32_t target, const char *name);
+static int song_draft_begin(void);
+static int song_erase_parts(uint32_t target, uint32_t parts);
+static void song_poll(void);
+static uint8_t song_save_loop;
 static void song_name(char *b);
 static uint8_t song_save_target __attribute__((section(".pool")));                   /* destination picker: never opens the project */
 static void panel_setup(void);
@@ -349,7 +353,7 @@ static uint16_t val_col(uint32_t c) { return c == ui.hot_col && ui.hot_t ? T_ACC
 enum { CF_NONE, CF_CLEAR_SEQ, CF_CLEAR_TRK, CF_OVR_PROJ, CF_OVR_USER, CF_LOAD_PAT,
        CF_DEL_ROW, CF_CLEAR_SONG, CF_INIT_SOUND, CF_CLEAR_MOTION, CF_ERASE_USER, CF_CLEAR_PFX,
        CF_RECALL_SOUND, CF_CLEAR_ALL, CF_DICE_ALL, CF_INIT_SYS, CF_DICE_SOUND, CF_DICE_SEQ, CF_DICE_LFO,
-       CF_DICE_FX, CF_CPU_TEST, CF_MUT_BACK, CF_LIVE_COMMIT, CF_ERASE_SECT, CF_OVR_SONG };   /* ui.confirm: TOOLS' clears; (0.6.21) HOME + SELECT:
+       CF_DICE_FX, CF_CPU_TEST, CF_MUT_BACK, CF_LIVE_COMMIT, CF_ERASE_SECT, CF_OVR_SONG, CF_ERASE_SONG };   /* ui.confirm: TOOLS' clears; (0.6.21) HOME + SELECT:
                                    * everything diced; (0.6.65) EDIT + SELECT: keep the diced sound?; (0.6.67) SEQ / LFO / FX + SELECT:
                                    * keep the diced sequence / LFO / effects?;
                                    * SAVE over a used slot; a pattern over the user's steps;
@@ -802,8 +806,7 @@ static void page_entered(void)
 {
     const page_t *pg = cur_page();
     br_armed = 0;
-    if (pg->graph == GR_SONGSAVE && song_save_target == song_cur)
-        song_save_target = (uint8_t)((song_cur + 1u) % NSONG);
+    if (pg->graph == GR_SONGSAVE && !song_draft) song_save_target = song_cur;
     ui.knob_ms = fm1_ms;                         /* (0.9.0) HUD: the knob row whole again on a new page */
     if (!ui.home && pg->fam == FAM_FX && fx_trk_k(ui.page) < 0 && pg->graph != GR_BUSES)
         ui.fxmod = (uint8_t)fx_mod_of(ui.page);  /* (FX: the effect shown, BUSES' tile lit) */
@@ -1944,7 +1947,7 @@ static uint32_t act_cols(void)                   /* the columns that are actions
     if (pg->graph == GR_SONGSAVE) return 8u;
     if (pg->graph == GR_USER)
         return 14u;                              /* LOAD ERASE SAVE */
-    if (pg->graph == GR_SLOTS && save_on() && save_level() == SV_PROJ)
+    if (pg->graph == GR_SLOTS && save_on())
         return 14u;                              /* (V10.17) SECTIONS: ERASE LOAD SAVE */
     if (pg->scope == SC_GLOBAL)
         for (c = 0; c < 4u; c++)
@@ -1999,7 +2002,7 @@ static int act_ready(void)
     uint32_t c = act_col(), s = song.sel, id;
     if (!c--)
         return 0;
-    if (cur_page()->graph == GR_SONGSAVE) return !transport_busy() && song_save_target != song_cur;
+    if (cur_page()->graph == GR_SONGSAVE) return !transport_busy();
     if (cur_page()->graph == GR_MOTION) return !chain_busy() && motion_count(TSEL);
     if (cur_page()->graph == GR_EVENTS) return ev_act_ready();
     if (cur_page()->graph == GR_LYRIC) return 1;
@@ -2013,7 +2016,7 @@ static int act_ready(void)
     if (cur_page()->graph == GR_USER)
         return c == 3u ? !song.playing : up_used(ui.uslot) && (c == 1u || !song.playing);
     if (cur_page()->graph == GR_SLOTS && c == 1u)       /* (V10.17) SECTIONS: ERASE a stored section, stopped */
-        return project_used((uint32_t)song.g[G_SLOT] - 1u) && !transport_busy();
+        return !transport_busy() && (save_level() == SV_LIB || project_used((uint32_t)song.g[G_SLOT] - 1u));
     id = cur_page()->id[c & 3u];
     if (id == G_LOAD)
         return project_used((uint32_t)song.g[G_SLOT] - 1u);

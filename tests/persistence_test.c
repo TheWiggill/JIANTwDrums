@@ -76,6 +76,7 @@ static int check(const char *what, int ok)
 
 static void reset(void)
 {
+    song_draft = song_save_loop = 0;
     memset(nor, 0xFF, sizeof nor);
     memset(&song, 0, sizeof song);
     memset(trk, 0, sizeof trk);
@@ -506,6 +507,7 @@ static int songs_test(void)
 #include "voice_user_cases.h"
 #include "split_storage_cases.h"
 
+#ifndef PERSISTENCE_TEST_NO_MAIN
 int main(void)
 {
     int bad = 0, ok;
@@ -860,3 +862,5 @@ int main(void)
     return bad != 0;
 }
 
+
+#endif

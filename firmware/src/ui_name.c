@@ -94,7 +94,7 @@ static void name_open(uint32_t kind, uint32_t slot)
         return;
     }
     if (kind == NK_SONG_SAVE) {
-        str_cpy(nm.ph, "SONG", sizeof nm.ph);
+        str_cpy(nm.ph, song_save_loop ? "LOOP" : "SONG", sizeof nm.ph);
         song_name(b);
     } else if (kind == NK_USER_SAVE || kind == NK_USER_RENAME) {
         uint32_t e = kind == NK_USER_RENAME ? up_engine(slot) : TSEL->eng_req;
@@ -327,7 +327,7 @@ static uint32_t name_leds(void)
 static void nm_title(char *b)
 {
     if (nm.kind == NK_SONG_SAVE) {
-        str_cpy(b, "SAVE SONG TO PROJECT ", 24);
+        str_cpy(b, song_save_loop ? "SAVE LOOP TO PROJECT " : "SAVE SONG TO PROJECT ", 24);
         fmt_int(b + str_len(b), (int32_t)nm.slot + 1);
         return;
     }

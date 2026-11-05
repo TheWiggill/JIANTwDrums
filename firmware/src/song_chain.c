@@ -67,6 +67,7 @@ static void scene_capture(scene_t *s)
     memcpy(s->mac, macro_v, sizeof s->mac);
 }
 static song_index_t song_idx;
+static uint8_t song_draft;                    /* Generated workspace: never auto-written to project slots. */
 static uint8_t song_cur;                      /* the song whose sections proj_slot holds (0: the four project slots) */
 /* track k of the current song's row r: the section it plays (the row's own unless ARRANGE 2 gave it another) */
 static uint32_t row_src(uint32_t r, uint32_t k, uint32_t s)

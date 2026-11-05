@@ -175,6 +175,7 @@ static int check(const char *what, int ok)
 static void ui_power_on(void)
 {
     uint32_t i;
+    song_draft = song_save_loop = 0;
     memset(split_cfg, 0, sizeof split_cfg); memset(&midi_map, 0, sizeof midi_map);
     if (!lyb_ok)
         sing_init();                              /* (0.9.0: as felucca_init, VOICE's English generator words) */
@@ -7565,7 +7566,9 @@ static int test_save_lens(void)
     ok &= song_cur == 0u && (TSEL->preset != pr || TSEL->eng_req != trk_def_engine(0)) && cur_page()->graph == GR_SLOTS;
     bad += check("0.9.2 SAVE > PROJECTS: KNOB 1 the project; PRESETS a sound (was the project)", ok);
     ok = 1;
-    turn(EN_K4, 1); press(B_OCTUP); frame();                                 /* SAVE: the NAME screen, its own layout */
+    turn(EN_K4, 1); press(B_OCTUP); frame();                                 /* PROJECTS opens explicit save scope first. */
+    ok &= cur_page()->graph == GR_SONGSAVE && !name_on();
+    press(B_OCTUP); frame();
     ok &= name_on() && !lz_on();
     press(B_OCTDN); frame();
     ok &= !name_on() && lz_on();
@@ -8815,11 +8818,11 @@ static int test_project_page(void)
     ok = song_cur == 1 && trk[0].step[0].note[0] == 80 && live.cur < 0 && !chain_config.count && msg_is("PROJECT 2");
     bad += check("  KNOB 1: project 2 in (its sections, its song), the music kept", ok);
     song.g[G_SLOT] = 1;
-    turn(EN_K2, 1); frame();                            /* LIBRARY: KNOB 2 the section */
-    ok = song.g[G_SLOT] == 2 && save_level() == SV_LIB;
+    turn(EN_K2, 1); frame();                            /* PROJECTS: KNOB 2 selects ERASE, never a different part. */
+    ok = song.g[G_SLOT] == 1 && save_level() == SV_LIB && ui.act == 2;
     turn(EN_SELECT, -1); frame();                       /* (V10.1) SONG's SECTIONS (one back): KNOB 1 */
     ok &= save_level() == SV_PROJ && cur_page()->graph == GR_SLOTS;
-    turn(EN_K1, 1); frame();
+    turn(EN_K1, 2); frame();
     ok &= song.g[G_SLOT] == 3;
     turn(EN_K1, 1); frame();
     ok &= song.g[G_SLOT] == 4 && song_cur == 1;
@@ -8829,7 +8832,7 @@ static int test_project_page(void)
     ok &= ui.act == 0u;
     turn(EN_K1, -1); frame();
     ok &= song.g[G_SLOT] == 3;
-    bad += check("  LIBRARY's KNOB 2, SECTIONS' KNOB 1: the section (C); SECTIONS' KNOB 2 ERASE (V10.17)", ok);
+    bad += check("  PROJECTS KNOB 2 ERASE; SECTIONS KNOB 1 selects C, KNOB 2 erases the part", ok);
     turn(EN_K4, 1); press(B_OCTUP); frame();            /* SAVE into project 2's C: the NAME screen, then OK */
     for (k = 0; k < 8u && name_on(); k++) { press(B_OCTUP); frame(); }
     ok = project_used(2) && live.cur == 2;
@@ -8843,7 +8846,7 @@ static int test_project_page(void)
     press(B_OCTDN); frame();
     ok &= !ui.confirm && project_used(2);
     turn(EN_K2, 1); press(B_OCTUP); frame(); press(B_OCTUP); frame();   /* .. OCT+ erases it */
-    ok &= !ui.confirm && !project_used(2) && live.cur < 0 && msg_is("ERASED SECT C") && trk[0].step[0].note[0] == 80;
+    ok &= !ui.confirm && !project_used(2) && live.cur < 0 && msg_is("PART ERASED") && trk[0].step[0].note[0] == 80;
     turn(EN_K2, 1); press(B_OCTUP); frame();            /* (empty now: no dialog) */
     ok &= !ui.confirm;
     bad += check("V10.17 SECTIONS KNOB 2 ERASE: the dialog (ERASE SECT C?), then EMPTY; the music stays; not playing", ok);
