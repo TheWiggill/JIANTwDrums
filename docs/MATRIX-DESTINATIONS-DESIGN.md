@@ -137,7 +137,8 @@ nombres específicos para las rutas antiguas válidas y muestra N/A si el modo n
 tiene consumidor. Cargar un preset sigue el comportamiento anterior de carga de
 sonido; esta política no cambia qué parámetros reemplaza un preset.
 
-La página de matrix indica VOICE/TRACK/MASTER y su diagrama marca V/T/M. Los
+La página de matrix indica VOICE/TRACK/MASTER; su diagrama mantiene D1–D4
+como números de ruta para no confundirlos con pistas. Los
 nombres de E1–E8 provienen de `track_desc`; CUT/SHP reciben los nombres de sus
 consumidores concretos. Se conservan controles por voz que tienen un uso distinto
 del parámetro base por pista. Los aliases exactos se omiten en nuevas selecciones;

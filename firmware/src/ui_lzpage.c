@@ -129,7 +129,7 @@ static void graph_mod_net(const track_t *t)
             cv_rect(160, y, 72, 1, T_THEME); cv_rect(160, y + 25, 72, 1, T_THEME);
             cv_rect(160, y, 1, 26, T_THEME); cv_rect(231, y, 1, 26, T_THEME);
         }
-        b[0] = mod_dst_scope(t, (uint32_t)p[1]); b[1] = (char)('1' + k); b[2] = ' '; b[3] = 0;
+        b[0] = 'D'; b[1] = (char)('1' + k); b[2] = ' '; b[3] = 0;
         str_cpy(b + 3, on ? mod_dst_name(t, p[1]) : "OFF", 13);
         cv_clip_text(165, y + 5 - AF_X_CAP_Y, &AF_X, b, on ? T_TEXT : T_DIM, bg, 64);
         param_format(&TP[P_M1AMT], p[2], b, &u);
