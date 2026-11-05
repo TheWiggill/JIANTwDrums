@@ -2670,7 +2670,7 @@ static void gen_amt_turn(uint8_t *v, int32_t s)         /* OFF, 10 .. 100, AUTO 
     x = clamp(x + s * 10, 0, 110);
     *v = (uint8_t)(x > 100 ? GA_AUTO : x);
 }
-BTAPP_FN static void gen_knob_bt(uint32_t k, int32_t s)
+static void gen_knob(uint32_t k, int32_t s)
 {
     uint32_t p = gp.page;
     gp.hot = (uint8_t)k;
@@ -2696,10 +2696,6 @@ BTAPP_FN static void gen_knob_bt(uint32_t k, int32_t s)
         else gp.human = (uint8_t)clamp((int32_t)gp.human + s * 5, 0, 100);
     }
     ui.force = 1;
-}
-static void gen_knob(uint32_t k, int32_t s)
-{
-    if (bt_hw_seg()) gen_knob_bt(k, s);
 }
 static uint32_t gen_page(void) { return gp.page % 3u; }
 static void gen_page_put(uint32_t p)                     /* (0.9.2) GEN 1..3: HOME's pages (ui_lens.c nav_go) */

@@ -10,6 +10,7 @@ optimizer, this script adds 'minsize' to those definitions, and the IR is then c
   size_fns.py IN.ll OUT.ll"""
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parents[1]
@@ -108,38 +109,26 @@ def main(src, dst):
                "proj_unpack_bt", "about_load", "bt_prox_panel", "bt_prox_input",
                "fm4_abs", "fm4_lg", "fm4_ms", "fm4_samples", "fm4_rate", "fm4_fall", "fm4_level", "fm4_outlevel", "fm4_convert_bt"}
     names, hit = ((size_names() | cold_ui) - isr) | input_size, set()
+    # Large, shared main-loop helpers keep one body rather than being copied
+    # into their callers. IRQ reach (including engine callbacks) stays at -Os.
+    attrs = dict(re.findall(r"^attributes #(\d+) = \{([^}]+)\}", ir, re.M))
+    refs = Counter(IR_REF.findall(ir))
+    shared = {m[1] for m in IR_BODY.finditer(ir) if m[1] in names - isr and refs[m[1]] >= 3
+              and len(m[2].splitlines()) >= 32}
+    outlined = set()
 
     def mark(m):
         if m.group(2) not in names:
             return m.group(0)
         hit.add(m.group(2))
-        return m.group(1) + " minsize" + m.group(3)
-    copies = 0
-    def share(m):
-        nonlocal copies
-        fn = m.group(1)
-        if fn not in names or fn in isr or fn in {"ui_copy_bytes", "ui_fill_bytes", "ui_copy", "ui_fill"}:
-            return m.group(0)
-        def copy(c):
-            nonlocal copies
-            length = re.search(r", i32 (\d+), i32 \d+, i1 false\)$", c.group(0))
-            if not length or not 16 <= int(length[1]) <= 256:
-                return c.group(0)
-            copies += 1
-            return re.sub(r"@llvm\.(memcpy|memset)[\w.]*", "@ui_copy_bytes" if c[1] == "memcpy" else "@ui_fill_bytes", c[0])
-        def plain(c):
-            nonlocal copies
-            length = re.search(r", i32 (\d+)\)$", c[0])
-            if not length or not 16 <= int(length[1]) <= 256:
-                return c[0]
-            copies += 1
-            return c[0].replace("@" + c[1] + "(", "@ui_copy(" if c[1] == "memcpy" else "@ui_fill(")
-        body = re.sub(r"call void @llvm\.(memcpy|memset)[\w.]*\([^\n]*\)", copy, m[0])
-        return re.sub(r"call i8\* @(memcpy|memset)\([^\n]*\)", plain, body)
-    ir = IR_BODY.sub(share, ir)
+        group = re.search(r"#(\d+)", m[3])
+        old = attrs.get(group[1], "") if group else ""
+        outline = m[2] in shared and not re.search(r"\b(alwaysinline|noinline)\b", old)
+        if outline: outlined.add(m[2])
+        return m.group(1) + " minsize" + (" noinline" if outline else "") + m.group(3)
     Path(dst).write_text(IR_DEF.sub(mark, ir))
     print(f"size: {len(hit)} main-loop functions built for size ({len(names) - len(hit)} not in this build; "
-          f"{len(size_names() & isr)} reached from an interrupt kept -Os); {copies} main-loop copies shared")
+          f"{len(size_names() & isr)} reached from an interrupt kept -Os); {len(outlined)} shared UI helpers outlined")
     return 0
 
 

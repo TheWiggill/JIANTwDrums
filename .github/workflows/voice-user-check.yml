@@ -18,11 +18,6 @@ jobs:
       - run: pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
       - name: Generate headers
         run: python3 -c "import sys;sys.path.insert(0,'tools');import build;build.generate()"
-      - name: Main-loop copy sharing boundaries
-        run: |
-          python3 tests/size_copy_test.py
-          cc -O1 -fno-builtin tests/ui_copy_test.c -o /tmp/ui-copy
-          /tmp/ui-copy
       - name: JieLi toolchain cache
         uses: actions/cache@v4
         with:
