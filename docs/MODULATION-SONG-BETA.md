@@ -58,6 +58,10 @@ is displayed as IN ENV to distinguish it from track envelopes.
   sources selectable without trying to stack 24 source labels on the screen.
 - Loading a project clears previous track envelope state.
 
+Decorative pseudo-note previews are replaced with density bars. This reduces
+display work and flash use
+without removing sound controls or the actual arrangement display.
+
 No existing matrix source was removed. No new step-component opcode is added:
 the existing component encoding is full. Resonance was not appended as a matrix
 destination because the existing 32-bit destination masks are now full.
