@@ -503,6 +503,7 @@ def main():
     counts = {}
     for lang in ("es", "en", "ja"):
         rows = load_bank(lang, nsyl[lang])
+        bank_words = []
         txt, offs, meta, grp = bytearray(), [], [], [[[0, 0] for _ in CATS] for _ in THEMES]
         n = 0
         for t in range(len(THEMES)):
@@ -510,12 +511,16 @@ def main():
                 r = rows.get((t, c), [])
                 grp[t][c] = [n, len(r)]
                 for w, ns, fem in r:
+                    assert len(w) <= 19, "singer word buffer"
+                    bank_words.append(w)
                     offs.append(len(txt))
                     txt += w.encode() + b"\0"
                     meta.append(ns | (16 if fem else 0))
                     n += 1
         counts[lang] = n
         U = lang.upper()
+        L.append(f"#ifdef LY_EN_REF\nstatic const char *const LY_{U}_BANK_REF_W[] = {{" +
+                 ','.join('"'+w+'"' for w in bank_words) + "};\n#endif")
         L.append(f"#define LY_{U}_NW {n}u")
         # Exact alphabet packing: 0 is word terminator, 1..26 a..z.
         # Sparse offsets remain every 16 words, now measured in bits.
@@ -532,7 +537,7 @@ def main():
         L.append(f"static const uint16_t LY_{U}_GRP[{len(THEMES)}][{len(CATS)}] = {{\n    {rows_c}}};")
     out.write_text("\n".join(L) + "\n")
     print(f"lyrics: {len(PHONEMES)} phonemes; English dictionary {len(words)} words, "
-          f"{len(blob) + 2 * len(idx) + len(tp) + len(tl) + len(th) + nlut} B (Huffman; {plain} B as bytes); "
+          f"{len(blob) + 2 * len(idx) + len(tp) + len(tl) + len(th) + nlut + 2*len(pairs)} B (Huffman/pairs; {plain} B as bytes); "
           f"banks ES {counts['es']} EN {counts['en']} JA {counts['ja']} words -> {out}")
 
 

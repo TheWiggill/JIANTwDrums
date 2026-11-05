@@ -869,6 +869,7 @@ static int rec_ratch(void)
     return bad;
 }
 
+#ifndef DRUM_OCT_NO_MAIN
 int main(void)
 {
     int bad = 0;
@@ -888,3 +889,5 @@ int main(void)
     printf("drumx octaves: all ok\n");
     return 0;
 }
+#endif
+

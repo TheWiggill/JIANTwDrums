@@ -826,7 +826,8 @@ static uint32_t sy_gen_word(const track_t *t, sing_t *s, uint32_t lang, uint32_t
         const char *q=SY_EXT_WORDS[lang-LG_RU];
         uint32_t pick=theme*2u+(sy_rnd(&s->rng)&1u);
         if(theme==TH_ANY) pick=sy_rnd(&s->rng)&15u;
-        if(lyr>LYR_NW) q="la";
+        if(!ly_en_ok) q="la";
+        else if(lyr>LYR_NW) q=SCAT_ES[sy_rnd(&s->rng)%NELEM(SCAT_ES)];
         else while(pick--) while(*q++);
         str_cpy(s->w,q,sizeof s->w);
         s->prem--;

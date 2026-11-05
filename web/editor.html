@@ -2685,7 +2685,7 @@ const TEXT = {
     layout: "(The firmware has a different parameter count; showing a plain list.)",
     ctlHelp: "Sliders: click, then fine-tune with the wheel or arrow keys (Shift: steps of 10); double-click resets.",
     lyricT: "Lyric (VOICE WORDS)",
-    lyricHelp: "The VOICE track's lyric (up to 63 characters). EDIT > WORDS: LANG picks the language (ES / EN / JA, Japanese in romaji), LYRIC TEXT sings this. Each note sings the next syllable; a \"-\" holds the vowel one more note.",
+    lyricHelp: "VOICE lyrics: up to 63 characters after transliteration. ES, EN, JA (romaji), RU, DE, FR, ZH (pinyin), PT, GN. New languages use approximate phonetic singing rules; Mandarin notes follow your melody. TEXT advances each note; TEXT FIXED repeats POS. A \"-\" holds the vowel one more note.",
     lyricSend: "Send",
     lyricLang: "LANG",
     lyricSrc: "LYRIC",
@@ -3133,6 +3133,7 @@ async function lyricRead(d = dev) {
   if (!lyricShown()) return;
   const r = parse[CMD.LYRIC](await rq(req.lyric(d.sel || 0)));
   if (document.activeElement !== $("lyric")) $("lyric").value = r.text;
+  lyricPreview();
 }
 $("lyricsend").addEventListener("click", () => {
   if (!lyricShown()) return;
@@ -3165,6 +3166,10 @@ function updateBrowser() {
   const sel = $("engine");
   $("lyricbox").hidden = !lyricShown();
   if (lyricShown()) {
+    for (const [id,param] of [["lyrlang",LYR_ID.lang],["lyrsrc",LYR_ID.src]]) {
+      const max=dev.pdesc[param]?.max;
+      if (Number.isInteger(max)) for (const option of $(id).options) option.disabled=+option.value>max;
+    }
     if (document.activeElement !== $("lyrlang")) $("lyrlang").value = String(Math.max(0, Math.min(9, dev.dump.p[LYR_ID.lang] | 0)));
     if (document.activeElement !== $("lyrsrc")) $("lyrsrc").value = String(Math.max(0, Math.min(25, dev.dump.p[LYR_ID.src] | 0)));
   }

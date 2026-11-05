@@ -1183,7 +1183,7 @@ static void cursor_fix(void)                           /* LEN got shorter: onto 
 /* Main-loop lyric selection. All phones/counters are temporary, the result is
  * an ordinary POS lock in the existing motion store, leaving both components. */
 static uint8_t lyric_word, lyric_syl=1;
-static uint32_t lyric_pick(char *label)
+static __attribute__((noinline)) uint32_t lyric_pick(char *label)
 {
     const char *txt=lyr_get(song.sel);
     uint32_t p=0,a,b,mel,w=0,base=0,ns=0;

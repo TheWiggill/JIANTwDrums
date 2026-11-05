@@ -474,6 +474,7 @@ static void check_reading(void)
         static const char *const LN[4] = {"", "ES", "EN", "JA"};
         uint32_t bad_w = 0, tot = 0;
         for (l = LG_ES; l <= LG_JA; l++) {
+            const char *const *ref=l==LG_ES?LY_ES_BANK_REF_W:l==LG_EN?LY_EN_BANK_REF_W:LY_JA_BANK_REF_W;
             const ly_bank_t *bk = &LY_BANK[l - 1u];
             uint32_t nwds = l == LG_ES ? LY_ES_NW : l == LG_EN ? LY_EN_NW : LY_JA_NW;
             for (k = 0; k < nwds; k++) {
@@ -481,6 +482,7 @@ static void check_reading(void)
                 char nw2[24];
                 char word[20];
                 const char *w = ly_word(bk, k, word);
+                bad_w += strcmp(w,ref[k])!=0; /* exact text, not only the syllable count */
                 (void)sy_word(l, nw2, sy_norm(w, (uint32_t)strlen(w), nw2, sizeof nw2), ph, &n);
                 tot++;
                 if (n != (bk->meta[k] & 15u)) {

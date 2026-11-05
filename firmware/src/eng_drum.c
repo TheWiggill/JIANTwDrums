@@ -206,7 +206,7 @@ static const char *drum_lane_abbr(const track_t *t, uint32_t l)
 }
 
 /* the lanes step s strikes: its hits, and its notes on their lanes (a NOTE step only) */
-static uint32_t step_lanes_of(const track_t *t, const step_t *s)
+static __attribute__((noinline)) uint32_t step_lanes_of(const track_t *t, const step_t *s)
 {
     uint32_t m = 0, i;
     if (s->time != ST_NOTE)
@@ -218,7 +218,7 @@ static uint32_t step_lanes_of(const track_t *t, const step_t *s)
 
 /* .. and which of them are accented */
 static uint32_t step_lanes(const step_t *s) {return step_lanes_of(0,s);}
-static uint32_t step_accents_of(const track_t *t,const step_t *s)
+static __attribute__((noinline)) uint32_t step_accents_of(const track_t *t,const step_t *s)
 {return s->flags&SF_ACCENT?step_lanes_of(t,s):s->acc&step_lanes_of(t,s);}
 static uint32_t step_accents(const step_t *s) { return step_accents_of(0,s); }
 

@@ -53,6 +53,16 @@ jobs:
           }
       - name: Firmware memory and reach checks
         run: tail -n 20 build/song-check/target.log
+      - name: DRUM performance and multilingual intentional lyric regression
+        run: |
+          set -euo pipefail
+          cc -O1 -g -w -Wno-implicit-function-declaration -fsanitize=address,bounds -Ibuild/gen -Ifirmware/src tests/drum_voice_extensions_test.c -lm -o build/song-check/drum-voice
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 build/song-check/drum-voice | tee build/song-check/drum-voice.log
+          cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/drumx_oct_test.c -lm -o build/song-check/classic-octaves
+          build/song-check/classic-octaves | tee build/song-check/classic-octaves.log
+          cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/voice_test.c -lm -o build/song-check/voice-reading
+          build/song-check/voice-reading | tee build/song-check/voice-reading.log
+          python3 tests/voice_web_test.py
       - name: FIT clock, persistence and audio timing
         run: |
           set -euo pipefail

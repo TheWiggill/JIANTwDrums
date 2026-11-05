@@ -9,14 +9,15 @@
 #define LP (1u<<(LG_PT-LG_RU))
 #define LG (1u<<(LG_GN-LG_RU))
 typedef struct { char s[5]; uint8_t langs,a,b; } sy_rule_t;
-static const sy_rule_t SY_RULES[] = {
-    {"shch",LR,PH_SH,0}, {"sch",LD,PH_SH,0}, {"eau",LF,PH_O,0},
+static const sy_rule_t SY_RULES[] LY_DICT_SEC = {
+    {"shch",LR,PH_SH,0}, {"sch",LD,PH_SH,0}, {"eau",LF,PH_O,0}, {"oeu",LF,PH_ER,0},
     {"zh",LR|LZ,PH_ZH,0}, {"kh",LR,PH_X,0}, {"sh",LR|LZ,PH_SH,0},
     {"ch",LR|LZ,PH_CH,0}, {"ch",LD,PH_X,0}, {"ch",LF|LP|LG,PH_SH,0},
     {"ts",LR|LD,PH_TS,0}, {"yu",LR,PH_Y,PH_U}, {"ya",LR,PH_Y,PH_A},
     {"yo",LR,PH_Y,PH_O}, {"ye",LR,PH_Y,PH_E},
     {"ei",LD,PH_A,PH_I}, {"ie",LD,PH_I,0}, {"eu",LD,PH_O,PH_I},
     {"ae",LD,PH_EH,0}, {"oe",LD,PH_ER,0}, {"ue",LD,PH_UJ,0},
+    {"ei",LF,PH_E,0}, {"eh",LF,PH_EH,0},
     {"ou",LF,PH_U,0}, {"eu",LF,PH_ER,0}, {"oi",LF,PH_W,PH_A},
     {"gn",LF,PH_NY,0}, {"nh",LP,PH_NY,0}, {"lh",LP,PH_Y,0},
     {"ny",LG,PH_NY,0}, {"ng",LZ|LG,PH_NG,0},
@@ -34,6 +35,7 @@ static const sy_rule_t SY_RULES[] = {
 };
 static uint32_t sy_ext(uint32_t lang, const char *w, uint32_t n, uint8_t *tc, uint8_t *tk)
 {
+    if(!ly_en_ok) return sy_es_tok(w,n,tc,tk); /* unverified/missing optional bank */
     uint32_t i=0,m=0,mask=1u<<(lang-LG_RU);
     while(i<n && m+2u<=SW_MAX) {
         uint32_t j,k=0,a=0,b=0;
