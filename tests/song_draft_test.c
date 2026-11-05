@@ -76,7 +76,16 @@ int main(void)
  song_fixture();song_save_loop=1;assert(!song_save_as(0,"LOOP IN PLACE"));
  assert(saved_note(0,0)==90&&!chain_config.count&&live.cur==0);
  for(unsigned k=1;k<4;k++)assert(!project_used(k)&&saved_note(0,k)==-1);
- puts("save: an existing open project can be explicitly replaced with one loop");
+ trk[0].step[0].note[0]=12;ui_prefs|=PREF_RESTORE_ON;
+ song_index_load();song_index_boot();
+ assert(autosave_boot(1)&&trk[0].step[0].note[0]==90&&!live.mode&&!chain_config.count);
+ puts("save: in-place LOOP also updates RESTORE LAST; reboot cannot restore stale music");
+ song_fixture();assert(!song_draft_begin());draft_music(65);
+ assert(!song_save_as(song_cur,"DRAFT BOOT"));
+ song_draft=0;trk[0].step[0].note[0]=12;ui_prefs|=PREF_RESTORE_ON;
+ song_index_load();song_index_boot();
+ assert(autosave_boot(1)&&trk[0].step[0].note[0]==65&&live.mode&&chain_config.count==4);
+ puts("save: in-place draft SONG restores its music and arrangement after reboot");
  song_fixture();memcpy(draft_before,proj_slot,sizeof draft_before);erase_error=1;
  assert(project_erase(0)&&!memcmp(draft_before,proj_slot,sizeof draft_before));erase_error=0;
  assert(!project_erase(1));assert(!project_used(1));

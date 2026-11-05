@@ -104,6 +104,12 @@ static int song_save_as(uint32_t target, const char *name)
     index->rows[target].rsv[1] = 0;
     index->rows[target].rsv[2] = SONG_MODE_TAG | (!song_save_loop && live.mode ? 1u : 0u);
     if (st_save(OBJ_SONGIDX, index, sizeof *index)) { ui_message("SAVE ERROR: RETRY"); return 2; }
+    /* RESTORE LAST must not mask an explicit overwrite of the open project
+     * with a stale pre-generation session at the next boot. song_keep is the
+     * valid, already-packed live music; writing it does not clobber index. */
+    if (target == song_cur && st_save(OBJ_AUTOSAVE, &song_keep, sizeof song_keep)) {
+        ui_message("SAVE ERROR: RETRY"); return 2;
+    }
     /* Keep the live draft metadata while updating the destination's library entry. */
     if (!song_draft || target != song_cur) song_index_target(index, target);
     if (!song_draft && target == song_cur) {

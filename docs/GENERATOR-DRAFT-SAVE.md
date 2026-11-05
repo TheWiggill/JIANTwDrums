@@ -20,6 +20,9 @@ overwrite confirmation, then naming. Saving requires stopped transport. Saving
 keeps the draft available for more generations; power-off discards an unsaved
 draft. SAVE > PROJECTS selects saved destinations without loading them during a
 draft; LOAD opens the selected saved project and discards the draft.
+Overwriting the open project also updates RESTORE LAST, so its previous autosave
+cannot mask the newly saved music at the next boot. Saving elsewhere keeps the
+open project's autosave unchanged.
 
 SAVE > PROJECTS > ERASE clears all saved parts and arrangement at the selected
 destination after confirmation. SAVE > SECTIONS > ERASE clears the selected
