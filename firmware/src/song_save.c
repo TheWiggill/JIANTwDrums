@@ -40,7 +40,7 @@ static int song_saved_index(song_index_t *index)
     index->rows[song_cur] = chain_config;
     return 0;
 }
-BTAPP_FN static void song_index_target(const song_index_t *index, uint32_t target)
+static void song_index_target(const song_index_t *index, uint32_t target)
 {
     song_idx.rows[target] = index->rows[target];
     memcpy(song_idx.scene[target], index->scene[target], sizeof index->scene[target]);
