@@ -2308,6 +2308,28 @@ static __attribute__((noinline)) void drum_mix(int32_t *ol, int32_t *or_, uint32
         }
 }
 
+/* A requested track follower: one peak scan, never another engine render.
+ * Stereo IMAGE is included; the smoothed end-of-block LEVEL/PAN and duck gain
+ * calibrate the control signal. UI meters and shared FX returns are excluded. */
+static __attribute__((noinline)) void track_follow_peak(const track_t *t, const int32_t *b, uint32_t n)
+{
+    uint32_t ti = (uint32_t)(t - trk), i;
+    int32_t pl = 0, pr = 0, level = mp_lvl[ti] >> 8, pan = mp_pan[ti] >> 8;
+    for (i = 0; i < n; i++) {
+        int32_t l = b[i] - ((dx_xon & 1u) ? dx_sl[i] : 0), r = b[i] - ((dx_xon & 1u) ? dx_sr[i] : 0);
+        l = l < 0 ? -l : l; r = r < 0 ? -r : r;
+        if (l > pl) pl = l;
+        if (r > pr) pr = r;
+    }
+    if (ENGINES[t->engine] != &ENG_DRUM) level = mulq15(level, duck_g1);
+    pl = ((pl >> 2) * level) >> 10; pr = ((pr >> 2) * level) >> 10;
+    pl = pl * (64 - (pan > 0 ? pan : 0)) >> 6;
+    pr = pr * (64 + (pan < 0 ? pan : 0)) >> 6;
+    track_pk[ti] = (int16_t)clamp(pl > pr ? pl : pr, 0, 32767);
+}
+/* mix_part's RAM copy may be out of the new helper's direct-call range. */
+static void (*const volatile TRACK_FOLLOW)(const track_t *, const int32_t *, uint32_t) = track_follow_peak;
+
 /* one synth part into the dry mix and the sends; a part with no voice sounding costs
  * the LFO tick and a cleared buffer only (after the DIST tail has run out) */
 static inline __attribute__((always_inline)) void mix_part(track_t *t, uint32_t n)   /* (0.6.78: inlined in both
@@ -2397,6 +2419,7 @@ static inline __attribute__((always_inline)) void mix_part(track_t *t, uint32_t 
             int32_t *const sx[3] = {sc, sd, sr};
             drum_mix(ol, or_, n, lq, dl, gl, dgl, gr, dgr, pm0, pm1, sx);
         }
+        if ((track_follow_mask >> ti) & 1u) TRACK_FOLLOW(t, b, n);
         for (i = 0; i < n; i++, lq += dl, gl += dgl, gr += dgr) {
             int32_t x = ((b[i] >> 2) * (lq >> 8)) >> 10, a = x < 0 ? -x : x;   /* pre-shift: 8 loud voices */
             int32_t xs = clamp(x, -xmax, xmax);         /* sends: mulq15 would overflow */
@@ -2866,6 +2889,8 @@ static __attribute__((noinline)) void mix_block(int32_t *out, uint32_t n)   /* (
             mc_jobs++;
         } else {
             mc_lost();                                  /* (its parts' block and the buses' dropped; one core from here) */
+            for (i = 0; i < NPART; i++)
+                if ((c1m >> i) & 1u) track_pk[i] = 0;
             for (i = 0; i < n; i++)
                 fx_wet[i] = fx_sl[i] = fx_sr[i] = 0;
         }
@@ -2929,3 +2954,4 @@ static __attribute__((noinline)) void mix_block(int32_t *out, uint32_t n)   /* (
         out[2u * i + 1u] = r;
     }
 }
+

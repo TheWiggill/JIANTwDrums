@@ -666,7 +666,7 @@ static void test_jiant_078(void)
     fresh(ea, 0);
     trk[0].p[P_M1SRC] = MS_NOISE; trk[0].p[P_M1DST] = MD_CUT; trk[0].p[P_M1AMT] = 40;
     h = phrase();
-    check("0.7.8: the NOISE source moves the filter (its own sound)", h != a0 && MS_NOISE == 14 && MS_N == 17);
+    check("0.7.8: the NOISE source moves the filter (its own sound)", h != a0 && MS_NOISE == 14 && MS_N > MS_NOISE);
     fresh(ea, 0);
     trk[0].p[P_M1SRC] = MS_PROX; trk[0].p[P_M1DST] = MD_CUT; trk[0].p[P_M1AMT] = 40;
     mod_prox = 0;
@@ -688,7 +688,7 @@ static void test_jiant_078(void)
         trk[0].p[P_M1SRC] = MS_ENV2; trk[0].p[P_M1DST] = MD_CUT; trk[0].p[P_M1AMT] = 60;
         trk[0].p[P_E2ATK] = 100; trk[0].p[P_E2DEC] = 60; trk[0].p[P_E2SUS] = 30; trk[0].p[P_E2REL] = 40;
         hs = phrase();
-        check("V10.22: ENV2 on CUT sounds its own, its ATK shapes it", hf != a0 && hs != hf && MS_ENV2 == 16 && MS_N == 17);
+        check("V10.22: ENV2 on CUT sounds its own, its ATK shapes it", hf != a0 && hs != hf && MS_ENV2 == 16 && MS_N > MS_ENV2);
         fresh(ea, 0);
         trk[0].p[P_M1SRC] = MS_ENV2; trk[0].p[P_M1DST] = MD_CUT; trk[0].p[P_M1AMT] = 60;
         trk[0].p[P_E2ATK] = 40; trk[0].p[P_E2DEC] = 60; trk[0].p[P_E2SUS] = 64; trk[0].p[P_E2REL] = 40;
@@ -1293,3 +1293,4 @@ int main(int argc, char **argv)
     printf("%s\n", bad ? "MOD MATRIX TEST FAILED" : "mod matrix test passed");
     return bad != 0;
 }
+

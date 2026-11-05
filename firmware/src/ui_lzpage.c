@@ -110,17 +110,14 @@ static int graph_env_lz(const track_t *t, const page_t *pg)
  *            amounts as rows, each lit by what it sends now; MSEQ, MSEQ 2: graph_mseq under its caption */
 static void graph_mod_net(const track_t *t)
 {
-    uint32_t k, s, used = 0;
-    for (k = 0; k < NMSLOT; k++)
-        used |= 1u << clamp(t->p[P_M1SRC + 3u * k], 0, MS_N - 1);
-    for (s = 1; s < (uint32_t)MS_N; s++)
-        cv_text(10, 6 + (int32_t)(s - 1u) * 9 - AF_X_CAP_Y, &AF_X, N_MSRC[s], used >> s & 1u ? T_TEXT : T_DIM);
+    uint32_t k;
     for (k = 0; k < NMSLOT; k++) {
         const int16_t *p = &t->p[P_M1SRC + 3u * k];
-        int32_t y = 4 + (int32_t)k * 33, on = p[0] && p[1], sel = k == mod_ui_slot, sy = 9 + (p[0] - 1) * 9, w;
+        int32_t y = 4 + (int32_t)k * 33, on = p[0] && p[1], sel = k == mod_ui_slot, sy = y + 11, w;
         uint16_t bg = sel ? T_TINT : T_RAISE, lc = sel ? T_THEME : on ? T_MID : T_DIM;
         char b[16];
         const char *u = "";
+        cv_text(6, sy - AF_X_CAP_Y, &AF_X, N_MSRC[clamp(p[0], 0, MS_N - 1)], on ? T_TEXT : T_DIM);
         if (on) {
             og_quad_a(48 * 16, sy * 16, 110 * 16, sy * 16, 158 * 16, (y + 11) * 16, lc, 16u, 256);
             if (sel && !ANIM_OFF()) {               /* (the pulse: a quadratic's point at u = frame) */
@@ -413,3 +410,4 @@ static void graph_system(void)
     str_cpy(b + str_len(b), "%", 2);
     cv_text_r(230, 62 - AF_X_CAP_Y, &AF_X, b, T_TEXT, T_SURF);
 }
+

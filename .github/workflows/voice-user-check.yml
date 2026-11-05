@@ -45,6 +45,12 @@ jobs:
         run: |
           cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/song_generator_test.c -lm -o build/song-check/generator
           build/song-check/generator | tee build/song-check/generator.log
+      - name: Matrix and track follower regression
+        run: |
+          cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/mod_test.c -lm -o build/song-check/mod
+          build/song-check/mod > build/song-check/mod.log
+          cc -O1 -g -w -Wno-implicit-function-declaration -fsanitize=address,bounds -Ibuild/gen -Ifirmware/src tests/track_follow_test.c -lm -o build/song-check/follow
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 build/song-check/follow | tee build/song-check/follow.log
       - name: Verified pre-split baseline for UI regression comparison
         uses: actions/checkout@v4
         with:
@@ -86,6 +92,7 @@ jobs:
         env:
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
           JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
+          FELUCCA_REPIN: keep
         run: python3 tools/build.py > build/song-check/target.log 2>&1 || { cat build/song-check/target.log; exit 1; }
       - name: Firmware memory and reach checks
         run: tail -n 20 build/song-check/target.log

@@ -1132,7 +1132,7 @@ static void mono_remove(track_t *t, uint32_t note)
 
 static int pfx_note(track_t *t, uint32_t note, uint32_t vel);   /* pfx.c (in fx.c) */
 static uint8_t trk_hush;
-static uint8_t trk_live = 4;
+/* trk_live is shared with the matrix; declared in core.h. */
 static volatile uint8_t asleep_hit;                     /* (0.6.28) a note went to a track asleep (ui_input: the hint) */                            /* (JIANT 0.6.18) MENU > TRACKS: the tracks that play (4 LOW CPU, the
                                                          * default; 6 HIGH): the ones past it get no notes and stop,
                                                          * their sounds and steps kept (fx.c mix_part) */                                /* (0.6.15) bit k: track k muted by GLO's solo / the FX layer's
@@ -1727,4 +1727,5 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
         xf_snap_t = 0xFFu;                              /* (faded out: the snapshot done with) */
     return nr;
 }
+
 
