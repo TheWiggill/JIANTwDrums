@@ -55,6 +55,7 @@ static void song_index_boot(void)
             song_idx.rows[0] = proj_scratch.chain;
     }
     chain_config = song_idx.rows[song_cur];
+    song_mode_restore();
 }
 /* the current song's name: its section A's, else SONG n (b: PROJ_NAME_LEN + 1 bytes) */
 static void song_name(char *b)
@@ -435,7 +436,7 @@ static int song_switch(uint32_t n, int load_a)
         proj_cur = PROJ_NO_SLOT;
     ui.force = 1;
     if (load_a) {
-        if ((chain_config.rsv[2] & 0xFEu) == SONG_MODE_TAG) live.mode = chain_config.rsv[2] & 1u;
+        song_mode_restore();
         song_name(nm);
         ui_say(nm, "");
     } else {                                          /* PROJECT n, then its section A's name */
@@ -503,7 +504,8 @@ static void song_poll(void)
             ui_message("SONG END");
         }
     }
-    if (memcmp(&chain_config, &song_idx.rows[song_cur], sizeof chain_config)) {   /* the rows changed */
+    chain_config.rsv[2] = SONG_MODE_TAG | (live.mode ? 1u : 0u);
+    if (memcmp(&chain_config, &song_idx.rows[song_cur], sizeof chain_config)) {   /* the rows or PLAY mode changed */
         song_idx.rows[song_cur] = chain_config;
         song_idx_dirty = 1;
         song_idx_t = fm1_ms;

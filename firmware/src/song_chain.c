@@ -23,6 +23,7 @@ static chain_config_t chain_config;           /* the current song's rows */
                                               * the song's rows in flash: after a power cycle GEN's FORM writes them again
                                               * (in RAM they were lost, and every section looked the player's) */
 #define NSONG 8u                              /* songs: four sections each (storage.c: where they are kept) */
+#define SONG_MODE_TAG 0xA0u                    /* chain.rsv[2]: saved LOOP/SONG mode, old files have zero */
 #define SONG_MAGIC 0x474E4F53u                /* "SONG" */
 /* (JIANT) a row's scene: when the row goes in (a song, not a quick chain) the tracks' mutes, DRUM's group mutes, the
  * macros and the punch-in MIDI effects become what was stored; they stay through the rows after it that have none.
@@ -119,6 +120,12 @@ static struct {
     uint8_t dirty;                    /* sections stored in RAM, not in flash yet (bit s) */
     uint8_t mode;                     /* 1 SONG: PLAY plays the song; 0 LOOP */
 } live = {.req = -1, .cur = -1};
+
+static void song_mode_restore(void)
+{
+    if ((chain_config.rsv[2] & 0xFEu) == SONG_MODE_TAG)
+        live.mode = chain_config.rsv[2] & 1u;
+}
 
 static void chain_start(void);                   /* song_play.c (end of seq.c) */
 static void chain_stop(void);

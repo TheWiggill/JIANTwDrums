@@ -2546,8 +2546,8 @@ static void ui_input_frame(void)
         name_input(notes, oct);
         return;
     }
-    if (save == BT_TAP && !dlg_on())                    /* SAVE let go (not its layer's: that tap is layer_tap's) */
-        open_family(FAM_SAVE);
+    if (save == BT_TAP && !dlg_on())
+        layer_tap(LAYER_SAVE);
     if (dlg_on()) {                                     /* OCT- cancels, OCT+ does it; nothing else reacts (GEN: a page,
                                                          * below) */
         if (oct & 2u) {

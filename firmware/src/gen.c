@@ -1747,9 +1747,6 @@ static void gen_parts(void)
     uint32_t nord;
     if (form == FM_LOOP) return;
     gseed(GS_FORM);
-    for (k = 0; k < 4u; k++)
-        if (project_used(k) && !((dice_secs >> k) & 1u)) { gform_kept = 1; return; }   /* (a section of yours: kept,
-                                                         * and said: gen_go) */
     live.cur = -1;
     section_store(0);                                   /* A: the whole piece */
     if (live.cur != 0) return;
@@ -2466,8 +2463,18 @@ static void gen_go(void)
 {
     uint32_t k;
     char b[8];
-    undo_mark();
     gform_kept = 0;
+    /* Refuse before gen_clean: a requested SONG must not silently become a loop
+     * while also erasing the current arrangement. Never overwrite saved A-D. */
+    if (gp.form)
+        for (k = 0; k < 4u; k++)
+            if (project_used(k) && !((dice_secs >> k) & 1u)) {
+                gform_kept = 1;
+                ui_message("A-D SAVED");
+                str_cpy(ui.msg2, "USE AN EMPTY PROJECT", sizeof ui.msg2);
+                return;
+            }
+    undo_mark();
     gen_make();
     str_cpy(gp.last, gs.g->name, sizeof gp.last);
     k = str_len(gp.last);
@@ -2475,7 +2482,7 @@ static void gen_go(void)
     b[3] = (char)('0' + gp.seed / 10u % 10u); b[4] = (char)('0' + gp.seed % 10u); b[5] = 0;
     str_cpy(gp.last + k, b, sizeof gp.last - k);
     ui_say("GEN: ", gp.last);
-    str_cpy(ui.msg2, live.mode ? "PARTS: PLAY THE SONG" : gform_kept ? "FORM: A-D ARE YOURS" : "UNDO: GLO + G4", sizeof ui.msg2);
+    str_cpy(ui.msg2, live.mode ? "PLAY: SONG / SAVE: ALL PARTS" : "UNDO: GLO + G4", sizeof ui.msg2);
     ui.force = 1;
 }
 static uint32_t gen_sig(void)                           /* the settings that make the piece */
@@ -2739,7 +2746,9 @@ static void gen_cards(void)
 }
 static uint32_t gen_draw_sig(void)
 {
-    return gen_sig() * 31u + gp.page * 7u + str_hash(gp.hot * 977u, gp.last) + ux.gen;
+    return gen_sig() * 31u + gp.page * 7u + str_hash(gp.hot * 977u, gp.last) + ux.gen +
+        chain_config.count * 7919u + live.mode * 13u + song.playing * 29u +
+        (chain.running ? (chain.row + 1u) * 104729u + chain.remaining * 1299709u : 0u);
 }
 static uint32_t gen_hash(uint32_t x) { x *= 2654435761u; x ^= x >> 15; x *= 2246822519u; x ^= x >> 13; return x % 1000u; }
 static void gen_panel(void)
@@ -2749,6 +2758,22 @@ static void gen_panel(void)
     uint32_t k, i, p = gp.page % 3u, n = (uint32_t)str_len(FORM[gp.form % 3u]);
     int32_t bw = 228 / (int32_t)n;
     char v[24];
+    if (p == 0u && chain_config.count) {
+        /* Reuse the actual arrangement, not FORM's illustrative BCADCA chips.
+         * Progress refreshes per bar; no new high-rate animation or DSP work. */
+        graph_proj(2);
+        cv_rect(0, 124, 240, 16, T_SURF);
+        if (chain.running) {
+            v[0] = (char)('A' + (uint32_t)live.cur % 4u); v[1] = ' ';
+            fmt_int(v + 2, (int32_t)chain.row + 1);
+            k = str_len(v); v[k++] = '/'; fmt_int(v + k, chain.config.count);
+            str_cpy(v + str_len(v), " LEFT ", 7);
+            fmt_int(v + str_len(v), chain.remaining);
+        } else str_cpy(v, song.playing ? "PLAYING LOOP" : live.mode ? "SONG READY" : "LOOP MODE", sizeof v);
+        cv_text(4, 128, &AF_X, v, T_TEXT);
+        cv_text_r(236, 128, &AF_X, "SAVE: SONG", T_ACCENT, T_SURF);
+        return;
+    }
     for (k = 0; k < 5u; k++) {
         int32_t y = 4 + (int32_t)k * 19, dn;
         uint32_t a = gp.amt[k];
@@ -2783,3 +2808,4 @@ static void gen_panel(void)
     cv_clip_text(6, 126, &AF_X, v, T_MID, T_SURF, 150);
     cv_text_r(234, 126, &AF_X, "OCT+ MAKE", T_ACCENT, T_SURF);
 }
+

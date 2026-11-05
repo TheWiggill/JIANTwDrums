@@ -424,8 +424,10 @@ static void layer_tap(uint32_t l)
 {
     if (l == LAYER_REC)                                 /* REC: arms / disarms (no page) */
         (void)rec_tap();
-    else if (l == LAYER_SAVE)                           /* SAVE: its pages (presets, user sounds, projects) */
-        open_family(FAM_SAVE);
+    else if (l == LAYER_SAVE) {                         /* GEN's SAVE keeps the whole song. */
+        if (gen_on()) nav_put(SEC_SAVE, "SAVE SONG AS");
+        else open_family(FAM_SAVE);
+    }
     else
         (void)page_tap(LAYERS[l].btn);
 }

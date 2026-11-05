@@ -41,6 +41,10 @@ jobs:
           python3 tests/uac_input_irq_test.py > build/song-check/usb-input.log
           cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/midi_control_test.c -lm -o build/song-check/midi
           build/song-check/midi | tee build/song-check/midi.log
+      - name: Generator song progress and whole-song save regression
+        run: |
+          cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/song_generator_test.c -lm -o build/song-check/generator
+          build/song-check/generator | tee build/song-check/generator.log
       - name: Verified pre-split baseline for UI regression comparison
         uses: actions/checkout@v4
         with:

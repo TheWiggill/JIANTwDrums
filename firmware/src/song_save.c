@@ -4,7 +4,6 @@
  * buffers: no new audio memory. The source stays open and untouched. Each destination section has the
  * storage layer's A/B protection; the four sections and index are NOT one atomic transaction. On an
  * interrupted overwrite the source remains available to retry the complete copy. */
-#define SONG_MODE_TAG 0xA0u                      /* chain.rsv[2], previously zero: saved LOOP/SONG mode */
 
 /* Normalize a source section into proj_wire, including current song-wide globals. 0 empty, 1 ready,
  * -1 cannot serialize. song_keep holds the unsaved live section for the duration of this operation. */

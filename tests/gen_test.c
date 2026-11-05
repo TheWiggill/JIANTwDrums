@@ -521,7 +521,7 @@ int main(void)
             ok = live.mode == 1 && chain_config.count == 6u && (dice_secs & 15u) == 15u;
             section_store(1);
             gen_with(1, 33, 60, 2);
-            ok &= live.mode == 0 && !chain_config.count && str_eq(ui.msg2, "FORM: A-D ARE YOURS");
+            ok &= live.mode == 1 && chain_config.count == 6u && str_eq(ui.msg2, "USE AN EMPTY PROJECT");
             bad += gcheck("FORM after a power cycle: the song written again; a section of the player's kept, and said", ok);
         }
     }
@@ -1208,3 +1208,4 @@ int main(void)
     printf(bad ? "gen: %d FAILED\n" : "gen: all passed\n", bad);
     return bad ? 1 : 0;
 }
+
