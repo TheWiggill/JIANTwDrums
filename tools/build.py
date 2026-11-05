@@ -458,7 +458,12 @@ def build_app():
                 # (0.9.9-gen1) a generator table the layout has not recorded: out of .rodata too, unless the
                 # compiler merges it with the small constants (4 8 16 32 B: the sound's are checked after them)
                 ty = re.search(r" constant (\[[^\]]*(?:\][^\]]*)*?\]|i\d+) ", m.group(1) + " ")
-                if m.group(2) not in late or (ty and ir_bytes(ty[1]) in (4, 8, 16, 32)):   # (snd5: a struct's too)
+                # Long UI-only strings also fill otherwise stranded gaps. The
+                # ISR/global closure and every recorded audio table stay put;
+                # explicit sections (including BTAPP) were excluded above.
+                ui_string = (m[2].startswith(".str") and m[2] not in reach and ty and
+                             re.fullmatch(r"\[\d+ x i8\]", ty[1]) and ir_bytes(ty[1]) >= 24)
+                if not ui_string and (m.group(2) not in late or (ty and ir_bytes(ty[1]) in (4, 8, 16, 32))):   # (snd5: a struct's too)
                     return m.group(0)
             aligns[m.group(2)] = int(m.group(4))
             return f'{m.group(1)}, section ".rodata.n.{m.group(2)}"{m.group(3)}'

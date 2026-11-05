@@ -32,6 +32,14 @@ save or erase is not atomic across all four parts and the index: retry an
 interrupted operation. Failed saves retain the draft for retry. No flash map,
 loader, project format or audio buffer changes are involved.
 
+This ADD beta uses the compact CDC console to recover application flash. USB
+descriptors, MIDI, the editor and update entry stay the same. `status` (including
+USB audio counters), `dbg`, `crash` and `uboot yes` remain available. Advanced
+developer commands `inp`, `params`, `memr` and `flr` require a diagnostic build
+with `FELUCCA_CONSOLE_VERBOSE=1`; their source is retained. Such builds still
+have to meet the target memory limits. No audio/IRQ optimization policy changes
+or memory-copy rewriting are used to make this release fit.
+
 Validation: native NOR tests cover source preservation, both scopes, same-project
 overwrite, failure/retry, project erase and dependent-row cleanup. Generator UI
 tests cover 45 genre choices, distinct parts, playback traversal, regeneration
