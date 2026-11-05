@@ -119,12 +119,7 @@ static void graph_mod_net(const track_t *t)
         const char *u = "";
         cv_text(6, sy - AF_X_CAP_Y, &AF_X, N_MSRC[clamp(p[0], 0, MS_N - 1)], on ? T_TEXT : T_DIM);
         if (on) {
-            og_quad_a(48 * 16, sy * 16, 110 * 16, sy * 16, 158 * 16, (y + 11) * 16, lc, 16u, 256);
-            if (sel && !ANIM_OFF()) {               /* (the pulse: a quadratic's point at u = frame) */
-                int32_t q = (int32_t)(anim_fr * 6u % 256u), r = 256 - q;
-                og_node((48 * r * r + 2 * 110 * r * q + 158 * q * q) >> 12, (sy * r * r + 2 * sy * r * q + (y + 11) * q * q) >> 12,
-                        2, T_TEXT);
-            }
+            cv_rect(58, sy, 100, 1, lc);
         } else
             cv_text(124, y + 9 - AF_X_CAP_Y, &AF_X, "----", T_DIM);
         cv_rect(160, y, 72, 26, bg);

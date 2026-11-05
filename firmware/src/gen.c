@@ -2750,7 +2750,6 @@ static uint32_t gen_draw_sig(void)
         chain_config.count * 7919u + live.mode * 13u + song.playing * 29u +
         (chain.running ? (chain.row + 1u) * 104729u + chain.remaining * 1299709u : 0u);
 }
-static uint32_t gen_hash(uint32_t x) { x *= 2654435761u; x ^= x >> 15; x *= 2246822519u; x ^= x >> 13; return x % 1000u; }
 static void gen_panel(void)
 {
     static const char *const ROLE[5] = {"DRUMS", "BASS", "CHORDS", "ARP", "LEAD"};
@@ -2787,13 +2786,10 @@ static void gen_panel(void)
         GFX_HOOK_ALIGN(0, y, 0, y + 16, AL_V, "GEN part name centred up/down");
         cv_text_r(232, y + CAP_IN(X, 16), &AF_X, v, T_DIM, bg);
         dn = a == GA_AUTO ? 550 : (int32_t)a * 10;
-        for (i = 0; i < 32u; i++) {
-            uint32_t h = gen_hash(gp.seed * 13u + k * 101u + i + (i > 15u ? gp.complex * 3u / 100u : 0u)), vv = gen_hash(i * 7u + k);
-            if ((int32_t)h < dn * (k ? 8 : 10) / 10) {
-                int32_t x = 52 + (int32_t)i * 49 / 10, yy = y + 3 + (k == 1u || k == 4u ? (int32_t)(1000u - vv) * 8 / 1000 : 0);
-                cv_rect(x, yy, k == 2u ? 9 : 3, k == 2u ? 10 : 3, heat_col(64 + (int32_t)gp.energy * 154 / 100 + (int32_t)vv * 38 / 1000));
-            }
-        }
+        /* Density is a setting, not a preview of generated notes. Keep the
+         * real arrangement above; avoid 160 decorative hash/draw operations. */
+        cv_rect(52, y + 6, 150, 4, T_LINE);
+        if (dn) cv_rect(52, y + 6, dn * 150 / 1000, 4, on ? T_THEME : T_MID);
     }
     for (i = 0; i < n; i++) {                           /* the FORM's sections */
         uint32_t sc = (uint32_t)(FORM[gp.form % 3u][i] - 'A');
