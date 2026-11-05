@@ -515,7 +515,8 @@ def main():
                     bank_words.append(w)
                     offs.append(len(txt))
                     txt += w.encode() + b"\0"
-                    meta.append(ns | (16 if fem else 0))
+                    assert 0 <= ns < 8
+                    meta.append(ns | (8 if fem else 0))
                     n += 1
         counts[lang] = n
         U = lang.upper()
@@ -531,7 +532,8 @@ def main():
         L.append(f"static const uint8_t LY_{U}_TXT[{len(packed)}] = {{\n    {c_bytes(packed)}}};")
         offs = offs[::16]                            # (0.9.0) each 16th word's place (sing.c ly_word: then the 0s)
         L.append(f"static const uint16_t LY_{U}_OFF[{len(offs)}] = {{\n    {c_bytes(o*5 for o in offs)}}};")
-        L.append(f"static const uint8_t LY_{U}_META[{n}] = {{\n    {c_bytes(meta)}}};")
+        packed_meta = bytes(meta[i] | ((meta[i+1] if i+1<n else 0)<<4) for i in range(0,n,2))
+        L.append(f"static const uint8_t LY_{U}_META[{len(packed_meta)}] = {{\n    {c_bytes(packed_meta)}}};")
         assert all(a < 512 and b < 128 for t in grp for a,b in t)
         rows_c = ",\n    ".join("{" + ", ".join(str(a | b<<9) for a, b in t) + "}" for t in grp)
         L.append(f"static const uint16_t LY_{U}_GRP[{len(THEMES)}][{len(CATS)}] = {{\n    {rows_c}}};")

@@ -485,9 +485,9 @@ static void check_reading(void)
                 bad_w += strcmp(w,ref[k])!=0; /* exact text, not only the syllable count */
                 (void)sy_word(l, nw2, sy_norm(w, (uint32_t)strlen(w), nw2, sizeof nw2), ph, &n);
                 tot++;
-                if (n != (bk->meta[k] & 15u)) {
+                if (n != (ly_meta(bk,k) & 7u)) {
                     if (bad_w++ < 8u)
-                        printf("voice:   %s %s: %u syllables here, %u in the bank\n", LN[l], w, n, bk->meta[k] & 15u);
+                        printf("voice:   %s %s: %u syllables here, %u in the bank\n", LN[l], w, n, ly_meta(bk,k) & 7u);
                 }
             }
         }

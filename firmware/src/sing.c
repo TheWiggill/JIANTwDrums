@@ -604,6 +604,7 @@ static const ly_bank_t LY_BANK[3] = {
     {LY_EN_TXT, LY_EN_OFF, LY_EN_META, LY_EN_GRP},
     {LY_JA_TXT, LY_JA_OFF, LY_JA_META, LY_JA_GRP},
 };
+static uint32_t ly_meta(const ly_bank_t *b,uint32_t j) {return b->meta[j>>1]>>((j&1u)*4u)&15u;}
 /* a word of category cat in the theme with at most maxs syllables (exact: just that many): its index, -1 none */
 static int32_t ly_pick(uint32_t lang, uint32_t theme, uint32_t cat, uint32_t maxs, int exact, uint32_t *r)
 {
@@ -613,7 +614,7 @@ static int32_t ly_pick(uint32_t lang, uint32_t theme, uint32_t cat, uint32_t max
         return -1;
     o = sy_rnd(r) % n;
     for (k = 0; k < n; k++) {
-        uint32_t j = st + (o + k) % n, s = b->meta[j] & 15u;
+        uint32_t j = st + (o + k) % n, s = ly_meta(b,j) & 7u;
         if (exact ? s == maxs : s <= maxs)
             return (int32_t)j;
     }
@@ -889,7 +890,7 @@ static uint32_t sy_gen_word(const track_t *t, sing_t *s, uint32_t lang, uint32_t
         if (j < 0)
             j = ly_pick(lang, th, cat, s->prem, 0, &s->rng);
         if (j >= 0 && cat == 0u)
-            s->fem = (b->meta[j] >> 4) & 1u;
+            s->fem = (ly_meta(b,j) >> 3) & 1u;
         pcat = cat;
     }
     if (j < 0)                                           /* nothing fits: a noun or verb of exactly what is left */
@@ -914,7 +915,7 @@ static uint32_t sy_gen_word(const track_t *t, sing_t *s, uint32_t lang, uint32_t
         s->w[m] = 0;
         if (lang == LG_ES && s->fem && m && s->w[m - 1u] == 'o' && pcat == 2u)
             s->w[m - 1u] = 'a';                          /* the adjective after a feminine noun */
-        s->prem = (uint8_t)(s->prem - clamp(b->meta[j] & 15u, 1, s->prem));
+        s->prem = (uint8_t)(s->prem - clamp(ly_meta(b,j) & 7u, 1, s->prem));
     }
     return (uint32_t)j;                                  /* (English: the bank's word j, as it is) */
 }

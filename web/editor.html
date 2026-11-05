@@ -605,7 +605,8 @@ const parse = {
 /* (JIANT 0.8.5) a lyric the device takes: printable ASCII, at most 63 characters; accents dropped (the device has none:
    stress is not marked in singing), the enye as "ny" (as the device reads it: sing.c sy_es) */
 function lyricText(s, language = "") {
-  let text = String(s ?? "").replace(/[’‘]/g, "'");
+  let text = String(s ?? "").replace(/[’‘]/g, "'").replace(/[çÇ]/g,"s")
+    .replace(/[ñÑ]/g, c => c === "ñ" ? "ny" : "NY");
   if (language === "RU") {
     const abc = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя";
     const latin = ["a","b","v","g","d","e","yo","zh","z","i","y","k","l","m","n","o","p","r","s","t","u","f","kh","ts","ch","sh","shch","","y","","e","yu","ya"];
