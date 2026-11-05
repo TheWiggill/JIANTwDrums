@@ -18,6 +18,8 @@ jobs:
       - run: pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
       - name: Generate headers
         run: python3 -c "import sys;sys.path.insert(0,'tools');import build;build.generate()"
+      - name: Pinned audio gap packing regression
+        run: python3 tests/layout_packing_test.py
       - name: JieLi toolchain cache
         uses: actions/cache@v4
         with:
@@ -41,6 +43,7 @@ jobs:
         env:
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
           JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
+          FELUCCA_REPIN: keep
         run: |
           mkdir -p build/song-check
           python3 tools/build.py > build/song-check/target.log 2>&1 || {
