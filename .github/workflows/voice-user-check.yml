@@ -99,7 +99,6 @@ jobs:
         env:
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
           JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
-          FELUCCA_REPIN: keep
         run: |
           python3 tools/build.py > build/song-check/target.log 2>&1 || {
             cat build/song-check/target.log

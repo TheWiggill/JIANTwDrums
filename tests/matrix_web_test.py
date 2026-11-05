@@ -15,7 +15,8 @@ let dev={info:{pe0:4,pcount:12,engines:['INPUT']},dump:{engine:0},built:0,pdesc:
 function assertSession(d){assert.equal(d,dev);}
 async function getDescOrNull(s,i){calls.push(i);return {...dev.pdesc[i],names:["OFF",mode?'T:MOVE':'T:POS']};}
 function buildGroups(){builds++;}
-'''+fn('matrixContextId')+'\n'+fn('rereadEngineDesc')+'\n'+fn('modDst')+'''
+'''+fn('matrixContextId')+'\n'+fn('rereadEngineDesc')+'\n'+fn('modDst')+'\n'+fn('aliasOf')+'''
+assert.equal(aliasOf(['OFF','V:AMP','OFF'],2),0);assert.equal(aliasOf(['OFF','V:AMP','T:LEVEL'],2),2);
 assert(matrixContextId(dev,4));assert(matrixContextId(dev,7));assert(matrixContextId(dev,0));assert(!matrixContextId(dev,6));
 await rereadEngineDesc(); assert.equal(calls.length,12);assert.equal(builds,1);
 mode=1;calls=[];await rereadEngineDesc();assert.equal(calls.filter(i=>i<4).length,4);assert.equal(builds,2);
