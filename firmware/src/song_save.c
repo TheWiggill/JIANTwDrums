@@ -7,7 +7,7 @@
 
 /* Normalize a source section into proj_wire, including current song-wide globals. 0 empty, 1 ready,
  * -1 cannot serialize. song_keep holds the unsaved live section for the duration of this operation. */
-static int song_copy_section(uint32_t section, uint32_t current, const char *name)
+BTAPP_FN static int song_copy_section(uint32_t section, uint32_t current, const char *name)
 {
     project_t *p = &proj_scratch;
     if (song_save_loop) {

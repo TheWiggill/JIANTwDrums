@@ -104,7 +104,9 @@ def main(src, dst):
     # Keep synthesis, clocks, DMA, note release and ownership queries at -Os.
     input_size = {"midi_event", "midi_control", "midi_cc_map", "midi_cc_set", "midi_learned", "midi_route_ch14"}
     cold_ui = {"mod_dst_ok", "mod_dst_offer_bt", "mod_dst_name_bt", "gen_value", "gen_cards_bt", "gen_panel_bt",
-               "song_index_target", "song_remove_parts"}
+               "song_index_target", "song_remove_parts", "song_copy_section", "gen_knob_bt",
+               "proj_unpack_bt", "about_load", "bt_prox_panel", "bt_prox_input",
+               "fm4_abs", "fm4_lg", "fm4_ms", "fm4_samples", "fm4_rate", "fm4_fall", "fm4_level", "fm4_outlevel", "fm4_convert_bt"}
     names, hit = ((size_names() | cold_ui) - isr) | input_size, set()
 
     def mark(m):
