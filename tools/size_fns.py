@@ -10,7 +10,6 @@ optimizer, this script adds 'minsize' to those definitions, and the IR is then c
   size_fns.py IN.ll OUT.ll"""
 import re
 import sys
-from collections import Counter
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parents[1]
@@ -109,26 +108,14 @@ def main(src, dst):
                "proj_unpack_bt", "about_load", "bt_prox_panel", "bt_prox_input",
                "fm4_abs", "fm4_lg", "fm4_ms", "fm4_samples", "fm4_rate", "fm4_fall", "fm4_level", "fm4_outlevel", "fm4_convert_bt"}
     names, hit = ((size_names() | cold_ui) - isr) | input_size, set()
-    # Large, shared main-loop helpers keep one body rather than being copied
-    # into their callers. IRQ reach (including engine callbacks) stays at -Os.
-    attrs = dict(re.findall(r"^attributes #(\d+) = \{([^}]+)\}", ir, re.M))
-    refs = Counter(IR_REF.findall(ir))
-    shared = {m[1] for m in IR_BODY.finditer(ir) if m[1] in names - isr and refs[m[1]] >= 3
-              and len(m[2].splitlines()) >= 32}
-    outlined = set()
-
     def mark(m):
         if m.group(2) not in names:
             return m.group(0)
         hit.add(m.group(2))
-        group = re.search(r"#(\d+)", m[3])
-        old = attrs.get(group[1], "") if group else ""
-        outline = m[2] in shared and not re.search(r"\b(alwaysinline|noinline)\b", old)
-        if outline: outlined.add(m[2])
-        return m.group(1) + " minsize" + (" noinline" if outline else "") + m.group(3)
+        return m.group(1) + " minsize" + m.group(3)
     Path(dst).write_text(IR_DEF.sub(mark, ir))
     print(f"size: {len(hit)} main-loop functions built for size ({len(names) - len(hit)} not in this build; "
-          f"{len(size_names() & isr)} reached from an interrupt kept -Os); {len(outlined)} shared UI helpers outlined")
+          f"{len(size_names() & isr)} reached from an interrupt kept -Os)")
     return 0
 
 

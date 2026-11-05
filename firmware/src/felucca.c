@@ -19,6 +19,9 @@
 #ifndef FELUCCA_CDC
 #define FELUCCA_CDC 1            /* USB CDC-ACM serial console */
 #endif
+#ifndef FELUCCA_CONSOLE_VERBOSE
+#define FELUCCA_CONSOLE_VERBOSE 0 /* developer memory/LED-scan dumps: opt in; keep status, audio and crash diagnostics */
+#endif
 #ifndef FELUCCA_UAC
 #define FELUCCA_UAC 1            /* USB audio input: the master output, 16-bit stereo 44.1 kHz (usb.c) */
 #endif
