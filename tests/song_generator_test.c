@@ -43,6 +43,7 @@ int main(void)
     sig = gen_draw_sig();
     events_block(chain_bar()); song_poll(); frame();
     bad += check("GEN progress refreshes at next bar of the same section", chain.remaining == 15 && gen_draw_sig() != sig);
+    screen_save("build/song-check", "generator-song");
     unsigned transitions = 0, last = chain.row;
     for (unsigned bar = 1; bar < 129; ++bar) {
         events_block(chain_bar()); song_poll();

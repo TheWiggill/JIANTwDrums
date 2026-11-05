@@ -843,6 +843,19 @@ int main(void)
     bad += fit_storage_test();
     bad += voice_user_test();
     bad += split_storage_test();
+    {
+        static project_store_t follow_store;
+        song.playing = 0; transport_req = 0; chain.armed = chain.running = 0;
+        trk[0].p[P_M1SRC] = MS_T1 + NTRK - 1;
+        trk[0].p[P_M1DST] = MD_LEVEL;
+        trk[0].p[P_M1AMT] = -64;
+        project_capture(&proj_scratch);
+        ok = proj_pack(&follow_store, &proj_scratch) &&
+             proj_import(&proj_scratch, &follow_store, sizeof follow_store) &&
+             proj_scratch.t[0].p[P_M1SRC] == MS_T1 + NTRK - 1 &&
+             proj_scratch.t[0].p[P_M1DST] == MD_LEVEL && proj_scratch.t[0].p[P_M1AMT] == -64;
+        bad += check("new follower and LEVEL IDs round-trip in the existing project format", ok);
+    }
     printf("%s\n", bad ? "PERSISTENCE TEST FAILED" : "persistence test passed");
     return bad != 0;
 }

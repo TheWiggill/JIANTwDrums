@@ -3029,7 +3029,7 @@ static int test_menu_tabs(void)
         memset(&favorites.factory[6][22], 0, 10);
         memset(&bp, 0, sizeof bp);
         mod_prox = 0;
-        ok = MS_PROX == 15 && MS_N == 18 && MS_FOLLOW == 17 &&   /* (V10.22 ENV2, V10.54 FOLLOW after it) */ str_eq(N_MSRC[MS_PROX], "PROX") && !MS_BIPOLAR(MS_PROX);
+        ok = MS_PROX == 15 && MS_N > MS_FOLLOW && MS_FOLLOW == 17 &&   /* Existing source IDs stay stable when sources are appended. */ str_eq(N_MSRC[MS_PROX], "PROX") && !MS_BIPOLAR(MS_PROX);
         for (k = 0; k < 40u; k++)
             w[k] = LV(80u);
         bt_prox_step(w, 8, 1, t);
