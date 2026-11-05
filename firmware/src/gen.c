@@ -2753,9 +2753,7 @@ static uint32_t gen_draw_sig(void)
 static void gen_panel(void)
 {
     static const char *const ROLE[5] = {"DRUMS", "BASS", "CHORDS", "ARP", "LEAD"};
-    static const char FORM[3][7] = {"A", "ABAC", "BCADCA"};
-    uint32_t k, i, p = gp.page % 3u, n = (uint32_t)str_len(FORM[gp.form % 3u]);
-    int32_t bw = 228 / (int32_t)n;
+    uint32_t k, p = gp.page % 3u;
     char v[24];
     if (p == 0u && chain_config.count) {
         /* Reuse the actual arrangement, not FORM's illustrative BCADCA chips.
@@ -2773,31 +2771,15 @@ static void gen_panel(void)
         cv_text_r(236, 128, &AF_X, "SAVE: SONG", T_ACCENT, T_SURF);
         return;
     }
+    /* Settings are shown numerically by the knob cards. The panel needs only
+     * their density bars; FORM is already labelled on GEN 1. */
     for (k = 0; k < 5u; k++) {
-        int32_t y = 4 + (int32_t)k * 19, dn;
-        uint32_t a = gp.amt[k];
-        int on = (p == 1u && k < 4u) || (p == 2u && k == 4u);
-        uint16_t bg = on ? T_TINT : T_RAISE;               /* (the mock-up's selection: a tint) */
-        cv_rect(4, y, 232, 16, bg);
-        GFX_HOOK_ALIGN(0, y, 0, y + 16, AL_V, "GEN part name centred up/down");
-        cv_text_on(8, y + CAP_IN(X, 16), &AF_X, ROLE[k], on ? T_TEXT : T_MID, bg);
-        str_cpy(v, a == GA_AUTO ? "AUTO" : a ? "" : "OFF", sizeof v);
-        if (a && a != GA_AUTO) { fmt_int(v, (int32_t)a); str_cpy(v + str_len(v), "%", 2); }
-        GFX_HOOK_ALIGN(0, y, 0, y + 16, AL_V, "GEN part name centred up/down");
-        cv_text_r(232, y + CAP_IN(X, 16), &AF_X, v, T_DIM, bg);
-        dn = a == GA_AUTO ? 550 : (int32_t)a * 10;
-        /* Density is a setting, not a preview of generated notes. Keep the
-         * real arrangement above; avoid 160 decorative hash/draw operations. */
-        cv_rect(52, y + 6, 150, 4, T_LINE);
-        if (dn) cv_rect(52, y + 6, dn * 150 / 1000, 4, on ? T_THEME : T_MID);
-    }
-    for (i = 0; i < n; i++) {                           /* the FORM's sections */
-        uint32_t sc = (uint32_t)(FORM[gp.form % 3u][i] - 'A');
-        char l[2] = {FORM[gp.form % 3u][i], 0};
-        int32_t x = 6 + (int32_t)i * bw;
-        cv_rect(x, 102, bw - 2, 14, sec_col(sc));
-        GFX_HOOK_ALIGN(x, 102, x + bw - 2, 116, AL_HV, "GEN section letter centred");
-        cv_text_in(x, 102 + CAP_IN(X, 14), bw - 2, &AF_X, l, T_INK, sec_col(sc));
+        int32_t y = 8 + (int32_t)k * 21;
+        uint32_t a = gp.amt[k] == GA_AUTO ? 55u : gp.amt[k];
+        uint16_t c = ((p == 1u && k < 4u) || (p == 2u && k == 4u)) ? T_THEME : T_MID;
+        cv_text(8, y, &AF_X, ROLE[k], c);
+        cv_rect(60, y + 3, 166, 4, T_LINE);
+        if (a) cv_rect(60, y + 3, (int32_t)a * 166 / 100, 4, c);
     }
     str_cpy(v, "LAST: ", sizeof v);
     str_cpy(v + 6, gp.last[0] ? gp.last : "-", sizeof v - 6);
