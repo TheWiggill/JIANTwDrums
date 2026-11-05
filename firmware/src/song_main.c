@@ -212,7 +212,7 @@ static uint32_t chain_prepare(void)
         if (!proj_import(&proj_scratch, &proj_slot[chain_config.row[i].slot], sizeof(project_store_t)))
             return 3u + chain_config.row[i].slot;
     project_capture(&proj_scratch);                   /* the music as it is: back when the song ends */
-    chain.kept = (uint8_t)proj_pack(&song_keep, &proj_scratch);
+    chain.kept = proj_pack(&song_keep, &proj_scratch) ? (uint8_t)(1u | ((uint32_t)(live.cur + 1) << 1)) : 0u;
     chain.config = chain_config;
     chain.loop = 0;
     chain.pass = 0;
@@ -527,6 +527,7 @@ static void song_poll(void)
         if (chain.kept && proj_import(&proj_scratch, &song_keep, sizeof song_keep) &&
             !project_restore_runtime(&proj_scratch)) {
             proj_cur = cur;                           /* (the music before the song: its slot and name) */
+            live.cur = (int8_t)((int32_t)(chain.kept >> 1) - 1);
             str_cpy(proj_name, name, PROJ_NAME_LEN + 1u);
             ui_message("SONG END");
         }

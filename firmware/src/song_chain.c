@@ -106,7 +106,7 @@ static struct {
     uint8_t loop;                     /* the quick chain: round and round (a song stops at its end) */
     volatile uint8_t pass;            /* (0.6.22) the song's times through so far (its END: chain_wraps) */
     uint8_t scn;                      /* the row whose scene is in effect + 1 (0: none since the song began) */
-    uint8_t rec, kept;
+    uint8_t rec, kept;                /* kept: bit 0 snapshot valid; bits 1..3 original section + 1 (0 none) */
     uint32_t carry;                   /* samples past the bar line at the end of the block: the first step's */
     uint32_t bar_pos;                 /* samples into the bar (while playing) */
 } chain;

@@ -59,6 +59,7 @@ int main(void)
     }
     bad += check("GEN traverses six rows, including break, and wraps the song", transitions == 6 && chain.row == 0);
     seq_stop(); song_poll(); frame();
+    bad += check("STOP restores the original section identity with its music before SAVE", live.cur == 0 && proj_cur == 0);
     press(B_SAVE); frame();
     bad += check("SAVE from GEN opens whole-song destination without changing source",
                  cur_page()->graph == GR_SONGSAVE && song_save_target == song_cur && !name_on());

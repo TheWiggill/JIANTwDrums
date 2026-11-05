@@ -86,6 +86,13 @@ int main(void)
  song_index_load();song_index_boot();
  assert(autosave_boot(1)&&trk[0].step[0].note[0]==65&&live.mode&&chain_config.count==4);
  puts("save: in-place draft SONG restores its music and arrangement after reboot");
+ song_fixture();assert(!song_draft_begin());draft_music(65);
+ assert(!chain_prepare());events_block(CTL);song_poll();
+ events_block(chain_bar());song_poll();assert(chain.running&&live.cur==1);
+ seq_stop();song_poll();assert(live.cur==0&&trk[0].step[0].note[0]==65);
+ assert(!song_save_as(1,"AFTER PLAY"));
+ for(unsigned k=0;k<4;k++)assert(saved_note(1,k)==65+(int)k);
+ puts("save: PLAY then STOP then SONG save preserves every distinct section");
  song_fixture();memcpy(draft_before,proj_slot,sizeof draft_before);erase_error=1;
  assert(project_erase(0)&&!memcmp(draft_before,proj_slot,sizeof draft_before));erase_error=0;
  assert(!project_erase(1));assert(!project_used(1));
