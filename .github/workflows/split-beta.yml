@@ -47,7 +47,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: github-pages
-          run-id: 41930632844
+          run-id: 42043564564
           github-token: ${{ github.token }}
           path: build/released
       - name: Exact tested firmware
@@ -89,7 +89,7 @@ jobs:
           pages=Path('build/pages');fw=pages/'preview/firmware'
           def digest(p):return hashlib.sha256(p.read_bytes()).hexdigest()
           def protected():
-              return {p.relative_to(pages).as_posix():digest(p) for p in pages.rglob('*') if p.is_file() and not p.relative_to(pages).as_posix().startswith(('preview/firmware/','preview/webapp/installer/'))}
+              return {p.relative_to(pages).as_posix():digest(p) for p in pages.rglob('*') if p.is_file() and not p.relative_to(pages).as_posix().startswith(('preview/firmware/','preview/webapp/installer/','preview/webapp/editor/'))}
           before=protected()
           prior=json.loads((fw/'versions.json').read_text())
           old={v['file']:digest(fw/v['file']) for v in prior}
@@ -97,10 +97,11 @@ jobs:
           assert m['version']==v+'-'+m['source'][:7]+'-preview'
           edition_path=Path('web/EDITIONS.json')
           editions=json.loads(edition_path.read_text())
-          editions[m['version']]={'edition':'ADDITIVE / MOD','status':'beta'}
+          editions[m['version']]={'edition':'ADDITIVE / MATRIX','status':'beta'}
           edition_path.write_text(json.dumps(editions))
+          shutil.copyfile('build/candidate/web/editor.html','web/editor.html')
           make_site.main('build/candidate/build/felucca.fwsc',m['version'],'build/new-preview',str(fw))
-          for sub in ('firmware','webapp/installer'):
+          for sub in ('firmware','webapp/installer','webapp/editor'):
               shutil.rmtree(pages/'preview'/sub)
               shutil.copytree(Path('build/new-preview')/sub,pages/'preview'/sub)
           fw=pages/'preview/firmware';versions=json.loads((fw/'versions.json').read_text())
@@ -108,8 +109,8 @@ jobs:
           for name,h in old.items():assert digest(fw/name)==h,'previous beta package changed'
           (fw/'SOURCE_COMMIT').write_text(m['source']+'\n')
           (fw/'SHA256SUMS').write_text(''.join(digest(p)+'  '+p.name+'\n' for p in sorted(fw.glob('felucca-*.fwsc'))))
-          assert before==protected(),'a public, emulator or editor file changed'
-          print('PASS previous beta bytes preserved; every file outside beta preserved')
+          assert before==protected(),'a public, emulator or non-preview editor file changed'
+          print('PASS previous beta bytes preserved; public site and all non-beta files preserved')
           print('Published versions:',[x['version'] for x in versions])
           print('New package SHA256:',digest(fw/versions[0]['file']))
           PY
