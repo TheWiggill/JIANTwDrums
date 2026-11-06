@@ -142,6 +142,11 @@ static void prefs_update(void)
     }
     if (prefs_rev < 3u)                                /* (0.9.9-snd5) STRING's and ADD's stars (favorites.c fav_rows_new) */
         fav_rows_new();
+    if (prefs_rev < 4u) {                              /* (V10.6h) LOFI's stars: its chip presets' numbers are MATH's */
+        memset(favorites.factory[ENGI_LOFI], 0, sizeof favorites.factory[ENGI_LOFI]);   /* voices now (eng_lofi.c) */
+        prefs_rev = 4u;
+        settings_save();
+    }
 }
 /* MENU > AUDIO CLICK, CLICK LEVEL, COUNT-IN (1.1, Discussion #131; click.c, seq.c): two bits each in another byte no
  * engine uses, saved with the settings: bits 0-1 CLICK (OFF REC ON), 2-3 CLICK LEVEL (stored 0 MID, 1 LOW, 2 HIGH),
@@ -1713,17 +1718,23 @@ static uint32_t preset_all_pos(uint32_t *total)          /* list index of the se
 
 /* list index n (< total) -> engine, *k its preset; NENGINES = user preset, *k its slot. The engines in the order of
  * `order` (NENG_SHOWN of them): ENGINE_ORDER, the list shown; (0.9.9) ENGINE_PC_ORDER, PROGRAM CHANGE's numbers */
+/* (V10.6h) PROGRAM CHANGE counts the engines as 0.9.8's numbers had them, so every number names what it named: MATH
+ * as LOFI's 18 (the chip presets' numbers onto MATH's voices), ANIMAL its first 24 (the 5 tonal ones appended are
+ * reached by the list, not by a program number); the user presets after them as before */
+static const uint8_t LOFI_PC[18] = {0, 1, 2, 8, 9, 10, 11, 3, 4, 5, 6, 7, 5, 3, 4, 4, 3, 6};
+static uint32_t pc_shown(uint32_t e, int pc) { return !pc ? preset_shown(e) : e == ENGI_LOFI ? 18u : e == ENGI_ANIMAL ? 24u : preset_shown(e); }
 static uint32_t preset_all_at_in(uint32_t n, uint32_t *k, const uint8_t *order)
 {
     uint32_t e, r;
-    for (r = 0; r < NENG_SHOWN && n >= preset_shown(order[r]); r++)
-        n -= preset_shown(order[r]);
+    int pc = order == ENGINE_PC_ORDER;
+    for (r = 0; r < NENG_SHOWN && n >= pc_shown(order[r], pc); r++)
+        n -= pc_shown(order[r], pc);
     if (r == NENG_SHOWN) {
         *k = up_nth(n);
         return NENGINES;
     }
     e = order[r];
-    *k = preset_nth(ENGINES[e], n);                     /* the n-th shown preset */
+    *k = pc && e == ENGI_LOFI ? LOFI_PC[n % 18u] : preset_nth(ENGINES[e], n);   /* the n-th shown preset */
     return e;
 }
 static uint32_t preset_all_at(uint32_t n, uint32_t *k) { return preset_all_at_in(n, k, ENGINE_ORDER); }
@@ -1856,7 +1867,8 @@ static void midi_pc_poll(void)
             midi_pc_req[i] = 0;
             song.sel = (uint8_t)i;
             preset_all_pos(&all);
-            if (n < all) {
+            all = all - preset_shown(ENGI_LOFI) - preset_shown(ENGI_ANIMAL) + pc_shown(ENGI_LOFI, 1) + pc_shown(ENGI_ANIMAL, 1);
+            if (n < all) {                              /* (V10.6h: as PROGRAM CHANGE counts them) */
                 e = preset_all_at_in(n, &k, ENGINE_PC_ORDER);   /* (0.9.9: 0.9.8's numbers) */
                 if (e == NENGINES) {
                     up_load(k);

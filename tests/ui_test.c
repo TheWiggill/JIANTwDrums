@@ -13213,14 +13213,20 @@ static int test_engine_order_099(void)
     ok &= e == ENGI_ANALOG && k == preset_nth(ENGINES[ENGI_ANALOG], 0);   /* the last kit, then ANALOG's first (V10.6d) */
     for (i = 0, n = 0; i < all; i++) {                             /* the same sounds in both orders */
         uint32_t k1, k2, e1 = preset_all_at(i, &k1), e2;
-        for (e2 = 0, n = 0; e2 < all && !n; e2++) {
+        for (e2 = 0, n = 0; e2 < all + 1u && !n; e2++) {   /* (V10.6h: PROGRAM CHANGE counts one more: 18 - 12 + 24 - 29) */
             uint32_t q, ee = preset_all_at_in(e2, &q, ENGINE_PC_ORDER);
             n = ee == e1 && q == k1;
         }
         (void)k2;
-        if (!n) break;
+        if (!n && !(e1 == ENGI_ANIMAL && k1 >= 24u)) break;   /* (V10.6h: ANIMAL's appended tonal ones by the list alone) */
     }
     ok &= i == all && NELEM(PC) == NENG_SHOWN;
+    {   /* (V10.6h) PROGRAM CHANGE as 0.9.8 counted: MATH 18 (LOFI's), ANIMAL 24; ANIMAL's first is right after VOICE's
+         * 15, LOFI's slot 15 (PC 3 + 15 .. after PHASE and FM6) MATH BASS */
+        uint32_t base = preset_shown(ENGI_ANALOG) + preset_shown(ENGI_FM6) + preset_shown(ENGI_PHASE), q;
+        ok &= preset_all_at_in(base + 15u, &q, ENGINE_PC_ORDER) == ENGI_LOFI && q == 4u;
+        ok &= preset_all_at_in(base + 18u, &q, ENGINE_PC_ORDER) == ENGI_VOICE && q == preset_nth(ENGINES[ENGI_VOICE], 0);
+    }
     for (i = 0; i < NELEM(PC); i++)
         ok &= str_eq(ENGINES[ENGINE_PC_ORDER[i]]->name, PC[i]);
     e = preset_all_at_in(0, &k, ENGINE_PC_ORDER);

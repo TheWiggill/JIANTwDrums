@@ -249,8 +249,9 @@ static const uint8_t MIDI_CC_MAP[][2] = {
 };
 /* per engine (ENGINES[] order): CC74's E index + 1 in the high nibble, CC71's in the low one, 0 = none */
 static const uint8_t MIDI_CC_ENG[NENGINES] = {
-    0x56, 0x00, 0x30, 0x80, 0x50, 0x07, 0x67, 0x00,   /* ANALOG CUT RES, -, PHASE DCW, LOFI TONE, SAMPLE CUT, VOICE Q,
-                                                       * TRIO CUT RES, WHEEL - */
+    0x56, 0x00, 0x30, 0x00, 0x50, 0x07, 0x67, 0x00,   /* ANALOG CUT RES, -, PHASE DCW, MATH - (V10.6h: was E8, now its LOOP:
+                                                       * its CUT RES are the FILTER page's), SAMPLE CUT, VOICE Q, TRIO
+                                                       * CUT RES, WHEEL - */
     0x32, 0x30, 0x30, 0x34, 0x30,                     /* (snd5) STRING BRIGHT DECAY, PHYS BRIT, DRUM TONE, NOISE FREQ RES, FM6 MLVL */
     0x26,                                             /* (snd5) ADD BRIGHT FORMNT */
     0x23, 0x00,  /* (V10.54: then INPUT, none) */  /* ANIMAL PRESS (TOUCH CLICK BUZZ MOUTH), CHAOS (COUPLE Q DRIFT ROUGH) */
@@ -275,9 +276,7 @@ static void __attribute__((noinline)) midi_cc_map(track_t *t, uint32_t cc, uint3
         if (id == 0xFFFFu)
             return;
         e = MIDI_CC_ENG[eng_idx(t->eng_req)] >> (id == MCC_CUT ? 4 : 0) & 15u;
-        if (!e)
-            return;
-        id = P_E0 + e - 1u;
+        id = e ? P_E0 + e - 1u : id == MCC_CUT ? P_FCUT : P_FRES;   /* (V10.6h) none of its own: the FILTER page's */
     }
     midi_cc_set(t, id, value);
 }

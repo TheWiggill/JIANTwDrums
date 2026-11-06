@@ -115,6 +115,8 @@ static void v04_tracks(proj_trk_t *t)
     for (k = 0; k < PROJ_LT; k++) {
         sound_v04(t[k].engine, &t[k].p[P_E0]);
         if (analog_from_chip(t[k].engine, &t[k].p[P_E0])) {   /* (V10.6d) LOFI's chips: ANALOG */
+            t[k].p[P_E4] = (int16_t)clamp(t[k].p[P_FCUT], 0, 127);   /* (V10.6h: its FILTER page's) */
+            t[k].p[P_E5] = (int16_t)clamp(t[k].p[P_FRES], 0, 127);
             t[k].engine = 0;
             t[k].preset = 0;
         }
@@ -140,7 +142,8 @@ static int track_ok(const proj_trk_t *n, const proj_trk_v2_t *o, uint32_t t, int
         int16_t e[8];                           /* (JIANT 0.4: LOFI's and ANALOG's E values as today's, core.h sound_v04) */
         for (k = 0; k < 8u; k++) e[k] = oldv(t, 45u + k);
         sound_v04(chip ? o->engine : n->engine, e);
-        analog_from_chip(chip ? o->engine : n->engine, e);
+        if (analog_from_chip(chip ? o->engine : n->engine, e))
+            e[4] = (int16_t)clamp(n->p[P_FCUT], 0, 127), e[5] = (int16_t)clamp(n->p[P_FRES], 0, 127);
         for (k = 0; k < 8u; k++)
             ok &= n->p[P_E0 + k] == e[k];
     }
@@ -182,7 +185,8 @@ static int track_v3_ok(const proj_trk_t *n, const proj_trk_v3_t *o, uint32_t t)
         int16_t e[8];                           /* (JIANT 0.4: as today's) */
         for (k = 0; k < 8u; k++) e[k] = oldv3(t, 49u + k);
         sound_v04(o->engine, e);
-        analog_from_chip(o->engine, e);
+        if (analog_from_chip(o->engine, e))
+            e[4] = (int16_t)clamp(n->p[P_FCUT], 0, 127), e[5] = (int16_t)clamp(n->p[P_FRES], 0, 127);
         for (k = 0; k < 8u; k++)
             ok &= n->p[P_E0 + k] == e[k];
     }

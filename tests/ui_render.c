@@ -1753,8 +1753,8 @@ static void setup(int s)
     case S_V6_PHASE_FULL: v6_scene(ENGI_PHASE_UI, "BRASS", "EDIT 1", 0, 50, 300, 7); ui_scope = 0; break;
     case S_V6_LOFI: v6_scene(ENGI_LOFI_UI, "BYTEBEAT", "EDIT 1", 0, 60, 300, 8); break;
     case S_V6_LOFI_FLOAT: v6_scene(ENGI_LOFI_UI, "FLOAT PAD", "EDIT 2", 0, 60, 120, 8); break;
-    case S_V6_LOFI_PLS: v6_scene(ENGI_LOFI_UI, "PULSE LD", "EDIT 1", 0, 72, 600, 8); break;
-    case S_V6_LOFI_HOME: v6_scene(ENGI_LOFI_UI, "GB ARP", 0, 0, 72, 300, 8); break;
+    case S_V6_LOFI_PLS: v6_scene(ENGI_LOFI_UI, "MATH LEAD", "EDIT 1", 0, 72, 600, 8); break;
+    case S_V6_LOFI_HOME: v6_scene(ENGI_LOFI_UI, "MATH KEYS", 0, 0, 72, 300, 8); break;
     case S_V6_LOFI_FULL: v6_scene(ENGI_LOFI_UI, "BYTEBEAT", "EDIT 1", 0, 60, 300, 8); ui_scope = 0; break;
     case S_V6_STRING: v6_scene(ENGI_STRING, "STEEL GTR", "EDIT 1", 0, 48, 80, 9); break;   /* (0.9.9-snd5) TEJEDORA */
     case S_V6_STRING_BOW: v6_scene(ENGI_STRING, "BOWED", "EDIT 2", 0, 55, 900, 9); break;

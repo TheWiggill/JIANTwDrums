@@ -1015,9 +1015,9 @@ async function editorTracks() {
   const { m, rq, ev, done } = attachMock({ watchMs: 1000 });
   const info = E.parse[C.INFO](await rq(E.req.info()));
   const tr = E.parse[C.TRACK](await rq(E.req.track()));
-  ok(info.ntrk === 6 && tr.sel === 0 && tr.ntrk === 6 && tr.tracks.map((t) => t.engine).join() === "10,5,14,3,0,12"
-    && tr.tracks[0].preset === 0 && tr.tracks[1].preset === 9 && tr.tracks[4].preset === 14,
-    "tracks: INFO NTRK, TRACK lists 6 parts (0.9.9: DRUM-X, VOICE SINGER EN, ANIMAL, LOFI, ANALOG FAT BASS, FM6)");
+  ok(info.ntrk === 6 && tr.sel === 0 && tr.ntrk === 6 && tr.tracks.map((t) => t.engine).join() === "10,0,2,12,5,14"
+    && tr.tracks[0].preset === 5 && tr.tracks[1].preset === 14 && tr.tracks[2].preset === 9,
+    "tracks: INFO NTRK, TRACK lists 6 parts (V10.6e: DRUM-X ACOUSTIC, ANALOG FAT BASS, PHASE GLASS PAD, FM6, VOICE, ANIMAL)");
   /* the v1 commands follow the selected track */
   const d0 = E.parse[C.DUMP](await rq(E.req.dump()), info);
   const t1 = E.parse[C.TRACK](await rq(E.req.track(1)));
@@ -1025,7 +1025,7 @@ async function editorTracks() {
   await rq(E.req.set(0, 1, 77));
   const td0 = E.parse[C.TRACK_DUMP](await rq(E.req.trackDump(0)), info);
   const td1 = E.parse[C.TRACK_DUMP](await rq(E.req.trackDump(1)), info);
-  ok(t1.sel === 1 && d1.engine === 5 && d0.engine === 10 && td1.p[1] === 77 && td0.p[1] === d0.p[1] && td0.p[1] !== 77,
+  ok(t1.sel === 1 && d1.engine === 0 && d0.engine === 10 && td1.p[1] === 77 && td0.p[1] === d0.p[1] && td0.p[1] !== 77,
     "tracks: TRACK selects; DUMP / SET act on it, TRACK_DUMP reads any track");
   /* steps of a track that is not selected */
   const w = E.parse[C.TRACK_STEP](await rq(E.req.trackStep(2, 5, { n: 2, notes: [60, 67, 0, 0], time: 0, flags: 1, vel: 99 })));
@@ -1045,7 +1045,7 @@ async function editorTracks() {
   const us = E.parse[C.UP_STORE](await rq(E.req.upStore(20, "X"), { timeout: 2500, retries: 0 }));
   const ul = E.parse[C.UP_LOAD](await rq(E.req.upLoad(1), { timeout: 2500, retries: 0 }));
   const dl = E.parse[C.DUMP](await rq(E.req.dump()), info);
-  ok(dd.engine === 3 && us.rc === 0 && ul.rc === 0 && dl.engine === 12, "tracks: track 4 selected -> DUMP engine LOFI, UP_STORE / UP_LOAD rc 0");
+  ok(dd.engine === 12 && us.rc === 0 && ul.rc === 0 && dl.engine === 12, "tracks: track 4 selected -> DUMP engine FM6, UP_STORE / UP_LOAD rc 0");
   /* pushes carry the selected track */
   await rq(E.req.track(0));
   ok(await E.startWatch(rq), "tracks: WATCH on");
@@ -1137,7 +1137,7 @@ async function editorTrackParam() {
   const g = E.parse[C.TRACK_PARAM](await rq(E.req.trackParam(1, PAN)));
   const p2 = await E.mixer.setPan(rq, 2, 0, PAN, -40, true);
   const p1 = await E.mixer.setPan(rq, 1, 0, PAN, 99, true);
-  const alg = E.parse[C.TRACK_PARAM](await rq(E.req.trackParam(5, info.pe0, 50)));   /* track 6 is FM6 (0.9.9): ALG 0..32 */
+  const alg = E.parse[C.TRACK_PARAM](await rq(E.req.trackParam(3, info.pe0, 50)));   /* track 4 is FM6 (V10.6e): ALG 0..32 */
   const lv = E.parse[C.TRACK_PARAM](await rq(E.req.trackParam(3, 0, -5)));
   const sel = E.parse[C.TRACK](await rq(E.req.track()));
   const td2 = E.parse[C.TRACK_DUMP](await rq(E.req.trackDump(2)), info);

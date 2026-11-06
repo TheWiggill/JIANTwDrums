@@ -717,30 +717,37 @@ static void seq_note_off(track_t *t, uint32_t note);
 static const uint32_t GR_RATIO[25] = {32768, 34716, 36781, 38968, 41285, 43740, 46341, 49097, 52016, 55109, 58386, 61858, 65536, 69433, 73562, 77936, 82570, 87480, 92682, 98193, 104032, 110218, 116772, 123715, 131072};   /* 2^(st/12), Q16 */
 /* (0.6.81) the grains' clock, a sample: a grain starting again takes its spray and the PITCH now (turned in the middle
  * of a grain, its read point jumped: a click at every step of the knob) */
+/* (V10.6g) TYPE REVERSE: the grains near TIME long (46, 93 or 186 ms: a quarter of the line at most), each read
+ * backwards (ratio -1: the read point goes back a sample each sample, the delay grows two), so every repeat plays the
+ * last TIME of sound reversed, the two grains' triangles crossfading; SPRY as before, PITCH not. gr_inc the grains'
+ * phase step (Q16), gr_len their length (FS samples): GR_LEN's otherwise, every GRAIN sound as before */
+static uint32_t gr_inc = 65536u / GR_LEN, gr_len = GR_LEN;
+static uint8_t gr_rev;
 static void dly_grain_adv(void)
 {
     uint32_t j;
-    fx.gr_ph = (fx.gr_ph + 65536u / GR_LEN) & 0xFFFFu;
+    fx.gr_ph = (fx.gr_ph + gr_inc) & 0xFFFFu;
     for (j = 0; j < 2u; j++)
-        if (((fx.gr_ph + j * 32768u) & 0xFFFFu) < 65536u / GR_LEN) {
+        if (((fx.gr_ph + j * 32768u) & 0xFFFFu) < gr_inc) {
             fx.gr_sp[j] = song.g[G_DSPRY] ? rng() % ((uint32_t)song.g[G_DSPRY] * 64u + 1u) : 0u;
-            fx.gr_s[j] = (int32_t)GR_RATIO[clamp(song.g[G_DPIT], -12, 12) + 12] - 65536;
+            fx.gr_s[j] = gr_rev ? -131072 : (int32_t)GR_RATIO[clamp(song.g[G_DPIT], -12, 12) + 12] - 65536;
         }
 }
 static __attribute__((noinline)) int32_t dly_grain(uint32_t dl, uint32_t sh)   /* (0.8.4) sh: the line at FS >> sh */
 {
     int32_t x = 0;
-    uint32_t j, top = (DLY_LEN << sh) - (2u << sh) - GR_LEN * 2u;   /* (the farthest a grain starts, FS samples) */
+    uint32_t j, top = (DLY_LEN << sh) - (2u << sh) - gr_len * 2u;   /* (the farthest a grain starts, FS samples) */
     for (j = 0; j < 2u; j++) {
         int32_t s = fx.gr_s[j];
-        uint32_t e = (GR_LEN * (uint32_t)(s < 0 ? -s : s)) >> 8;   /* the read point's sweep over a grain, Q8 */
+        uint32_t e = (gr_len * (uint32_t)(s < 0 ? -s : s)) >> 8;   /* the read point's sweep over a grain, Q8 (a
+                                                         * multiple of 8: gr_len x 2^k; REVERSE's at most 8192 x 512) */
         uint32_t ph = (fx.gr_ph + j * 32768u) & 0xFFFFu, d, di, gl = dl;
         int32_t a, b, w;
         if (gl + fx.gr_sp[j] > top)                     /* (JIANT 0.5) a long TIME (the whole line): */
             gl = top - fx.gr_sp[j];                     /* room for the sweep, else the read point sat clamped (no pitch).
                                                          * (0.6.19: each grain its own: grain 0's new spray moved grain 1's
                                                          * read point in the middle of its window: a click every grain) */
-        d = ((gl + fx.gr_sp[j]) << 8) + ((e * ((s > 0 ? 65535u - ph : ph) >> 4)) >> 12);   /* Q8: up, the delay
+        d = ((gl + fx.gr_sp[j]) << 8) + (((e >> 3) * ((s > 0 ? 65535u - ph : ph) >> 4)) >> 9);   /* Q8: up, the delay
                                                          * shrinks over the grain; down, it grows */
         d >>= sh;                                       /* (FS samples -> the line's) */
         di = d >> 8;
@@ -897,6 +904,18 @@ static inline int32_t dly_rd(uint32_t d, int32_t m) { return dly_rd_of(dly_buf, 
 #define DLY_EDGE 8u
 #define DLY_SPAN(sh) ((DLY_LEN - DLY_EDGE) << (sh))      /* the longest read at FS >> sh, FS samples */
 #define DLY_MAX DLY_SPAN(2u)                             /* .. of all (a quarter rate) */
+/* (V10.6g) REVERSE's grains set off the hot code (mod.c macro_master, each block, from flash: the RAM code's room):
+ * near TIME long (the read point the last block took, FS samples), 46 / 93 / 186 ms (a quarter of the line at most:
+ * room for the sweep, its product in 32 bits) */
+static __attribute__((noinline)) void dly_rev_set(void)
+{
+    uint32_t dl = fx.dl_now, L;
+    gr_rev = song.g[G_DTYPE] == 2;
+    L = !gr_rev || dl < 2u * GR_LEN ? GR_LEN : dl < 4u * GR_LEN ? 2u * GR_LEN : 4u * GR_LEN;
+    gr_inc = 65536u / L;                                /* (L a power of two: 32 16 8) */
+    gr_len = L;
+}
+static void (*const volatile DLY_REV_SET)(void) = dly_rev_set;   /* (mod.c macro_master: RAM code) */
 static uint32_t delay_samples(void)
 {
     uint32_t g = (uint32_t)GFX(GF_DTIME);
@@ -1961,7 +1980,8 @@ static inline __attribute__((always_inline)) void fx_buses(const int32_t *cho_in
     int32_t dg = song.g[G_DDRV] > 0 ? 4096 + 123 * clamp(song.g[G_DDRV], 0, 100) : 0;   /* (snd2) DRIVE: x1 .. x4, Q12 */
     int32_t dgi = dg ? (int32_t)(134217728u / (uint32_t)dg) : 0;
     dband_t db;
-    int32_t gr = !sys_load && (song.g[G_DPIT] || song.g[G_DSPRY]);   /* (JIANT) the GRAIN delay (LOAD LITE / ECO: plain) */
+    int32_t gr = !sys_load && (song.g[G_DPIT] || song.g[G_DSPRY] || gr_rev);   /* (JIANT) the GRAIN delay (LOAD
+                                                         * LITE / ECO: plain); (V10.6g) REVERSE through it */
     /* (0.6.90) PING-PONG (not with the GRAIN): the line read at TIME (left) and twice TIME (right, the loop's tap), the
      * loop's gain squared, the right x FEEDBK: the repeats left, right, left .., each FEEDBK softer; TIME at most half
      * the line (0.8.4: of its longest, at a quarter rate, dly_rate); WIDE out of it */

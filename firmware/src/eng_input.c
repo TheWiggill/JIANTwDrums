@@ -169,7 +169,9 @@ static __attribute__((noinline)) void ain_swarm(uint32_t n)
     int32_t gl[SW_N], gr[SW_N], a0[SW_N], da[SW_N];
     sw_rnd += now;                                       /* (the interrupt's own jitter: entropy) */
     for (v = 0; v < SW_N; v++) {                         /* the reference clock: the loudest device heard */
-        if (sw[v].id && now - sw[v].last < 2u * SW_TPS && (sw[v].id ^ 0x31u) != 0x4A49u) {
+        if (sw[v].id && now - sw[v].last < 2u * SW_TPS && sw[v].id != 0x4E4763CBu) {   /* (V10.6h: SELF_ID's id as sw_heard
+                                                         * makes it: the FM-1's own voice is not a device; the old test never
+                                                         * matched, its clock beat every ~2 s) */
             ext = 1;
             if (sw[v].per && sw[v].lv >= rlv)
                 rlv = sw[v].lv, ref = sw[v].per;

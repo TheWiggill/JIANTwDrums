@@ -1621,7 +1621,7 @@ function makeMockDevice(opt = {}) {
     D("LEN", F.INT, 1, 16, 16), E("QUANT", ["CHR", "SCL"], 1),
     ...Array.from({ length: 16 }, () => D("PITCH", F.SEMI, -24, 24, 0)),
     D("MOD", F.PCT, 0, 127, 0),                       /* (0.6.86) G_DMOD 66: the delay's tape drift (WOW, FLUTTER) */
-    E("TYPE", ["ANALOG", "DIGITAL"], 0), E("PING", ["OFF", "ON"], 0),   /* (0.6.90) G_DTYPE 67, G_DPING 68 */
+    E("TYPE", ["ANALOG", "DIGITAL", "REVERS"], 0), E("PING", ["OFF", "ON"], 0),   /* (0.6.90) G_DTYPE 67, G_DPING 68 */
     D("LEN", F.INT, 1, 64, 64), E("RES", ["1/8", "1/16", "1/32"], 1),   /* (0.6.99) G_PFXLEN 69, G_PFXRES 70: the punch-in lane */
     D("DRIVE", F.PCT, 0, 100, 0),                     /* (0.9.9-snd2) G_DDRV 71: the delay's loop driven */
   ];
@@ -1927,10 +1927,11 @@ function makeMockDevice(opt = {}) {
     st.bank[slot] = snapshot(name);
     clearSteps(); st.p[29] = 16;
   });
-  /* the power-on sounds (engines.c TRK_DEF, 0.9.9): DRUM-X, SINGER EN, CMOS BIRD, BYTEBEAT, FAT BASS, TINE EP */
-  [[1, 5, 9], [2, 14, 0], [3, 3, 0], [4, 0, 14], [5, FM6_E, 0], [0, 10, 0]].forEach(([i, e, p]) => { st.sel = i; setEngine(e); applyPreset(p); });
+  /* the power-on sounds (engines.c TRK_DEF, V10.6e): DRUM-X ACOUSTIC, ANALOG FAT BASS, PHASE GLASS PAD, FM6 TINE EP,
+     VOICE CHOIR AAH, ANIMAL WHISTLE */
+  [[1, 0, 14], [2, 2, 9], [3, FM6_E, 0], [4, 5, 0], [5, 14, 24], [0, 10, 5]].forEach(([i, e, p]) => { st.sel = i; setEngine(e); applyPreset(p); });
   /* the device powers on with its sequencers empty; the mock starts as a little demo to look at: track 1 (DRUM-X)
-     with BEAT, track 5 (the bass) with OFFBEAT (as SEQ > PATTERNS would load them), the voice left, the bird right */
+     with BEAT, track 5 (the voice) with OFFBEAT (as SEQ > PATTERNS would load them), the bass left, the pad right */
   st.sel = 4; loadPattern(1);
   st.sel = 0; loadPattern(11);
   st.tracks[1].p[39] = -24; st.tracks[2].p[39] = 20; st.tracks[2].p[0] = 92;

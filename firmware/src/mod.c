@@ -304,11 +304,13 @@ static __attribute__((noinline)) int mod_begin(track_t *t)
 
 /* (JIANT) once an audio block, before the parts (fx.c): CLIP and PUNCH as the master plays them, the stored
  * values plus every track's slots on them (per-voice sources: the latest note-on's value; LFO: the block before) */
+static void (*const volatile DLY_REV_SET)(void);         /* (fx.c: REVERSE's grains, set from flash) */
 static __attribute__((noinline)) void macro_master(void)
 {
     int32_t off[MD_MASTER_END - MD_CLIP] = {0};
     uint32_t i, k, any = 0, sw1 = 0;
     mns_clk++;
+    DLY_REV_SET();
     if (ain_sw)                                         /* (SWARM: a track's SOURCE; its own block, a USB input too) */
         AIN_SWARM(CTL);
     ain_follow();

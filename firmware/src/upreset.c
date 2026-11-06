@@ -111,8 +111,13 @@ static void up_migrate(up_rec_t *r)
     }
     for (k = 0; k < 8u; k++) e[k] = up_value(r, r->np - 8u + k);
     if (r->engine == ENGI_LOFI) {                       /* (V10.6d) LOFI's chips: ANALOG's nearest (MATH's CHIP */
-        if (analog_from_chip(r->engine, e))             /* STEP: 4BIT) */
+        if (analog_from_chip(r->engine, e)) {           /* STEP: 4BIT) */
             r->engine = 0;
+            if (r->np == P_COUNT) {                     /* (V10.6h) its FILTER page's CUT RES as ANALOG's own E4 E5 */
+                e[4] = (int16_t)clamp(up_value(r, P_FCUT), 0, 127);
+                e[5] = (int16_t)clamp(up_value(r, P_FRES), 0, 127);
+            }
+        }
         for (k = 0; k < 8u; k++) up_set_value(r, r->np - 8u + k, e[k]);
     }
 }

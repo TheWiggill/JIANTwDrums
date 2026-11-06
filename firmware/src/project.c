@@ -458,6 +458,8 @@ static void proj_phys_gone(project_t *q)
     for (k = 0; k < NTRK; k++) {
         proj_trk_t *d = &q->t[k];
         if (analog_from_chip(d->engine, &d->p[P_E0])) { /* (V10.6d) LOFI's chips: ANALOG's nearest, its envelope kept */
+            d->p[P_E4] = (int16_t)clamp(d->p[P_FCUT], 0, 127);   /* (V10.6h) its FILTER page's CUT RES as ANALOG's own */
+            d->p[P_E5] = (int16_t)clamp(d->p[P_FRES], 0, 127);   /* (ANALOG's filter is E4 E5) */
             d->engine = ENGI_PHYS_TO;
             if (d->preset < PROJ_DEF_KEEP)
                 d->preset = 0;
@@ -484,11 +486,16 @@ static void proj_phys_gone(project_t *q)
             d->preset = 0;
         hit |= 1u << k;
     }
+    for (k = 0; k < NTRK; k++)                          /* (V10.6h) MATH tracks: motion of CHIP / WAVE (a chip value, */
+        if (q->t[k].engine == ENGI_LOFI)                /* recorded before) goes too */
+            hit |= 1u << (k + 16u);
     if (!hit)
         return;
     for (i = n = 0; i < q->motion.count && i < MOTION_MAX; i++) {
         const motion_event_t *e = &q->motion.event[i];
         if (((hit >> MOTION_TRK(e)) & 1u) && MOTION_ID(e) >= P_E0)
+            continue;
+        if (((hit >> (MOTION_TRK(e) + 16u)) & 1u) && (MOTION_ID(e) == P_E0 || MOTION_ID(e) == P_E1))
             continue;
         q->motion.event[n++] = *e;
     }
