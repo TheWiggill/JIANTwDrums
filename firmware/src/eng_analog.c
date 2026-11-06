@@ -120,59 +120,30 @@ static uint32_t an_pw(const track_t *t, const vmod_t *m)
     return 0x80000000u + (uint32_t)(clamp(q, -16384, 65000) << 15);
 }
 
-/* SYNC RING SAW3 (see the top): a render of their own (the other WAVEs' loop untouched), the same noise, drive and
- * filter */
-/* (V10.22) PLS3: three pulses as SAW3's saws (osc 2 DTN cents up at INT, osc 3 down), SHAPE (MORPH too) their width;
- * a loop of its own (analog_ext's as it was), the same noise, drive and filter */
-static __attribute__((noinline)) void analog_pls3(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
-{
-    const int16_t *p = t->p;
-    uint32_t i, inc1 = m->inc, ph0 = v->ph[0], ph1 = v->ph[1], ph2 = v->ph[2], ft = ft_voice(p), pw = an_pw(t, m);
-    uint32_t inc2 = cents_inc(m->pitch16 + p[P_E7] * 16, p[P_E1], 0), inc3 = cents_inc(m->pitch16 + AN_INT3(p) * 16, -p[P_E1], 0);
-    int32_t m2 = p[P_E2] * 258, m1 = 32767 - m2, nz = 0, drv = p[P_E6], kd = 8192 - p[P_E5] * 7600 / 127;
-    int32_t drive = 32768 + drv * 512, cut = (p[P_E4] << 8) + m->cutoff + ((v->pitch16 - 60 * 16) << 2);
-    int32_t ic1 = v->s[0], ic2 = v->s[1], nst = v->s[2];
-    tsvf_t flt;
-    tsvf_coef(&flt, cut, p[P_E5]);
-    for (i = 0; i < n; i++) {
-        int32_t a = osc_pulse(ph0, inc1, pw), b = (osc_pulse(ph1, inc2, pw) + osc_pulse(ph2, inc3, pw)) >> 1, s;
-        ph0 += inc1;
-        ph1 += inc2;
-        ph2 += inc3;
-        s = mulq15(a, m1) + mulq15(b, m2);
-        if (nz)
-            s += mulq15((int32_t)(noise32(&nst) >> 17) - 16384, nz);
-        if (drv)
-            s = softclip(((s >> 2) * (drive >> 2)) >> 11);
-        out[i] += voice_amp(soft_knee(svf_mode(&flt, s >> 1, &ic1, &ic2, ft, kd), 16000) << 1, m, i) << 1;
-    }
-    v->ph[0] = ph0;
-    v->ph[1] = ph1;
-    v->ph[2] = ph2;
-    v->s[0] = ic1;
-    v->s[1] = ic2;
-    v->s[2] = nst;
-}
+/* SYNC RING SAW3 PLS3 (see the top): a render of their own (the other WAVEs' loop untouched), the same noise, drive and
+ * filter. (V10.22) PLS3: three pulses as SAW3's saws (osc 2 DTN cents up at INT, osc 3 down), SHAPE (MORPH too) their
+ * width; (V10.6e) in this loop with SAW3 (was a copy of its own: ~1.5 KB) */
 static __attribute__((noinline)) void analog_ext(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
 {
     const int16_t *p = t->p;
     uint32_t wave = (uint32_t)p[P_E0], i, inc1 = m->inc, ph0 = v->ph[0], ph1 = v->ph[1], ph2 = v->ph[2], r, inc2, inc3;
     uint32_t ft = ft_voice(p), pw = an_pw(t, m);
     int32_t mx = wave >= AW_SYNC ? an_mext(t->mo_cur, m) : 0;   /* (0.6.81) MORPH, SHAPE on SYNC RING SAW3 */
-    int32_t det = p[P_E1] + (wave == AW_SAW3 ? mx * 40 / (127 << 8) : 0), m2 = p[P_E2] * 258, m1 = 32767 - m2, nz = wave == AW_SAW3 ? 0 : p[P_E3] * 200, drv = p[P_E6], kd = 8192 - p[P_E5] * 7600 / 127;
+    uint32_t o3 = wave == AW_SAW3 || wave == AW_PLS3;   /* (three oscillators: osc 2 at INT, osc 3 at INT 3) */
+    int32_t det = p[P_E1] + (wave == AW_SAW3 ? mx * 40 / (127 << 8) : 0), m2 = p[P_E2] * 258, m1 = 32767 - m2, nz = o3 ? 0 : p[P_E3] * 200, drv = p[P_E6], kd = 8192 - p[P_E5] * 7600 / 127;
     int32_t drive = 32768 + drv * 512, cut = (p[P_E4] << 8) + m->cutoff + ((v->pitch16 - 60 * 16) << 2);
     int32_t ic1 = v->s[0], ic2 = v->s[1], nst = v->s[2];
     tsvf_t flt;
     tsvf_coef(&flt, cut, p[P_E5]);
     r = 16u + (uint32_t)det + (wave != AW_SAW3 ? (uint32_t)(mx * 64 / (127 << 8)) : 0u);   /* SYNC / RING: osc 2 at r / 16
                                                          * of osc 1 (1 .. 8.9; 0.6.81: MORPH up to 4 more) */
-    inc2 = wave == AW_SAW3 ? cents_inc(m->pitch16 + p[P_E7] * 16, det, 0) : (inc1 >> 4) * r;   /* (SAW3: osc 2 at INT) */
-    if (wave != AW_SAW3 && p[P_E7]) {                   /* (JIANT 0.5) SYNC / RING: INT moves osc 2 too, semitones */
+    inc2 = o3 ? cents_inc(m->pitch16 + p[P_E7] * 16, det, 0) : (inc1 >> 4) * r;   /* (SAW3: osc 2 at INT) */
+    if (!o3 && p[P_E7]) {                   /* (JIANT 0.5) SYNC / RING: INT moves osc 2 too, semitones */
         inc2 = (cents_inc(m->pitch16 + p[P_E7] * 16, 0, 0) >> 4) * r;
         r = inc1 >> 8 ? (inc2 / (inc1 >> 8)) >> 4 : r; /* (its ratio to osc 1, x16: the restart below) */
         if (r < 1u) r = 1u;
     }
-    inc3 = wave == AW_SAW3 ? cents_inc(m->pitch16 + AN_INT3(p) * 16, -det, 0) : 0u;   /* (V10.39: osc 3 at INT 3) */
+    inc3 = o3 ? cents_inc(m->pitch16 + AN_INT3(p) * 16, -det, 0) : 0u;   /* (V10.39: osc 3 at INT 3) */
     if (wave < AW_SYNC)                                 /* (JIANT 0.5: HP BP COMB) the plain WAVEs: osc 2 as analog_render */
         inc2 = det || p[P_E7] ? cents_inc(m->pitch16 + p[P_E7] * 16, det, 0) : inc1;
     for (i = 0; i < n; i++) {
@@ -187,6 +158,10 @@ static __attribute__((noinline)) void analog_ext(track_t *t, voice_t *v, int32_t
             }
         } else if (wave == AW_SAW3) {
             b = (osc_saw(ph1, inc2) + osc_saw(ph2, inc3)) >> 1;
+            ph2 += inc3;
+        } else if (wave == AW_PLS3) {
+            a = osc_pulse(ph0, inc1, pw);
+            b = (osc_pulse(ph1, inc2, pw) + osc_pulse(ph2, inc3, pw)) >> 1;
             ph2 += inc3;
         } else if (wave == AW_SYNC) {
             b = osc_saw(ph1, inc2);
@@ -287,8 +262,6 @@ static void analog_dispatch(track_t *t, voice_t *v, int32_t *out, uint32_t n, co
         int32_t base = (int32_t)t->p[P_E0] * 256;      /* (as it leaves or comes: the plain WAVE) */
         analog_morph(t, v, out, n, m, m0 < 0 ? base : m0, m1 < 0 ? base : m1);
     }
-    else if (t->p[P_E0] == AW_PLS3)                   /* (V10.22) */
-        analog_pls3(t, v, out, n, m);
     else if ((uint32_t)t->p[P_E0] >= AW_SYNC || t->p[P_FTYPE])
         analog_ext(t, v, out, n, m);
     else
