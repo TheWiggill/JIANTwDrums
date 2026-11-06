@@ -96,6 +96,9 @@ static void fresh(uint32_t e, uint32_t pi)        /* the boot state (no FX tails
     host_tracks_init();
     for (k = 0; k < NPART; k++)
         host_preset(&trk[k], k ? 0u : e, k ? 0u : pi);
+    for (k = 0; k < 12u; k++)                        /* (V10.6i: a factory preset may fill MOD slots; the tests start from
+                                                      * none, as before) */
+        trk[0].p[P_M1SRC + k] = 0;
     song.sel = 0;
     hash = 0xCBF29CE484222325ull;
 }

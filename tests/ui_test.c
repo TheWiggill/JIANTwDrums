@@ -12017,6 +12017,8 @@ static int test_lz_edit(void)
     ok &= (TSEL->preset != pr || TSEL->eng_req != 0u) && str_eq(cur_page()->title, "EDIT 2");   /* (the next sound) */
     bad += check("0.9.2 EDIT: EDIT from elsewhere the page left; PRESETS the next sound, the page stays", ok);
     ui_power_on(); set_engine_of(TSEL, 0); go_title("FOCUS"); frame();
+    for (v = 0; v < 12; v++)                                        /* (V10.6i: the preset's own MOD slots cleared: */
+        TSEL->p[P_M1SRC + v] = 0;                                   /* the FOCUS rules from a free matrix) */
     ui.focus = 0;
     turn(EN_K1, 4); frame();                                        /* PARAM: E5 (ANALOG's CUT) */
     ok = focus_k() == 4u && str_eq(ui.col[1], "CUT|") == 0;

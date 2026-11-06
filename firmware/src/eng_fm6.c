@@ -496,7 +496,7 @@ static const preset_t FM6_PRESETS[] = {
      MODS(MENV2(0, 35, 0, 15), MMOD(1, PS_ENV2, PD_CUT, 16), P_GLIDE, 10)},    /* bright on the attack */
     {"BRASS", {0, 0, 0, 0, 0, 0, 0, 3}, {8, 0, 127, 15}, 0, TAG(LEAD), FX(0, 25, 20, 40), PAT(4),
      MODS(P_LRATE, 86, P_LD_PIT, 1, P_LFADE, 70, MMOD(1, PS_MODW, PD_VIB, 2))},   /* a vibrato that comes in */
-    {"PAD", {0, 0, 0, 0, 0, 0, 30, 4}, {20, 0, 127, 12}, 0, TAG(PAD), FX(0, 60, 30, 70), PAT(5), BREATHE(12, 1, 1),
+    {"PAD", {0, 0, 0, 0, 0, 0, 30, 4}, {0, 0, 127, 12}, 0, TAG(PAD), FX(0, 60, 30, 70), PAT(5), BREATHE(12, 1, 1),
      MODS(MMOD(1, PS_LFO, PD_PAN, 16), MMOD(2, PS_MODW, PD_CUT, 24))},          /* the drift pans it too */
     {"MARIMBA", {0, 0, 0, 0, 0, 0, 0, 5}, {0, 0, 127, 0}, 0, TAG(PLUCK), FX(0, 0, 25, 40), PAT(3),
      MODS(MMOD(1, PS_VEL, PD_CUT, 14), MMOD(2, PS_KEY, PD_PAN, 20))},           /* the bars across the stage */
