@@ -69,6 +69,9 @@ static int st_prog(uint32_t off, const void *p, uint32_t n) { (void)off; (void)p
 static int st_erase(uint32_t off) { (void)off; return -1; }
 #include "../firmware/src/storage.c"
 #include "../firmware/src/editor.c"
+/* (V10.40) editor.c calls ui_input.c's excite_turn (a WAVE / EXCITE whose knobs change meaning); ui_input.c is not
+ * part of this test: the knob's value is what the protocol tests check, not the panel's follow-up */
+static void excite_turn(track_t *t, const int16_t *vp, int32_t old) { (void)t; (void)vp; (void)old; }
 
 static int check(const char *what, int ok)
 {
