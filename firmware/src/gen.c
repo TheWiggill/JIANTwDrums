@@ -2499,10 +2499,11 @@ static void gen_new_seed(void)
     if (!rng_state) rng_state = 0x1234567u;
     gp.seed = (uint16_t)(rng() % 10000u);
 }
-/* OCT+ on the GEN screen: the piece; the same settings again: a new seed first */
+/* OCT+ on the GEN screen: the piece; the same settings again, or the first press since power-on (V10.6l: it was always
+ * EXPLORE 0001, the same odd piece after every power-on), a new seed first */
 static void gen_press(void)
 {
-    if (gp.sig == gen_sig()) gen_new_seed();
+    if (!gp.sig || gp.sig == gen_sig()) gen_new_seed();
     gen_go();
     gp.sig = gen_sig();
 }
