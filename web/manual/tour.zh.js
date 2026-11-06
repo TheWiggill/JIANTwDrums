@@ -54,8 +54,8 @@ steps: {
   "nav.rule3": { t: "规则 3：PRESETS 载入预设", d: "永远如此：任何页面是音色，SEQ 里是节奏型，GEN 里是曲风。从不切换页面。转动 [PRESETS]。" },
   "nav.rule4": { t: "规则 4：KNOB 1 负责选择", d: "当页面需要选择某样东西（一步、一个小节、一个槽位、一个阶段、一个算子、鼓组里的声音、一行）时，由 [KNOB 1] 来选。" },
   "nav.rule5": { t: "规则 5：按住 = 快捷层", d: "按住一个按键：在按住期间，琴键和旋钮会改变功能，屏幕会标出每个琴键的作用。按住 [GLO]，看看示意图上的琴键。" },
-  "nav.rule6": { t: "规则 6：屏幕告诉你在哪", d: "顶部的标签是分区的分组（当前分组高亮，每页一个点）。底部显示 分区 · 分组 · 页面 和 n/N，例如 FX · DELAY · DLY 2  6/16。" },
-  "nav.menu": { t: "MENU", d: "按住 [HOME] 片刻（约 0.7 秒）：打开包含各项设置（屏幕、音频、MIDI、USB、系统）的 MENU。规则相同：SELECT 翻页，ALGORITHM 切换标签，HOME 关闭。" },
+  "nav.rule6": { t: "规则 6：屏幕告诉你在哪", d: "顶部的标签是分区的分组（当前分组高亮，每页一个点）。底部显示 分区 · 分组 · 页面 和 n/N，例如 FX · DELAY · DLY 2  6/18。" },
+  "nav.menu": { t: "MENU", d: "按住 [HOME] 一会儿（约 0.7 秒）：打开 MENU，共四个标签页：DISPLAY、CONTROL、AUDIO、SYSTEM。规则相同：SELECT 选行，ALGORITHM 切换标签页，HOME 关闭。" },
 
   "gen.open": { t: "打开生成器", d: "按住 [HOME] 并转动 [SELECT]（或者连按 HOME 直到 GEN 标签）。默认是 EXPLORE：不限曲风，打破所有规则。用 [KNOB 1] 或 PRESETS 可以选择某种曲风或 RANDOM。" },
   "gen.make": { t: "生成", d: "点一下 [OCT+]：一整首歌的构思就出现了，包括引擎、音色、声部、音阶、速度和效果。" },
@@ -91,7 +91,7 @@ steps: {
   "euclid.mutate": { t: "MUTATE", d: "[SELECT] 再转一格：MUTATE 让节奏型在播放时自己变化。KNOB 1 EVERY（每几小节），KNOB 2 AMOUNT，KNOB 3 MODE（ORBIT 会回来，DRIFT 越走越远，PULSE 交替），KNOB 4 决定变化什么。OCT− 恢复原样。" },
   "euclid.melodic": { t: "在调内的旋律", d: "在旋律音轨上，EUCLID 写出音阶内的音符：先在 [SCL] 设置（ROOT 和 SCALE），或者让它从其他音轨中找出调性。KNOB 1 HITS 恰好给出这么多个音符。" },
 
-  "mix.glo": { t: "GLO：混音", d: "点一下 [GLO]：MIXER，每条音轨是一个通道，带 LEVEL、PAN 和混响。再点 GLO：GLOBAL（速度、摇摆、时钟）、SYSTEM 和 LIVE。" },
+  "mix.glo": { t: "GLO：混音", d: "按 [GLO]：MIXER，每条音轨是一个通道，有 LEVEL、PAN 和混响。再按 GLO：COMPS、GLOBAL（速度、摇摆、时钟）、SYSTEM 和 LIVE。" },
   "mix.mutes": { t: "静音音轨", d: "按住 [GLO] 并点黑键：黑键 1–6 静音 T1–T6（再点一次取消静音）。试试 [F#3]。黑键 7–10 静音鼓组的分组，E4 取消所有静音。" },
   "mix.solo": { t: "独奏", d: "按住 [GLO] 时，按住白键 F3–D4 期间对 T1–T6 独奏。试试 [F3]。" },
   "mix.tempo": { t: "速度", d: "按住 [GLO] 并转动 [SELECT]：在任何页面调整速度。按住 GLO 时，F4 是 TAP，PLAY 从头重新开始。" },
@@ -115,11 +115,11 @@ steps: {
   "song.live": { t: "现场切换段落", d: "按住 [SAVE]：[F3] G3 A3 B3 播放段落 A–D（从下一小节开始），C4–F4 存入 A–D，D5 切换 LOOP / SONG。SAVE + OCT+ 存入正在播放的段落。" },
   "song.projects": { t: "工程与自动保存", d: "在 SAVE › PROJECT › PROJECTS 中从 8 个工程里选一个。设置会自动保存；音乐则在你需要时存入段落。用网页编辑器备份全部内容。" },
 
-  "connect.menu": { t: "MENU", d: "按住 [HOME]：MENU。SCREEN（外观 AIR、COLORS、HUD 和配色）、AUDIO（节拍器、预备拍）、MIDI、USB 和 SYSTEM。" },
+  "connect.menu": { t: "MENU", d: "按住 [HOME]：MENU。DISPLAY（皮肤 AIR、COLORS、BOTTOM、HUD 与配色）、CONTROL（HOLD、MIDI OUT、MIDI MAP 和 LEARN）、AUDIO（节拍器、预备拍、TRACKS、LOAD）和 SYSTEM（USB、BLUETOOTH、校准、ABOUT）。" },
   "connect.tracks": { t: "4 条或 6 条音轨", d: "连按 [GLO] 直到 SYSTEM：KNOB 1 TRACKS 选择 4 条（默认，更轻量）或 6 条音轨，LOAD 设置处理器的工作强度。" },
-  "connect.usb": { t: "USB：音频与 MIDI", d: "MENU › USB › USB AUDIO：STEREO、STEMS（每条音轨各占一个通道送进你的 DAW）、IN+OUT（双向音频）或 HOST（直接插入 USB-MIDI 键盘）。MIDI 支持 USB、TRS 和蓝牙。" },
+  "connect.usb": { t: "USB：音频与 MIDI", d: "MENU › SYSTEM › USB（或 GLO › SYSTEM 2）：STEREO、STEMS（每条音轨单独一个通道送进 DAW）、IN+OUT（双向音频）或 HOST（直接插入 USB MIDI 键盘）。MIDI 支持 USB、TRS 和蓝牙。" },
   "connect.input": { t: "INPUT 引擎", d: "INPUT 把从 USB 传入的音频放到一条音轨上（IN 1、IN 2、1+2 或立体声），可以使用效果器和音序。MOD 的 FOLLOW 调制源让这路音频去调制其他东西。" },
-  "connect.bt": { t: "蓝牙 MIDI 与 PROX", d: "MENU › SYSTEM › BT ON：连接蓝牙 MIDI 应用（显示为 JIANT FM-1）。PROX 是一个调制源，取决于手机离得多近。" },
+  "connect.bt": { t: "蓝牙 MIDI 与 PROX", d: "MENU › SYSTEM › BLUETOOTH 设为 ON（或 GLO › SYSTEM 2）：用蓝牙 MIDI 应用连接（显示为 JIANT FM-1）。PROX 是根据手机远近产生的调制源。" },
   "connect.editor": { t: "网页编辑器", d: "网页编辑器（Chrome 或 Edge）在电脑屏幕上显示你的音色和设置，FM-1 同时照常演奏；它还能把 DX7 音色库发送到 FM6，并一键备份所有工程。" },
 
   "next.cheat": { t: "速查表", d: "首页有两张可打印的速查表：控制和音色页面，方便放在 FM-1 旁边。" },

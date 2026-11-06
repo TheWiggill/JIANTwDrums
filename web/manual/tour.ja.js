@@ -54,8 +54,8 @@ steps: {
   "nav.rule3": { t: "ルール 3：PRESETS はプリセットを読み込む", d: "いつでも、どのページでも音色、SEQ ではパターン、GEN ではジャンル。ページは変わりません。[PRESETS] を回してください。" },
   "nav.rule4": { t: "ルール 4：KNOB 1 で選ぶ", d: "ページで何かを選ぶとき（ステップ、小節、スロット、ステージ、オペレーター、キットの音、行など）は [KNOB 1] で選びます。" },
   "nav.rule5": { t: "ルール 5：長押し = レイヤー", d: "ボタンを押さえている間、鍵盤とノブの機能が変わり、画面には各鍵盤の役割が表示されます。[GLO] を押さえて、図の鍵盤を見てください。" },
-  "nav.rule6": { t: "ルール 6：画面が居場所を教えてくれる", d: "上のタブはセクションのグループです（いまのグループが点灯し、1 ページに 1 つの点）。下には セクション · グループ · ページ と n/N が出ます。例：FX · DELAY · DLY 2  6/16。" },
-  "nav.menu": { t: "MENU", d: "[HOME] を少し（約 0.7 秒）押さえると、設定（画面、オーディオ、MIDI、USB、システム）の MENU が開きます。ルールは同じです。SELECT でページ、ALGORITHM でタブ、HOME で閉じます。" },
+  "nav.rule6": { t: "ルール 6：画面が居場所を教えてくれる", d: "上のタブはセクションのグループです（いまのグループが点灯し、1 ページに 1 つの点）。下には セクション · グループ · ページ と n/N が出ます。例：FX · DELAY · DLY 2  6/18。" },
+  "nav.menu": { t: "MENU", d: "[HOME] を少し（約 0.7 秒）長押しすると MENU が開きます。タブは DISPLAY、CONTROL、AUDIO、SYSTEM の 4 つ。ルールは同じで、SELECT で行、ALGORITHM でタブ、HOME で閉じます。" },
 
   "gen.open": { t: "ジェネレーターを開く", d: "[HOME] を押さえて [SELECT] を回します（または GEN タブまで HOME を軽く押します）。最初は EXPLORE で、ジャンルなし、すべてのルールを破ります。[KNOB 1] か PRESETS で、いずれかのジャンルや RANDOM を選べます。" },
   "gen.make": { t: "作る", d: "[OCT+] に触れると、エンジン、音色、パート、スケール、テンポ、エフェクトまでそろった曲のアイデアが丸ごと現れます。" },
@@ -91,7 +91,7 @@ steps: {
   "euclid.mutate": { t: "MUTATE", d: "[SELECT] をもう 1 クリックで MUTATE。演奏中にパターンがひとりでに変わっていきます。KNOB 1 EVERY（何小節ごと）、KNOB 2 AMOUNT、KNOB 3 MODE（ORBIT は戻ってくる、DRIFT は離れていく、PULSE は交互）、KNOB 4 で何を変えるか。OCT− で元のパターンに戻ります。" },
   "euclid.melodic": { t: "キーに合ったメロディー", d: "メロディーのトラックでは、EUCLID はスケールの中のノートを書きます。先に [SCL] で設定する（ROOT と SCALE）か、ほかのトラックからキーを見つけさせましょう。KNOB 1 HITS でちょうどその数のノートになります。" },
 
-  "mix.glo": { t: "GLO：ミックス", d: "[GLO] に触れると MIXER です。トラックが LEVEL、PAN、リバーブ付きのチャンネルとして並びます。GLO をさらに押すと GLOBAL（テンポ、スウィング、クロック）、SYSTEM、LIVE。" },
+  "mix.glo": { t: "GLO：ミックス", d: "[GLO] を押すと MIXER。各トラックがチャンネルになり、LEVEL、PAN、リバーブを調整できます。GLO をもう一度押すと COMPS、GLOBAL（テンポ、スウィング、クロック）、SYSTEM、LIVE へ。" },
   "mix.mutes": { t: "トラックをミュート", d: "[GLO] を押さえて黒鍵に触れます。黒鍵 1〜6 で T1〜T6 をミュート（もう一度でミュート解除）。[F#3] を試してください。黒鍵 7〜10 はドラムのグループをミュートし、E4 ですべてのミュートを解除します。" },
   "mix.solo": { t: "ソロ", d: "[GLO] を押さえたまま白鍵 F3〜D4 を押さえている間、T1〜T6 がソロになります。[F3] を試してください。" },
   "mix.tempo": { t: "テンポ", d: "[GLO] を押さえて [SELECT] を回すと、どのページからでもテンポを変えられます。GLO を押さえたまま、F4 は TAP、PLAY で頭から再スタート。" },
@@ -115,11 +115,11 @@ steps: {
   "song.live": { t: "ライブでセクション", d: "[SAVE] を押さえて、[F3] G3 A3 B3 でセクション A〜D を再生（次の小節から）、C4〜F4 で A〜D に保存、D5 で LOOP / SONG を切り替えます。SAVE + OCT+ で、再生中のセクションに保存します。" },
   "song.projects": { t: "プロジェクトと自動保存", d: "SAVE › PROJECT › PROJECTS で 8 つのプロジェクトから 1 つを選びます。設定は自動で保存され、音楽はあなたが指示したときにセクションへ保存されます。Web エディターですべてをバックアップしておきましょう。" },
 
-  "connect.menu": { t: "MENU", d: "[HOME] を長押しすると MENU。SCREEN（スキン AIR、COLORS、HUD とパレット）、AUDIO（クリック、カウントイン）、MIDI、USB、SYSTEM があります。" },
+  "connect.menu": { t: "MENU", d: "[HOME] を長押しで MENU。DISPLAY（スキン AIR、COLORS、BOTTOM、HUD と配色）、CONTROL（HOLD、MIDI OUT、MIDI MAP、LEARN）、AUDIO（クリック、カウントイン、TRACKS、LOAD）、SYSTEM（USB、BLUETOOTH、キャリブレーション、ABOUT）。" },
   "connect.tracks": { t: "4 トラックか 6 トラックか", d: "SYSTEM まで [GLO] を軽く押します。KNOB 1 TRACKS で 4（初期値、軽め）か 6 トラックを選び、LOAD でプロセッサーをどれだけ働かせるかを決めます。" },
-  "connect.usb": { t: "USB：オーディオと MIDI", d: "MENU › USB › USB AUDIO：STEREO、STEMS（各トラックを別々のチャンネルで DAW へ）、IN+OUT（双方向のオーディオ）、HOST（USB-MIDI キーボードを直接接続）。MIDI は USB、TRS、Bluetooth に対応します。" },
+  "connect.usb": { t: "USB：オーディオと MIDI", d: "MENU › SYSTEM › USB（または GLO › SYSTEM 2）：STEREO、STEMS（各トラックを別チャンネルで DAW へ）、IN+OUT（双方向のオーディオ）、HOST（USB MIDI キーボードを直接接続）。MIDI は USB、TRS、Bluetooth に対応。" },
   "connect.input": { t: "INPUT エンジン", d: "INPUT は USB から入ってくる音をトラックに載せます（IN 1、IN 2、1+2 またはステレオ）。エフェクトもシーケンスも使えます。MOD の FOLLOW ソースを使うと、その音でほかのものをモジュレーションできます。" },
-  "connect.bt": { t: "Bluetooth MIDI と PROX", d: "MENU › SYSTEM › BT ON：Bluetooth MIDI アプリを接続します（JIANT FM-1 と表示されます）。PROX はスマホとの距離から生まれるモジュレーション・ソースです。" },
+  "connect.bt": { t: "Bluetooth MIDI と PROX", d: "MENU › SYSTEM › BLUETOOTH を ON（または GLO › SYSTEM 2）：Bluetooth MIDI アプリから接続します（JIANT FM-1 と表示されます）。PROX はスマートフォンの近さによるモジュレーションソースです。" },
   "connect.editor": { t: "Web エディター", d: "Web エディター（Chrome または Edge）は、FM-1 が鳴り続けたまま音色と設定をパソコンの画面に表示し、DX7 のバンクを FM6 に送り、すべてのプロジェクトをワンクリックでバックアップします。" },
 
   "next.cheat": { t: "チートシート", d: "トップページに印刷用のシートが 2 枚あります。操作とサウンドのページで、FM-1 の横に置いておけます。" },

@@ -54,8 +54,8 @@ steps: {
   "nav.rule3": { t: "Regra 3: o PRESETS carrega presets", d: "Sempre: sons em qualquer página, padrões no SEQ, o gênero no GEN. Ele nunca muda de página. Gire o [PRESETS]." },
   "nav.rule4": { t: "Regra 4: o KNOB 1 escolhe", d: "Quando uma página escolhe algo (um passo, um compasso, um slot, um estágio, um operador, o som do kit, uma linha), quem escolhe é o [KNOB 1]." },
   "nav.rule5": { t: "Regra 5: segurar = a camada", d: "Segure um botão: as teclas e os knobs mudam de função enquanto ele está apertado, e a tela mostra o que cada tecla faz. Segure [GLO] e olhe as teclas no desenho." },
-  "nav.rule6": { t: "Regra 6: a tela diz onde você está", d: "Em cima, as abas são os grupos da seção (o seu aceso, um ponto por página). Embaixo: SEÇÃO · GRUPO · página e n/N, por exemplo FX · DELAY · DLY 2  6/16." },
-  "nav.menu": { t: "O MENU", d: "Segure [HOME] por um instante (uns 0,7 s): o MENU abre com os ajustes (tela, áudio, MIDI, USB, sistema). As mesmas regras: SELECT nas páginas, ALGORITHM nas abas, HOME fecha." },
+  "nav.rule6": { t: "Regra 6: a tela diz onde você está", d: "Em cima, as abas são os grupos da seção (o seu aceso, um ponto por página). Embaixo: SEÇÃO · GRUPO · página e n/N, por exemplo FX · DELAY · DLY 2  6/18." },
+  "nav.menu": { t: "O MENU", d: "Segure [HOME] por um instante (uns 0,7 s): abre o MENU com suas quatro abas, DISPLAY, CONTROL, AUDIO e SYSTEM. As mesmas regras: SELECT as linhas, ALGORITHM as abas, HOME fecha." },
 
   "gen.open": { t: "Abra o gerador", d: "Segure [HOME] e gire o [SELECT] (ou toque HOME até a aba GEN). Ele começa no EXPLORE: sem gênero, todas as regras quebradas. Com o [KNOB 1] ou o PRESETS você escolhe um dos gêneros ou RANDOM." },
   "gen.make": { t: "Gere", d: "Toque em [OCT+]: aparece uma ideia de música inteira, com motores, sons, partes, escala, tempo e efeitos." },
@@ -91,7 +91,7 @@ steps: {
   "euclid.mutate": { t: "MUTATE", d: "Mais um clique do [SELECT]: o MUTATE muda o padrão sozinho enquanto toca. KNOB 1 EVERY (a cada quantos compassos), KNOB 2 AMOUNT, KNOB 3 MODE (ORBIT volta, DRIFT se afasta, PULSE alterna) e KNOB 4 o que muda. OCT− traz o original de volta." },
   "euclid.melodic": { t: "Melodias no tom", d: "Numa track melódica, o EUCLID escreve notas da escala: ajuste antes no [SCL] (ROOT e SCALE), ou deixe ele achar o tom nas outras tracks. O KNOB 1 HITS dá exatamente essa quantidade de notas." },
 
-  "mix.glo": { t: "GLO: a mixagem", d: "Toque em [GLO]: o MIXER, as tracks como canais com LEVEL, PAN e reverb. Tocando GLO de novo: GLOBAL (tempo, swing, clock), SYSTEM e LIVE." },
+  "mix.glo": { t: "GLO: a mixagem", d: "Toque em [GLO]: o MIXER, os tracks como canais com LEVEL, PAN e reverb. Tocando GLO de novo: COMPS, GLOBAL (tempo, swing, clock), SYSTEM e LIVE." },
   "mix.mutes": { t: "Mute nas tracks", d: "Segure [GLO] e toque uma tecla preta: as pretas 1–6 mutam T1–T6 (toque de novo para desmutar). Teste [F#3]. As pretas 7–10 mutam grupos de bateria e o E4 tira todos os mutes." },
   "mix.solo": { t: "Solo", d: "Com [GLO] segurado, as teclas brancas F3–D4 deixam T1–T6 em solo enquanto você segura. Teste [F3]." },
   "mix.tempo": { t: "Tempo", d: "Segure [GLO] e gire o [SELECT]: o tempo, de qualquer página. Com GLO segurado, o F4 é TAP e o PLAY recomeça do início." },
@@ -115,11 +115,11 @@ steps: {
   "song.live": { t: "Seções ao vivo", d: "Segure [SAVE]: [F3] G3 A3 B3 tocam a seção A–D (no próximo compasso), C4–F4 guardam em A–D, D5 alterna LOOP / SONG. SAVE + OCT+ guarda na seção que está tocando." },
   "song.projects": { t: "Projetos e salvamento automático", d: "Em SAVE › PROJECT › PROJECTS você escolhe um de 8 projetos. Os ajustes se salvam sozinhos; a música é guardada numa seção quando você pede. Faça backup de tudo com o editor web." },
 
-  "connect.menu": { t: "O MENU", d: "Segure [HOME]: o MENU. SCREEN (skins AIR, COLORS, HUD e paletas), AUDIO (clique, contagem), MIDI, USB e SYSTEM." },
+  "connect.menu": { t: "O MENU", d: "Segure [HOME]: o MENU. DISPLAY (skins AIR, COLORS, BOTTOM, HUD e cores), CONTROL (HOLD, MIDI OUT, MIDI MAP e LEARN), AUDIO (click, contagem, TRACKS, LOAD) e SYSTEM (USB, BLUETOOTH, calibração, ABOUT)." },
   "connect.tracks": { t: "4 ou 6 tracks", d: "Toque [GLO] até o SYSTEM: o KNOB 1 TRACKS escolhe 4 (o padrão, mais leve) ou 6 tracks, e o LOAD o quanto o processador trabalha." },
-  "connect.usb": { t: "USB: áudio e MIDI", d: "MENU › USB › USB AUDIO: STEREO, STEMS (cada track no próprio canal da sua DAW), IN+OUT (áudio nos dois sentidos) ou HOST (um teclado USB-MIDI ligado direto). MIDI por USB, TRS e Bluetooth." },
+  "connect.usb": { t: "USB: áudio e MIDI", d: "MENU › SYSTEM › USB (ou GLO › SYSTEM 2): STEREO, STEMS (cada track no seu próprio canal para a sua DAW), IN+OUT (áudio nos dois sentidos) ou HOST (um teclado MIDI USB ligado direto). MIDI por USB, TRS e Bluetooth." },
   "connect.input": { t: "O motor INPUT", d: "O INPUT coloca numa track o áudio que entra pelo USB (IN 1, IN 2, 1+2 ou estéreo), com efeitos e sequência. A fonte FOLLOW do MOD deixa esse áudio modular outras coisas." },
-  "connect.bt": { t: "MIDI Bluetooth e PROX", d: "MENU › SYSTEM › BT ON: conecte um app de MIDI Bluetooth (ele aparece como JIANT FM-1). O PROX é uma fonte de modulação que vem da distância do celular." },
+  "connect.bt": { t: "MIDI Bluetooth e PROX", d: "MENU › SYSTEM › BLUETOOTH em ON (ou GLO › SYSTEM 2): conecte um app MIDI Bluetooth (aparece como JIANT FM-1). PROX é uma fonte de modulação pela distância do celular." },
   "connect.editor": { t: "O editor web", d: "O editor web (Chrome ou Edge) mostra seus sons e ajustes na tela do computador enquanto o FM-1 continua tocando, envia bancos de DX7 para o FM6 e faz backup de todos os projetos com um clique." },
 
   "next.cheat": { t: "As colas", d: "Na página inicial tem duas folhas para imprimir: os controles e as páginas de som, para deixar do lado do FM-1." },

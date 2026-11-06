@@ -54,8 +54,8 @@ steps: {
   "nav.rule3": { t: "Règle 3 : PRESETS charge des presets", d: "Toujours : des sons sur n'importe quelle page, des patterns dans SEQ, le genre dans GEN. Il ne change jamais de page. Tourne [PRESETS]." },
   "nav.rule4": { t: "Règle 4 : KNOB 1 choisit", d: "Quand une page choisit quelque chose (un pas, une mesure, un slot, une étape d'enveloppe, un opérateur, le son du kit, une ligne), c'est [KNOB 1] qui choisit." },
   "nav.rule5": { t: "Règle 5 : maintenir = la couche", d: "Maintiens un bouton : les touches et les potards changent de fonction tant qu'il est enfoncé, et l'écran montre ce que fait chaque touche. Maintiens [GLO] et regarde les touches sur le dessin." },
-  "nav.rule6": { t: "Règle 6 : l'écran te dit où tu es", d: "En haut, les onglets sont les groupes de la section (le tien allumé, un point par page). En bas : SECTION · GROUPE · page et n/N, par exemple FX · DELAY · DLY 2  6/16." },
-  "nav.menu": { t: "Le MENU", d: "Maintiens [HOME] un instant (environ 0,7 s) : le MENU s'ouvre avec les réglages (écran, audio, MIDI, USB, système). Les mêmes règles : SELECT pour ses pages, ALGORITHM pour ses onglets, HOME le ferme." },
+  "nav.rule6": { t: "Règle 6 : l'écran te dit où tu es", d: "En haut, les onglets sont les groupes de la section (le tien allumé, un point par page). En bas : SECTION · GROUPE · page et n/N, par exemple FX · DELAY · DLY 2  6/18." },
+  "nav.menu": { t: "Le MENU", d: "Maintiens [HOME] un instant (environ 0,7 s) : le MENU s’ouvre avec ses quatre onglets, DISPLAY, CONTROL, AUDIO et SYSTEM. Les mêmes règles : SELECT les lignes, ALGORITHM les onglets, HOME le ferme." },
 
   "gen.open": { t: "Ouvre le générateur", d: "Maintiens [HOME] et tourne [SELECT] (ou appuie sur HOME jusqu'à l'onglet GEN). Il démarre sur EXPLORE : aucun genre, toutes les règles brisées. Avec [KNOB 1] ou PRESETS, tu peux choisir un des genres ou RANDOM." },
   "gen.make": { t: "Lance-le", d: "Touche [OCT+] : une idée de morceau complète apparaît, avec moteurs, sons, parties, gamme, tempo et effets." },
@@ -91,7 +91,7 @@ steps: {
   "euclid.mutate": { t: "MUTATE", d: "Encore un cran de [SELECT] : MUTATE change le pattern tout seul pendant qu'il joue. KNOB 1 EVERY (toutes les combien de mesures), KNOB 2 AMOUNT, KNOB 3 MODE (ORBIT revient, DRIFT s'éloigne, PULSE alterne) et KNOB 4 ce qui change. OCT− ramène l'original." },
   "euclid.melodic": { t: "Des mélodies dans le ton", d: "Sur une piste mélodique, EUCLID écrit des notes de la gamme : règle-la d'abord sur [SCL] (ROOT et SCALE), ou laisse-le trouver la tonalité dans les autres pistes. KNOB 1 HITS donne exactement ce nombre de notes." },
 
-  "mix.glo": { t: "GLO : le mix", d: "Touche [GLO] : le MIXER, les pistes comme des tranches avec LEVEL, PAN et reverb. En appuyant encore sur GLO : GLOBAL (tempo, swing, horloge), SYSTEM et LIVE." },
+  "mix.glo": { t: "GLO : le mix", d: "Touche [GLO] : le MIXER, les pistes comme des tranches avec LEVEL, PAN et réverb. En retouchant GLO : COMPS, GLOBAL (tempo, swing, horloge), SYSTEM et LIVE." },
   "mix.mutes": { t: "Couper des pistes", d: "Maintiens [GLO] et touche une touche noire : les noires 1–6 coupent T1–T6 (touche encore pour réactiver). Essaie [F#3]. Les noires 7–10 coupent des groupes de batterie et E4 enlève tous les mutes." },
   "mix.solo": { t: "Solo", d: "Avec [GLO] maintenu, les touches blanches F3–D4 mettent T1–T6 en solo tant que tu les tiens. Essaie [F3]." },
   "mix.tempo": { t: "Tempo", d: "Maintiens [GLO] et tourne [SELECT] : le tempo, depuis n'importe quelle page. Avec GLO maintenu, F4 est TAP et PLAY redémarre depuis le début." },
@@ -115,11 +115,11 @@ steps: {
   "song.live": { t: "Les sections en live", d: "Maintiens [SAVE] : [F3] G3 A3 B3 lancent la section A–D (à la mesure suivante), C4–F4 enregistrent dans A–D, D5 bascule LOOP / SONG. SAVE + OCT+ enregistre dans la section en cours." },
   "song.projects": { t: "Projets et sauvegarde auto", d: "Dans SAVE › PROJECT › PROJECTS, tu choisis un des 8 projets. Les réglages se sauvegardent tout seuls ; la musique est enregistrée dans une section quand tu le demandes. Sauvegarde tout avec l'éditeur web." },
 
-  "connect.menu": { t: "Le MENU", d: "Maintiens [HOME] : le MENU. SCREEN (skins AIR, COLORS, HUD et palettes), AUDIO (clic, décompte), MIDI, USB et SYSTEM." },
+  "connect.menu": { t: "Le MENU", d: "Maintiens [HOME] : le MENU. DISPLAY (skins AIR, COLORS, BOTTOM, HUD et couleurs), CONTROL (HOLD, MIDI OUT, MIDI MAP et LEARN), AUDIO (clic, décompte, TRACKS, LOAD) et SYSTEM (USB, BLUETOOTH, calibration, ABOUT)." },
   "connect.tracks": { t: "4 ou 6 pistes", d: "Appuie sur [GLO] jusqu'à SYSTEM : KNOB 1 TRACKS choisit 4 (par défaut, plus léger) ou 6 pistes, et LOAD à quel point le processeur travaille." },
-  "connect.usb": { t: "USB : audio et MIDI", d: "MENU › USB › USB AUDIO : STEREO, STEMS (chaque piste sur son propre canal dans ta DAW), IN+OUT (audio dans les deux sens) ou HOST (un clavier USB-MIDI branché directement). MIDI par USB, TRS et Bluetooth." },
+  "connect.usb": { t: "USB : audio et MIDI", d: "MENU › SYSTEM › USB (ou GLO › SYSTEM 2) : STEREO, STEMS (chaque piste sur son propre canal vers ta DAW), IN+OUT (audio dans les deux sens) ou HOST (un clavier MIDI USB branché directement). MIDI par USB, TRS et Bluetooth." },
   "connect.input": { t: "Le moteur INPUT", d: "INPUT met sur une piste l'audio qui arrive par l'USB (IN 1, IN 2, 1+2 ou stéréo), avec ses effets et sa séquence. La source FOLLOW de MOD permet à cet audio de moduler d'autres choses." },
-  "connect.bt": { t: "MIDI Bluetooth et PROX", d: "MENU › SYSTEM › BT ON : connecte une appli MIDI Bluetooth (il apparaît comme JIANT FM-1). PROX est une source de modulation qui dépend de la distance du téléphone." },
+  "connect.bt": { t: "MIDI Bluetooth et PROX", d: "MENU › SYSTEM › BLUETOOTH sur ON (ou GLO › SYSTEM 2) : connecte une app MIDI Bluetooth (elle apparaît comme JIANT FM-1). PROX est une source de modulation selon la proximité du téléphone." },
   "connect.editor": { t: "L'éditeur web", d: "L'éditeur web (Chrome ou Edge) affiche tes sons et réglages sur l'écran de l'ordinateur pendant que le FM-1 continue de jouer, envoie des banques DX7 à FM6 et sauvegarde chaque projet en un clic." },
 
   "next.cheat": { t: "Les antisèches", d: "Sur la page d'accueil, il y a deux fiches à imprimer : les commandes et les pages de son, à garder à côté du FM-1." },
