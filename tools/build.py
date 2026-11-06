@@ -477,7 +477,7 @@ def build_app():
                 # explicit sections (including BTAPP) were excluded above.
                 ui_string = (m[2].startswith(".str") and m[2] not in reach and ty and
                              re.fullmatch(r"\[\d+ x i8\]", ty[1]) and ir_bytes(ty[1]) >= 24)
-                ui_string |= m[2].startswith("AF_") and m[2].endswith("_PACK") and m[2] not in reach
+                ui_string |= m[2].startswith("AF_") and m[2].endswith(("_PACK", "_HC")) and m[2] not in reach
                 if not ui_string and (m.group(2) not in late or (ty and ir_bytes(ty[1]) in (4, 8, 16, 32))):   # (snd5: a struct's too)
                     return m.group(0)
             aligns[m.group(2)] = int(m.group(4))
