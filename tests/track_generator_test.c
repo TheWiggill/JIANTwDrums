@@ -2,6 +2,34 @@
 #define UI_TEST_NO_MAIN 1
 #include "ui_test.c"
 
+/* Differential check against the previous period formula, including counter
+ * wrap, stopped transport and S&H. This is the only changed DSP calculation. */
+static int drum_motion_reference(void)
+{
+    int ok=1;unsigned cases=0;
+    static const uint8_t q[9]={0,64,32,16,8,4,2,1,1};
+    for(unsigned bpm=20;bpm<=300;bpm++) for(unsigned rate=1;rate<=8;rate++)
+        for(unsigned shape=0;shape<5;shape++) for(unsigned play=0;play<2;play++) {
+            song.g[G_BPM]=(int16_t)bpm;song.playing=(uint8_t)play;
+            dx_mot[XM_RATE]=(uint8_t)rate;dx_mot[XM_DPTH]=127;dx_mot[XM_SHPE]=(uint8_t)shape;
+            ms_clock=0xAABBCDDu;dx_mot_free=UINT32_MAX-31u;
+            dx_mot_cyc=UINT32_MAX;dx_mot_rng=42;dx_mot_sh=57;
+            uint32_t len=beat_samples()*q[rate]/4u;
+            if(rate==8) len=beat_samples()/8u;
+            if(len<64u) len=64u;
+            uint32_t pos=play?ms_clock:32u,cyc=pos/len;
+            uint32_t ph=(uint32_t)(((uint64_t)(pos%len)<<32)/len);
+            int32_t w=shape==0?osc_sine(ph):shape==1?(ph<0x80000000u?(int32_t)(ph>>15)-32768:98303-(int32_t)(ph>>15)):
+                      shape==2?(int32_t)(ph>>16)-32768:shape==3?32767-(int32_t)(ph>>16):
+                      (int32_t)((42u*1664525u+1013904223u)>>16)-32768;
+            dx_mot_block(64);
+            ok &= dx_mot_cyc==cyc&&dx_mot_v==(w*127)>>16&&dx_mot_free==32u;
+            cases++;
+        }
+    printf("DRUM motion: %u old-formula comparisons\n",cases);
+    return ok;
+}
+
 static int verify(track_t *t,unsigned genre,unsigned role,unsigned len)
 {
     static project_t before,after;
@@ -40,6 +68,8 @@ static int verify(track_t *t,unsigned genre,unsigned role,unsigned len)
 int main(void)
 {
     int bad=0,ok=1;unsigned count=0;
+    ui_power_on();
+    bad+=check("DRUM motion period/wave is bit exact to the prior formula",drum_motion_reference());
     ui_power_on();song.playing=1;
     {
         const uint8_t *packed[]={ABOUT_PROJECT_PACK,ABOUT_CREDITS_PACK};
