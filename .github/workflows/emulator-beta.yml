@@ -1,0 +1,106 @@
+name: Publish beta emulator
+# (V10.6g) The browser emulator of the verified beta: compiled from the same source commit as web/SPLIT_BETA.json, into
+# the site the last beta publish deployed (its Pages artifact, site_run_id); only emu/ changes, every installer,
+# firmware package and editor file is kept byte for byte.
+on:
+  push:
+    branches: [main]
+    paths: [web/EMULATOR_BETA.json]
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Pin
+        id: pin
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json,os,re,urllib.request
+          from pathlib import Path
+          m=json.loads(Path('web/EMULATOR_BETA.json').read_text())
+          b=json.loads(Path('web/SPLIT_BETA.json').read_text())
+          assert re.fullmatch('[0-9a-f]{40}',m['source']) and m['source']==b['source'],'emulator must be the beta source'
+          assert Path('web/EMULATOR').read_text().strip()==m['source'],'web/EMULATOR pin mismatch'
+          req=urllib.request.Request(f'https://api.github.com/repos/{os.environ["GITHUB_REPOSITORY"]}/actions/runs/{m["site_run_id"]}',headers={'Authorization':'Bearer '+os.environ['GH_TOKEN']})
+          run=json.load(urllib.request.urlopen(req))
+          assert run['status']=='completed' and run['conclusion']=='success','site run did not deploy'
+          assert run['name'] in ('Publish verified ADD beta','Publish beta emulator'),'site run is not a beta publish'
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+              f.write('source='+m['source']+'\n')
+              f.write('site_run_id='+str(m['site_run_id'])+'\n')
+          PY
+      - name: Published site
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          run-id: ${{ steps.pin.outputs.site_run_id }}
+          github-token: ${{ github.token }}
+          path: build/released
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pin.outputs.source }}
+          path: build/emusrc
+          persist-credentials: false
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 6.0.11
+      - name: Build and verify the emulator
+        run: |
+          pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
+          (cd build/emusrc && python3 -c "import sys;sys.path.insert(0,'tools');import build;build.generate()")
+          cp web/emu/additive-api.h build/emusrc/web/emu/additive-api.h
+          cat web/emu/additive-api.h >> build/emusrc/web/emu/felucca_web.c
+          (cd build/emusrc && sh web/emu/build.sh)
+          node web/emu/additive-boot-test.mjs build/emusrc/build/emu/felucca.wasm
+      - name: Replace only emu/
+        run: |
+          mkdir -p build/pages
+          tar -xf build/released/artifact.tar -C build/pages
+          python3 - <<'PY'
+          import hashlib,json,re,shutil
+          from pathlib import Path
+          pages=Path('build/pages');compiled=Path('build/emusrc/build/emu');m=json.loads(Path('web/EMULATOR_BETA.json').read_text())
+          def tree():return {p.relative_to(pages).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in pages.rglob('*') if p.is_file() and p.relative_to(pages).parts[0]!='emu'}
+          before=tree()
+          v=re.search(r'^#define FELUCCA_VERSION "([^"]+)"',Path('build/emusrc/firmware/src/felucca.c').read_text(),re.M).group(1)
+          assert m['version']==v,'version label mismatch'
+          shell=Path('web/emu/index-additive.html').read_text().replace('@VERSION@',v).replace('@PREVIEW@',' (beta)')
+          (compiled/'index.html').write_text(shell)
+          shutil.copy('web/emu/worklet.js',compiled/'worklet.js')
+          dest=pages/'emu'
+          if dest.exists():shutil.rmtree(dest)
+          shutil.copytree(compiled,dest)
+          (dest/'SOURCE_COMMIT').write_text(m['source']+'\n');(dest/'EDITION').write_text('ADDITIVE\n')
+          assert before==tree(),'files outside emu changed'
+          print('PASS only emu/ changed:',v,m['source'])
+          PY
+      - name: Browser audio
+        timeout-minutes: 4
+        run: |
+          pip install --timeout 30 --retries 2 playwright==1.58.0
+          python3 -u web/emu/browser-additive-test.py build/pages/emu
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/pages
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
