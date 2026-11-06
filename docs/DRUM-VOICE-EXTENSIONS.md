@@ -9,15 +9,17 @@ Choose **EDIT → KIT 4 → KEY MAP → EXTENDED**. CLASSIC is the default and p
 | OCT | EXTENDED behavior |
 | --- | --- |
 | 0 | Original GM kit |
-| +1 | Twelve different 16-step fills, by key; repeat while held, stop at release |
+| +1 | 27 different 16-step fills, one per physical key; repeat while held, stop at release |
 | +2, +3 | Twelve combinations of kick, rim/tom and snare/hat, with per-lane 1/2/4 hits per step |
 | −1 | First 13 keys: chromatic kick, −6…+6 semitones; remaining 14: chromatic tom, −6…+7 |
 | −2 | Twelve per-hit FX variations: full reverb/delay sends, longer decay, oscillator feedback, fold or noise, depending on key |
 | −3 | Existing FLAM touch |
 
-The FX variations do not rewrite the kit or global FX controls. Reverb/delay still require their bus to be enabled. Feedback here means the existing drum oscillator feedback, not a new delay feedback loop. Repeated keys share the original eight drum lanes and the existing four held-performance slots per track. These modes do not increase hardware polyphony.
+The FX variations do not rewrite the kit or global FX controls. Reverb/delay still require their bus to be enabled. Feedback here means the existing drum oscillator feedback, not a new delay feedback loop. Repeated keys share the original eight drum lanes and the existing held-performance slots per track. Only one extended performance plays at once; a second slot queues its replacement. These modes do not increase hardware polyphony.
 
-Recording expands fills/sets into ordinary GM hits and per-lane ratchets. Chromatic and per-hit FX sounds retain encoded note values. Both step components and master components remain available. GM notes 35–81 are unchanged. In EXTENDED, external MIDI uses 0–12 for kick, 13–26 for tom; FX at 27–34 and 82–85; fills at 86–97; sets at 98–121. In CLASSIC all previous MIDI bands remain unchanged.
+Fills and sets start/switch on the next track step (DIV, FIT and swing apply). The last pressed key replaces the active performance at that boundary. Older held keys do not restart it when the latest key is released. A pending replacement released before its boundary is cancelled. Mild per-step velocity humanization (−4…+3 in MIDI velocity) varies successive repetitions without moving hit times off the tempo grid.
+
+Recording expands fills/sets into ordinary GM hits and per-lane ratchets, with the humanized step velocity. Chromatic and per-hit FX sounds retain encoded note values. Both step components and master components remain available. GM notes 35–81 are unchanged. In EXTENDED, external MIDI uses 0–12 for kick, 13–26 for tom; FX at 27–34 and 82–85; 27 fills at 86–112; sets at 113–127. In CLASSIC all previous MIDI bands remain unchanged.
 
 ## VOICE
 
@@ -38,6 +40,6 @@ The beta editor previews transliteration and checks the **63-character limit aft
 
 ## Memory and validation
 
-No extra audio buffers, delay lines, voices, lyric cache, or sample banks. Two bytes of main-loop lyric selection state. Existing English words and ES/EN/JA generator banks are retained: bounded-depth phoneme pair compression, 5-bit alphabet packing, packed group ranges and nibble metadata are lossless. English dictionary search keeps eight words per indexed block; English text phonemes remain resolved off the audio interrupt.
+No extra audio buffers, delay lines, voices, lyric cache, or sample banks. Two bytes of main-loop lyric selection state. Existing English words and ES/EN/JA generator banks are retained: bounded-depth phoneme pair compression, 5-bit alphabet packing, packed group ranges and nibble metadata are lossless. English dictionary search keeps eight words per indexed block; smaller acceleration tables retain the same canonical fallback; English text phonemes remain resolved off the audio interrupt.
 
 Host checks cover every original English dictionary entry and every original generator word, original singer/seek behavior, classic DRUM octaves/recording/MIDI, new fill release/wrap, chromatic/FX ownership and sends, recording, language bounds under ASan, exact syllable locks, project round trip, editor syntax and transliteration. The broader existing workflow checks storage, song generation/save, FIT, USB audio, MIDI, modulation/followers and the known full-UI baseline. Target compilation must pass normal flash/RAM/layout/paired-segment guards before publication. Physical FM-1 validation remains a user test after beta installation.

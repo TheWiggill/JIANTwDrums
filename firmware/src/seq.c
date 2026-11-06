@@ -940,11 +940,11 @@ static uint32_t dxp_note(const dxo_t *e, uint32_t phase, uint32_t slot, uint32_t
 {
     static const uint16_t fills[12] = {0x8888,0xAAAA,0xF080,0xE8A0,0xC8C8,0xFF00,
                                       0x9249,0xA4A4,0x8421,0xE000,0xCCAA,0xFFFF};
-    uint32_t key=e->note%12u, mask;
+    uint32_t key=e->note%27u, mask;
     *rate=1;
     if (e->half==2u) {
-        mask=slot==0u?fills[key]:slot==1u?(uint16_t)(fills[(key+5u)%12u]>>1):0x1111u;
-        if (!((mask>>(phase&15u))&1u)) return 0;
+        mask=slot==0u?fills[key%12u]:slot==1u?(uint16_t)(fills[(key+5u)%12u]>>1):0x1111u;
+        if (!((mask>>((phase+3u*(key/12u))&15u))&1u)) return 0;
         *rate=slot<2u && phase>=12u ? 1u<<((key+phase)%3u) : 1u;
         return slot==0u?38u:slot==1u?(key%3u==0u?39u:DRUM_LANE_NOTE[DV_TOM]):
                key&1u?42u:36u;
@@ -957,21 +957,38 @@ static uint32_t dxp_note(const dxo_t *e, uint32_t phase, uint32_t slot, uint32_t
 static void dxp_fire(track_t *t, const dxo_t *e, uint32_t phase, uint32_t sub, uint32_t how)
 {
     uint32_t j, rate, note;
+    if(phase>=16u) return; /* queued: no off-grid first hit */
+    uint32_t vel=(uint32_t)clamp((int32_t)e->vel+(int32_t)(e->r>>4)-4,1,127);
     for(j=0;j<3u;j++) {
         note=dxp_note(e,phase,j,&rate);
         if(!note || (sub%(4u/rate))) continue;
         dx_in_rat=(uint8_t)rate;
-        if(how==2u) rec_drum(t,&t->step[seq_src(t,t->seq_idx)],note,e->vel,0);
-        else if(how) input_on(t,note,e->vel);
-        else trk_note_on(t,note,e->vel);
+        if(how==2u) rec_drum(t,&t->step[seq_src(t,t->seq_idx)],note,vel,0);
+        else trk_note_on(t,note,vel);
     }
     dx_in_rat=0;
+}
+/* One active performance and at most one replacement, using existing slots.
+ * The last pressed key wins on the next step; releasing an old key cannot
+ * cancel its replacement and old held keys never restart by themselves. */
+static void dxp_choke(uint32_t ti)
+{
+    if(dxo_n[ti]>1u&&dxo[ti][1].half>=2u&&dxo[ti][1].ph==255u) {
+        dxo[ti][0]=dxo[ti][1];dxo_n[ti]=1;
+    }
+}
+static void dxp_step(dxo_t *e,uint32_t idx)
+{
+    e->idx=(uint16_t)idx;e->part=255u;e->ph=(uint8_t)((e->ph+1u)&15u);
+    /* A small, shared per-step velocity change is representable in step_t.
+     * Keep all hit times on the tempo grid; don't jitter ratchets separately. */
+    e->r=(uint8_t)(4u|((rng()&7u)<<4));
 }
 static void dxo_on(track_t *t, uint32_t note, int32_t o, uint32_t vel, uint32_t id)
 {
     uint32_t ti = trk_index(t), k;
     dxo_t *e;
-    uint32_t ext=drum_track(t)&&drum_ext(t)&&note>=86u&&note<=121u;
+    uint32_t ext=drum_track(t)&&drum_ext(t)&&note>=86u&&note<=127u, extcnt=0, extpart=0;
     if(ext) o=1;
     if (!o || t->p[P_AMODE] || ti >= NPART || !drum_track(t)) {
         input_on(t, note, vel);
@@ -986,10 +1003,14 @@ static void dxo_on(track_t *t, uint32_t note, int32_t o, uint32_t vel, uint32_t 
     dx_in_rat = DXO_RAT[o > 3 ? 3 : o];
     rec_at = 0;
     if(!ext) input_on(t, note, vel);                    /* (its first hit; recorded with the RATCH) */
-    for (k = 0; k < dxo_n[ti] && dxo[ti][k].id != id; k++)
-        ;
-    if (k == dxo_n[ti] && dxo_n[ti] < DXO_N)
-        dxo_n[ti]++;
+    if(ext) {
+        if(dxo_n[ti]) {extcnt=dxo[ti][0].cnt;extpart=dxo[ti][0].part;}
+        k=dxo_n[ti]&&dxo[ti][0].half>=2u&&dxo[ti][0].ph<16u?1u:0u;
+        dxo_n[ti]=(uint8_t)(k+1u);
+    } else {
+        for (k = 0; k < dxo_n[ti] && dxo[ti][k].id != id; k++);
+        if (k == dxo_n[ti] && dxo_n[ti] < DXO_N) dxo_n[ti]++;
+    }
     e = &dxo[ti][k < DXO_N ? k : DXO_N - 1u];
     e->id = (uint16_t)id;
     e->note = (uint8_t)note;
@@ -1002,11 +1023,12 @@ static void dxo_on(track_t *t, uint32_t note, int32_t o, uint32_t vel, uint32_t 
     e->part = song.playing && t->seq_pos < 0x7FFFFFFFu ? (uint8_t)dxo_part(t, e->r) : 255u;
     e->quiet = e->rec = 0;
     if(ext) {
-        e->half=note<98u?2u:3u;
-        e->note=(uint8_t)((note-86u)%12u);
+        e->half=note<113u?2u:3u;
+        e->note=(uint8_t)(note<113u?note-86u:(note-113u)%12u);
         e->r=4;
-        e->part=song.playing&&t->seq_pos<0x7FFFFFFFu?(uint8_t)dxo_part(t,4):0;
-        dxp_fire(t,e,0,0,1);
+        e->part=song.playing&&t->seq_pos<0x7FFFFFFFu?(uint8_t)dxo_part(t,4):(uint8_t)extpart;
+        e->cnt=extcnt;e->ph=255u;
+        dx_in_rat=0;return;
     }
     if (cin_left)                                       /* (the count-in keeps it for step 1) */
         e->rec = 1;
@@ -1039,8 +1061,10 @@ static void dxo_off(track_t *t, uint32_t id)
 static __attribute__((noinline)) void dxo_rec_hold(track_t *t, uint32_t idx)
 {
     uint32_t ti = trk_index(t), k, src = seq_src(t, idx), bak = 0;
+    dxp_choke(ti);
     for (k = 0; k < dxo_n[ti]; k++) {
         dxo_t *e = &dxo[ti][k];
+        if(e->half>=2u&&(e->idx!=idx||e->ph==255u)) dxp_step(e,idx);
         if (e->rec == idx + 1u) {                       /* (its press went into this one: it plays it) */
             e->quiet = (uint8_t)(idx + 1u);
             continue;
@@ -1053,7 +1077,7 @@ static __attribute__((noinline)) void dxo_rec_hold(track_t *t, uint32_t idx)
             dxo_bak_idx[ti] = (uint16_t)idx;
             bak = 1;
         }
-        if(e->half>=2u) dxp_fire(t,e,(e->ph+(idx!=e->idx))&15u,0,2);
+        if(e->half>=2u) dxp_fire(t,e,e->ph,0,2);
         else {
             dx_in_rat = e->r;
             rec_drum(t, &t->step[src], e->note, e->vel, 0);
@@ -1075,9 +1099,13 @@ static __attribute__((noinline)) void dxo_tick(track_t *t, uint32_t n)
         dxo_n[ti] = 0;
         return;
     }
+    if(dxo_n[ti]>1u&&(!song.playing||t->seq_pos>=0x7FFFFFFFu)&&
+       dxo[ti][0].half>=2u&&dxo[ti][0].part==3u&&
+       dxo[ti][0].cnt+n>=div_samples((uint32_t)t->p[P_SDIV])/4u) dxp_choke(ti);
     for (k = 0; k < dxo_n[ti]; k++) {
         dxo_t *e = &dxo[ti][k];
-        uint32_t r = e->r ? e->r : 1u, part;
+        uint32_t r = e->half>=2u?4u:e->r ? e->r : 1u, part;
+        if(e->half>=2u&&cin_left) continue;
         if (!song.playing || t->seq_pos >= 0x7FFFFFFFu) {   /* stopped: from the press */
             uint32_t per = div_samples((uint32_t)t->p[P_SDIV]) / r << (e->half==1u);
             if(e->half<2u) e->part = 255u;
@@ -1090,7 +1118,7 @@ static __attribute__((noinline)) void dxo_tick(track_t *t, uint32_t n)
                 ev_at(e->cnt >= n ? 0u : n - e->cnt);
                 if(e->half>=2u) {
                     e->part=(uint8_t)((e->part+1u)&3u);
-                    if(!e->part) e->ph=(uint8_t)((e->ph+1u)&15u);
+                    if(!e->part) {dxp_step(e,0xFFFFu);e->part=0;}
                 }
                 dxo_hit(t, e);
                 ev_off = 0;
@@ -1100,9 +1128,8 @@ static __attribute__((noinline)) void dxo_tick(track_t *t, uint32_t n)
         e->cnt = 0;
         part = dxo_part(t, r);
         if (t->seq_idx != e->idx) {
-            e->idx = t->seq_idx;
-            e->part = 255u;
-            e->ph = e->half>=2u ? (uint8_t)((e->ph+1u)&15u) : e->ph^1u;
+            if(e->half>=2u) dxp_step(e,t->seq_idx);
+            else {e->idx=t->seq_idx;e->part=255u;e->ph^=1u;}
         }
         if (e->quiet == t->seq_idx + 1u) {
             e->part = (uint8_t)part;
@@ -1166,13 +1193,13 @@ static void key_next(uint32_t k, track_t *t)
     if(drum_track(t)&&drum_ext(t)&&kb_oct[k] && kb_oct[k]>=-2) {
         uint32_t key=(x+128u-29u)%128u;
         x=kb_oct[k]==-1?key%27u:kb_oct[k]==-2?drum_fx_note(key):
-          86u+12u*(uint32_t)(kb_oct[k]>1?1:0)+key%12u;
+          kb_oct[k]==1?86u+key%27u:113u+key%12u;
         kb_snd[k][kb_on[k]]=(uint8_t)x;
         kb_oct[k]=0;                                  /* retain the exact MIDI note until release */
     }
     if (!midi_local_held(t, x)) {
         in_norec = kb_sn[k] > 1u;                   /* (0.6.84: the chord's notes recorded at once, key_on) */
-        dxo_on(t, x, kb_oct[k], 100, DXO_KEY + (x>=86u&&x<=121u?x:k));
+        dxo_on(t, x, kb_oct[k], 100, DXO_KEY + (x>=86u&&x<=127u?x:k));
         in_norec = 0;
         mo_key(t, 0x09u | (0x90u | mc) << 8 | drum_oct_note(x, kb_oct[k]) << 16 | 100u << 24);
     }
@@ -1238,7 +1265,7 @@ static void key_off(uint32_t k, track_t *t)
     /* Repeated physical octaves share a performance note. Its scheduler is
      * released by the last owner, even if the key map/octave or LATCH changed. */
     uint32_t control=kb_snd[k][0];
-    if(control>=86u&&control<=121u&&!midi_local_held(t,control)) dxo_off(t,DXO_KEY+control);
+    if(control>=86u&&control<=127u&&!midi_local_held(t,control)) dxo_off(t,DXO_KEY+control);
     if (key_latch(t)) {                             /* LATCH: it keeps sounding (recorded as let go) */
         if (t->arp_phys)
             t->arp_phys--;

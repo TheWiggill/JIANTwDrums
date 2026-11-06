@@ -42,8 +42,8 @@ static int extensions(void)
     ok=drum_side_of(dc,DV_KICK,drum_send(dt,DV_KICK),g,&bus,&amt)&&amt==63&&bus==dc->sb[2];
     for(k=0;k<CTL;k++) ok &= !bus[k];
     bad+=check("EXT sends: lazy per-core bus clearing for intra-block note-on",ok);
-    uint32_t hashes[12];ok=1;
-    for(k=0;k<12;k++) {
+    uint32_t hashes[27];ok=1;
+    for(k=0;k<27;k++) {
         dxo_t e={0};e.half=2;e.note=(uint8_t)k;uint32_t h=2166136261u;
         for(p=0;p<16;p++) for(j=0;j<3;j++) {
             n=dxp_note(&e,p,j,&r);h=(h^n^r<<8)*16777619u;
@@ -52,36 +52,48 @@ static int extensions(void)
         for(j=0;j<k;j++) ok &= hashes[j]!=h;
         hashes[k]=h;
     }
-    bad+=check("EXT: twelve distinct 16-step fills, recordable per-lane rates",ok);
+    bad+=check("EXT: all 27 keys have distinct 16-step fills and recordable rates",ok);
     ok=1;
-    for(k=0;k<12;k++) {
+    for(k=0;k<27;k++) {
         drum_setup();dt->p[P_DKEYMODE]=1;song.octave=1;
         key_dn(k);lanes_b(2);
-        ok &= dxo_n[3]==1 && dxo[3][0].half==2 && dxo[3][0].ph==0;
+        ok &= dxo_n[3]==1 && dxo[3][0].half==2 && dxo[3][0].ph==255 && kb_snd[k][0]==86u+k;
         uint32_t per=div_samples(dt->p[P_SDIV])/4u;
-        for(p=0;p<64;p++) dxo_tick(dt,per);
+        for(p=0;p<68;p++) dxo_tick(dt,per);
         ok &= dxo[3][0].ph==0 && dxo[3][0].part==0;
         song.octave=0;key_upk(k);lanes_b(2);
         ok &= !dxo_n[3]&&!kb_on[k];
     }
     bad+=check("EXT fills repeat while held, wrap after one bar, release at changed octave",ok);
-    drum_setup();dt->p[P_DKEYMODE]=1;song.octave=1;
-    key_dn(0);lanes_b(2);key_dn(12);lanes_b(2);key_upk(0);lanes_b(2);
-    ok=dxo_n[3]==1;
-    dt->p[P_DKEYMODE]=0;key_upk(12);lanes_b(2);
-    bad+=check("EXT duplicate pattern keys keep repeating until their last owner releases",ok&&!dxo_n[3]);
+    drum_setup();dt->p[P_DKEYMODE]=1;song.octave=1;seq_start();
+    lanes_until(1,step_len(1)/8u);uint32_t before=vage;
+    key_dn(0);lanes_b(2);
+    ok=dxo_n[3]==1&&dxo[3][0].ph==255u&&before==vage;
+    lanes_until(2,step_len(2)/8u);
+    ok &= dxo_n[3]==1&&dxo[3][0].ph==0;
+    key_dn(12);lanes_b(2);ok &= dxo_n[3]==2&&dxo[3][0].note==0&&dxo[3][1].note==12;
+    lanes_until(3,step_len(3)/8u);ok &= dxo_n[3]==1&&dxo[3][0].note==12;
+    key_upk(0);lanes_b(2);ok &= dxo_n[3]==1;
+    key_dn(4);lanes_b(2);key_dn(26);lanes_b(2);
+    lanes_until(4,step_len(4)/8u);ok &= dxo_n[3]==1&&dxo[3][0].note==26;
+    key_upk(12);key_upk(26);lanes_b(2);
+    lanes_until(5,step_len(5)/8u);ok &= !dxo_n[3];seq_stop();
+    bad+=check("EXT quantized choke: latest key replaces fill; old release cannot cancel or restart it",ok);
+    dxo_t human={0};human.half=2;human.vel=100;human.ph=255;uint32_t variation=0;
+    for(k=0;k<64;k++) {dxp_step(&human,k);variation|=1u<<(human.r>>4);}
+    bad+=check("EXT humanize varies velocity per step and keeps the timing grid",variation&&(variation&(variation-1u)));
     drum_setup();dt->p[P_DKEYMODE]=1;
-    midi_play(dt,0,98,100);
+    midi_play(dt,0,113,100);
     bad+=check("EXT external keyboard starts ratchet sets",dxo_n[3]==1&&dxo[3][0].half==3);
-    dxo_off(dt,DXO_MIDI+98);
+    dxo_off(dt,DXO_MIDI+113);
     bad+=check("EXT external keyboard releases the performance",!dxo_n[3]);
     /* Recording stores the same lane/rate recipe, not virtual control notes. */
     drum_setup();dt->p[P_DKEYMODE]=1;song.rec=1u<<3;seq_start();
-    lanes_until(1,step_len(1)/8u);dxo_on(dt,99,0,100,DXO_MIDI+99);
-    lanes_until(5,step_len(5)/4u);dxo_off(dt,DXO_MIDI+99);seq_stop();
+    lanes_until(1,step_len(1)/8u);dxo_on(dt,114,0,100,DXO_MIDI+114);
+    lanes_until(5,step_len(5)/4u);dxo_off(dt,DXO_MIDI+114);seq_stop();
     ok=1;n=0;
     for(k=2;k<5;k++) {
-        const step_t *s=&dt->step[k];n+=s->hit!=0;
+        const step_t *s=&dt->step[k];n+=s->hit!=0;ok &= s->vel>=96u&&s->vel<=103u;
         for(j=0;j<s->n;j++) ok &= s->note[j]<86;
         for(j=0;j<8;j++) ok &= step_lmode(s,j)<=LM_X4;
     }
