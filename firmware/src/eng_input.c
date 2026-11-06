@@ -95,6 +95,8 @@ static struct sw_dev {
 static int32_t sw_lmin = 127, sw_lmax;
 static uint32_t sw_tick;
 static uint8_t ain_tr;                                   /* the first INPUT track (mod.c macro_master) */
+static uint8_t ain_mode;                                 /* what the input is now: 0 none, 1 USB (computer, phone,
+                                                          * interface), 2 SWARM (mod.c macro_master; the INPUT page) */
 static int32_t scale_snap(const track_t *t, int32_t n);  /* seq.c */
 #ifndef fm1_ticks
 static uint32_t fm1_ticks(void);                         /* (hal/fm1_time.h; the host tests' own) */

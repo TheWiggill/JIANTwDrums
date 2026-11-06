@@ -1504,6 +1504,8 @@ static uint32_t graph_signature(void)
     if (pg->fam == FAM_EDIT && trk_engp(t) == &ENG_INPUT)   /* (V10.54) INPUT: its meters live */
         h = (h ^ ((uint32_t)(ain_pk[0] >> 10) | (uint32_t)(ain_pk[1] >> 10) << 6 | (uint32_t)(mod_follow >> 10) << 12 |
                   (uint32_t)(ain_gg[(uint32_t)(t - trk) % NTRK] >> 12) << 18)) * 16777619u;
+    if (pg->fam == FAM_EDIT && trk_engp(t) == &ENG_INPUT && ain_mode == 2u)   /* (SWARM: it moves every frame) */
+        h ^= ui.frame * 2654435761u + ain_mode;
     if (DX_KIT3(pg))                                 /* (0.8.8) KIT 3's colony lives every frame, as KIT's (was still) */
         h ^= ui.frame * 2654435761u;
     if (pg->graph >= GR_FMOP && pg->graph <= GR_FMENV)   /* (0.9.6) FM6's operators: the colony lives, as the beings */

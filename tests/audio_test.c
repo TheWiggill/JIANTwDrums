@@ -338,6 +338,17 @@ static void swarm_input(void)
     check("INPUT: SWARM: three devices heard are three voices on an INPUT track, each its own period", a > 200.0 && n == 3u &&
           sw[0].per > 0 && sw[1].per > sw[0].per && sw[2].per > sw[1].per);
     check("INPUT: SWARM: the devices gone, the swarm fades to silence", q2 < 1.0);
+    {   /* an audio device plugged in (USB filled the block): the input is it, the swarm steps aside at once */
+        int32_t out[2 * CTL];
+        uint32_t i;
+        sw_run(300, 1, &a, &lr);
+        check("INPUT: SWARM plays while no USB audio comes in (the INPUT page shows the swarm)", ain_mode == 2u);
+        for (i = 0; i < CTL; i++) uin_l[i] = uin_r[i] = 1000;
+        uin_on = 1;                                     /* (uac_in_fill: a computer, a phone or an interface) */
+        audio_block(out, CTL);
+        check("INPUT: USB audio in: the input switches to it at once (the page shows its meters)", ain_mode == 1u);
+        uin_on = 0;
+    }
 }
 static void input_engine(void)
 {

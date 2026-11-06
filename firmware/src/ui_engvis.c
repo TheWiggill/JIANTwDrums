@@ -1931,8 +1931,59 @@ static VX_CODE void vx_add(const track_t *t, const int32_t *A, int32_t en_home)
 
 /* (V10.54) INPUT: the audio interface's two inputs as meters (lit: the ones SOURCE takes), GATE's level across them,
  * between them FOLLOW (the matrix's source) and the gate's gain; the source over them */
+/* (SWARM) the swarm as it plays: each device heard a body at its side (its channel: L, both, R) and its note's height,
+ * its size its level, lit on each advertisement (its rhythm), turning on a small orbit at its own period (the
+ * clocks' polyrhythm seen), a line from the loudest to each other (the relation that detunes them); SWARM n above */
+static void vx_swarm(const int32_t *A)
+{
+    uint32_t v, now = fm1_ticks(), n = 0, ref = SW_N, rlv = 0;
+    int32_t x0 = A[0] + 8, w = A[2] - 16, y0 = A[1] + 16, h = A[3] - 26, px[SW_N], py[SW_N], hl[SW_N];
+    char b[10];
+    if (w < 16 || h < 16)
+        return;
+    for (v = 0; v < 3u; v++)                             /* (the floor: L, both, R) */
+        cv_rect(x0 + (int32_t)(1u + 2u * v) * w / 6 - 3, y0 + h + 4, 7, 1, T_MID);
+    for (v = 0; v < SW_N; v++) {
+        const struct sw_dev *d = &sw[v];
+        uint32_t per = d->per | 1u, ph;
+        int32_t side = d->ch == 37u ? 1 : d->ch == 39u ? 5 : 3;
+        px[v] = -1;
+        if (!d->id || d->amp < 8)
+            continue;
+        n++;
+        ph = (uint32_t)(((uint64_t)((now - d->last) % per) << 32) / per);   /* (its own clock's phase) */
+        px[v] = x0 + side * w / 6 + ((int32_t)(d->id >> 3) % 17 - 8) * w / 64 + (osc_sine(ph) * 6 >> 15);
+        py[v] = y0 + h - 4 - ((int32_t)d->note - 24) * (h - 8) / 72 + (osc_sine(ph + 0x40000000u) * 4 >> 15);
+        hl[v] = clamp(((int32_t)d->lv - sw_lmin) * 255 / (int32_t)(((uint32_t)(sw_lmax - sw_lmin) & 127u) | 1u), 0, 255);
+        if (d->lv >= rlv)
+            rlv = d->lv, ref = v;
+    }
+    for (v = 0; v < SW_N && ref < SW_N; v++)              /* the relations: the loudest to each other */
+        if (px[v] >= 0 && v != ref)
+            cv_line(px[ref], py[ref], px[v], py[v], ux_mix(T_MID, vk_heat(hl[v]), 35));
+    for (v = 0; v < SW_N; v++) {
+        const struct sw_dev *d = &sw[v];
+        int32_t z;
+        int hit = d->acc > d->amp / 2;
+        if (px[v] < 0)
+            continue;
+        z = clamp(3 + d->amp * 6 / 14000, 3, 9);
+        cv_rect(px[v] - z / 2, py[v] - z / 2, z, z, hit ? T_TEXT : vk_heat(hl[v]));
+        if (hit)                                         /* (an advertisement now: its ring) */
+            cv_frame(px[v] - z / 2 - 3, py[v] - z / 2 - 3, z + 6, z + 6, vk_heat(hl[v]));
+    }
+    if (!vx_small) {
+        str_cpy(b, "SWARM ", sizeof b);
+        fmt_int(b + 6, (int32_t)n);
+        cv_text(A[0] + A[2] / 2 - 3 * (int32_t)str_len(b), A[1] + 2 - AF_X_CAP_Y, &AF_X, b, T_THEME);
+    }
+}
 static VX_SEG void vx_input(const track_t *t, const int32_t *A, int32_t en_home)
 {
+    if (ain_mode == 2u) {                               /* (SWARM: the devices; USB audio: the meters below) */
+        vx_swarm(A);
+        return;
+    }
     uint32_t src = (uint32_t)clamp(t->p[P_E0], 0, AIN_N - 1), k;
     int32_t bw = A[2] / 7, bh = A[3] - 30, by = A[1] + 16, cx = A[0] + A[2] / 2, thr = clamp(t->p[P_E2], 0, 127);
     int32_t lv = thr * thr * 2, gg = ain_gg[(uint32_t)(t - trk) % NTRK];
