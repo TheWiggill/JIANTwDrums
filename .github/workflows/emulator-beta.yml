@@ -91,7 +91,7 @@ jobs:
         timeout-minutes: 4
         run: |
           pip install --timeout 30 --retries 2 playwright==1.58.0
-          python3 -u web/emu/browser-additive-test.py build/pages/emu
+          python3 -u web/emu/browser-beta-test.py build/pages/emu "$(python3 -c "import json;print(json.load(open('web/EMULATOR_BETA.json'))['version'])")"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/pages
