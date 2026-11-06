@@ -2465,9 +2465,10 @@ static __attribute__((noinline)) void dx_mot_block(uint32_t n)
         dx_mot_v = 0;
         return;
     }
-    len = beat_samples() * Q8[r] / 4u;                  /* (a quarter = 4 sixteenths) */
-    if (r == 8u)
-        len = beat_samples() / 8u;
+    /* Both branches read the same block's tempo. Avoid the duplicated tempo
+     * conversion at the fastest rate, preserving its exact integer period. */
+    len = beat_samples();
+    len = r == 8u ? len / 8u : len * Q8[r] / 4u;       /* a quarter = 4 sixteenths */
     if (len < 64u)
         len = 64u;
     pos = song.playing ? ms_clock : dx_mot_free;
