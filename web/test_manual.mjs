@@ -22,7 +22,8 @@ const HERE = new URL(".", import.meta.url).pathname, DIR = join(HERE, "manual"),
 const ctx = { console };
 ctx.window = ctx;
 vm.createContext(ctx);
-for (const f of ["data.js", "nav.js", "manual.js"]) vm.runInContext(readFileSync(join(DIR, f), "utf8"), ctx, { filename: f });
+const TOUR_FILES = ["tour.js", "tour.es.js", "tour.en.js", "tour.pt.js", "tour.fr.js", "tour.ja.js", "tour.zh.js"];
+for (const f of ["data.js", "nav.js", ...TOUR_FILES, "manual.js"]) vm.runInContext(readFileSync(join(DIR, f), "utf8"), ctx, { filename: f });
 const M = ctx.JMAN, N = ctx.JNAV, A = ctx.JMANUAL;
 ok(M && N && A, "manual: data.js, nav.js and manual.js load (no DOM)");
 
@@ -34,6 +35,35 @@ try {
 ok(N.sections.join() === "HOME,EDIT,SEQ,FX,GLO,ENV,LFO,SCL,ARP,SAVE", "manual: the ten sections of the firmware");
 const fwv = /FELUCCA_VERSION "(v[^"]+)"/.exec(readFileSync(join(ROOT, "firmware/src/felucca.c"), "utf8"))[1];
 ok(N.version === fwv || /^V\d/.test(N.version), `manual: the map is the firmware's version (${N.version}: this tree's ${fwv} or the V line's, JIANT_FW)`);
+
+/* the tutorial (tour.js): every step in the six languages, what it asks to touch is on the drawing, every keycap in
+   its words a control, every question lands on a step, every screen in shots/ */
+{
+  const T = ctx.JTOUR, X = ctx.JTOUR_TEXT, ids = new Set([...A.CONTROL_IDS, ...A.KEYS.map((k) => k.name)]);
+  ok(T && T.flat.length > 60 && T.CHAPTERS.length >= 12, `tutorial: ${T.flat.length} steps in ${T.CHAPTERS.length} chapters`);
+  for (const l of T.LANGS) {
+    const t = X[l] || {};
+    const miss = [...T.flat.filter((st) => !(t.steps && t.steps[st.key] && t.steps[st.key].t && t.steps[st.key].d)).map((st) => st.key),
+                  ...T.CHAPTERS.filter((c) => !(t.chapters && t.chapters[c.id] && t.chapters[c.id].t)).map((c) => c.id),
+                  ...T.QUESTIONS.filter((q) => !(t.questions && t.questions[q.id] && t.questions[q.id].q)).map((q) => q.id),
+                  ...Object.keys(X.en.ui).filter((k) => !(t.ui && t.ui[k]))];
+    ok(!miss.length, `tutorial: every text in ${l}` + (miss.length ? " (missing " + miss.slice(0, 6).join(" ") + ")" : ""));
+    if (l !== "es" && l !== "en") {
+      const pm = Object.keys(A.UI.en).filter((k) => !(t.page && t.page[k]));
+      ok(!pm.length, `tutorial: the page's own words in ${l}` + (pm.length ? " (missing " + pm.slice(0, 6).join(" ") + ")" : ""));
+    }
+    const badcap = [];
+    for (const [k, v] of Object.entries(t.steps || {})) for (const m of String(v.d).matchAll(/\[([^\]]+)\]/g)) if (!ids.has(m[1].replace("−", "-"))) badcap.push(k + ":" + m[1]);
+    ok(!badcap.length, `tutorial: every [keycap] in ${l} is a control` + (badcap.length ? " (" + badcap.slice(0, 4).join(" ") + ")" : ""));
+  }
+  const badt = T.flat.filter((st) => T.targets(st).some((x) => !ids.has(x))).map((st) => st.key);
+  ok(!badt.length, "tutorial: what each step asks to touch is on the drawing" + (badt.length ? " (" + badt.join(" ") + ")" : ""));
+  ok(T.QUESTIONS.every((q) => T.indexOf(q.go) >= 0), "tutorial: every question lands on a step");
+  const noshot = T.flat.filter((st) => st.shot && !existsSync(join(DIR, "shots", st.shot + ".png"))).map((st) => st.shot);
+  ok(!noshot.length, "tutorial: every screen it shows is in shots/" + (noshot.length ? " (" + noshot.join(" ") + ")" : ""));
+  ok(A.LANGS.join() === "es,en,pt,fr,ja,zh" && A.uiOf("ja").lang === "ja" && A.uiOf("fr").h2 !== undefined || A.uiOf("fr").r_h2 !== A.UI.en.r_h2,
+     "tutorial: the page in six languages (pt fr ja zh from tour.<lang>.js)");
+}
 
 /* every control on the drawing has an entry */
 ok(A.CONTROL_IDS.length === 22 && A.KEYS.length === 27, "manual: 8 knobs + 14 buttons and 27 keys drawn");
@@ -117,7 +147,23 @@ else {
     p.on("pageerror", (e) => errs.push(e.message));
     p.on("requestfailed", (r) => { if (!/fonts\.g/.test(r.url())) errs.push("failed " + r.url()); });
     await p.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());      /* offline: the page must not need them */
+    /* the tutorial, on by default: its card, a step done by touching what it lights, a question, the languages */
     await p.goto("file://" + join(DIR, "index.html") + "?lang=es");
+    ok(await p.locator("#tour").isVisible() && /Bienvenida/i.test(await p.locator("#info").innerText()), `page ${w}px: the tutorial on by default`);
+    await p.locator("[data-tgo='1']").click();
+    await p.locator('#fm1 .ctl[data-ctl="SELECT"]').click();
+    ok(await p.locator(".tok").isVisible(), `page ${w}px: tutorial: SELECT touched -> the step done`);
+    await p.locator("details.tqs summary").click();
+    await p.locator('[data-tq="gen.undo"]').click();
+    await p.locator('#fm1 .ctl[data-ctl="GLO"]').click();
+    await p.locator('#fm1 .ctl[data-ctl="G4"]').click();
+    ok(await p.locator(".tok").isVisible(), `page ${w}px: tutorial: a question, then GLO + G4 -> done`);
+    const titles = [];
+    for (const l of ["pt", "fr", "ja", "zh", "en"]) { await p.locator(`.lang button[data-lang="${l}"]`).click(); titles.push(await p.locator(".ttitle").innerText()); }
+    ok(new Set(titles).size === 5 && titles.every(Boolean), `page ${w}px: tutorial in PT FR JA ZH EN (${titles.join(" | ")})`);
+    await p.locator('[data-tmode="off"]').click();
+    ok(!(await p.locator(".ttitle").count()), `page ${w}px: Free explore leaves the tutorial`);
+    await p.goto("file://" + join(DIR, "index.html") + "?lang=es&tour=off");
     const n = await p.locator("#fm1 .ctl").count();
     ok(n === 49, `page ${w}px: the drawing has its 49 controls (${n})`);
     await p.locator('#fm1 .ctl[data-ctl="SEQ"]').click();
@@ -132,7 +178,7 @@ else {
       i.complete ? i.naturalWidth === 240 : new Promise((r) => { i.onload = () => r(i.naturalWidth === 240); i.onerror = () => r(false); }))).then((a) => a.every(Boolean)));
     ok(imgsOk, `page ${w}px: the screens shown load`);
     await p.locator('.lang button[data-lang="en"]').click();
-    ok((await p.locator("h2").nth(1).innerText()) === "How do I…?", `page ${w}px: English`);
+    ok((await p.locator("#ref h2").innerText()) === "How do I…?", `page ${w}px: English`);
     ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `page ${w}px: no horizontal scroll`);
     ok(!errs.length, `page ${w}px: no error` + (errs.length ? " (" + errs.join("; ") + ")" : ""));
     await p.close();

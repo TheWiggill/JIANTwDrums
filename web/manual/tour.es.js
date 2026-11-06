@@ -1,0 +1,136 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Juan Ignacio Antonucci (Juan Jiant)
+// The tutorial's words in Spanish (tour.js: the steps; [X] = the control X's keycap).
+(window.JTOUR_TEXT = window.JTOUR_TEXT || {}).es = {
+ui: {
+  t_eb: "Tutorial · empezá acá", t_h2: "Aprendé JIANT paso a paso",
+  t_in: "Un recorrido guiado por todo el sistema. En cada paso se ilumina en el FM-1 lo que tenés que tocar y la pantalla muestra lo que vas a ver. Tocalo para seguir, o usá Siguiente. También podés saltar a un capítulo o a una pregunta.",
+  t_on: "Tutorial", t_off: "Explorar libre", t_next: "Siguiente", t_prev: "Anterior", t_skip: "Saltar paso",
+  t_restart: "Empezar de nuevo", t_chapters: "Capítulos", t_questions: "Preguntas frecuentes", t_step: "Paso",
+  t_of: "de", t_do: "Tocá en el dibujo:", t_hold: "mantené", t_then: "y", t_good: "¡Bien! Eso es.", t_free: "Este paso es para leer: seguí con Siguiente.",
+  t_finish: "Terminaste el recorrido. Ya conocés todo JIANT: seguí explorando el panel, buscá cualquier comando abajo o probalo en el emulador.",
+  t_emu: "Probalo en el emulador", t_progress: "completado"
+},
+chapters: {
+  welcome: { t: "Bienvenida", d: "Qué es JIANT y cómo funciona este tutorial." },
+  panel: { t: "El panel", d: "Las perillas, los botones y las teclas del FM-1." },
+  sound: { t: "Tu primer sonido", d: "Elegir pista, cambiar de sonido, tocar y transformarlo." },
+  nav: { t: "Moverse por el sistema", d: "Las seis reglas que valen en todas las secciones." },
+  gen: { t: "Un tema en un minuto", d: "El generador GEN escribe una canción entera." },
+  edit: { t: "Los motores y EDIT", d: "Doce motores de síntesis y cómo editarlos." },
+  seq: { t: "El secuenciador", d: "Escribir y grabar notas, locks y patrones." },
+  euclid: { t: "EUCLID y MUTATE", d: "Ritmos y melodías euclidianas que cambian solas." },
+  mix: { t: "Mezcla, efectos y en vivo", d: "Mutes, solos, tempo, efectos y punch-in." },
+  mod: { t: "Modulación, escala y arpegio", d: "ENV, LFO, macros, SCL y ARP." },
+  song: { t: "Guardar y armar la canción", d: "Secciones, ARRANGE, TIMELINE y proyectos." },
+  connect: { t: "MENU y conexiones", d: "Ajustes, pistas, USB, MIDI, Bluetooth y audio de entrada." },
+  next: { t: "Seguir aprendiendo", d: "Dónde buscar cuando quieras más." }
+},
+steps: {
+  "welcome.hello": { t: "Hola, esto es JIANT FM", d: "JIANT es un firmware libre que convierte al M-VAVE FM-1 en un instrumento completo: seis pistas, doce motores de síntesis, un secuenciador de 64 pasos, efectos, modulación y canciones enteras, sin computadora. Este tutorial te lleva por todo, paso a paso." },
+  "welcome.how": { t: "Cómo funciona", d: "En cada paso se ilumina en el dibujo lo que tenés que tocar. Probá ahora: tocá la perilla [SELECT]. Cuando el paso pide «mantené A y tocá B», tocá A y después B, en ese orden." },
+  "welcome.emu": { t: "Sin FM-1 también", d: "Si no tenés el FM-1 a mano, abajo de esta página está el emulador: el mismo firmware corriendo en el navegador. Las teclas de la compu hacen de botones (1 … = FX … REC) y de teclado (Z a ' y Q a O). Podés seguir el tutorial con el emulador abierto en otra pestaña." },
+
+  "panel.master": { t: "MASTER: el volumen", d: "Arriba a la izquierda, [MASTER] es el volumen de salida. Nada más." },
+  "panel.algorithm": { t: "ALGORITHM: la pista", d: "[ALGORITHM] elige la pista, T1 a T6, desde cualquier página. La pista siempre la elige ALGORITHM. Con el valor de fábrica (TRACKS 4) llega hasta T4." },
+  "panel.presets": { t: "PRESETS: los sonidos", d: "[PRESETS] siempre carga presets: los sonidos de la pista en cualquier página, los patrones en las páginas SEQ y el género en GEN. Nunca te cambia de página ni de pista." },
+  "panel.select": { t: "SELECT: las páginas", d: "[SELECT] recorre las páginas de la sección en que estás, una por paso, y frena en la primera y en la última. Mantener un botón y girar SELECT abre funciones especiales (las vas a ver)." },
+  "panel.knobs": { t: "KNOB 1–4: las cuatro tarjetas", d: "Las cuatro perillas de la derecha manejan las cuatro tarjetas de la pantalla. Si la página elige algo (un paso, una pista del kit, una fila), lo elige [KNOB 1]. En HOME son los cuatro controles más útiles del motor." },
+  "panel.buttons": { t: "Los doce botones", d: "Cada botón es una sección: FX, SCL, ENV, LFO, EDIT, GLO arriba; HOME, SAVE, ARP, SEQ, PLAY y REC abajo. Tocado, entra a la sección. Mantenido, abre su capa de atajos. Tocá [SEQ]." },
+  "panel.keys": { t: "Las 27 teclas", d: "De F3 a G5, tocan la pista elegida. Mientras mantenés un botón se convierten en atajos de esa capa, y en la grilla de DRUM-X son pasos. Tocá [C4]." },
+  "panel.oct": { t: "OCT− y OCT+", d: "Cambian la octava del teclado (los dos juntos vuelven a 0). En las páginas de acción y en los diálogos son NO / SÍ: [OCT+] confirma, [OCT−] cancela o vuelve." },
+
+  "sound.home": { t: "HOME: el ecosistema", d: "Tocá [HOME]. Cada pista es una criatura con carita: su forma sale de sus perillas, se hincha y se calienta con su propio sonido, cierra los ojos en cada golpe. La pista elegida es la más grande." },
+  "sound.track": { t: "Elegí una pista", d: "Girá [ALGORITHM]. Al encender: T1 DRUM-X (batería), T2 VOICE (canta), T3 ANIMAL (un pájaro), T4 LOFI. T5 ANALOG y T6 FM6 aparecen con TRACKS 6." },
+  "sound.browse": { t: "Cambiá de sonido", d: "Girá [PRESETS]: recorre los sonidos de fábrica de todos los motores y después los tuyos. El sonido cambia sin cortar lo que suena." },
+  "sound.play": { t: "Tocá", d: "Tocá las teclas, por ejemplo [E4]. [OCT−] y [OCT+] bajan o suben la octava." },
+  "sound.shape": { t: "Moldealo", d: "En HOME, [KNOB 1] a [KNOB 4] son los cuatro controles más útiles del motor (por ejemplo CUT, RES, ATK, REL). Girá [KNOB 2] y mirá cómo cambia la criatura." },
+  "sound.dice": { t: "Los dados del sonido", d: "Mantené [EDIT] y girá [SELECT]: el sonido se tira de nuevo y lo escuchás al instante. La pantalla muestra ANTES y AHORA." },
+  "sound.keep": { t: "¿Te gusta? Quedátelo", d: "[OCT+] (OK) se queda con el sonido nuevo, [OCT−] (CANCEL) vuelve al anterior. SELECT otra vez tira de nuevo." },
+  "sound.jump": { t: "Saltar de motor en motor", d: "Mantené [EDIT] y girá [PRESETS]: salta al primer sonido del motor siguiente, con su nombre en pantalla, en vez de recorrer los presets uno por uno." },
+
+  "nav.rule1": { t: "Regla 1: SELECT recorre las páginas", d: "Cada sección es una cadena de páginas. [SELECT] avanza una por paso y frena en los extremos. Si te perdiste, girá SELECT para ver dónde estás." },
+  "nav.rule2": { t: "Regla 2: el botón entra, o avanza", d: "Desde otra sección, el botón te lleva a la página donde estabas ahí. Ya adentro, salta a la primera página del grupo siguiente y da la vuelta. Tocá [FX] dos veces." },
+  "nav.rule3": { t: "Regla 3: PRESETS carga presets", d: "Siempre: sonidos en cualquier página, patrones en SEQ, el género en GEN. Nunca cambia de página. Girá [PRESETS]." },
+  "nav.rule4": { t: "Regla 4: KNOB 1 elige", d: "Cuando una página elige algo (un paso, un compás, un slot, una etapa, un operador, el sonido del kit, una fila), lo elige [KNOB 1]." },
+  "nav.rule5": { t: "Regla 5: mantener = la capa", d: "Mantené un botón: las teclas y las perillas cambian de función mientras lo tenés apretado y la pantalla muestra un mapa de qué hace cada tecla. Mantené [GLO] y mirá las teclas del dibujo." },
+  "nav.rule6": { t: "Regla 6: la pantalla te dice dónde estás", d: "Arriba, las pestañas son los grupos de la sección (la tuya iluminada, un punto por página). Abajo: SECCIÓN · GRUPO · página y n/N, por ejemplo FX · DELAY · DLY 2  6/18." },
+  "nav.menu": { t: "El MENU", d: "Mantené [HOME] un momento (unos 0,7 s): se abre el MENU con sus cuatro pestañas, DISPLAY, CONTROL, AUDIO y SYSTEM. Las mismas reglas: SELECT las filas, ALGORITHM las pestañas, HOME lo cierra." },
+
+  "gen.open": { t: "Abrí el generador", d: "Mantené [HOME] y girá [SELECT] (o tocá HOME hasta la pestaña GEN). Arranca en EXPLORE: sin género, rompiendo todas las reglas. Con [KNOB 1] o PRESETS podés elegir uno de los géneros o RANDOM." },
+  "gen.make": { t: "Crealo", d: "Tocá [OCT+]: aparece una idea de canción entera, con motores, sonidos, partes, escala, tempo y efectos." },
+  "gen.play": { t: "Escuchalo", d: "Tocá [PLAY]. Tocá PLAY otra vez para parar." },
+  "gen.again": { t: "¿Otro?", d: "[OCT+] otra vez: una semilla nueva, un tema nuevo. [OCT−] vuelve a HOME." },
+  "gen.parts": { t: "Ajustá las partes", d: "Girá [SELECT] un paso a la derecha: GEN 2. Bajá DRUMS o ARP con las perillas y tocá OCT+: el mismo tema con eso cambiado." },
+  "gen.undo": { t: "Deshacer", d: "Mantené [GLO] y tocá [G4]: UNDO, vuelve a lo que había antes del último cambio grande (otra vez: rehacer). También: mantené REC solo y soltalo sin tocar nada más." },
+
+  "edit.engines": { t: "Doce motores", d: "Cualquier pista puede usar cualquier motor: DRUM-X, VOICE, ANIMAL, LOFI, ANALOG, FM6, PHASE, WHEEL, NOISE, STRING, ADD e INPUT (el audio que entra por USB). Todo es síntesis: no hay samples. Tocá [EDIT] para editar el de la pista." },
+  "edit.pages": { t: "Las páginas de EDIT", d: "Girá [SELECT]: EDIT 1 y EDIT 2 (los parámetros del motor), después TONE con FILTER, VOICE y las páginas propias de cada motor. Cada motor dibuja su criatura y su osciloscopio." },
+  "edit.focus": { t: "FOCUS", d: "Tocá [EDIT] hasta FOCUS: un parámetro grande. KNOB 1 lo elige, KNOB 2 lo ajusta, KNOB 3 le asigna una modulación y KNOB 4 cuánta." },
+  "edit.fm6": { t: "FM6", d: "FM de seis operadores con 32 algoritmos y bancos DX7 (se mandan desde el editor web). Sus páginas OPERATOR editan cada operador; KNOB 1 lo elige." },
+  "edit.drum": { t: "DRUM-X", d: "Una batería de ocho sonidos sintetizados (BD SD CP CH OH TM RS CB), cada uno con dos caras: MORPH lleva el kit entero de una a la otra, en vivo. En cada octava las mismas teclas: ratchets arriba, golpes cortos, fantasma y flam abajo." },
+  "edit.init": { t: "Empezar de cero o volver", d: "Mantené [EDIT]: [F3] INIT pone el sonido del motor en sus valores básicos; G3 RECALL lo devuelve como lo guardó la sección. Los dos preguntan antes y no tocan los pasos." },
+  "edit.store": { t: "Guardar un sonido", d: "Con la música parada, tocá [SAVE] hasta la pestaña SOUND, página USER: KNOB 1 elige el slot (U01–U32), KNOB 4 a la derecha hasta SAVE y OCT+; escribí el nombre con las teclas y OCT+ otra vez. Tus sonidos aparecen en PRESETS después de los de fábrica." },
+
+  "seq.roll": { t: "El piano roll", d: "Tocá [SEQ]: la página STEP es un piano roll de hasta 64 pasos por pista. KNOB 1 mueve el cursor por los pasos, KNOB 2 transpone, KNOB 3 es el largo (TIME) y KNOB 4 la velocidad (VEL)." },
+  "seq.steprec": { t: "Grabar paso a paso", d: "Con la música parada, en STEP, tocá [REC]: la pantalla dice KEYS WRITE STEPS." },
+  "seq.write": { t: "Escribí notas", d: "Tocá una nota o un acorde, por ejemplo [C4]: va al paso del cursor y, al soltar, el cursor avanza. Mientras tenés las teclas apretadas, KNOB 1 elige cuántos pasos dura; ARP lo escribe arpegiado." },
+  "seq.length": { t: "Alargar o acortar", d: "[KNOB 3] (TIME) sobre una nota la alarga a la derecha (ligaduras) o la acorta a la izquierda, hasta volverla silencio. Sirve para cualquier nota, grabada o escrita." },
+  "seq.clear": { t: "Borrar un paso", d: "Mantené [SEQ] y tocá [G5] (CLR STEP): borra el paso del cursor y sus locks." },
+  "seq.live": { t: "Grabar en vivo", d: "Tocá [REC] en cualquier otra página (o con la música andando): la pista se arma y arranca. Lo que tocás se graba cuantizado, encima de lo que hay, y los movimientos de perillas quedan como automatización. El click y la cuenta previa están en MENU › AUDIO." },
+  "seq.lock": { t: "Parameter locks", d: "En STEP, mantené un paso (la nota que estás escribiendo, o una tecla de la grilla) y girá una perilla, por ejemplo [KNOB 2]: ese paso tiene su propio valor. Con el paso mantenido, SELECT cambia la página de parámetros." },
+  "seq.grid": { t: "La grilla de DRUM-X", d: "En una pista DRUM-X, STEP es una grilla: las teclas blancas son los 16 pasos, las negras 1–8 eligen el sonido (BD SD CP…) y la negra 9 mantenida pone acentos." },
+  "seq.patterns": { t: "Patrones listos", d: "En cualquier página SEQ, girá [PRESETS]: abre PHRASES con patrones. OCT+ carga el elegido en la pista, OCT− vuelve." },
+  "seq.tools": { t: "SEQ TOOLS", d: "Mantené [SEQ]: F3 CLEAR, G3 REVERSE, A3 / B3 SHIFT, F4 borra la automatización. Las perillas: LEN (largo), DIV, SWING, GATE. Mantener SEQ y girar SELECT tira los dados de la secuencia." },
+
+  "euclid.go": { t: "EUCLID", d: "Elegí la pista, tocá [SEQ] hasta la pestaña EUCL (o girá SELECT hasta EUCLID). Esta página escribe ritmos euclidianos: los golpes repartidos lo más parejo posible." },
+  "euclid.density": { t: "Un kit entero con una perilla", d: "En una pista DRUM-X con LANE en ALL, girá [KNOB 1] (DENSITY 1–8): toda la batería. KNOB 2 STEPS da el largo y KNOB 3 ROTATE el groove." },
+  "euclid.lane": { t: "Sonido por sonido", d: "Girá [KNOB 4] (LANE) hasta un sonido (BD, SD, CH…): HITS, STEPS y ROTATE escriben solo ese." },
+  "euclid.modes": { t: "MODES", d: "[SELECT] un paso a la derecha: MODES. En DRUM-X: ACCENT, GHOST, RATCHET, VARY. En una pista melódica: MOTION (saltos), HARMONY (acordes), OCTAVE y SLIDE." },
+  "euclid.vary": { t: "Variaciones", d: "[OCT+] crea una variación nueva y OCT− vuelve a la anterior. Para deshacer: GLO + G4." },
+  "euclid.mutate": { t: "MUTATE", d: "Un paso más con [SELECT]: MUTATE cambia el patrón solo mientras suena. KNOB 1 EVERY (cada cuántos compases), KNOB 2 AMOUNT, KNOB 3 MODE (ORBIT vuelve, DRIFT se aleja, PULSE alterna) y KNOB 4 qué cambia. OCT− vuelve al original." },
+  "euclid.melodic": { t: "Melodías en tono", d: "En una pista melódica EUCLID escribe notas en la escala: elegila primero en [SCL] (ROOT y SCALE), o dejá que la encuentre en las otras pistas. KNOB 1 HITS da la cantidad exacta de notas." },
+
+  "mix.glo": { t: "GLO: la mezcla", d: "Tocá [GLO]: el MIXER, las pistas como canales con LEVEL, PAN y reverb. Tocando GLO otra vez: COMPS, GLOBAL (tempo, swing, reloj), SYSTEM y LIVE." },
+  "mix.mutes": { t: "Silenciar pistas", d: "Mantené [GLO] y tocá una tecla negra: las negras 1–6 silencian T1–T6 (tocá otra vez para volver). Probá [F#3]. Las negras 7–10 silencian grupos de la batería y E4 quita todos los mutes." },
+  "mix.solo": { t: "Solo", d: "Con [GLO] mantenido, las blancas F3–D4 dejan sola a T1–T6 mientras las tenés apretadas. Probá [F3]." },
+  "mix.tempo": { t: "Tempo", d: "Mantené [GLO] y girá [SELECT]: el tempo, desde cualquier página. Con GLO mantenido, F4 es TAP y PLAY reinicia desde el principio." },
+  "mix.fx": { t: "FX: los efectos", d: "Tocá [FX]: envíos y distorsión por pista, buses, delay, cinco reverbs, chorus, slicer, el MASTER (limitador, clip, punch, cinta, EQ) y PUNCH. Cada toque de FX salta al módulo siguiente." },
+  "mix.punch": { t: "Punch-in: efectos en vivo", d: "Mantené [FX] y tocá [F3]: REPEAT 1/8 mientras la tenés. Otras teclas: G3/A3 repeticiones más cortas, B3 GLITCH, C4 TAPE STOP, STUTTER, FREEZE, SHUFFLE. Las perillas son macros: STEPS, TRANSPOSE, MUTATE, FILTER." },
+  "mix.mano": { t: "LIVE: MANO y el filtro DJ", d: "Tocá [GLO] hasta la pestaña LIVE: MANO convierte las teclas en modificadores en vivo sobre las seis secuencias, y KNOB 4 es el filtro DJ de toda la mezcla. RIELES muestra las seis secuencias como rieles." },
+
+  "mod.env": { t: "ENV: envolventes", d: "Tocá [ENV]: la envolvente de la pista (ataque, decay, sustain, release) y a dónde va (filtro, pitch, forma). En STAGE, KNOB 1 elige la etapa y KNOB 2 la ajusta." },
+  "mod.lfo": { t: "LFO", d: "Tocá [LFO]: la onda y su velocidad, y en LFO DEST cuánto mueve cuatro destinos. MSEQ es un secuenciador de modulación de 16 pasos." },
+  "mod.matrix": { t: "La matriz MOD", d: "Tocá [LFO] hasta la pestaña MOD: cuatro slots que conectan una fuente (LFO, envolvente, velocidad, macros, FOLLOW, PROX…) con un destino, cada uno con su cantidad." },
+  "mod.macros": { t: "Macros M1–M4", d: "Mantené [LFO] y girá [KNOB 1]: las cuatro perillas son las macros M1–M4. Al soltar quedan enganchadas en todas las páginas hasta que tocás LFO de nuevo. F3 inventa rutas nuevas, G3 las borra." },
+  "mod.scale": { t: "SCL: la escala", d: "Tocá [SCL]: ROOT, SCALE y QUANT, para que todo quede en tono. Mantené SCL y tocá una tecla: esa nota es la tónica. CHORD hace que cada tecla toque un acorde de la escala." },
+  "mod.arp": { t: "ARP", d: "Tocá [ARP]: el arpegiador de la pista (MODE, RATE, OCT, y en ARP 2 GATE, SWING y PROB)." },
+
+  "song.idea": { t: "Cómo se arma una canción", d: "Cada proyecto tiene cuatro secciones, A a D, con la música de las seis pistas. Hacés música, la guardás en una sección y encadenás las secciones. Hay 8 proyectos." },
+  "song.sections": { t: "Guardar en una sección", d: "Pará la música y tocá [SAVE]: abre TIMELINE. Girá SELECT un paso a la derecha: SECTIONS." },
+  "song.storea": { t: "Guardá la A", d: "Girá KNOB 4 hasta que su tarjeta diga OCT+ y tocá [OCT+]. Escribí un nombre con las teclas (o dejá el que propone) y OCT+ otra vez. La pantalla dice SAVED." },
+  "song.storeb": { t: "Una variación en la B", d: "Cambiá algo (unos pasos, un mute). En SECTIONS girá [KNOB 1] hasta B y guardá igual que antes." },
+  "song.arrange": { t: "ARRANGE: encadenar", d: "[SELECT] dos pasos a la derecha: ARRANGE, las filas de la canción. OCT+ agrega una fila, KNOB 2 su sección y KNOB 3 cuántos compases. Una fila para A, otra para B, y PLAY: la canción toca las filas en orden." },
+  "song.timeline": { t: "TIMELINE", d: "[SAVE] abre TIMELINE: la canción de izquierda a derecha, una línea por pista. Cada fila puede traer una pista de otra sección (FROM) y variarla solo ahí (VAR: MUTE, FILL, HALF, REV, OCT…)." },
+  "song.live": { t: "Secciones en vivo", d: "Mantené [SAVE]: [F3] G3 A3 B3 tocan la sección A–D (en el compás siguiente), C4–F4 guardan en A–D, D5 alterna LOOP / SONG. SAVE + OCT+ guarda en la sección que suena." },
+  "song.projects": { t: "Proyectos y autoguardado", d: "En SAVE › PROJECT › PROJECTS elegís entre 8 proyectos. Los ajustes se guardan solos; la música se guarda en la sección cuando vos lo pedís. Hacé copias de todo con el editor web." },
+
+  "connect.menu": { t: "El MENU", d: "Mantené [HOME]: el MENU. DISPLAY (skins AIR, COLORS, BOTTOM, HUD y colores), CONTROL (HOLD, MIDI OUT, MIDI MAP y LEARN), AUDIO (click, cuenta previa, TRACKS, LOAD) y SYSTEM (USB, BLUETOOTH, calibración, ABOUT)." },
+  "connect.tracks": { t: "4 o 6 pistas", d: "Tocá [GLO] hasta SYSTEM: KNOB 1 TRACKS elige 4 (de fábrica, más liviano) o 6 pistas, y LOAD cuánto trabaja el procesador." },
+  "connect.usb": { t: "USB: audio y MIDI", d: "MENU › SYSTEM › USB (o GLO › SYSTEM 2): STEREO, STEMS (cada pista en su propio canal hacia tu DAW), IN+OUT (audio en los dos sentidos) o HOST (un teclado MIDI USB enchufado directo). MIDI por USB, TRS y Bluetooth." },
+  "connect.input": { t: "El motor INPUT", d: "INPUT pone en una pista el audio que entra por USB (IN 1, IN 2, 1+2 o estéreo), con sus efectos y su secuencia. La fuente FOLLOW de MOD hace que ese audio module otras cosas." },
+  "connect.bt": { t: "Bluetooth MIDI y PROX", d: "MENU › SYSTEM › BLUETOOTH en ON (o GLO › SYSTEM 2): conectá una app MIDI Bluetooth (aparece como JIANT FM-1). PROX es una fuente de modulación según qué tan cerca está el teléfono." },
+  "connect.editor": { t: "El editor web", d: "El editor web (Chrome o Edge) muestra tus sonidos y ajustes en la pantalla de la compu mientras el FM-1 sigue tocando, manda bancos DX7 a FM6 y hace backup de todos los proyectos con un clic." },
+
+  "next.cheat": { t: "Las cheat sheets", d: "En la página de inicio hay dos hojas para imprimir: los controles y las páginas de sonido, para tener al lado del FM-1." },
+  "next.search": { t: "¿Cómo hago…?", d: "Más abajo en esta página está la referencia: escribí lo que querés hacer y aparece el comando, con su pantalla y qué teclas usar en el emulador. También hay recetas paso a paso y el mapa de navegación." },
+  "next.done": { t: "¡Listo!", d: "Ya recorriste todo JIANT. Tocá cualquier control del dibujo en modo Explorar libre para ver todo lo que hace, o volvé a cualquier capítulo cuando quieras." }
+},
+questions: {
+  q_sound: { q: "¿Cómo cambio de sonido?" }, q_lost: { q: "Me perdí, ¿cómo vuelvo?" }, q_undo: { q: "¿Cómo deshago?" },
+  q_song: { q: "¿Cómo hago un tema rápido?" }, q_melody: { q: "¿Cómo grabo una melodía?" }, q_beat: { q: "¿Cómo armo un ritmo?" },
+  q_save: { q: "¿Cómo guardo?" }, q_chain: { q: "¿Cómo encadeno partes?" }, q_mute: { q: "¿Cómo silencio una pista?" },
+  q_live: { q: "¿Qué efectos hay en vivo?" }, q_tempo: { q: "¿Cómo cambio el tempo?" }, q_daw: { q: "¿Cómo lo conecto a la compu?" },
+  q_tracks: { q: "¿Por qué veo solo 4 pistas?" }, q_engine: { q: "¿Qué motores hay?" }
+}
+};
