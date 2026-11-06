@@ -441,6 +441,22 @@ static void check_reading(void)
                  (unsigned)LY_EN_N, b);
         check(what, ok);
     }
+    {   /* (V10.6f) the words left out of the packed dictionary (tools/lyrics/en_ruled.txt): not in it, and the letter
+         * rules read each exactly as the dictionary did (its phonemes, stresses, syllables) */
+        uint8_t ph[SW_MAX];
+        uint32_t nw, n, ns, i, nsr, bad = 0;
+        for (nw = 0; nw < LY_EN_RULED_N; nw++) {
+            const char *rw = LY_EN_RULED_W[nw], *rp = LY_EN_RULED_PH[nw];
+            uint32_t wl = (uint32_t)strlen(rw);
+            bad += sy_en_find(rw, wl, ph) != 0;
+            n = sy_word(LG_EN, rw, wl, ph, &ns);
+            for (i = nsr = 0; i < strlen(rp); i++) nsr += ((uint8_t)rp[i] & SYB) != 0;
+            if (n != strlen(rp) || ns != nsr) { bad++; continue; }
+            for (i = 0; i < n; i++) bad += ph[i] != ((uint8_t)rp[i] & 0x7Fu);
+        }
+        printf("voice:   %u words by the rules alone (out of the dictionary), %u differ\n", (unsigned)LY_EN_RULED_N, bad);
+        check("V10.6f English: the words the rules read as the dictionary did, out of it, sung the same", !bad && LY_EN_RULED_N > 400u);
+    }
     {   /* (V10.15) the dictionary in the Bluetooth segment: without it (ly_en_ok 0, NO SEG) nothing of it is read (its
          * bytes poisoned here: a read would change the words), every English word by the letter rules, each with a
          * syllable; the generator's words too (sing_init again), and singing goes on; with it back, as before */

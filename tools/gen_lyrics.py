@@ -449,15 +449,22 @@ def main():
     L.append("static const char PH_NAME[PH_COUNT][3] = {" + ", ".join(f'"{n}"' for _, n in PHONEMES) + "};")
     # the English dictionary
     recs, nsyl_en, plain = [], {}, 0
-    words = sorted(en)
-    prev = ""
-    for k, w in enumerate(words):
+    # (V10.6f) the words the letter rules read exactly as the dictionary (tools/lyrics/en_ruled.txt): not packed
+    ruled = {ln.strip() for ln in (LY / "en_ruled.txt").read_text().splitlines() if ln.strip() and not ln.startswith("#")}
+    ruled_ph = []
+    for w in sorted(en):
         ph, ns = en_phones(en[w])
         if not ns or not re.fullmatch(r"[a-z]{1,23}", w):
             raise SystemExit(f"gen_lyrics: {w}: no vowel, or not a-z")
         if len(ph) > 32:                             # (sing.c SW_MAX)
             raise SystemExit(f"gen_lyrics: {w}: over 32 phonemes")
         nsyl_en[w] = ns
+        if w in ruled:
+            ruled_ph.append((w, bytes(0x80 | (0x40 if st else 0) | c for c, st in ph)))
+    words = sorted(w for w in en if w not in ruled)
+    prev = ""
+    for k, w in enumerate(words):
+        ph, ns = en_phones(en[w])
         pre = 0
         if k % EN_BLK:                               # each EN_BLK-th whole (the index's), the rest front-coded
             while pre < min(len(w), len(prev), 31) and w[pre] == prev[pre]:
@@ -497,6 +504,11 @@ def main():
              c_strs(f'"{w}"' for w in words) + "};")
     L.append("static const char *const LY_EN_REF_PH[LY_EN_N] = {\n    " +
              c_strs('"' + "".join(f"\\x{b:02x}" for b in r[2]) + '"' for r in recs) + "};")
+    L.append(f"#define LY_EN_RULED_N {len(ruled_ph)}u")
+    L.append("static const char *const LY_EN_RULED_W[LY_EN_RULED_N] = {\n    " +
+             c_strs(f'"{w}"' for w, _ in ruled_ph) + "};")
+    L.append("static const char *const LY_EN_RULED_PH[LY_EN_RULED_N] = {\n    " +
+             c_strs('"' + "".join(f"\\x{b:02x}" for b in p) + '"' for _, p in ruled_ph) + "};")
     L.append("#endif")
     # the banks
     nsyl = {"es": es_nsyl, "en": lambda w: nsyl_en[w] if w in nsyl_en else 0, "ja": ja_nmora}
