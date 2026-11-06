@@ -1172,7 +1172,7 @@ static void key_next(uint32_t k, track_t *t)
     }
     if (!midi_local_held(t, x)) {
         in_norec = kb_sn[k] > 1u;                   /* (0.6.84: the chord's notes recorded at once, key_on) */
-        dxo_on(t, x, kb_oct[k], 100, DXO_KEY + k);  /* (0.8.5: a kit's octave; else input_on) */
+        dxo_on(t, x, kb_oct[k], 100, DXO_KEY + (x>=86u&&x<=121u?x:k));
         in_norec = 0;
         mo_key(t, 0x09u | (0x90u | mc) << 8 | drum_oct_note(x, kb_oct[k]) << 16 | 100u << 24);
     }
@@ -1235,6 +1235,10 @@ static void key_off(uint32_t k, track_t *t)
     dxo_off(t, DXO_KEY + k);                         /* the held performance ends (LATCH too) */
     kb_on[k] = 0;                                   /* (the strum's notes not in yet: never) */
     kb_sn[k] = 0;
+    /* Repeated physical octaves share a performance note. Its scheduler is
+     * released by the last owner, even if the key map/octave or LATCH changed. */
+    uint32_t control=kb_snd[k][0];
+    if(control>=86u&&control<=121u&&!midi_local_held(t,control)) dxo_off(t,DXO_KEY+control);
     if (key_latch(t)) {                             /* LATCH: it keeps sounding (recorded as let go) */
         if (t->arp_phys)
             t->arp_phys--;

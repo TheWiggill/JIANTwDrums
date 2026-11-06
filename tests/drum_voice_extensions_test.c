@@ -65,6 +65,11 @@ static int extensions(void)
         ok &= !dxo_n[3]&&!kb_on[k];
     }
     bad+=check("EXT fills repeat while held, wrap after one bar, release at changed octave",ok);
+    drum_setup();dt->p[P_DKEYMODE]=1;song.octave=1;
+    key_dn(0);lanes_b(2);key_dn(12);lanes_b(2);key_upk(0);lanes_b(2);
+    ok=dxo_n[3]==1;
+    dt->p[P_DKEYMODE]=0;key_upk(12);lanes_b(2);
+    bad+=check("EXT duplicate pattern keys keep repeating until their last owner releases",ok&&!dxo_n[3]);
     drum_setup();dt->p[P_DKEYMODE]=1;
     midi_play(dt,0,98,100);
     bad+=check("EXT external keyboard starts ratchet sets",dxo_n[3]==1&&dxo[3][0].half==3);
