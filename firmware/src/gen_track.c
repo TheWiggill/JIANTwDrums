@@ -78,6 +78,7 @@ static __attribute__((noinline)) void trackgen_make(void)
     undo_mark();
     f=motion_guard();
     memcpy(t->step,temp.step,len*sizeof(step_t));
+    shift_valid[0][k]=shift_valid[1][k]=0;
     t->rat_left=t->lr_on=t->ss_n=t->ss_i=0;
     t->arp_from=t->cv_on=t->csp_n=0;t->seq_active=1;
     motion_unguard(f);
