@@ -109,6 +109,12 @@ static void up_migrate(up_rec_t *r)
             r->packed[UP_FM_AT] = UP_V04_MARK;
         }
     }
+    for (k = 0; k < 8u; k++) e[k] = up_value(r, r->np - 8u + k);
+    if (r->engine == ENGI_LOFI) {                       /* (V10.6d) LOFI's chips: ANALOG's nearest (MATH's CHIP */
+        if (analog_from_chip(r->engine, e))             /* STEP: 4BIT) */
+            r->engine = 0;
+        for (k = 0; k < 8u; k++) up_set_value(r, r->np - 8u + k, e[k]);
+    }
 }
 
 static void up_pat_norm(uint8_t *note, uint8_t *flags);

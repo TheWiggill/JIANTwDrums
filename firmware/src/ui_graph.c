@@ -365,10 +365,6 @@ static void graph_morph(const track_t *t)
         a0 = ((uint32_t)pos >> 8) & 7u; a1 = (a0 + 1u) & 7u;
         pd_setup(&pa, a0, dcw); pd_setup(&pb, a1, dcw);
         n0 = N_PD_WAVE[a0]; n1 = N_PD_WAVE[a1];
-    } else if (ENGINES[e] == &ENG_LOFI) {
-        pos = clamp(p[P_E1] * 256 + p[P_MORPH] * 768 / 127, 0, RW_WRAM * 256);
-        a0 = (uint32_t)pos >> 8; a1 = a0 + 1u < RW_BYTE ? a0 + 1u : a0;
-        n0 = N_RWAVE[a0]; n1 = N_RWAVE[a1];
     } else {
         if (p[P_E0] >= 4) {                             /* (0.6.81) PWM SYNC RING SAW3: the WAVE, what MORPH moves */
             static const char *const WHAT[5] = {"PWM  WIDTH", "SYNC  RATIO", "RING  RATIO", "SAW3  SPREAD", "PLS3  WIDTH"};
@@ -398,9 +394,6 @@ static void graph_morph(const track_t *t)
         if (ENGINES[e] == &ENG_PHASE) {
             s = pd_wave(&pa, ph >> 16);
             if (f) s += ((pd_wave(&pb, ph >> 16) - s) * f) >> 8;
-        } else if (ENGINES[e] == &ENG_LOFI) {
-            s = lofi_mto(a0, ph, 0x80000000u, WRAM[((uint32_t)p[P_E2] >> 3) & 15u], 0, 1u);
-            if (f) s += ((lofi_mto(a1, ph, 0x80000000u, WRAM[((uint32_t)p[P_E2] >> 3) & 15u], 0, 1u) - s) * f) >> 8;
         } else
             s = an_morph(pos, ph, inc);
         y = 46 - s * 34 / 32768;
@@ -1640,7 +1633,7 @@ static const char *eng_abbr(const char *name)
 #if FELUCCA_FM4
                                        {"DIGITAL", "DGTL"},
 #endif
-                                       {"PHASE", "PHAS"}, {"LOFI", "LOFI"},
+                                       {"PHASE", "PHAS"}, {"MATH", "MATH"},
                                        {"SAMPLE", "SMPL"}, {"VOICE", "VOCL"}, {"TRIO", "TRIO"}, {"WHEEL", "WHEL"},
                                        {"GRAIN", "GRAN"}, {"PHYS", "PHYS"}, {"DRUM", "DRUM"},
                                        {"NOISE", "NOIS"}, {"FM6", "FM6"}, {"SLICE", "SLCE"},

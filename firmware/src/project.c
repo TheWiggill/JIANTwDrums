@@ -457,6 +457,13 @@ static void proj_phys_gone(project_t *q)
     uint32_t k, i, n, hit = 0;
     for (k = 0; k < NTRK; k++) {
         proj_trk_t *d = &q->t[k];
+        if (analog_from_chip(d->engine, &d->p[P_E0])) { /* (V10.6d) LOFI's chips: ANALOG's nearest, its envelope kept */
+            d->engine = ENGI_PHYS_TO;
+            if (d->preset < PROJ_DEF_KEEP)
+                d->preset = 0;
+            hit |= 1u << k;
+            continue;
+        }
         if (!eng_gone(d->engine))
             continue;
         if (analog_from_trio(d->engine, &d->p[P_E0])) { /* (JIANT 0.4) TRIO: ANALOG's nearest, its envelope kept */
@@ -1636,6 +1643,7 @@ static void proj_steps(step_t *s)            /* a loaded sequence stays inside i
 static void proj_bound(project_t *q)
 {
     uint32_t t, i;
+    proj_phys_gone(q);                                  /* (V10.6d) LOFI's chips ANALOG before MATH's ranges clamp them */
     for (t = 0; t < NTRK; t++) {
         proj_steps(q->t[t].step);
         for (i = 0; i < NSTEP; i++) {

@@ -156,6 +156,8 @@ static int fun7_89(void)
             int16_t e[8];                                          /* (DRUM's E5, ACC then, FM now: 0; LOFI's and ANALOG's */
             for (i = 0; i < 8u; i++) e[i] = before.t[k].p[P_E0 + i];   /* E values as 0.4's: core.h sound_v04) */
             sound_v04(before.t[k].engine, e);
+            if (before.t[k].engine == 3u && e[1] >= 5)            /* (0.5.4's MOTION as written, GRIT 0: project.c; V10.6d: */
+                e[4] = 64, e[5] = 0;                               /* MATH's WAVE is BYTE or FLOAT) */
             for (i = 0; i < 8u; i++)
                 ok &= after.t[k].p[P_E0 + i] == (i == 5u && trk[k].engine == ENGI_DRUM ? 0 : e[i]);
         }

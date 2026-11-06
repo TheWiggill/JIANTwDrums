@@ -338,7 +338,7 @@ enum { SR_SUB, SR_ACID, SR_REESE, SR_FMBASS, SR_ROCKBASS, SR_HOOK, SR_WOW, SR_PA
 /* the factory presets by their place (eng_analog.c, eng_phase.c .. : ANALOG 2 SQR BASS, 4 ACID, 7 SUB BASS ..) */
 static const grecipe_t RECIPE[SR_N] = {
     /* ---- basses: their engine fixed */
-    [SR_SUB]      = {{{EG_A, 7}, {EG_A, 7}, {EG_LO, 14}}, GR(0, 7), GR(56, 79), GR(88, 119), GR(16, 31), GR(32, 47), GR(0, 15), GR4(0, 7), GFT(0, 0), GNOWV, 0, 0, V_LEGATO},
+    [SR_SUB]      = {{{EG_A, 7}, {EG_A, 7}, {EG_LO, 4}}, GR(0, 7), GR(56, 79), GR(88, 119), GR(16, 31), GR(32, 47), GR(0, 15), GR4(0, 7), GFT(0, 0), GNOWV, 0, 0, V_LEGATO},
     /* the 303 (0.9.9-gen2, after X0X's Open303: CUT ~48, RES ~100, ENV MOD ~85 of 127, DECAY ~200..600 ms, a 60 ms
      * slide, ACCENT on the filter's envelope and the level): one saw (or a square), the low-pass low (~400 Hz at rest)
      * with RES high (not ringing on its own) and the envelope high on it (~2 kHz at its peak; an ACCENT opens it ~2
@@ -368,7 +368,7 @@ static const grecipe_t RECIPE[SR_N] = {
     [SR_BELL]     = {{{EG_FM, 1}, {EG_FM, 5}, {EG_A, 13}}, GR(0, 7), GR(80, 103), GR(0, 7), GR(72, 103), GR(72, 103), GR(0, 15), GR4(0, 11), GFT(0, 0), GNOWV, 0, GDC(0, 8), V_POLY},
     [SR_LEAD]     = {{{EG_A, 21}, {EG_A, 0}, {EG_PH, 14}}, GR(0, 23), GR(48, 87), GR(56, 95), GR(32, 71), GR(56, 87), GR(16, 39), GR4(16, 39), GFT(0, 16), GNOWV, GLFO(4, 6), GDC(12, 12), V_LEGATO},
     [SR_VOXLEAD]  = {{{EG_VO, 1}, {EG_VO, 6}, {EG_A, 21}}, GR(0, 23), GR(56, 87), GR(56, 95), GR(32, 71), GR(56, 95), GR(8, 31), GR4(8, 23), GFT(0, 20), GNOWV, GLFO(4, 6), GDC(0, 20), V_LEGATO},
-    [SR_CHIP]     = {{{EG_LO, 3}, {EG_LO, 13}, {EG_LO, 16}}, GR(0, 7), GR(40, 79), GR(24, 79), GR(16, 47), GR(72, 111), GR(8, 31), GR4(8, 27), GFT(0, 0), GNOWV, 0, 0, V_LEGATO},
+    [SR_CHIP]     = {{{EG_A, 24}, {EG_LO, 6}, {EG_A, 20}}, GR(0, 7), GR(40, 79), GR(24, 79), GR(16, 47), GR(72, 111), GR(8, 31), GR4(8, 27), GFT(0, 0), GNOWV, 0, 0, V_LEGATO},
     [SR_KEYS]     = {{{EG_A, 23}, {EG_PH, 15}, {EG_WH, 1}}, GR(0, 7), GR(64, 87), GR(16, 55), GR(40, 71), GR(56, 95), GR(0, 23), GR4(4, 19), GFT(0, 0), GNOWV, 0, GDC(0, 20), V_POLY},
     /* ---- textures */
     [SR_DRONE]    = {{{EG_A, 22}, {EG_A, 19}, {EG_FM, 4}}, GR(88, 119), GR(88, 103), GR(120, 127), GR(96, 127), GR(32, 63), GR(16, 39), GR4(0, 11), GFT(0, 0), GNOWV, GLFO(16, 1), GDC(0, 44), V_POLY},

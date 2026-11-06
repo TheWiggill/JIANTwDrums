@@ -308,6 +308,31 @@ static int analog_from_trio(uint32_t engine, int16_t *e)
     e[7] = 64;
     return 1;
 }
+/* (V10.6d) LOFI is MATH, BYTE and FLOAT alone: a sound of a chip wave (WAVE 0..4: PLS TRI SAW NOIS WRAM) -> ANALOG's
+ * nearest, its E values in place: one oscillator (MIX 0), PLS SQR, TRI TRI, SAW SAW, NOIS a saw under full NOISE, WRAM
+ * SIN; CUT open, no RES DRIVE INT (the FILTER page's CUT RES, the envelope, the mix, the sends stay). A BYTE / FLOAT with
+ * CHIP STEP (4) -> 4BIT, the same sound. 1 = it was a chip sound (its engine is ANALOG now): projects (project.c
+ * proj_phys_gone), user presets (upreset.c). Idempotent */
+static const char U_REG64[] = "";   /* (V10.6d) a desc's unit: a register stored 0..127, shown as semitones from 64
+                                     * (64 - v: smaller is higher), "+0" the key played (params.c param_format) */
+static int analog_from_chip(uint32_t engine, int16_t *e)
+{
+    static const uint8_t W[5] = {1, 2, 0, 0, 3};
+    uint32_t w = (uint32_t)e[1];
+    if (engine != ENGI_LOFI)
+        return 0;
+    if (w == 5u || w == 6u) {
+        if (e[0] < 0 || e[0] > 3)
+            e[0] = 0;
+        return 0;
+    }
+    w = w < 5u ? w : 0u;
+    e[0] = (int16_t)W[w];
+    e[1] = e[2] = e[5] = e[6] = e[7] = 0;
+    e[3] = (int16_t)(w == 3u ? 127 : 0);
+    e[4] = 110;
+    return 1;
+}
 /* PHYS MODEL DRUM (MODEL 4, before 1.0) -> the DRUM engine, its E values in place: {MODEL, TUNE, TONE, DECY,
  * SNAP, ACC, KICK, PERC} -> {MRPH 64, TUNE, TONE, DECY, NOIS 64, FM 0, -, DRV 0}. 1 = it was one (its engine is
  * ENGI_DRUM now); projects (project.c) and user presets (upreset.c) */

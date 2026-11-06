@@ -239,8 +239,10 @@ int main(void)
     /* (JIANT 0.4) a LOFI record of 0.3 (no 0.4 mark): its TONE (E7) its CUT (E4), BEND MASK 0; an ANALOG one's KTR
      * (E7) INT 0; marked records as they are */
     {
-        up_rec_t lo = r, an = r, lo4 = r;
-        lo.engine = lo4.engine = 3; an.engine = 0;
+        up_rec_t lo = r, an = r, lo4 = r, ch = r;
+        lo.engine = lo4.engine = ch.engine = 3; an.engine = 0;
+        up_set_value(&lo, P_E1, 5); up_set_value(&lo4, P_E1, 5);   /* (V10.6d: BYTE; MATH keeps it) */
+        up_set_value(&ch, P_E1, 1); ch.packed[UP_FM_AT] = UP_V04_MARK;   /* (a chip TRI: ANALOG's TRI now) */
         up_set_value(&lo, P_E4, 30); up_set_value(&lo, P_E6, 2); up_set_value(&lo, P_E7, 90);
         up_set_value(&lo4, P_E4, 30); up_set_value(&lo4, P_E6, 2); up_set_value(&lo4, P_E7, 90);
         up_set_value(&an, P_E7, 64);
@@ -248,6 +250,7 @@ int main(void)
         *up_rec(16) = lo;
         *up_rec(17) = an;
         *up_rec(18) = lo4;
+        *up_rec(19) = ch;
         st_save(OBJ_UPRESET0 + 1, &up_bank[1], sizeof up_bank[1]);
         memset(up_bank, 0, sizeof up_bank);
         up_bank_check(1, st_load(OBJ_UPRESET0 + 1, &up_bank[1], sizeof up_bank[1]));
@@ -255,6 +258,9 @@ int main(void)
              up_value(up_rec(17), P_E7) == 0 && up_value(up_rec(18), P_E4) == 30 && up_value(up_rec(18), P_E7) == 90 &&
              up_rec(16)->packed[UP_FM_AT] == UP_V04_MARK;
         bad += check("0.3 records: LOFI TONE -> CUT, BEND MASK 0; ANALOG KTR -> INT 0; marked ones kept", ok);
+        bad += check("V10.6d: a LOFI chip record (TRI) -> ANALOG TRI, one oscillator, CUT open; BYTE ones stay MATH",
+                     up_rec(19)->engine == 0u && up_value(up_rec(19), P_E0) == 2 && up_value(up_rec(19), P_E2) == 0 &&
+                     up_value(up_rec(19), P_E4) == 110 && up_rec(16)->engine == 3u && up_value(up_rec(16), P_E1) == 5);
     }
 
     /* SAMPLE SET 4 (PERC, the GM kit, retired after 1.0.2) -> the DRUM engine with its default kit: from flash (an

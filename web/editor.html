@@ -1604,7 +1604,7 @@ function makeMockDevice(opt = {}) {
     D("SIZE", F.PCT, 0, 127, 90), D("DAMP", F.PCT, 0, 127, 60), D("RATE", F.LFOHZ, 0, 127, 40), D("DEPTH", F.PCT, 0, 127, 60),
     E("MIDI", ["USB", "TRS"], 0), D("REL", F.PCT, 0, 100, 30),   /* G_DREL (was SYNC): DUCK's release */ E("ROUTE", ["CH1-6", "SEL"], 0), D("CPU", F.INT, 0, 0, 0),
     D("SLOT", F.INT, 1, 4, 1), D("DJ FILT", F.BIPCT, -64, 63, 0), E("LOAD", NGO, 0), E("SAVE", NGO, 0),   /* (0.9.1) G_DJF 17 (was NAME, "--"): the master DJ FILTER */
-    E("ENG", ["ANALOG", "-", "PHASE", "LOFI", "-", "VOICE", "-", "WHEEL",
+    E("ENG", ["ANALOG", "-", "PHASE", "MATH", "-", "VOICE", "-", "WHEEL",
       "STRING", "-", "DRUM", "NOISE", "FM6", "ADD", "ANIMAL"], 0), D("CLIP", F.PCT, 0, 100, 0),   /* G_CLIP (was SET); 0.8.3 ANIMAL; snd5 STRING 8 ADD 13 */
     E("CLRSQ", NGO, 0), E("INIT", NGO, 0),
     E("TYPE", ["ROOM", "SPRING", "SHIMR", "RESO", "CLOUD"], 0),               /* G_RTYPE (id 24, was G_DRCH): the reverb's model */
@@ -1660,17 +1660,14 @@ function makeMockDevice(opt = {}) {
         P("DIGI STAB", [4, 2, 75, 70, 0, 1, 0, 0], [0, 55, 20, 40], 0, 6), P("SYN BASS", [1, 0, 50, 70, 0, 0, 60, 0], [0, 58, 50, 25], 1, 2),
         P("VOX PAD", [5, 4, 35, 30, 10, 0, 0, 0], [70, 95, 115, 100], 0, 5), P("HARP", [3, 0, 70, 90, 0, 0, 0, 0], [0, 85, 0, 70], 0, 3),
         P("PD LEAD", [0, 2, 65, 55, 9, 0, 20, 10], [4, 70, 95, 45], 1, 4), P("RING KEYS", [2, 4, 60, 60, 0, 1, 0, 0], [0, 75, 25, 60], 0, 6)] },
-    { name: "LOFI", titles: ["CHIP", "TONE"], edit: [E("CHIP", ["4BIT", "4B/2", "8BIT", "1BIT", "STEP"], 0), E("WAVE", ["PLS", "TRI", "SAW", "NOIS", "WRAM", "BYTE", "FLOAT"], 0), D("DUTY", F.INT, 0, 127, 64),
-        D("CRUSH", F.PCT, 0, 127, 0), D("CUT", F.CUTOFF, 0, 127, 110), D("VIB", F.PCT, 0, 127, 0), D("BEND", F.PCT, 0, 127, 0), D("MASK", F.PCT, 0, 127, 0)],   /* (JIANT 0.4: CUT BEND MASK) */
-      presets: [P("BYTEBEAT", [2, 5, 4, 0, 64, 0, 0, 0], [0, 80, 110, 40], 1, 4), P("BYTE VAR", [2, 5, 64, 40, 64, 0, 0, 0], [0, 80, 110, 50], 1, 3),
-        P("BYTE BENT", [2, 5, 16, 0, 64, 24, 70, 0], [0, 80, 110, 45], 1, 4), P("PULSE LD", [0, 0, 32, 0, 127, 20, 0, 0], [0, 60, 90, 30], 1, 4),
-        P("WAVE BASS", [1, 1, 0, 0, 90, 0, 0, 0], [0, 50, 70, 20], 1, 2), P("8BIT KEYS", [2, 0, 96, 0, 110, 0, 30, 0], [0, 60, 80, 40], 0, 13),
-        P("WAVE LEAD", [0, 4, 92, 0, 110, 18, 0, 0], [0, 70, 90, 30], 1, 3), P("STEP LEAD", [4, 0, 40, 34, 127, 16, 0, 0], [0, 64, 127, 55], 1, 4),
-        P("BYTE TONE", [2, 5, 40, 0, 64, 0, 0, 80], [0, 70, 100, 40], 1, 4), P("FLOAT FM", [2, 6, 4, 0, 64, 0, 0, 0], [0, 60, 90, 40], 1, 4),
-        P("FLOAT ARP", [2, 6, 8, 0, 64, 0, 0, 0], [0, 50, 80, 50], 1, 3), P("FLOAT PAD", [2, 6, 112, 0, 40, 0, 0, 0], [60, 90, 110, 90], 1, 3),
-        P("CHIP PAD", [0, 1, 64, 0, 90, 12, 0, 0], [40, 90, 115, 80], 0, 5), P("GB ARP", [2, 0, 16, 0, 120, 0, 0, 0], [0, 55, 0, 35], 0, 3),
-        P("TRI BASS", [0, 1, 64, 0, 80, 0, 0, 0], [0, 60, 90, 20], 1, 2), P("SOFT CHIP", [1, 0, 64, 0, 85, 8, 0, 0], [5, 70, 80, 50], 0, 6),
-        P("SAW CHIP", [2, 2, 64, 0, 100, 10, 0, 0], [0, 65, 90, 35], 1, 4), P("PULSE BASS", [0, 0, 40, 0, 70, 0, 0, 0], [0, 55, 80, 15], 1, 2)] },
+    { name: "MATH", titles: ["MATH", "TIME"], edit: [E("CHIP", ["4BIT", "4B/2", "8BIT", "1BIT"], 2), D("WAVE", F.ENUM, 5, 6, 5, ["BYTE", "FLOAT"]), D("ALGO", F.INT, 0, 127, 64),
+        D("VAR", F.PCT, 0, 127, 0), D("MOTION", F.INT, 0, 127, 0), D("GRIT", F.PCT, 0, 127, 0), D("BEND", F.PCT, 0, 127, 0), D("LOOP", F.PCT, 0, 127, 0)],   /* (V10.6d: LOFI is MATH, BYTE and FLOAT alone) */
+      presets: [P("BYTEBEAT", [2, 5, 4, 0, 0, 0, 0, 0], [0, 80, 110, 40], 1, 4), P("BYTE VAR", [2, 5, 64, 40, 0, 0, 0, 0], [0, 80, 110, 50], 1, 3),
+        P("BYTE BENT", [2, 5, 16, 0, 0, 24, 70, 0], [0, 80, 110, 45], 1, 4), P("MATH KEYS", [2, 6, 108, 0, 0, 0, 0, 0], [0, 75, 40, 45], 0, 6),
+        P("MATH BASS", [2, 6, 76, 0, 0, 0, 0, 0], [0, 60, 90, 20], 1, 2), P("MATH PAD", [2, 6, 44, 0, 0, 0, 0, 0], [60, 90, 110, 85], 0, 5),
+        P("MATH LEAD", [2, 6, 92, 0, 0, 0, 0, 0], [2, 70, 100, 40], 1, 4), P("MATH BELL", [2, 6, 40, 0, 0, 0, 0, 0], [0, 88, 0, 70], 0, 7),
+        P("BYTE TONE", [2, 5, 40, 0, 0, 0, 0, 80], [0, 70, 100, 40], 1, 4), P("FLOAT FM", [2, 6, 4, 0, 0, 0, 0, 0], [0, 60, 90, 40], 1, 4),
+        P("FLOAT ARP", [2, 6, 8, 0, 0, 0, 0, 0], [0, 50, 80, 50], 1, 3), P("FLOAT PAD", [2, 6, 112, 0, 0, 0, 0, 0], [60, 90, 110, 90], 1, 3)] },
     /* 4: reserved (SAMPLE, retired in JIANT; its sounds load as ANALOG, its PERC set as DRUM) */
     { name: "-", titles: ["-", "-"], edit: [D("-", F.INT, 0, 127, 0), D("-", F.INT, 0, 127, 0), D("-", F.INT, 0, 127, 0),
         D("-", F.INT, 0, 127, 0), D("-", F.INT, 0, 127, 0), D("-", F.INT, 0, 127, 0), D("-", F.INT, 0, 127, 0), D("-", F.INT, 0, 127, 0)],
@@ -1774,7 +1771,10 @@ function makeMockDevice(opt = {}) {
         P("BAT", [2, 120, 0, 40, -64, 127, 3, 22], [0, 64, 127, 20], 0, 7), P("MOSQUITO", [3, 30, 50, 64, 20, 40, 2, 22], [10, 64, 127, 40], 0, 5),
         P("BEE", [3, 90, 30, 75, 10, 40, 2, 22], [10, 64, 127, 40], 0, 5), P("FLY", [3, 70, 90, 78, 25, 50, 1, 22], [10, 64, 127, 40], 0, 5),
         P("WOLF", [4, 0, 8, 64, 40, 50, 0, 5], [20, 64, 127, 60], 1, 5), P("DOG BARK", [4, 100, 70, 64, -15, 85, 5, 6], [0, 64, 127, 30], 0, 3),
-        P("ROAR", [4, 110, 100, 100, -20, 50, 3, 9], [6, 64, 127, 50], 1, 8), P("PURR", [4, 10, 60, 50, 0, 60, 1, 19], [10, 64, 127, 40], 1, 8)] },
+        P("ROAR", [4, 110, 100, 100, -20, 50, 3, 9], [6, 64, 127, 50], 1, 8), P("PURR", [4, 10, 60, 50, 0, 60, 1, 19], [10, 64, 127, 40], 1, 8),
+        P("WHISTLE", [2, 100, 0, 64, 0, 80, 0, 22], [4, 64, 127, 45], 1, 4), P("BIRD FLUTE", [2, 90, 12, 64, 0, 80, 0, 22], [10, 64, 127, 50], 1, 4),
+        P("WING HUM", [3, 60, 0, 64, 0, 40, 0, 22], [6, 64, 127, 40], 0, 5), P("HUM VOX", [4, 60, 0, 64, 0, 60, 0, 5], [20, 64, 127, 60], 0, 5),
+        P("PULSE TONE", [1, 127, 100, 64, 0, 80, 0, 22], [0, 64, 127, 35], 0, 6)] },   /* (V10.6d: in tune, C3 is C3) */
   ];
   const FM6_E = ENG.findIndex((e) => e.name === "FM6"), FM6_OWN = FM6.FACTORY_PK.length, DRUM_E = ENG.findIndex((e) => e.name === "DRUM");
   /* factory PATTERNS[] (engines.c; the device loads them from SEQ > PATTERNS, presets only suggest one): absolute
@@ -2428,7 +2428,6 @@ function enumShown(d) {
   const vals = [];
   for (let v = d.min; v <= d.max; v++) vals.push(v);
   const len = d.fmt === F.ENUM && d.names ? d.names.map(divLength) : [null];
-  if (d.names && d.names[5] === "BYTE" && d.names[0] === "PLS") return [vals[5], ...(vals.length > 6 ? [vals[6]] : []), ...vals.slice(0, 5)];   /* (JIANT 0.4: LOFI's WAVE, BYTE first; 0.5.1: FLOAT next) */
   if (len.includes(null) && d.names && len.some((x) => x !== null) && d.names.every((n, i) => len[i] !== null || /^[\d.]+m?s$/.test(n)))
     return [...vals.filter((v) => len[v - d.min] !== null).sort((a, b) => len[b - d.min] - len[a - d.min] || a - b),
             ...vals.filter((v) => len[v - d.min] === null)];   /* (JIANT 0.4, the delay's TIME: the divisions, then free times) */
@@ -2438,7 +2437,7 @@ function enumShown(d) {
 /* the order the device shows its engines in (src/engines.c ENGINE_ORDER): the lists here follow it, the protocol keeps
    the engine numbers. engineOrder(names): the indices of names in that order, "-" (a reserved number) left out; a name
    the list does not know (another firmware) follows in index order */
-const ENGINE_ORDER = ["DRUM", "VOICE", "ANIMAL", "LOFI", "ANALOG", "FM6", "PHASE", "WHEEL", "NOISE", "STRING", "SAMPLE", "DIGITAL"];   /* (0.9.9: DRUM-X, VOICE,
+const ENGINE_ORDER = ["DRUM", "ANALOG", "PHASE", "FM6", "VOICE", "ANIMAL", "MATH", "LOFI", "WHEEL", "NOISE", "STRING", "SAMPLE", "DIGITAL"];   /* (V10.6d: the power-on parts first; LOFI an older firmware's MATH) */   /* (0.9.9: DRUM-X, VOICE,
    ANIMAL first, as the parts at power-on; DIGITAL, FELUCCA_FM4 builds only, last; was ANALOG FM6 DIGITAL PHASE LOFI VOICE WHEEL NOISE
    DRUM ANIMAL, the order PROGRAM CHANGE still numbers the sounds in: engines.c ENGINE_PC_ORDER) */
 function engineOrder(names) {
@@ -3057,7 +3056,7 @@ async function getDescOrNull(s, i, d = dev) { try { return await getDesc(s, i, d
 /* rebuilds the controls only when the engine or its parameters changed (a slider being dragged survives) */
 function matrixContextId(d, id) {
   const e = d.info.engines[d.dump.engine], off = id - d.info.pe0;
-  return off === 0 || (e === "LOFI" && off === 1) || ((e === "INPUT" || e === "EXT") && off === 3) || /^(?:DEST|DST)\d$/.test(d.pdesc[id]?.label || "") || d.pdesc[id]?.label === "LANG";
+  return off === 0 || ((e === "LOFI" || e === "MATH") && off === 1) || ((e === "INPUT" || e === "EXT") && off === 3) || /^(?:DEST|DST)\d$/.test(d.pdesc[id]?.label || "") || d.pdesc[id]?.label === "LANG";
 }
 
 async function rereadEngineDesc(d = dev) {

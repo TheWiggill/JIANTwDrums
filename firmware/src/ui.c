@@ -583,10 +583,9 @@ static int page_visible(uint32_t i)
     if (sys_load == LOAD_ECO && ((PAGES[i].graph == GR_SLCR || PAGES[i].graph == GR_SLPIT) ||
                                  (PAGES[i].fam == FAM_FX && PAGES[i].id[0] == G_CRATE)))
         return 0;                                       /* (0.6.30) LOAD ECO: no SLICER, no chorus: their pages gone */
-    if (PAGES[i].graph == GR_MORPH) {                   /* (0.6.45) MORPH: ANALOG's plain waves, PHASE, LOFI's (not BYTE FLOAT) */
+    if (PAGES[i].graph == GR_MORPH) {                   /* (0.6.45) MORPH: ANALOG's waves, PHASE (V10.6d: MATH none) */
         uint32_t e = trk_eng(TSEL);
-        return e == ENGI_ANALOG || ENGINES[e] == &ENG_PHASE ||   /* (0.6.81: every ANALOG WAVE) */
-               (ENGINES[e] == &ENG_LOFI && TSEL->p[P_E1] < RW_BYTE);
+        return e == ENGI_ANALOG || ENGINES[e] == &ENG_PHASE;   /* (0.6.81: every ANALOG WAVE) */
     }
     if(PAGES[i].graph==GR_TRACKGEN) return trackgen_ok(TSEL);
     if (PAGES[i].graph == GR_LYRIC || PAGES[i].graph == GR_LYRSTEP)
@@ -1453,7 +1452,7 @@ static uint32_t preset_orig(const engine_t *e, uint32_t k) { (void)e; return k; 
 /* the presets of engine e that browsing shows before preset k (k = npresets: all of them) */
 /* (0.5.1) browsing order: LOFI's BYTE presets, then FLOAT's (appended in 0.5.1: the stored numbers stay), then the
  * rest; every other engine in its own order. preset_nth: the preset shown n-th */
-static const uint8_t LOFI_ORDER[18] = {0, 1, 2, 8, 9, 10, 11, 3, 4, 5, 6, 7, 12, 13, 14, 17, 15, 16};
+static const uint8_t LOFI_ORDER[12] = {0, 1, 2, 8, 9, 10, 11, 3, 4, 5, 6, 7};   /* (V10.6d MATH: BYTE, FLOAT, the voices) */
 _Static_assert(sizeof LOFI_ORDER == NELEM(LOFI_PRESETS), "LOFI's browsing order: every preset once");
 static uint32_t preset_rank(const engine_t *e, uint32_t k)
 {
@@ -1554,6 +1553,8 @@ static void apply_preset_to(track_t *t, uint32_t pi)
     t->p[P_REL] = e->presets[pi].env[3];
     t->p[P_ED_FLT] = e->presets[pi].fenv;
     t->p[P_VOICE] = PR_MONO(&e->presets[pi]) ? V_LEGATO : V_POLY;   /* mono presets keep the legato feel */
+    if (e == &ENG_LOFI)                               /* (V10.6d) MATH: RTRG on, each note the formula from its start */
+        t->p[P_LRTRG] = 1;
     if (e == &ENG_FORMANT) {                          /* (0.8.5) VOICE's words: LANG, LYRIC (0: its vowels) */
         t->p[P_VLANG] = (int16_t)(e->presets[pi].xp & 3u);
         t->p[P_VLYR] = (int16_t)(e->presets[pi].xp >> 2);
@@ -1654,6 +1655,8 @@ static void power_sound_of(track_t *t, uint32_t i)
     uint32_t k;
     init_sound_of(t, TRK_DEF[i % NPART][0]);
     apply_preset_to(t, TRK_DEF[i % NPART][1]);
+    if (TRK_DEF[i % NPART][0] == ENGI_DRUM)           /* (V10.6d) DRUM-X: its preset's kit too (ACOUSTIC's, soft) */
+        dx_kit_load(TRK_DEF[i % NPART][1]);
     for (k = 0; k < 4u; k++)
         t->p[P_DIST + k] = 0;
 }

@@ -112,14 +112,24 @@ static void to_v4(project_v4_t *v, const project_t *q)
 static void v04_tracks(proj_trk_t *t)
 {
     uint32_t k;
-    for (k = 0; k < PROJ_LT; k++)
+    for (k = 0; k < PROJ_LT; k++) {
         sound_v04(t[k].engine, &t[k].p[P_E0]);
+        if (analog_from_chip(t[k].engine, &t[k].p[P_E0])) {   /* (V10.6d) LOFI's chips: ANALOG */
+            t[k].engine = 0;
+            t[k].preset = 0;
+        }
+    }
 }
 static int track_ok(const proj_trk_t *n, const proj_trk_v2_t *o, uint32_t t, int drum, int16_t lvl, int16_t rev)
 {
     uint32_t k;
+    int16_t ce[8];                              /* (V10.6d: a LOFI chip sound is ANALOG's now) */
+    int chip;
+    for (k = 0; k < 8u; k++) ce[k] = oldv(t, 45u + k);
+    sound_v04(o->engine, ce);
+    chip = analog_from_chip(o->engine, ce);
     int ok = (drum ? n->engine == ENGI_DRUM && n->preset == PROJ_DEF_KEEP && steps_grid_same(n->step, o->step)
-                   : n->engine == o->engine && n->preset == o->preset && steps_same(n->step, o->step));
+                   : n->engine == (chip ? 0u : o->engine) && n->preset == (chip ? 0u : o->preset) && steps_same(n->step, o->step));
     for (k = 0; k <= P_DETUNE; k++)
         ok &= n->p[k] == (drum && k == P_LEVEL ? lvl : drum && k == P_REV ? rev : oldv(t, k));
     ok &= n->p[P_SLCR] == 0 && n->p[P_SLPAT] == TP[P_SLPAT].def && n->p[P_SLRATE] == TP[P_SLRATE].def &&
@@ -129,7 +139,8 @@ static int track_ok(const proj_trk_t *n, const proj_trk_v2_t *o, uint32_t t, int
     {
         int16_t e[8];                           /* (JIANT 0.4: LOFI's and ANALOG's E values as today's, core.h sound_v04) */
         for (k = 0; k < 8u; k++) e[k] = oldv(t, 45u + k);
-        sound_v04(n->engine, e);
+        sound_v04(chip ? o->engine : n->engine, e);
+        analog_from_chip(chip ? o->engine : n->engine, e);
         for (k = 0; k < 8u; k++)
             ok &= n->p[P_E0 + k] == e[k];
     }
@@ -157,7 +168,12 @@ static void fill_v3_track(proj_trk_v3_t *d, uint32_t t)
 static int track_v3_ok(const proj_trk_t *n, const proj_trk_v3_t *o, uint32_t t)
 {
     uint32_t k;
-    int ok = n->engine == o->engine && n->preset == o->preset && steps_same(n->step, o->step);
+    int16_t ce[8];                              /* (V10.6d: a LOFI chip sound is ANALOG's now) */
+    int chip;
+    for (k = 0; k < 8u; k++) ce[k] = oldv3(t, 49u + k);
+    sound_v04(o->engine, ce);
+    chip = analog_from_chip(o->engine, ce);
+    int ok = n->engine == (chip ? 0u : o->engine) && n->preset == (chip ? 0u : o->preset) && steps_same(n->step, o->step);
     for (k = 0; k <= P_SLDEPTH; k++)            /* up to the SLICER: the same ids (0.6.9: its slots AUTO PAN's, off) */
         ok &= n->p[k] == (k >= P_SLCR ? TP[k].def : oldv3(t, k));
     for (k = P_M1SRC; k <= P_M4AMT; k++)
@@ -165,7 +181,8 @@ static int track_v3_ok(const proj_trk_t *n, const proj_trk_v3_t *o, uint32_t t)
     {
         int16_t e[8];                           /* (JIANT 0.4: as today's) */
         for (k = 0; k < 8u; k++) e[k] = oldv3(t, 49u + k);
-        sound_v04(n->engine, e);
+        sound_v04(o->engine, e);
+        analog_from_chip(o->engine, e);
         for (k = 0; k < 8u; k++)
             ok &= n->p[P_E0 + k] == e[k];
     }
@@ -359,7 +376,7 @@ int main(void)
     memcpy(qx, q.t, sizeof q.t);
     v04_tracks(qx);
     for (t = 0; t < PROJ_LT; t++)
-        ok &= !memcmp(q2.t[t].p, qx[t].p, sizeof q.t[t].p) && q2.t[t].engine == q.t[t].engine &&
+        ok &= !memcmp(q2.t[t].p, qx[t].p, sizeof q.t[t].p) && q2.t[t].engine == qx[t].engine &&
               steps_same(q2.t[t].step, v4.t[t].step);
     bad += check("FUN4 -> FUN6: parameters, engines, globals; steps as they were, no hits", ok);
     {   /* track 2 a DRUM track: BEAT-like steps, a chord, a low tom 41, a crash 49, a step accent, a TIE */

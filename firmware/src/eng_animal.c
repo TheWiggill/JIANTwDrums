@@ -62,11 +62,12 @@ static const param_desc_t AN_DESC[] = {
     {"BUZZ", F_PCT, 0, 127, 100, 0, 0}, {"DRIFT", F_PCT, 0, 127, 0, 0, 0},
     {"DOPPLR", F_BIPCT, -64, 63, 0, 0, 0},
     {"MOUTH", F_PCT, 0, 127, 100, 0, 0}, {"ROUGH", F_PCT, 0, 127, 0, 0, 0},
-    {"AIR", F_INT, 0, 40, 22, 0, 0}
+    {"AIR", F_INT, 0, 40, 22, 0, 0},
+    {"SIZE", F_INT, 0, 127, 64, 0, U_REG64}            /* (V10.6d) the register in semitones: 0 the key played (64) */
 };
 static const uint8_t AN_DMAP[AN_NMODE][8] = {
-    [AN_CMOS] = {0,1,2,3,4,0,5,6}, [AN_PULSE] = {0,7,8,0,9},
-    [AN_WING] = {0,10,11,0,12}, [AN_GLOTT] = {0,13,14,0,0,0,0,15}
+    [AN_CMOS] = {0,1,2,3,4,0,5,6}, [AN_PULSE] = {0,7,8,16,9}, [AN_WHSTL] = {0,0,0,16},
+    [AN_WING] = {0,10,11,16,12}, [AN_GLOTT] = {0,13,14,0,0,0,0,15}
 };
 static uint32_t an_mode(const int16_t *p) { return (uint32_t)clamp(p[P_E0], 0, AN_NMODE - 1); }
 static const param_desc_t *animal_desc(const track_t *t, uint32_t k)
@@ -542,6 +543,13 @@ static const preset_t ANIMAL_PRESETS[] = {
     {"DOG BARK", {AN_GLOTT, 100, 70, 64, -15, 85, 5, 6}, {0, 64, 127, 30}, 0, TAG(FX), FX(0, 0, 10, 30), PAT(3)},
     {"ROAR", {AN_GLOTT, 110, 100, 100, -20, 50, 3, 9}, {6, 64, 127, 50}, 0, 1 | TAG(FX), FX(10, 0, 10, 40), PAT(8)},
     {"PURR", {AN_GLOTT, 10, 60, 50, 0, 60, 1, 19}, {10, 64, 127, 40}, 0, 1 | TAG(FX), FX(0, 0, 0, 20), PAT(8)},
+    /* (V10.6d, appended) voices in tune, to play: SIZE 64 (the key), SWEEP / DOPPLR 0, no CHAOS, GROUP HOLD (one syllable
+     * as long as the note); C3 sounds C3 (WHSTL ~6 cents over: its pitch rises with the amplitude) */
+    {"WHISTLE", {AN_WHSTL, 100, 0, 64, 0, 80, 0, 22}, {4, 64, 127, 45}, 0, 1 | TAG(LEAD), FX(0, 0, 20, 40), PAT(4)},
+    {"BIRD FLUTE", {AN_WHSTL, 90, 12, 64, 0, 80, 0, 22}, {10, 64, 127, 50}, 0, 1 | TAG(LEAD), FX(0, 10, 25, 45), PAT(4)},
+    {"WING HUM", {AN_WING, 60, 0, 64, 0, 40, 0, 22}, {6, 64, 127, 40}, 0, TAG(PAD), FX(0, 20, 20, 40), PAT(5)},
+    {"HUM VOX", {AN_GLOTT, 60, 0, 64, 0, 60, 0, 5}, {20, 64, 127, 60}, 0, TAG(PAD), FX(0, 30, 20, 50), PAT(5)},
+    {"PULSE TONE", {AN_PULSE, 127, 100, 64, 0, 80, 0, 22}, {0, 64, 127, 35}, 0, TAG(KEYS), FX(0, 10, 25, 35), PAT(6)},
 };
 
 static const engine_t ENG_ANIMAL = {
