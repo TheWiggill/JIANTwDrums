@@ -85,6 +85,17 @@ static const char *const N_ENGNAME[] = {"ANALOG", FELUCCA_FM4 ? "DIGITAL" : "-",
 #define PD(l, f, mn, mx, df) {l, f, mn, mx, df, 0, 0}
 #define PE(l, n, df) {l, F_ENUM, 0, (int16_t)(sizeof(n) / sizeof(n[0]) - 1), df, n, 0}
 
+static const param_desc_t TP[P_COUNT];
+/* (V10.6i) a factory preset's movement (preset_t.mod): each pair a common parameter (< P_E0) and its value, within its
+ * range (ui.c apply_preset_to, tests/hostsim.c) */
+_Static_assert(P_E0 <= 127, "preset_t.mod names a parameter in an int8_t");
+static void preset_mods(track_t *t, const preset_t *pr)
+{
+    const int8_t *m = pr->mod;
+    for (; m && m[0] >= 0; m += 2)
+        if (m[0] < P_E0)
+            t->p[m[0]] = (int16_t)clamp(m[1], TP[m[0]].min, TP[m[0]].max);
+}
 static const param_desc_t TP[P_COUNT] = {
     [P_LEVEL] = PD("LEVEL", F_DB, 0, 127, 104),
     [P_ATK] = PD("ATK", F_TIME, 0, 127, 10),

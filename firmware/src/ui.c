@@ -1459,18 +1459,34 @@ static uint32_t preset_orig(const engine_t *e, uint32_t k) { (void)e; return k; 
  * rest; every other engine in its own order. preset_nth: the preset shown n-th */
 static const uint8_t LOFI_ORDER[12] = {0, 1, 2, 8, 9, 10, 11, 3, 4, 5, 6, 7};   /* (V10.6d MATH: BYTE, FLOAT, the voices) */
 _Static_assert(sizeof LOFI_ORDER == NELEM(LOFI_PRESETS), "LOFI's browsing order: every preset once");
+/* (V10.6i) ANIMAL: the instruments first (in tune, to play a song with), then the experiments and the creatures' calls,
+ * then the bare voices (INIT: one mode each, nothing moving); the stored numbers stay (projects, PROGRAM CHANGE) */
+static const uint8_t ANIMAL_ORDER[] = {24, 25, 29, 27, 30, 31, 26, 33, 28, 32, 34,
+                                       35, 36, 37, 38, 39, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+                                       19, 20, 21, 22, 23,
+                                       40, 41, 42, 43, 44};
+_Static_assert(sizeof ANIMAL_ORDER == NELEM(ANIMAL_PRESETS), "ANIMAL's browsing order: every preset once");
+static const uint8_t *preset_order(const engine_t *e, uint32_t *n)
+{
+    if (e == &ENG_LOFI) { *n = sizeof LOFI_ORDER; return LOFI_ORDER; }
+    if (e == &ENG_ANIMAL) { *n = sizeof ANIMAL_ORDER; return ANIMAL_ORDER; }
+    *n = 0;
+    return 0;
+}
 static uint32_t preset_rank(const engine_t *e, uint32_t k)
 {
-    uint32_t i;
-    if (e == &ENG_LOFI)
-        for (i = 0; i < sizeof LOFI_ORDER; i++)
-            if (LOFI_ORDER[i] == k)
-                return i;
+    uint32_t i, n;
+    const uint8_t *o = preset_order(e, &n);
+    for (i = 0; i < n; i++)
+        if (o[i] == k)
+            return i;
     return k;
 }
 static uint32_t preset_nth(const engine_t *e, uint32_t n)
 {
-    return e == &ENG_LOFI && n < sizeof LOFI_ORDER ? LOFI_ORDER[n] : n;
+    uint32_t c;
+    const uint8_t *o = preset_order(e, &c);
+    return n < c ? o[n] : n;
 }
 #define preset_shown(e) (ENGINES[e]->npresets)
 
@@ -1575,6 +1591,7 @@ static void apply_preset_to(track_t *t, uint32_t pi)
         const preset_t *pr = &e->presets[pi];
         for (i = 0; i < 4u; i++)
             t->p[P_DIST + i] = (int16_t)(pr->fx[i] ? pr->fx[i] - 1 : FX_DEF[i]);
+        preset_mods(t, pr);                           /* (V10.6i) its movement: LFO, ENV 2, MOD, FILTER */
     }
     fm6_track_loaded(t);                              /* FM6: the preset's patch (its SLOT) */
     load_end(t);
@@ -1734,7 +1751,8 @@ static uint32_t preset_all_at_in(uint32_t n, uint32_t *k, const uint8_t *order)
         return NENGINES;
     }
     e = order[r];
-    *k = pc && e == ENGI_LOFI ? LOFI_PC[n % 18u] : preset_nth(ENGINES[e], n);   /* the n-th shown preset */
+    *k = pc ? (e == ENGI_LOFI ? LOFI_PC[n % 18u] : n) : preset_nth(ENGINES[e], n);   /* the n-th shown preset (PROGRAM
+                                                     * CHANGE: the stored number, LOFI's as 0.9.8 had them) */
     return e;
 }
 static uint32_t preset_all_at(uint32_t n, uint32_t *k) { return preset_all_at_in(n, k, ENGINE_ORDER); }

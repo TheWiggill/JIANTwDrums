@@ -543,13 +543,52 @@ static const preset_t ANIMAL_PRESETS[] = {
     {"DOG BARK", {AN_GLOTT, 100, 70, 64, -15, 85, 5, 6}, {0, 64, 127, 30}, 0, TAG(FX), FX(0, 0, 10, 30), PAT(3)},
     {"ROAR", {AN_GLOTT, 110, 100, 100, -20, 50, 3, 9}, {6, 64, 127, 50}, 0, 1 | TAG(FX), FX(10, 0, 10, 40), PAT(8)},
     {"PURR", {AN_GLOTT, 10, 60, 50, 0, 60, 1, 19}, {10, 64, 127, 40}, 0, 1 | TAG(FX), FX(0, 0, 0, 20), PAT(8)},
-    /* (V10.6d, appended) voices in tune, to play: SIZE 64 (the key), SWEEP / DOPPLR 0, no CHAOS, GROUP HOLD (one syllable
-     * as long as the note); C3 sounds C3 (WHSTL ~6 cents over: its pitch rises with the amplitude) */
-    {"WHISTLE", {AN_WHSTL, 100, 0, 64, 0, 80, 0, 22}, {4, 64, 127, 45}, 0, 1 | TAG(LEAD), FX(0, 0, 20, 40), PAT(4)},
-    {"BIRD FLUTE", {AN_WHSTL, 90, 12, 64, 0, 80, 0, 22}, {10, 64, 127, 50}, 0, 1 | TAG(LEAD), FX(0, 10, 25, 45), PAT(4)},
-    {"WING HUM", {AN_WING, 60, 0, 64, 0, 40, 0, 22}, {6, 64, 127, 40}, 0, TAG(PAD), FX(0, 20, 20, 40), PAT(5)},
-    {"HUM VOX", {AN_GLOTT, 60, 0, 64, 0, 60, 0, 5}, {20, 64, 127, 60}, 0, TAG(PAD), FX(0, 30, 20, 50), PAT(5)},
-    {"PULSE TONE", {AN_PULSE, 127, 100, 64, 0, 80, 0, 22}, {0, 64, 127, 35}, 0, TAG(KEYS), FX(0, 10, 25, 35), PAT(6)},
+    /* (V10.6d, appended; V10.6i shaped and moving) voices in tune, to play: SIZE 64 (the key), SWEEP / DOPPLR 0, GROUP
+     * HOLD (one syllable as long as the note); C3 sounds C3 (WHSTL ~6 cents over: its pitch rises with the amplitude) */
+    {"WHISTLE", {AN_WHSTL, 100, 0, 64, 0, 80, 0, 22}, {2, 64, 127, 30}, 0, 1 | TAG(LEAD), FX(0, 0, 20, 30), PAT(4),
+     MODS(MLFO(LW_SIN, 86, 1, 0), P_LFADE, 70, MMOD(1, PS_MODW, PD_VIB, 40))},          /* pure, a vibrato that grows */
+    {"BIRD FLUTE", {AN_WHSTL, 85, 40, 64, 0, 80, 0, 22}, {18, 70, 110, 55}, 0, 1 | TAG(LEAD), FX(0, 10, 25, 45), PAT(4),
+     MODS(MLFO(LW_SIN, 90, 2, 6), P_LFADE, 50, MENV2(0, 30, 0, 20), MMOD(1, PS_ENV2, PD_PITCH, -4),
+          P_FCUT, 100, MMOD(2, PS_MODW, PD_VIB, 50))},   /* breathy (CHAOS), each note scooped up from below (ENV 2) */
+    {"WING HUM", {AN_WING, 60, 0, 64, 0, 40, 0, 22}, {50, 80, 110, 85}, 0, TAG(PAD), FX(0, 30, 20, 50), PAT(5),
+     MODS(MLFO(LW_DRIFT, 20, 0, 20), MMOD(1, PS_LFO, PD_PAN, 20))},                     /* swells in and out, drifting */
+    {"HUM VOX", {AN_GLOTT, 60, 6, 64, 0, 60, 0, 8}, {45, 80, 115, 90}, 0, TAG(PAD), FX(0, 30, 15, 55), PAT(5),
+     MODS(MLFO(LW_SIN, 84, 1, 0), P_LFADE, 80, MMOD(1, PS_MODW, PD_E(1), 30), MMOD(2, PS_VEL, PD_E(1), 20))},   /* MODW
+                                                     * and the velocity open the mouth */
+    {"PULSE TONE", {AN_PULSE, 127, 100, 64, 0, 80, 0, 22}, {0, 70, 40, 40}, 0, TAG(KEYS), FX(0, 10, 25, 35), PAT(6),
+     MODS(MENV2(0, 40, 0, 30), MMOD(1, PS_ENV2, PD_CUT, 30), MMOD(2, PS_VEL, PD_CUT, 20))},   /* a struck tone */
+    /* (V10.6i) more to play */
+    {"OCARINA", {AN_WHSTL, 90, 14, 64, 0, 80, 0, 22}, {28, 70, 120, 45}, 0, 1 | TAG(LEAD), FX(0, 0, 15, 50), PAT(4),
+     MODS(MLFO(LW_SIN, 84, 1, 0), P_LFADE, 90, MMOD(1, PS_MODW, PD_VIB, 40))},
+    {"HUM BASS", {AN_GLOTT, 45, 10, 64, 0, 60, 0, 4}, {2, 60, 100, 25}, 0, 1 | TAG(BASS), FX(0, 0, 0, 10), PAT(1),
+     MODS(MENV2(0, 35, 20, 20), MMOD(1, PS_ENV2, PD_E(1), 25), P_GLIDE, 20)},          /* the mouth opens on each note */
+    {"BUZZ LEAD", {AN_WING, 110, 10, 64, 0, 40, 0, 22}, {0, 64, 110, 30}, 0, 1 | TAG(LEAD), FX(15, 0, 30, 25), PAT(4),
+     MODS(MENV2(0, 45, 30, 30), MMOD(1, PS_ENV2, PD_CUT, 25), MMOD(2, PS_MODW, PD_VIB, 50), MLFO(LW_SIN, 88, 0, 0),
+          P_GLIDE, 25)},
+    {"CRICKET PLK", {AN_PULSE, 127, 90, 64, 0, 80, 0, 22}, {0, 45, 0, 35}, 0, TAG(PLUCK), FX(0, 0, 30, 40), PAT(6),
+     MODS(MMOD(1, PS_VEL, PD_CUT, 25))},
+    {"SWARM PAD", {AN_WING, 60, 40, 64, 8, 40, 0, 22}, {70, 90, 110, 100}, 0, TAG(PAD), FX(0, 40, 20, 60), PAT(5),
+     MODS(MLFO(LW_DRIFT, 24, 1, 25), MMOD(1, PS_LFO, PD_PAN, 30), MMOD(2, PS_LFO, PD_E(2), 15))},
+    {"GLASS FROG", {AN_PULSE, 100, 120, 64, 0, 80, 0, 22}, {0, 80, 0, 70}, 0, TAG(BELL), FX(0, 10, 25, 55), PAT(6),
+     MODS(MMOD(1, PS_VEL, PD_CUT, 20), MLFO(LW_SIN, 70, 0, 0), MMOD(2, PS_LFO, PD_PAN, 15))},
+    /* (V10.6i) experiments: the creatures moved by the matrix */
+    {"DAWN CHORUS", {AN_WHSTL, 100, 20, 64, -20, 100, 4, 22}, {0, 64, 127, 40}, 0, TAG(FX), FX(0, 0, 35, 55), PAT(3),
+     MODS(MLFO(LW_SH, 70, 0, 0), MMOD(1, PS_RAND, PD_PITCH, 12), MMOD(2, PS_LFO, PD_E(4), 30), MMOD(3, PS_RAND, PD_PAN, 40))},
+    {"SWAMP MACHN", {AN_PULSE, 110, 60, 52, 10, 90, 6, 26}, {0, 64, 127, 45}, 0, TAG(FX), FX(10, 20, 40, 45), PAT(5),
+     MODS(MLFO(LW_SH, 78, 0, 0), MMOD(1, PS_LFO, PD_E(5), 25), MMOD(2, PS_LFO, PD_CUT, 20), MMOD(3, PS_KEY, PD_E(5), 20))},
+    {"HIVE MIND", {AN_WING, 90, 60, 64, 20, 40, 0, 22}, {40, 80, 110, 70}, 0, TAG(FX), FX(0, 50, 20, 50), PAT(5),
+     MODS(MLFO(LW_SIN, 30, 0, 0), MMOD(1, PS_LFO, PD_E(2), 40), MENV2(60, 90, 40, 60), MMOD(2, PS_ENV2, PD_E(4), 30),
+          MMOD(3, PS_LFO, PD_PAN, 30))},
+    {"CMOS STORM", {AN_CMOS, 90, 40, 50, 10, 80, 3, 24}, {0, 64, 127, 50}, 0, TAG(FX), FX(10, 0, 40, 40), PAT(7),
+     MODS(MLFO(LW_SH, 76, 0, 0), MMOD(1, PS_LFO, PD_E(3), 35), MMOD(2, PS_RAND, PD_E(1), 25), MMOD(3, PS_RAND, PD_PAN, 30))},
+    {"GHOST HOWL", {AN_GLOTT, 10, 20, 64, 30, 50, 0, 10}, {60, 90, 100, 100}, 0, 1 | TAG(FX), FX(0, 10, 30, 80), PAT(8),
+     MODS(MENV2(80, 100, 0, 80), MMOD(1, PS_ENV2, PD_PITCH, 8), MLFO(LW_SIN, 82, 2, 0), P_LFADE, 60)},
+    /* (V10.6i) bare: one mode each, in tune, nothing moving, dry: to start from */
+    {"INIT WHSTL", {AN_WHSTL, 100, 0, 64, 0, 80, 0, 22}, {0, 64, 127, 20}, 0, TAG(LEAD), FX(0, 0, 0, 0)},
+    {"INIT PULSE", {AN_PULSE, 127, 90, 64, 0, 80, 0, 22}, {0, 64, 127, 20}, 0, TAG(KEYS), FX(0, 0, 0, 0)},
+    {"INIT WING", {AN_WING, 80, 0, 64, 0, 40, 0, 22}, {0, 64, 127, 20}, 0, TAG(PAD), FX(0, 0, 0, 0)},
+    {"INIT GLOTT", {AN_GLOTT, 60, 0, 64, 0, 60, 0, 5}, {0, 64, 127, 20}, 0, TAG(VOX), FX(0, 0, 0, 0)},
+    {"INIT CMOS", {AN_CMOS, 90, 0, 64, 0, 74, 0, 22}, {0, 64, 127, 20}, 0, TAG(FX), FX(0, 0, 0, 0)},
 };
 
 static const engine_t ENG_ANIMAL = {

@@ -10,6 +10,8 @@
 #define __attribute__(x)
 #define UP_HOST 1
 #include "../firmware/src/core.h"
+static inline int32_t clamp(int32_t v, int32_t lo, int32_t hi) { return v < lo ? lo : v > hi ? hi : v; }   /* (dsp.c's: upreset.c
+                                                     * keeps a converted chip sound's FILTER, V10.6h) */
 
 static uint8_t nor[0x100000];
 static int st_read(uint32_t off, void *dst, uint32_t n) { memcpy(dst, nor + off, n); return 0; }
@@ -258,9 +260,9 @@ int main(void)
              up_value(up_rec(17), P_E7) == 0 && up_value(up_rec(18), P_E4) == 30 && up_value(up_rec(18), P_E7) == 90 &&
              up_rec(16)->packed[UP_FM_AT] == UP_V04_MARK;
         bad += check("0.3 records: LOFI TONE -> CUT, BEND MASK 0; ANALOG KTR -> INT 0; marked ones kept", ok);
-        bad += check("V10.6d: a LOFI chip record (TRI) -> ANALOG TRI, one oscillator, CUT open; BYTE ones stay MATH",
+        bad += check("V10.6d: a LOFI chip record (TRI) -> ANALOG TRI, one oscillator, CUT its FILTER's (V10.6h); BYTE ones stay MATH",
                      up_rec(19)->engine == 0u && up_value(up_rec(19), P_E0) == 2 && up_value(up_rec(19), P_E2) == 0 &&
-                     up_value(up_rec(19), P_E4) == 110 && up_rec(16)->engine == 3u && up_value(up_rec(16), P_E1) == 5);
+                     up_value(up_rec(19), P_E4) == (ch.np == P_COUNT ? clamp(up_value(&ch, P_FCUT), 0, 127) : 110) && up_rec(16)->engine == 3u && up_value(up_rec(16), P_E1) == 5);
     }
 
     /* SAMPLE SET 4 (PERC, the GM kit, retired after 1.0.2) -> the DRUM engine with its default kit: from flash (an

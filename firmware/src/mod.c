@@ -64,6 +64,10 @@ static inline int32_t gfx_val(uint32_t k)
 #define GFX(k) gfx_val(k)
 static uint8_t macro_v[4];       /* (JIANT) the macros M1..M4, 0..127: the project's (project.c), LFO held turns them */
 _Static_assert(NELEM(N_MSRC) == MS_N && NELEM(N_MDST) == MD_N, "N_MSRC / N_MDST == MS_* / MD_*");
+_Static_assert(PS_LFO == MS_LFO && PS_ENV2 == MS_ENV2 && PS_NOISE == MS_NOISE && PS_MODW == MS_MODW && PS_RAND == MS_RAND &&
+               PD_VIB == MD_VIB && PD_E1 == MD_E1 && PD_FCUT == MD_FCUT && PD_LEVEL == MD_LEVEL && PD_REV == MD_REV,
+               "core.h PS_* / PD_* (a preset's MOD slots) == MS_* / MD_*");
+_Static_assert(LW_DRIFT == 5, "core.h LW_*: params.c N_LWAVE6");
 _Static_assert(P_M2SRC == P_M1SRC + 3 && P_M4AMT == P_M1SRC + 11 && P_M4AMT + 1 == P_FM1_ATK, "matrix slots: 3 ids each");
 #define NMSLOT 4u
 #define MS_VMASK ((1u << MS_ENV) | (1u << MS_VEL) | (1u << MS_KEY) | (1u << MS_RAND) | (1u << MS_ENV2))

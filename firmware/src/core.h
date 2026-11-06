@@ -432,7 +432,21 @@ typedef struct {
                                   * never touches the steps; SEQ > PATTERNS loads a pattern (ui.c pat_load). The
                                   * arp is the track's too: a preset does not set it */
     uint8_t xp;                  /* (JIANT 0.8.5) VOICE: LANG | LYRIC << 2 (P_VLANG, P_VLYR; 0 = OFF, its vowels) */
+    const int8_t *mod;           /* (V10.6i) the sound's movement: pairs of a common parameter (< P_E0) and its value, -1
+                                  * ends (MODS: the LFO and its DEST, ENV 2, the MOD slots, the FILTER page, GLIDE ..),
+                                  * set after the rest of the preset (ui.c apply_preset_to); 0 none. In flash */
 } preset_t;
+#define MODS(...) .mod = (const int8_t[]){__VA_ARGS__, -1}
+/* the MOD slots' SRC and DEST numbers a preset names (mod.c MS_* / MD_*, checked there; the engines come before it) */
+enum { PS_LFO = 1, PS_ENV, PS_VEL, PS_KEY, PS_RAND, PS_MODW, PS_AT, PS_NOISE = 14, PS_ENV2 = 16 };
+enum { PD_PITCH = 1, PD_CUT, PD_SHP, PD_AMP, PD_PAN, PD_DIST, PD_CHO, PD_DLY, PD_REV, PD_LRATE, PD_VIB, PD_E1,
+       PD_FCUT = 30, PD_LEVEL };
+#define PD_E(k) (PD_E1 + (k))    /* EDIT k (P_E0 + k: 0 the first, as the engine's edit[]) */
+/* a MOD slot k (1..4): SRC DEST AMT; the LFO: WAVE RATE and its depths to PITCH FILTER; ENV 2 */
+#define MMOD(k, s, d, a) P_M##k##SRC, (s), P_M##k##DST, (d), P_M##k##AMT, (a)
+#define MLFO(w, r, pit, flt) P_LWAVE, (w), P_LRATE, (r), P_LD_PIT, (pit), P_LD_FLT, (flt)
+#define MENV2(a, d, s, r) P_E2ATK, (a), P_E2DEC, (d), P_E2SUS, (s), P_E2REL, (r)
+enum { LW_SIN, LW_TRI, LW_SAW, LW_SQR, LW_SH, LW_DRIFT };
 #define FX(d, c, dl, r) .fx = {(d) + 1, (c) + 1, (dl) + 1, (r) + 1}
 #define PAT(n) .pat = (n)
 #define WORDS(lang, lyr) .xp = (uint8_t)((lang) | (lyr) << 2)

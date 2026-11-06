@@ -113,6 +113,7 @@ static void host_preset_values(track_t *t, uint32_t e, uint32_t pi, const preset
     }
     for (i = 0; i < 4u; i++)
         t->p[P_DIST + i] = (int16_t)(p->fx[i] ? p->fx[i] - 1 : FX_DEF[i]);
+    preset_mods(t, p);                            /* (V10.6i) its movement (ui.c apply_preset_to) */
     fm6_track_loaded(t);                          /* FM6: the preset's patch (ui.c apply_preset_to) */
 }
 static void host_preset_req(track_t *t, uint32_t e, uint32_t pi)
