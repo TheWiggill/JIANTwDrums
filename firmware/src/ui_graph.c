@@ -63,6 +63,7 @@ static void lz_uline(int32_t x, int32_t y, const aafont_t *f, const char *s, uin
 static int32_t graph_ht = 100;
 #include "ui_organic.c"                              /* JIANT FM's organic line art (drawn by code) */
 static uint16_t heat_col(int32_t v);
+static uint16_t note_col(uint32_t n);                /* (V10.6i) ui_lzpage.c: a note's own colour */
 #include "ui_scene.c"                                /* (V10.25) SCL > SCENE: the multitimbral page */
 #include "ui_euclid.c"                               /* (V10.6) SEQ > EUCLID / MODES: the generator, its graph */
 #include "ui_fm6op.c"                                /* (0.6.10, from Felucca 1.5) EDIT > OPERATOR, OP ENV, OPERATOR 2 */
@@ -2021,7 +2022,8 @@ static void graph_mseq(const track_t *t, uint16_t c)
  * the bars in all. KNOB 1 the row, 2 its section (on END: STOP / x2 .. / LOOP), 3 its bars, 4 its scene */
 static uint16_t sec_col(uint32_t s)
 {
-    static const uint8_t HJ[4] = {0, 85, 171, 213}, HO[4] = {120, 160, 200, 240};   /* (0.8.5: JIANT the mock-up's cyan
+    static const uint8_t HJ[4] = {40, 92, 140, 196}, HO[4] = {120, 160, 200, 240};   /* (V10.6i) A..D cold to hot: violet red
+                                                         * orange amber (was indigo red amber cream) */   /* (0.8.5: JIANT the mock-up's cyan
                                                          * violet orange yellow; was 60 115 175 230) */
     return heat_col(settings.palette == UI_JIANT_INDEX ? HJ[s & 3u] : HO[s & 3u]);
 }

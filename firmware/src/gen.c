@@ -2764,7 +2764,9 @@ BTAPP_FN static void gen_panel_bt(void)
     if (chain_config.count) {
         /* Reuse the actual arrangement, not FORM's illustrative BCADCA chips.
          * Progress refreshes per bar; no new high-rate animation or DSP work. */
+        proj_gene = 1;                                   /* (V10.6i) the lanes leave the helix a band of its own */
         graph_proj(2);
+        proj_gene = 0;
         cv_rect(0, 124, 240, 16, T_SURF);
         if (chain.running) {
             v[0] = (char)('A' + (uint32_t)live.cur % 4u); v[1] = ' ';
@@ -2788,24 +2790,33 @@ BTAPP_FN static void gen_panel_bt(void)
  * colours: each seed its DNA); under ARRANGE's first row when a song is arranged, none past it */
 static void gen_helix(void)
 {
-    uint32_t n = chain_config.count, x, s = gp.seed * 2654435761u + gp.genre * 40503u;
-    int32_t cy = n ? 106 : 94, a = n ? 8 : 16;
-    if (n > 8u)
+    uint32_t n = chain_config.count, x, s = gp.seed * 2654435761u + gp.genre * 40503u, t = 0, i;
+    int32_t cy = n ? 116 : 94, a = n ? 5 : 16, x0 = n ? 24 : 6;   /* (V10.6i) arranged: a band of its own under the lanes */
+    uint16_t f = settings.palette == UI_JIANT_INDEX ? heat_col(110) : T_THEME, b = settings.palette == UI_JIANT_INDEX ? heat_col(210) : T_ACCENT;
+    if (n > 16u)
         return;
-    for (x = 6; x < 234u; x += 2u) {
+    for (i = 0; i < n; i++) t += chain_config.row[i].bars;
+    for (x = (uint32_t)x0; x < 234u; x += 2u) {
         uint32_t ang = (x * 6u + anim_fr * 4u) << 23;
         int32_t d = osc_sine(ang) * a >> 15, z = osc_sine(ang + 0x40000000u);
-        if (x % 10u == 0u) {                             /* a rung: a base pair, the seed's */
+        if (x % 10u == 0u) {                             /* a rung: a base pair, the seed's; arranged, the section's above it */
             int32_t h = d < 0 ? -d : d;
-            cv_rect((int32_t)x, cy - h, 1, 2 * h + 1, ux_mix(T_SURF, heat_col(40 + 64 * (int32_t)(s >> (x / 10u % 16u * 2u) & 3u)), 70));
+            uint16_t c = ux_mix(T_SURF, heat_col(40 + 64 * (int32_t)(s >> (x / 10u % 16u * 2u) & 3u)), 70);
+            if (n && t) {
+                uint32_t acc = 0, k;
+                for (k = 0; k < n && 24u + (acc + chain_config.row[k].bars) * 212u / t <= x; k++)
+                    acc += chain_config.row[k].bars;
+                c = sec_col(chain_config.row[k < n ? k : n - 1u].slot & 3u);
+            }
+            cv_rect((int32_t)x, cy - h, 1, 2 * h + 1, c);
         }
-        cv_rect((int32_t)x, cy + d, 2, 2, z > 0 ? T_THEME : T_DIM);
-        cv_rect((int32_t)x, cy - d, 2, 2, z > 0 ? T_DIM : T_ACCENT);
+        cv_rect((int32_t)x, cy + d, 2, 2, z > 0 ? f : T_DIM);
+        cv_rect((int32_t)x, cy - d, 2, 2, z > 0 ? T_DIM : b);
     }
 }
 static void gen_panel(void)
 {
-    if (bt_hw_seg()) gen_panel_bt(); else graph_proj(chain_config.count ? 2 : 0);
+    if (bt_hw_seg()) gen_panel_bt(); else { proj_gene = 1; graph_proj(chain_config.count ? 2 : 0); proj_gene = 0; }
     gen_helix();
 }
 #include "gen_track.c"

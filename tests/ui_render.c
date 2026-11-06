@@ -655,7 +655,7 @@ enum { S_HOME, S_HOME_IDLE, S_MESSAGE, S_MESSAGE_KEY, S_MESSAGE_NOFILE, S_PRESET
        S_HOME_MACROS, S_HOME_BEING, S_HOME_ROUTES, S_GEN_LEAD,
        S_ED_FILTER, S_ED_FILTER_BP, S_ED_VOICE2, S_ED_FOCUS, S_ED_FOCUS_MOD, S_ED_OPERATOR,
        S_ENV_TRACKS, S_ENV_TRACKS_DEST, S_ENV_STAGE, S_ENV_STAGE_SUS, S_MSEQ2, S_KEY_CHORD, S_KEY_CHORD_OFF, S_KEY_ARP, S_KEY_ARP2, S_GLO_SENDS, S_MENU_ROW, S_MENU_ROW_LEDS, S_LY_FX_KNOBS, S_LY_FX_STATE, S_LY_GLO_STATE, S_DLG_DICE_SOUND, S_DLG_DICE_SEQ, S_DLG_DICE_FX, S_DLG_MUT_BACK,
-       S_DRUM_X4, S_DRUM_GHOST, S_DRUM_OCT_UP, S_DRUM_OCT_DN, S_COMP_TOUCH, S_COMP_EVEN, S_GEN_EXPLORE,
+       S_DRUM_X4, S_DRUM_GHOST, S_DRUM_OCT_UP, S_DRUM_OCT_DN, S_COMP_TOUCH, S_COMP_EVEN, S_GEN_EXPLORE, S_GEN_SONG,
        S_VX_HEAD_A, S_VX_HEAD_I, S_VX_HEAD_U, S_VX_HEAD_S, S_VX_HEAD_M, S_VX_HEAD_K, S_VX_HEAD_T, S_VX_HEAD_F, S_VX_HEAD_VOWEL,
        S_VX_HEAD_HOME, S_VX_HEAD_QUIET, S_VX_BIRD, S_VX_CMOS, S_VX_INSECT, S_VX_WING, S_VX_MAMMAL, S_VX_MORPH_IB, S_VX_MORPH_BM,
        S_VX_ANIMAL_HOME, S_VX_KIT, S_VX_KIT_HITS, S_VX_KIT_GHOST, S_VX_KIT_HOME, S_VX_KIT_MUTED,
@@ -693,7 +693,7 @@ static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "message", "mes
     "home_macros", "home_being", "home_routes", "gen_lead",
     "ed_filter", "ed_filter_bp", "ed_voice2", "ed_focus", "ed_focus_mod", "ed_operator",
     "env_tracks", "env_tracks_dest", "env_stage", "env_stage_sus", "mseq2", "key_chord", "key_chord_off", "key_arp", "key_arp2", "glo_sends", "menu_row", "menu_row_leds", "ly_fx_knobs", "ly_fx_state", "ly_glo_state", "dlg_dice_sound", "dlg_dice_seq", "dlg_dice_fx", "euclid_modes",
-    "drum_hit_x4", "drum_hit_ghost", "drum_oct_x8", "drum_oct_flam", "comp_touch", "comp_echo_even", "gen_explore",
+    "drum_hit_x4", "drum_hit_ghost", "drum_oct_x8", "drum_oct_flam", "comp_touch", "comp_echo_even", "gen_explore", "gen_song",
     "vx_head_a", "vx_head_i", "vx_head_u", "vx_head_s", "vx_head_m", "vx_head_k", "vx_head_t", "vx_head_f", "vx_head_vowel",
     "vx_head_home", "vx_head_quiet", "vx_bird", "vx_cmos", "vx_insect", "vx_wing", "vx_mammal", "vx_morph_insect_bird", "vx_morph_bird_mammal",
     "vx_animal_home", "vx_kit", "vx_kit_hits", "vx_kit_ghost", "vx_kit_home", "vx_kit_muted",
@@ -1376,6 +1376,12 @@ static void setup(int s)
     case S_CONFIRM_PAT: ui.confirm = CF_LOAD_PAT; ui.confirm_trk = 0; ui.ppick = 4; break;
     case S_CONFIRM_MOTION: ui.confirm = CF_CLEAR_MOTION; ui.confirm_trk = 3; break;
     case S_CONFIRM_ERASE: song.playing = 0; up_store(6, "A VERY LONG SOUND NAME"); ui.confirm = CF_ERASE_USER; ui.confirm_trk = 6; break;
+    case S_GEN_SONG:                                    /* (V10.6i) GENE over an arranged song: the lanes, the helix below */
+        chain_config.count = 6;
+        chain_config.row[0] = (chain_row_t){1, 16}; chain_config.row[1] = (chain_row_t){2, 16}; chain_config.row[2] = (chain_row_t){0, 32};
+        chain_config.row[3] = (chain_row_t){3, 16}; chain_config.row[4] = (chain_row_t){2, 16}; chain_config.row[5] = (chain_row_t){0, 32};
+        ui.confirm = CF_DICE_ALL; gp.page = 0; gp.hot = 0;
+        break;
     case S_GEN: ui.confirm = CF_DICE_ALL; gp.page = 0; gp.hot = 0; gp.genre = 1; gp.seed = 421; str_cpy(gp.last, "HOUSE 0421", sizeof gp.last); break;   /* (0.6.91) GEN */
     case S_GEN_PARTS: ui.confirm = CF_DICE_ALL; gp.page = 1; gp.hot = 2; gp.amt[GP_CHORDS] = 70; gp.amt[GP_ARP] = 0; break;
     case S_MENU: ui.menu = 1; ui.menu_sel = 0; song.rec = 1; break;

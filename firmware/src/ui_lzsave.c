@@ -97,6 +97,7 @@ static void graph_lz_tools(void)
     cv_text_in(4, (int32_t)h - 11, 232, &AF_X, ui.act ? "HOLD OCT+ TO DO IT" : "TURN A KNOB TO PICK", T_DIM, T_SURF);
 }
 /* PROJECT: the sections, the arrangement's chips, the song's strip (ar: ARRANGE, its rows picked) */
+static uint8_t proj_gene;                           /* (V10.6i) GENE draws the TIMELINE: its helix under it */
 static void graph_proj(int ar)
 {
     uint32_t i, total = 0, played = 0, sel = (uint32_t)song.g[G_SLOT] - 1u, n = chain_config.count, end;
@@ -107,9 +108,10 @@ static void graph_proj(int ar)
         static const char *const LN[NTRK + 1] = {"SEC", "T1", "T2", "T3", "T4", "T5", "T6"};
         static const char *const RV_SH[RV_N] = {"", "", "TH", "FL", "HF", "RV", "SH", "+8", "-8", "V1", "V2", "V3", "V4"};
         uint32_t t = 0, acc = 0, played = 0, j;
+        int32_t ls = proj_gene ? 15 : 17, lh = ls - 2;   /* (V10.6i) GENE: lanes 2 px shorter, the helix a band of its own */
         for (i = 0; i < n; i++) t += chain_config.row[i].bars;
         for (j = 0; j <= NTRK; j++)
-            cv_text(5, 4 + (int32_t)j * 17 + (j ? 4 : 3), &AF_X, LN[j], j == ui.song_tk ? T_THEME : T_DIM);
+            cv_text(5, 4 + (int32_t)j * ls + (j ? 4 : 3) - (17 - ls) / 2, &AF_X, LN[j], j == ui.song_tk ? T_THEME : T_DIM);
         for (i = 0; i < n && t; i++) {
             const chain_row_t *r = &chain_config.row[i];
             uint32_t s = r->slot & 3u;
@@ -117,12 +119,20 @@ static void graph_proj(int ar)
             if (w < 2) w = 2;
             for (j = 0; j <= NTRK; j++) {          /* (V10.3) the columns lead: a row's edge a 1 px line of its colour
                                                     * well darker; between lanes 2 px of it only a little darker */
-                int32_t y = 4 + (int32_t)j * 17, h = 15;
+                int32_t y = 4 + (int32_t)j * ls, h = lh;
                 uint32_t src = j ? row_src(i, j - 1u, s) : s, v = j ? row_var(i, j - 1u) : 0u, own = !j || src == s;
                 uint16_t c = j && own ? lz_sec(src, 1, 1) : sec_col(src);
                 if (v == RV_MUTE) {
                     cv_rect(x, y, w, h, T_BG);
                     cv_frame(x + 1, y + 1, w - 1, h - 2, T_DIM);
+                } else if (j && own && settings.palette == UI_JIANT_INDEX) {   /* (V10.6i) its own section: the colour in
+                                                         * scan lines, as a thermal camera's (was mixed with black: browns) */
+                    int32_t k;
+                    c = sec_col(src);
+                    cv_rect(x, y, w, h, T_BG);
+                    for (k = 0; k < h; k += 2)
+                        cv_rect(x, y + k, w, 1, c);
+                    if (i) cv_rect(x, y, 1, h, T_BG);
                 } else {
                     cv_rect(x, y, w, h, c);
                     if (j < NTRK) cv_rect(x, y + h, w, 2, ux_mix(T_BG, c, 45));
@@ -136,7 +146,7 @@ static void graph_proj(int ar)
                 }
             }
             if (i == ui.song_row % (n ? n : 1u)) {
-                int32_t fy = 4 + (int32_t)ui.song_tk * 17, fh = 15;
+                int32_t fy = 4 + (int32_t)ui.song_tk * ls, fh = lh;
                 cv_frame(x, fy, w, fh, T_TEXT);
                 cv_frame(x + 1, fy + 1, w - 2, fh - 2, T_TEXT);
             }
@@ -145,7 +155,7 @@ static void graph_proj(int ar)
         }
         if (chain.running && chain.row < n && t) {         /* the playhead */
             played += chain_config.row[chain.row].bars - chain.remaining;
-            cv_rect(24 + (int32_t)(played * 212u / t), 2, 1, 4 + 7 * 17, T_TEXT);
+            cv_rect(24 + (int32_t)(played * 212u / t), 2, 1, 4 + 7 * ls, T_TEXT);
         }
         end = SONG_END(&chain_config);
         fmt_int(b, (int32_t)t);
