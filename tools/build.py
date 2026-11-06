@@ -102,6 +102,7 @@ def generate():
     tools = SRC / "tools"
     cmds = [[tools / "gen_aa_font.py", GEN / "ui_fonts.h", "--preset", "jiant-lab", "--kern-min", "4"],   # (snd7: pairs under 1/4 px dropped)   # (gen_aa_font.UI_PRESET),
             [tools / "gen_px_font.py", GEN / "ui_font_x.h"],
+            [tools / "gen_about.py", GEN / "about_notices.h", FW / "src" / "ui_menu.c"],
             [tools / "gen_aa_icons.py", GEN / "ui_icons.h"],
             [tools / "gen_aa_keycaps.py", GEN / "ui_keycaps.h"],
             [tools / "gen_ui_palettes.py", GEN / "ui_palettes.h"],

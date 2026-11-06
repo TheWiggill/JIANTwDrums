@@ -35,6 +35,7 @@ static void draw_about_qr(int32_t x, int32_t y)
  * text, 1 theme, 2 mid) + 3 x the gap before it / 4 px), its text, a zero; a zero ends the list. The URLs without
  * "https://" (as they were shown) */
 #define MENU_DOC_H 196                                /* the document: screen rows 24..220 */
+#ifdef ABOUT_NOTICE_TEXT
 static const char ABOUT_PROJECT[] BTAPP_RO =
     "\002THE PROJECT\0"
     "\001Made in Argentina by Juan Jiant, visual artist and musician, a dad of two: an independent project, free for everyone.\0"
@@ -89,6 +90,16 @@ static const char ABOUT_CREDITS[] BTAPP_RO =
     "\001NO WARRANTY\0"
     "\007Full notices in source:\0"
     "\003github.com/juanjiant-bit/JIANT\0";
+#endif
+#include "about_notices.h"
+
+/* Generation proves acyclic pairs, depth <=12 and the document size. */
+static char *about_byte(char *d,char *end,uint32_t c)
+{
+    if(c<128u) {if(d<end) *d++=(char)c;}
+    else {d=about_byte(d,end,ABOUT_PAIRS[c-128u][0]);d=about_byte(d,end,ABOUT_PAIRS[c-128u][1]);}
+    return d;
+}
 
 static int32_t menu_text(const char *s, int32_t y, uint16_t col, int draw)
 {
@@ -121,10 +132,15 @@ static int32_t menu_text(const char *s, int32_t y, uint16_t col, int draw)
     return y;
 }
 
-static int32_t menu_lines(const char *s, int32_t y, int draw)   /* (V10.13) ABOUT_PROJECT, ABOUT_CREDITS */
+static int32_t menu_lines(const uint8_t *packed, int32_t y, int draw)
 {
+    char text[ABOUT_MAX],*d=text;
     if (!bt_hw_seg())
         return y;
+    uint32_t n=packed[0]|(uint32_t)packed[1]<<8;
+    for(uint32_t i=0;i<n;i++) d=about_byte(d,text+sizeof text-1u,packed[2u+i]);
+    *d=0;
+    const char *s=text;
     for (; *s; s += str_len(s) + 1u) {
         uint32_t k = (uint8_t)*s - 1u, c = k % 3u;
         y = menu_text(s + 1, y + 4 * (int32_t)(k / 3u), c == 1u ? T_THEME : c == 2u ? T_MID : T_TEXT, draw);
@@ -236,11 +252,11 @@ static int32_t menu_document(int32_t y, int draw)
         cv_text(6, y + 174, &AF_S, "/JIANT", T_MID);
         draw_about_qr(158, y + 122);
     }
-    y = menu_lines(ABOUT_PROJECT, y + 216, draw);
+    y = menu_lines(ABOUT_PROJECT_PACK, y + 216, draw);
     if (bt_hw_seg())                                    /* (V10.13: in the segment) */
         y = about_load(y, draw);
     y = about_cpu(y, draw);                             /* (p1: out of line, menu_document's room is pinned) */
-    y = menu_lines(ABOUT_CREDITS, y + 8, draw);
+    y = menu_lines(ABOUT_CREDITS_PACK, y + 8, draw);
     return y + 4;
 }
 static int32_t menu_scroll_max(void)
