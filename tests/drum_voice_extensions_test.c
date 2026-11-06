@@ -132,6 +132,13 @@ static int extensions(void)
     bad+=check("EXT recording replaces original notes and ratchets, preserving both components",ok&&n>=2);
     bad+=check("EXT release keeps the recorded fill; steps outside it remain intact",
         !dt->step[5].n&&!(dt->step[5].hit&(1u<<DV_BELL))&&dt->step[1].note[0]==81&&dt->step[6].note[0]==81);
+    drum_setup();dt->p[P_DKEYMODE]=1;
+    for(k=0;k<16;k++) dt->step[k]=(step_t){{81},1,ST_NOTE,0,100,1u<<DV_BELL};
+    song.rec=1u<<3;seq_start();lanes_until(1,step_len(1)/8u);
+    dxo_on(dt,86,0,100,DXO_MIDI+86);lanes_until(4,step_len(4)/8u);
+    bad+=check("EXT recording replaces original hits with rests where the fill is silent",
+        dt->step[3].time==ST_REST&&!dt->step[3].hit&&!dt->step[3].n&&!step_lm_any(&dt->step[3]));
+    dxo_off(dt,DXO_MIDI+86);seq_stop();
     /* Lane view and lane editing must agree with the renderer for encoded FX. */
     step_t *s=&dt->step[7];step_clear(s);s->time=ST_NOTE;s->n=1;s->note[0]=drum_fx_note(10);s->vel=100;
     ok=step_lanes_of(dt,s)==(1u<<DV_TOM);
