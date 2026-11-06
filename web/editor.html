@@ -3057,7 +3057,7 @@ async function getDescOrNull(s, i, d = dev) { try { return await getDesc(s, i, d
 /* rebuilds the controls only when the engine or its parameters changed (a slider being dragged survives) */
 function matrixContextId(d, id) {
   const e = d.info.engines[d.dump.engine], off = id - d.info.pe0;
-  return off === 0 || (e === "LOFI" && off === 1) || (e === "INPUT" && off === 3) || /^(?:DEST|DST)\d$/.test(d.pdesc[id]?.label || "") || d.pdesc[id]?.label === "LANG";
+  return off === 0 || (e === "LOFI" && off === 1) || ((e === "INPUT" || e === "EXT") && off === 3) || /^(?:DEST|DST)\d$/.test(d.pdesc[id]?.label || "") || d.pdesc[id]?.label === "LANG";
 }
 
 async function rereadEngineDesc(d = dev) {

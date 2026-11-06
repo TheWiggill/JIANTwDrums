@@ -307,8 +307,8 @@ static const preset_t INPUT_PRESETS[] = {
 };
 
 static const engine_t ENG_INPUT = {
-    .name = "INPUT",
-    .page_title = {"INPUT", "SHAPE"},
+    .name = "EXT",                                   /* (V10.6d: EXT, external signals: the audio input and SWARM) */
+    .page_title = {"EXT", "SHAPE"},
     .edit = {
         {"SOURCE", F_ENUM, 0, AIN_N - 1, AIN_IN1, N_AIN_SRC, 0},
         {"GAIN", F_INT, 0, 127, 64, 0, 0},
