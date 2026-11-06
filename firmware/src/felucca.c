@@ -17,7 +17,8 @@
 #define FELUCCA_OTA_DRYRUN 0     /* 1 = stage, ask "success", then undo: no record, no reset */
 #endif
 #ifndef FELUCCA_CDC
-#define FELUCCA_CDC 1            /* USB CDC-ACM serial console */
+#define FELUCCA_CDC 0            /* USB CDC-ACM serial console (V10.6x SWARM: off, the developer tool's ~3.8 KB of flash and
+                                  * ~2.9 KB of RAM for the instrument; USB is audio + MIDI as MENU > USB STEREO; 1 brings it back) */
 #endif
 #ifndef FELUCCA_CONSOLE_VERBOSE
 #define FELUCCA_CONSOLE_VERBOSE 0 /* developer memory/LED-scan dumps: opt in; keep status, audio and crash diagnostics */

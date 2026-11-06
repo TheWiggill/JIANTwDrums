@@ -107,7 +107,8 @@ static const char *const USBLVL_N[6] = {"MASTER", "FIXED", "-6 dB", "-12 dB", "-
  * console; (0.8.0) STEMS+IN, the stems with the host's audio output too (10 channels in: the stems, then the host's
  * audio as the last track mixed it and as it came; the phone app records a voice through the FM-1 and moves it by
  * the latency). ui.c usb_out */
-static const char *const USBOUT_N[6] = {"CONSOLE", "STEREO", "STEMS", "IN+OUT", "STEMS+IN", "HOST"};
+static const char *const USBOUT_N[6] = {FELUCCA_CDC ? "CONSOLE" : "AUDIO", "STEREO", "STEMS", "IN+OUT", "STEMS+IN", "HOST"};   /* (no console
+                                                       * built: the first as STEREO) */
 static uint8_t usb_host_want;                          /* (V10.41) USB > HOST (usb_host.c), applied when the menu closes; never saved */
 static const char *const HOLD_N[4] = {"0.3 s", "0.4 s", "0.5 s", "0.6 s"};   /* (the editor's names; the menu draws its own) */
 /* 1.1 (Discussion #131): the metronome (click.c) and the count-in (seq.c); ui.c ui_rec_prefs holds them */

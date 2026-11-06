@@ -1,11 +1,11 @@
 name: VOICE user lyric candidate
 on:
   push:
-    branches: [codex/voice-user-lyrics]
+    branches: [codex/voice-user-lyrics, codex/swarm]
 permissions:
   contents: read
 concurrency:
-  group: voice-user-candidate
+  group: voice-user-candidate-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   check:
