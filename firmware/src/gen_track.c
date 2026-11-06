@@ -5,7 +5,7 @@ typedef struct { uint16_t seed; uint8_t genre,role,complex,energy; } tg_config_t
 static tg_config_t tg_config[NTRK] = {[0 ... NTRK-1]={1,0,0,50,50}};
 static const char *const TG_ROLE[] = {"BASS","CHORDS","LEAD","ARP"};
 static int trackgen_ok(const track_t *t)
-{return eng_ok(eng_idx(t->eng_req))&&eng_idx(t->eng_req)!=ENGI_INPUT;}
+{return eng_ok(t->eng_req)&&t->eng_req!=ENGI_INPUT;}
 
 BTAPP_FN static void trackgen_knob_bt(uint32_t k,int32_t s)
 {
@@ -31,12 +31,12 @@ static __attribute__((noinline)) void trackgen_make(void)
 {
     track_t *t=TSEL;uint32_t k=trk_index(t),i,j,n,len,f;
     const tg_config_t *c=&tg_config[k];
-    struct { __typeof__(gp) p; __typeof__(gs) s; ggenre_t g; __typeof__(gx) x; uint32_t q; char name[20]; }
-        save={gp,gs,gmut,gx,gq,{0}};
+    struct { __typeof__(gp) p; __typeof__(gs) s; ggenre_t g; __typeof__(gx) x; uint32_t q; }
+        save={gp,gs,gmut,gx,gq};
     track_t temp;
     _Static_assert(sizeof temp+sizeof save<8192,"track generator main-stack budget (15.75 KiB stack)");
     if(!trackgen_ok(t)||chain_busy()) {ui_message("STOP SONG TO EDIT");return;}
-    memcpy(save.name,gmut_name,sizeof save.name);
+    /* These pattern helpers never write gmut_name (only gen_make does). */
     memset(&temp,0,sizeof temp);memcpy(temp.p,t->p,sizeof temp.p);
     temp.eng_req=t->eng_req;temp.engine=t->engine;
     len=(uint32_t)clamp(t->p[P_SLEN],1,NSTEP);
@@ -75,7 +75,6 @@ static __attribute__((noinline)) void trackgen_make(void)
         s->n=(uint8_t)n;
     }
     gp=save.p;gs=save.s;gmut=save.g;gx=save.x;gq=save.q;
-    memcpy(gmut_name,save.name,sizeof save.name);
     undo_mark();
     f=motion_guard();
     memcpy(t->step,temp.step,len*sizeof(step_t));
