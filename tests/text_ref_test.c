@@ -87,7 +87,8 @@ static aag_t ref_entry(const aafont_t *f, uint32_t gi, uint32_t ph)
         return g;
     }
     uint32_t v = f->gp[(gi << f->psh) + ph];
-    aag_t g = {(uint16_t)(f->gh[gi].off + v % 1024u), f->gh[gi].adv, (int8_t)((int)(v / 1024u % 8u) - 1),
+    const aagh_t *gh=f->gh;
+    aag_t g = {(uint16_t)(gh[gi].off + v % 1024u), gh[gi].adv, (int8_t)((int)(v / 1024u % 8u) - 1),
                (uint8_t)(v / 8192u % 64u), (uint8_t)(v / 524288u % 128u), (uint8_t)(v / 67108864u)};
     return g;
 }

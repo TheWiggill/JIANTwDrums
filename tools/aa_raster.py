@@ -187,7 +187,7 @@ def glyph_tables(name, table, phases):
             value = off | adv << 12 | (bx+1) << 21 | by << 24 | bw << 29 | bh << 34
             data.extend(value.to_bytes(5, 'little'))
         text = c_array(f"AF_{name}_PACK", "uint8_t", data, 20)
-        text += f"\n#define AF_{name}_GH ((const aagh_t *)AF_{name}_PACK)\n#define AF_{name}_GP 0\n#define AF_{name}_COMPACT 1\n#define AF_{name}_PHASES {phases}"
+        text += f"\n#define AF_{name}_GH AF_{name}_PACK\n#define AF_{name}_GP 0\n#define AF_{name}_COMPACT 1\n#define AF_{name}_PHASES {phases}"
         return text, len(data)
     gh, gp = [], []
     for i in range(0, len(table), phases):

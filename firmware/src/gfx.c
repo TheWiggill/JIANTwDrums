@@ -13,7 +13,7 @@ typedef struct { uint16_t off, adv; } aagh_t;   /* (0.9.0) a glyph: its phases' 
 typedef struct {
     uint8_t h, asc, first, last, nex;   /* line height, baseline; ASCII range; extras */
     uint16_t nk;                        /* kerning: the glyphs ki covers (0: none) */
-    const aagh_t *gh;                   /* (0.9.0) the glyph table, packed (tools/aa_raster.py glyph_tables): a glyph's */
+    const void *gh;                     /* byte-packed records, or aligned aagh_t in the wide format */
     const uint32_t *gp;                 /* .. and each phase's off - gh.off | bx + 1 << 10 | by << 13 | bw << 19 | bh << 26 */
     const uint8_t *data;
     const uint16_t *ki;                 /* (0.9.0) glyph a's pairs: kp[2 ki[a] .. 2 ki[a + 1] - 1] */
@@ -778,7 +778,7 @@ static aag_t ag(const aafont_t *f, uint32_t i)
         return g;
     }
 #if !FONT_COMPACT
-    const aagh_t *h = &f->gh[i >> f->psh];
+    const aagh_t *h = &((const aagh_t *)f->gh)[i >> f->psh];
     uint32_t v = f->gp[i];
     aag_t g;
     g.off = (uint16_t)(h->off + (v & 1023u));
@@ -793,7 +793,7 @@ static aag_t ag(const aafont_t *f, uint32_t i)
 static uint32_t font_advance(const aafont_t *f,uint32_t i)
 {
 #if !FONT_COMPACT
-    if(f->gp) return f->gh[i>>f->psh].adv;
+    if(f->gp) return ((const aagh_t *)f->gh)[i>>f->psh].adv;
 #endif
     const uint8_t *p=(const uint8_t *)f->gh+5u*i;
     return (p[1]>>4|p[2]<<4)&511u;
