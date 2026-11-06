@@ -436,7 +436,7 @@ static const preset_t FORMANT_PRESETS[] = {
     {"CHOIR AAH", {0, 0, 0, 0, 40, 22, 60, 0}, {85, 90, 115, 95}, 0, TAG(VOX), FX(0, 70, 15, 90), PAT(5),
      MODS(P_LWAVE, LW_DRIFT, P_LRATE, 36, P_LD_FLT, 6, MMOD(1, PS_MODW, PD_CUT, 40))},   /* the vowel breathes; MODW: OOH */
     {"VOX LEAD", {32, 0, 0, 2, 90, 8, 72, 0}, {6, 70, 105, 55}, 0, 1 | TAG(VOX), FX(0, 20, 45, 40), PAT(4),
-     MODS(P_LRATE, 88, P_LD_PIT, 1, P_LFADE, 70, MMOD(1, PS_MODW, PD_VIB, 40))},          /* a vibrato that grows */
+     MODS(P_LRATE, 88, P_LD_PIT, 1, P_LFADE, 70, MMOD(1, PS_MODW, PD_VIB, 2))},          /* a vibrato that grows */
     {"WOW BASS", {95, 0, 68, 0, 100, 0, 80, 0}, {0, 60, 80, 28}, 0, 1 | TAG(BASS), FX(10, 0, 10, 10), PAT(8),
      MODS(P_GLIDE, 18, MMOD(1, PS_VEL, PD_SHP, 30))},                                     /* a harder note buzzes */
     {"INIT VOWEL", {0, 64, 0, 0, 64, 10, 64, 0}, {2, 64, 127, 30}, 0, TAG(VOX), FX(0, 0, 0, 0)},

@@ -245,7 +245,7 @@ static void noise_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const
  * FREQ, SHP the COLOR), RAIN and ARCADE the experiments, INIT NOISE bare white noise (browsed in NOISE_ORDER) */
 static const preset_t NOISE_PRESETS[] = {
     {"WIND", {NZ_ANLG, 64, 70, 100, 127, 0, 70, 0}, {90, 90, 110, 90}, 0, TAG(FX), FX(0, 30, 20, 80), PAT(5),
-     MODS(P_LRATE, 18, P_LD_FLT, 14, MMOD(1, PS_MODW, PD_E(3), 30))},         /* gusts; MODW: it howls */
+     MODS(MMOD(1, PS_MODW, PD_E(3), 30))},                                   /* MODW: it howls */
     {"RAIN", {NZ_DUST, 30, 88, 80, 64, 105, 40, 0}, {10, 90, 127, 70}, 0, TAG(FX), FX(0, 0, 20, 70), PAT(5),
      MODS(MMOD(1, PS_RAND, PD_CUT, 30), MMOD(2, PS_RAND, PD_PAN, 40))},       /* each note its drops' pitch and place */
     /* a 7-bit register (127 steps) clocked 84 semitones (7 octaves) above the key: one period per key period,

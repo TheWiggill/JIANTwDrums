@@ -1469,6 +1469,7 @@ static const uint8_t *preset_order(const engine_t *e, uint32_t *n)
 {
     if (e == &ENG_LOFI) { *n = sizeof LOFI_ORDER; return LOFI_ORDER; }
     if (e == &ENG_ANIMAL) { *n = sizeof ANIMAL_ORDER; return ANIMAL_ORDER; }
+    if (e == &ENG_ANALOG) { *n = sizeof ANALOG_ORDER; return ANALOG_ORDER; }
     *n = 0;
     return 0;
 }

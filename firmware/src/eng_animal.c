@@ -525,7 +525,7 @@ static const preset_t ANIMAL_PRESETS[] = {
      MODS(MLFO(LW_SH, 70, 0, 0), MMOD(1, PS_RAND, PD_PITCH, 12), MMOD(2, PS_LFO, PD_E(4), 30), MMOD(3, PS_RAND, PD_PAN, 40))},
     {"CRICKET", {AN_PULSE, 127, 100, 26, 0, 119, 7, 22}, {0, 64, 127, 30}, 0, TAG(FX), FX(0, 0, 0, 35), PAT(5)},
     {"OCARINA", {AN_WHSTL, 90, 14, 64, 0, 80, 0, 22}, {28, 70, 120, 45}, 0, 1 | TAG(LEAD), FX(0, 0, 15, 50), PAT(4),
-     MODS(MLFO(LW_SIN, 84, 1, 0), P_LFADE, 90, MMOD(1, PS_MODW, PD_VIB, 40))},
+     MODS(MLFO(LW_SIN, 84, 1, 0), P_LFADE, 90, MMOD(1, PS_MODW, PD_VIB, 2))},
     {"CRICKET PLK", {AN_PULSE, 127, 90, 64, 0, 80, 0, 22}, {0, 45, 0, 35}, 0, TAG(PLUCK), FX(0, 0, 30, 40), PAT(6),
      MODS(MMOD(1, PS_VEL, PD_CUT, 25))},
     {"CICADA", {AN_PULSE, 38, 85, 28, 14, 60, 0, 24}, {20, 64, 127, 60}, 0, TAG(FX), FX(0, 0, 0, 40), PAT(5)},
@@ -540,7 +540,7 @@ static const preset_t ANIMAL_PRESETS[] = {
      MODS(MENV2(0, 35, 20, 20), MMOD(1, PS_ENV2, PD_E(1), 25), P_GLIDE, 20)},          /* the mouth opens on each note */
     {"OWL", {AN_WHSTL, 80, 8, 68, -8, 68, 9, 22}, {4, 64, 127, 50}, 0, TAG(FX), FX(0, 0, 15, 55), PAT(8)},
     {"BUZZ LEAD", {AN_WING, 110, 10, 64, 0, 40, 0, 22}, {0, 64, 110, 30}, 0, 1 | TAG(LEAD), FX(15, 0, 30, 25), PAT(4),
-     MODS(MENV2(0, 45, 30, 30), MMOD(1, PS_ENV2, PD_CUT, 25), MMOD(2, PS_MODW, PD_VIB, 50), MLFO(LW_SIN, 88, 0, 0),
+     MODS(MENV2(0, 45, 30, 30), MMOD(1, PS_ENV2, PD_CUT, 25), MMOD(2, PS_MODW, PD_VIB, 2), MLFO(LW_SIN, 88, 0, 0),
           P_GLIDE, 25)},
     {"HIVE MIND", {AN_WING, 90, 60, 64, 20, 40, 0, 22}, {40, 80, 110, 70}, 0, TAG(FX), FX(0, 50, 20, 50), PAT(5),
      MODS(MLFO(LW_SIN, 30, 0, 0), MMOD(1, PS_LFO, PD_E(2), 40), MENV2(60, 90, 40, 60), MMOD(2, PS_ENV2, PD_E(4), 30),
@@ -554,10 +554,10 @@ static const preset_t ANIMAL_PRESETS[] = {
     {"ROAR", {AN_GLOTT, 110, 100, 100, -20, 50, 3, 9}, {6, 64, 127, 50}, 0, 1 | TAG(FX), FX(10, 0, 10, 40), PAT(8)},
     {"PURR", {AN_GLOTT, 10, 60, 50, 0, 60, 1, 19}, {10, 64, 127, 40}, 0, 1 | TAG(FX), FX(0, 0, 0, 20), PAT(8)},
     {"WHISTLE", {AN_WHSTL, 100, 0, 64, 0, 80, 0, 22}, {2, 64, 127, 30}, 0, 1 | TAG(LEAD), FX(0, 0, 20, 30), PAT(4),
-     MODS(MLFO(LW_SIN, 86, 1, 0), P_LFADE, 70, MMOD(1, PS_MODW, PD_VIB, 40))},          /* pure, a vibrato that grows */
+     MODS(MLFO(LW_SIN, 86, 1, 0), P_LFADE, 70, MMOD(1, PS_MODW, PD_VIB, 2))},          /* pure, a vibrato that grows */
     {"BIRD FLUTE", {AN_WHSTL, 85, 40, 64, 0, 80, 0, 22}, {18, 70, 110, 55}, 0, 1 | TAG(LEAD), FX(0, 10, 25, 45), PAT(4),
      MODS(MLFO(LW_SIN, 90, 2, 6), P_LFADE, 50, MENV2(0, 30, 0, 20), MMOD(1, PS_ENV2, PD_PITCH, -4),
-          P_FCUT, 100, MMOD(2, PS_MODW, PD_VIB, 50))},   /* breathy (CHAOS), each note scooped up from below (ENV 2) */
+          P_FCUT, 100, MMOD(2, PS_MODW, PD_VIB, 2))},   /* breathy (CHAOS), each note scooped up from below (ENV 2) */
     {"WING HUM", {AN_WING, 60, 0, 64, 0, 40, 0, 22}, {50, 80, 110, 85}, 0, TAG(PAD), FX(0, 30, 20, 50), PAT(5),
      MODS(MLFO(LW_DRIFT, 20, 0, 20), MMOD(1, PS_LFO, PD_PAN, 20))},                     /* swells in and out, drifting */
     {"HUM VOX", {AN_GLOTT, 60, 6, 64, 0, 60, 0, 8}, {45, 80, 115, 90}, 0, TAG(PAD), FX(0, 30, 15, 55), PAT(5),

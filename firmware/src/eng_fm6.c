@@ -488,7 +488,7 @@ _Static_assert(NELEM(N_FM6_PATCH) == FM6_OWN + FM6_NBANK + 2u, "a SLOT name per 
  * LFO's PITCH depth: AMT 2..3 is a vibrato. 0..10 and 13 keep their sound (GEN picks 0..5, 7, 13 by number for roles,
  * gen_tables.c RECIPE; 0 TINE EP is the power-on EP); 11 is bare, 12 and 14 the experiments (browsed: FM6_ORDER) */
 static const preset_t FM6_PRESETS[] = {
-    {"TINE EP", {0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 127, 10}, 0, TAG(KEYS), FX(0, 45, 25, 35), PAT(6),
+    {"TINE EP", {0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 127, 0}, 0, TAG(KEYS), FX(0, 45, 25, 35), PAT(6),
      MODS(P_LRATE, 70, P_LPHASE, -1, MMOD(1, PS_LFO, PD_PAN, 12))},             /* a suitcase's slow auto-pan */
     {"BELL", {0, 0, 0, 0, 0, 0, 0, 1}, {0, 0, 127, 25}, 0, TAG(BELL), FX(0, 10, 30, 70), PAT(7),
      MODS(MMOD(1, PS_RAND, PD_PAN, 10), MMOD(2, PS_VEL, PD_CUT, 12))},

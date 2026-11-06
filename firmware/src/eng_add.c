@@ -135,7 +135,7 @@ static const preset_t ADD_PRESETS[] = {
     {"ADD ORGAN", {AD_HARM, 0, 76, 127, 0, 0, 127, 0}, {0, 64, 127, 40}, 0, TAG(KEYS), FX(0, 15, 0, 30), PAT(5),
      MODS(P_LRATE, 72, P_LD_AMP, 14, MMOD(1, PS_MODW, PD_LRATE, 30))},                   /* a rotor; MODW: fast */
     {"ADD SAW", {AD_HARM, 0, 92, 127, 0, 0, 127, 0}, {2, 70, 100, 35}, 30, 1 | TAG(LEAD), FX(0, 20, 0, 25), PAT(4),
-     MODS(P_FCUT, 70, P_FRES, 40, P_LRATE, 88, MMOD(1, PS_MODW, PD_VIB, 40))},           /* the filter opens */
+     MODS(P_FCUT, 70, P_FRES, 40, P_LRATE, 88, MMOD(1, PS_MODW, PD_VIB, 2))},           /* the filter opens */
     {"HOLLOW", {AD_ODD, 0, 84, 127, 0, 30, 127, 0}, {30, 70, 115, 70}, 0, TAG(PAD), FX(0, 10, 10, 35), PAT(5),
      MODS(P_LWAVE, LW_TRI, P_LRATE, 40, P_LD_SHP, 30, MMOD(1, PS_AT, PD_E(2), 30))},     /* a phaser of partials */
     {"INIT ADD", {AD_HARM, 0, 70, 127, 0, 0, 127, 0}, {0, 64, 127, 40}, 0, TAG(KEYS), FX(0, 0, 0, 0)},

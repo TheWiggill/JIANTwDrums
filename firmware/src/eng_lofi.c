@@ -415,7 +415,7 @@ static const preset_t LOFI_PRESETS[] = {
     {"MATH PAD", {2, 6, 44, 0, 0, 0, 0, 0}, {75, 90, 110, 95}, 0, TAG(PAD), FX(0, 50, 30, 60), PAT(5),
      MODS(P_FCUT, 96, P_LRATE, 20, P_LD_FLT, 10)},
     {"MATH LEAD", {2, 6, 92, 0, 0, 0, 0, 0}, {4, 70, 100, 42}, 0, 1 | TAG(LEAD), FX(0, 0, 35, 25), PAT(4),
-     MODS(P_LRATE, 88, P_LD_PIT, 1, P_LFADE, 72, MMOD(1, PS_MODW, PD_VIB, 2), P_GLIDE, 10)},
+     MODS(P_LRATE, 88, P_LFADE, 72, MMOD(1, PS_MODW, PD_VIB, 2), P_GLIDE, 10)},
     {"MATH BELL", {2, 6, 40, 0, 0, 0, 0, 0}, {0, 88, 0, 70}, 12, TAG(BELL), FX(0, 20, 35, 55), PAT(7),
      MODS(P_FCUT, 100, MMOD(1, PS_VEL, PD_CUT, 22))},
     /* (JIANT 0.5, appended) BYTE B11 looped (LOOP 80: a short cycle, a tone at the note), resonant; its LOOP leaps on
