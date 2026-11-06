@@ -26,6 +26,9 @@ assert.equal(modDst({label:'DEST1'},'E1'),'MORPH');
 assert.equal(modDst({label:'DST1'},'E1'),'MORPH');
 assert.equal(modDst({label:'DEST1'},'T:MOVE'),'T:MOVE');
 console.log('matrix web: JS syntax, current/legacy labels and contextual metadata refresh passed');
+dev.info.pe0=80;dev.info.pcount=88;dev.pdesc=Array.from({length:88},(_,i)=>({label:'P'+i}));calls=[];
+await rereadEngineDesc();
+assert(calls.includes(61)&&calls.includes(74),'engine switches refresh shared language/key-map and lyric/image descriptors');
 '''
 # modDst uses the existing visibility predicate only for old E1..E8 labels.
 test=test.replace('function assertSession', 'function visible(d){return d.label!=="-";}\nfunction assertSession')

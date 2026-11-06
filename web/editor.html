@@ -3065,6 +3065,9 @@ async function rereadEngineDesc(d = dev) {
   const pe0 = d.info.pe0;
   const before = JSON.stringify(d.pdesc);
   for (let i = 0; i < 8 && pe0 + i < d.info.pcount; i++) d.pdesc[pe0 + i] = await getDescOrNull(0, pe0 + i, d);
+  /* Shared slots change meaning with the selected engine: DRUM KEY MAP /
+     VOICE LANG / LOFI RTRG (61), and DRUM IMAGE / VOICE LYRIC (74). */
+  for (const i of [61, 74]) if (i < pe0 && i < d.info.pcount) d.pdesc[i] = await getDescOrNull(0, i, d);
   for (let i = 0; i < pe0; i++) if (/^(?:DEST|DST)\d$/.test(d.pdesc[i]?.label || "")) d.pdesc[i] = await getDescOrNull(0, i, d);
   if (d.built !== d.dump.engine || JSON.stringify(d.pdesc) !== before) buildGroups();
 }
