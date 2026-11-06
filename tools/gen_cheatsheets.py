@@ -161,13 +161,13 @@ def controls():
     pb = [
         ('HOME', 'ECO: ECO · MACROS  |  BEING: BEING · ROUTES  |  GEN: GEN 1 · GEN 2 · GEN 3', 'MENU'),
         ('EDIT', 'SOUND: EDIT 1 · EDIT 2  |  TONE: FILTER · MORPH · RETRIG · ROTOR · VOICE · VOICE 2 · WORDS  |  FOCUS (FM6: … OPERATOR: OPERATOR · OP ENV · OPERATOR 2; DRUM: KIT: KIT · KIT 2 · KIT 3  |  SOUND: SOUND 1–4  |  LEVELS 1–2  |  TONE: X-MOD · FILTER · STEREO · VOICE)', 'INIT · RECALL · sound mutes'),
-        ('SEQ', 'STEP  |  LENGTH: LENGTH · TRACK  |  EUCLID: EUCLID · MODES  |  PLAYHEADS  |  STRETCH  |  COMP: COMP · COMP 2  |  AUTO: AUTOMATION · AUTO LIST', 'SEQ TOOLS'),
+        ('SEQ', 'STEP  |  LENGTH: LENGTH · TRACK  |  EUCLID: EUCLID · MODES · MUTATE  |  PLAYHEADS  |  STRETCH  |  COMP: COMP · COMP 2  |  AUTO: AUTOMATION · AUTO LIST', 'SEQ TOOLS'),
         ('FX', 'TRACK: SENDS · DIST · AUTO PAN  |  BUSES  |  DELAY: DLY 1–3  |  REVERB 1–2  |  CHORUS  |  SLICER: SLICER · SL BUS 1–2 · SL PITCH  |  PUNCH  |  MASTER · TAPE · EQ',
          'PUNCH-IN FX'),
         ('GLO', 'LIVE: MANO · RIELES  |  MIX: MIXER · SENDS  |  GLOBAL  |  SYSTEM  |  COMPS (at power-on GLO opens MIXER)', 'MUTE · SOLO · LEVEL · TAP'),
         ('ENV', 'TRACKS: TRACKS · TRACKS DEST  |  ENV: ENV · ENV DEST  |  STAGE', '—'),
         ('LFO', 'MOD  |  LFO: LFO · LFO DEST  |  MSEQ: MSEQ · MSEQ 2', 'MACROS M1–M4 (stay latched)'),
-        ('SCL', 'KEY  |  CHORD', 'ROOT by key'),
+        ('SCL', 'KEY  |  CHORD  |  SCENE', 'ROOT by key'),
         ('ARP', 'ARP: ARP · ARP 2', '—'),
         ('SAVE', 'SONG: TIMELINE · SECTIONS  |  PROJECT: PROJECTS · ARRANGE · TOOLS  |  SOUND: USER · PRESETS (from outside, USER / SECTIONS come armed)', 'SONG layer · C5 NAME'),
         ('REC', '(transport)', 'CLEAR · CLICK · held alone: UNDO'),
@@ -249,7 +249,7 @@ def controls():
     b.append(sec('EVERY PAGE · KNOB 1 – 4'))
     fams = [
         ('ENV', HEAT[0], [('ENV', 'ATK DEC SUS REL'), ('ENV DEST', 'FILTER PITCH SHAPE LOOP'), ('STAGE', 'STAGE VALUE LOOP -')]),
-        ('LFO', HEAT[1], [('LFO', 'RATE WAVE PHASE FADE'), ('LFO DEST', 'PITCH FILTER SHAPE AMP'), ('MOD', 'SLOT SRC DEST AMT'),
+        ('LFO', HEAT[1], [('LFO', 'RATE WAVE PHASE FADE'), ('LFO DEST', 'PITCH FILTER SHAPE AMP'), ('MOD', 'SLOT SRC DEST AMT'), ('PROX (BT)', 'SRC PROX: the phone\'s distance · MENU › SYSTEM › BT, OCT+: OCT− FAR, OCT+ NEAR'),
                           ('MSEQ', 'STEP LEVEL LEN SLEW'), ('MSEQ 2', 'DIV - - -')]),
         ('FX', HEAT[5], [('FX', 'DIST CHORUS DLY REV'), ('DIST', 'DIST TYPE TONE -'), ('AUTO PAN', 'DEPTH RATE SYNC WAVE'), ('SLICER', 'MODE PAT RATE DEPTH'),
                          ('SL BUS', 'T1 T2 T3 T4'), ('SL BUS 2', 'T5 T6 FX -'), ('SL PITCH', 'STEP PITCH LEN QUANT'),
@@ -264,19 +264,19 @@ def controls():
                            ('LEVELS 2', 'HATOP TOM RIM BELL'), ('SOUND', 'SOUND SIDE PITCH PMOD'),
                            ('SOUND 2', 'SOUND DECAY NOISE COLOR'), ('SOUND 3', 'SOUND MODE PM.TYPE DRIVE'),
                            ('SOUND 4', 'SOUND LAYER FEEDBK SEND'), ('STEREO', 'IMAGE - - -')]),
-        ('SCL · ARP', HEAT[2], [('SCL', 'ROOT SCALE QUANT ALL TR'), ('CHORD', 'CHORD VOICING STRUM -'), ('ARP', 'MODE RATE OCT GATE'),
+        ('SCL · ARP', HEAT[2], [('SCL', 'ROOT SCALE QUANT ALL TR'), ('CHORD', 'CHORD VOICING STRUM -'), ('SCENE', 'ON TRACK ROLE CHORD'), ('ARP', 'MODE RATE OCT GATE'),
                                 ('ARP 2', 'SWING PROB HOLD ORDER')]),
         ('SEQ', HEAT[4], [('PATTERN', 'LEN DIV SWING GATE'), ('STRETCH', 'x/÷ REPEAT NUDGE ROTATE'), ('PLAYHEADS', 'HEAD RATE DIR INTVL'),
                           ('TRACK', 'PITCH CHANCE HUMAN REC Q'), ('EUCLID', 'HITS STEPS ROTATE VARY'), ('EUCLID · DRUM', 'HITS STEPS ROTATE LANE'), ('EUCLID · DRUM ALL', 'DENSITY STEPS ROTATE LANE'),
-                          ('MODES', 'MOTION HARMONY OCTAVE SLIDE'), ('MODES · DRUM', 'ACCENT GHOST RATCHET VARY'),
-                          ('BAR', 'BAR LEN - -'), ('STEP', 'STEP NOTE TIME FLAG'), ('STEP · DRUM', 'STEP LANE HIT ACC'), ('NOTE', 'FOCUS PITCH MOVE MICRO'),
+                          ('MODES', 'MOTION HARMONY OCTAVE SLIDE'), ('MODES · DRUM', 'ACCENT GHOST RATCHET VARY'), ('MUTATE', 'EVERY AMOUNT MODE WHAT'),
+                          ('BAR', 'BAR LEN - -'), ('STEP', 'STEP NOTE TIME VEL'), ('STEP · DRUM', 'STEP LANE HIT ACC'), ('NOTE', 'FOCUS PITCH MOVE MICRO'),
                           ('AUTOMATION', 'PLAY EVENT LOCK CLEAR'), ('AUTO LIST', 'ROW STEP PARAM VALUE'),
                           ('COMP', 'STEP TYPE VAL EVERY'), ('COMP 2', 'STEP TYPE VAL EVERY')]),
         ('GLO · SAVE', HEAT[6], [('MANO', 'RATE LOOP THIN DJ FILT (the keys: live modifiers)'), ('RIELES', 'PISTAS RATE CORTE DENS'),
                                  ('MIXER', 'LEVEL PAN REV DJ FILT'), ('GLOBAL', 'BPM SWING CLOCK TUNE'),
-                                 ('SYSTEM', 'TRACKS LOAD ROUTE CPU'), ('PRESETS', 'No. ENG FAV LIST'),
-                                 ('USER', 'SLOT LOAD ERASE SAVE'), ('PROJECTS', 'PROJECT SECT LOAD SAVE'), ('SECTIONS', 'SECT NAME LOAD SAVE'), ('ARRANGE', 'ROW SECT BARS SCENE (OCT+ adds a row, OCT− deletes the one picked)'), ('TIMELINE', 'ROW LANE · SEC: SECT BARS · T1–T6: FROM VAR'),
-                                 ('TOOLS', 'CLEAR SEQ · INIT SOUND · DEL ROW · CLEAR SONG · NEW PROJECT · CPU TEST: K1 picks, OCT+')]),
+                                 ('SYSTEM', 'TRACKS LOAD ROUTE CPU'), ('PRESETS', 'No. ENG FAV LIST · OCT+ keep, OCT- back'),
+                                 ('USER', 'SLOT LOAD ERASE SAVE'), ('PROJECTS', 'PROJECT SECT LOAD SAVE'), ('SECTIONS', 'SECT ERASE LOAD SAVE'), ('ARRANGE', 'ROW SECT BARS SCENE (OCT+ adds a row, OCT− deletes the one picked)'), ('TIMELINE', 'ROW LANE · SEC: SECT BARS · T1–T6: FROM VAR'),
+                                 ('TOOLS', 'K1 SCOPE (TRACK SOUND SONG SYSTEM) · K2 the action · hold OCT+ a second')]),
     ]
 
     def ptable(rows):
@@ -390,8 +390,8 @@ def sound():
     b.append('</div>')
     b.append('<div class="grid g3" style="margin-top:22px">')
     b.append(card('SEQUENCER', HEAT[4],
-                  '<p>64 steps a track, up to 4 notes a step, piano roll and drum grid. One chain (V10.6): STEP (the roll / grid, K1 all 64 steps) · LENGTH · TRACK · EUCLID · MODES · PLAYHEADS · STRETCH · COMP · COMP 2 · AUTOMATION · AUTO LIST; SELECT walks, SEQ jumps to the next group, PRESETS loads a pattern. <b>Hold a step + turn a knob</b>: '
-                  'a parameter lock. Step recording: hold a chord + KNOB 1 its length; + ARP: arpeggiated (K1 rate, K2 order, K3 oct). COMP / COMP 2: two components a step (CHANCE, RATCH, ARP NOTES / SEQ / SCALE, TRIG, RAND, OCT, TONAL, BEND, ECHO, PULSE, JUMP, REV, FILL, KILL, WALK, CLIMB, TOUCH: a kit\'s SHORT / GHOST / FLAM); a TRIG or FILL wins; WALK / CLIMB: a degree / an octave further every N loops (K4), UP DOWN UP-DN RND over a range (K3), stackable; ARP: ORDER × range, RATE in note values (x1 1/32 1/32T 1/64 1/64T 1/128); RATCH / ECHO: DIV; EVERY (KNOB 4): the loops the step\'s components play on (ALWAYS 1:2 2:2 1:3 .. 4:4 1:8 FIRST !FIRST SKIP). TRACK: PITCH, CHANCE thins the whole track, HUMAN one amount (velocity, timing, gate, decay / release), REC Q. STRETCH / REPEAT act as the knob turns; ROTATE reads the sequence from another step; NOTE\'s MICRO moves a step off the grid in 64ths (±32/64; REC Q 0 % records where you played, to the 64th). <b>EUCLID</b> (V10.6, MUTATE\'s place): HITS, STEPS 2–64, ROTATE write the track\'s pattern live; K4 LANE (DRUM-X: each sound its own; V10.7 <b>ALL</b>, the default: K1 DENSITY 1–8 writes a whole kit, a lane picked writes only that lane) or VARY; MODES adds ACCENT GHOST RATCHET VARY (DRUM-X) or MOTION HARMONY OCTAVE SLIDE; notes in the track\'s SCL, else the key the other tracks fit (FROM Tn), else NEW KEY; OCT+ a new variation, OCT− the one before. REC + knobs while playing: '
+                  '<p>64 steps a track, up to 4 notes a step, piano roll and drum grid. One chain (V10.6): STEP (the roll / grid, K1 all 64 steps) · LENGTH · TRACK · EUCLID · MODES · MUTATE · PLAYHEADS · STRETCH · COMP · COMP 2 · AUTOMATION · AUTO LIST; SELECT walks, SEQ jumps to the next group, PRESETS loads a pattern. <b>Hold a step + turn a knob</b>: '
+                  'a parameter lock. STEP K4 <b>VEL</b> (V10.8): 1–127, then ACC, SLD, A+S. Step recording: hold a chord + KNOB 1 its length; + ARP: arpeggiated (K1 rate, K2 order, K3 oct). COMP / COMP 2: two components a step (CHANCE, RATCH, ARP NOTES / SEQ / SCALE, TRIG, RAND, OCT, TONAL, BEND, ECHO, PULSE, JUMP, REV, FILL, KILL, WALK, CLIMB, TOUCH: a kit\'s SHORT / GHOST / FLAM); a TRIG or FILL wins; WALK / CLIMB: a degree / an octave further every N loops (K4), UP DOWN UP-DN RND over a range (K3), stackable; ARP: ORDER × range, RATE in note values (x1 1/32 1/32T 1/64 1/64T 1/128); RATCH / ECHO: DIV; EVERY (KNOB 4): the loops the step\'s components play on (ALWAYS 1:2 2:2 1:3 .. 4:4 1:8 FIRST !FIRST SKIP). TRACK: PITCH, CHANCE thins the whole track, HUMAN one amount (velocity, timing, gate, decay / release), REC Q. STRETCH / REPEAT act as the knob turns; ROTATE reads the sequence from another step; NOTE\'s MICRO moves a step off the grid in 64ths (±32/64; REC Q 0 % records where you played, to the 64th). <b>EUCLID</b> (V10.6; V10.16 VARY in four turns A A\' A\'\' B, and <b>MUTATE</b>: EVERY 1–16 bars, AMOUNT, ORBIT / DRIFT / PULSE, GROOVE / RHYTHM / FEEL / ALL, OCT+ now, OCT− the anchor): HITS, STEPS 2–64, ROTATE write the track\'s pattern live; K4 LANE (DRUM-X: each sound its own; V10.7 <b>ALL</b>, the default: K1 DENSITY 1–8 writes a whole kit, a lane picked writes only that lane) or VARY; MODES adds ACCENT GHOST RATCHET VARY (DRUM-X) or MOTION HARMONY OCTAVE SLIDE; notes in the track\'s SCL, else the key the other tracks fit (FROM Tn), else NEW KEY; OCT+ a new variation, OCT− the one before. REC + knobs while playing: '
                   'automation (64 records a section, MOTION page plays / clears them, AUTO LIST edits them).</p>'
                   '<h4>PATTERN · TRACK</h4>' + knobs('LEN', 'DIV', 'SWG', 'GATE') + knobs('PIT', 'CHN', 'HUM', 'RECQ')))
     b.append(card('SCALE · ARP', HEAT[0],
@@ -423,7 +423,7 @@ def sound():
                   'the effects. <b>SL PITCH</b>: the repeats\' 16-step pitch (±24 st, tape style, QNT SCL to the scale).</p>'))
     b.append(card('DELAY · CHORUS', HEAT[1], '<h4>DLY</h4>' + knobs('TIME', 'FDBK', 'TONE', 'MIX') +
                   '<h4>DLY 2</h4>' + knobs('WIDE', 'PITCH', 'SPRY', 'MOD') + '<h4>DLY 3</h4>' + knobs('TYPE', 'PING', '-', '-') +
-                  '<p style="margin-top:6px">Synced or free (5 ms – 2.95 s; past 0.74 s darker); PITCH / SPRY: a grain delay.</p>'
+                  '<p style="margin-top:6px">Synced (4BAR … 1/32; V10.8 dotted 1/4D 1/8D 1/16D) or free (5 ms – 2.95 s; past 0.74 s darker); PITCH / SPRY: a grain delay.</p>'
                   '<h4>CHORUS</h4>' + knobs('RATE', 'DEPTH', 'STER', '-') +
                   '<p style="margin-top:6px">STER: 0 as always, down to mono, up to twice as wide.</p>'))
     b.append('</div>')

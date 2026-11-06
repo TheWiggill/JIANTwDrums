@@ -121,6 +121,11 @@ jobs:
             PREVIEW_ROOT=/tmp/preview
             PREVIEW_SHA="$P"
           fi
+          # USB input regression: include the actual pinned beta, not main's sources.
+          for CDC in 0 1; do
+            (cd "$PREVIEW_ROOT" && cc -O2 -w -DHALF_FRAMES=128 -DT_CDC="$CDC" tests/uac_test.c -lm -o "/tmp/beta-uac-$CDC")
+            "/tmp/beta-uac-$CDC"
+          done
           (cd "$PREVIEW_ROOT" && python3 tools/build.py)
           PV=$(ver "$PREVIEW_ROOT")
           V=$(ver .)
@@ -170,7 +175,7 @@ jobs:
           done < web/CLASSIC
           python3 -c 'import json,sys; L=[l.split() for l in open("build/prev/list") if l.strip()]; json.dump([{"version":v,"file":f} for v,f in L], open("build/prev/versions.json","w"))'
           # (2026-10-30) one public list: web/STABLE first, then web/CLASSIC (ADD par10 among them; the SAMPLE edition withdrawn)
-          python3 web/make_site.py "$PKG" "${SV:-dev}-$SH" build/site build/prev
+          python3 web/make_site.py "$PKG" "${SV:-dev}" build/site build/prev
           cp -r build/site/webapp build/site/firmware build/emu/
       # (JIANT 0.7.9) the stems app's phase-0 probe (android/probe), next to the installer: app/jiant-probe.apk
       - uses: actions/setup-java@v4

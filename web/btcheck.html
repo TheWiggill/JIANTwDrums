@@ -1,0 +1,234 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-only
+     JIANT FM: Bluetooth radio calibration check (read-only). Reads flash 0x0E7000..0x0E9FFF over the USB serial
+     console (`flr OFFSET LEN`, firmware/src/console.c: SPI reads only, nothing is written) and decodes the JieLi VM
+     key/value store the stock firmware keeps there: the RF trims (records 106 107 108 187) and the Bluetooth address.
+     The VM rules follow Optimist's tools/ble_vm.py (GPL-3.0-only OR MPL-2.0): magic 55 AA AA 55, 4-byte headers
+     (CRC-16/XMODEM low byte, 12-bit id, 12-bit length), the last valid record of an id wins. -->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JIANT · BT check</title>
+<style>
+  :root { --bg:#0b0b10; --fg:#e8e6f0; --dim:#8a879a; --ok:#7fe0a0; --bad:#ff7a7a; --acc:#b48cff; --card:#16151f; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui, sans-serif; }
+  main { max-width:720px; margin:0 auto; padding:24px 16px 48px; }
+  h1 { font-size:22px; margin:0 0 4px; } h1 span { color:var(--acc); }
+  p, li { color:var(--fg); } .dim { color:var(--dim); }
+  .card { background:var(--card); border-radius:12px; padding:16px; margin:16px 0; }
+  button { background:var(--acc); color:#120d1f; border:0; border-radius:8px; padding:10px 16px; font-weight:600;
+           font-size:15px; cursor:pointer; margin:4px 8px 4px 0; }
+  button:disabled { opacity:.4; cursor:default; }
+  .ok { color:var(--ok); } .bad { color:var(--bad); }
+  pre { background:#000; color:#9fe; padding:10px; border-radius:8px; overflow-x:auto; font-size:12px; max-height:260px; }
+  progress { width:100%; height:10px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; } td, th { padding:4px 6px; border-bottom:1px solid #2a2836; text-align:left; }
+</style>
+</head>
+<body>
+<main>
+  <h1>JIANT <span>· BT check</span></h1>
+  <p class="dim" id="lead">Lee (sin escribir nada) la calibración de la radio Bluetooth de tu FM-1. Read-only check of your FM-1's
+     Bluetooth radio calibration.</p>
+
+  <div class="card">
+    <ol>
+      <li>FM-1 con <b>JIANT V10.10</b> o posterior, conectado por USB. With JIANT V10.10 or later, over USB.</li>
+      <li><b>Por MIDI</b> (celular Android o computadora, Chrome o Edge): tocá el primer botón y aceptá el permiso de MIDI.
+          Over MIDI (Android phone or computer): the first button.</li>
+      <li><b>Por consola</b> (solo computadora): MENU › SYSTEM › USB en CONSOLE (el valor de fábrica), el segundo botón.
+          Over the serial console (computer only).</li>
+    </ol>
+    <button id="gomidi">Leer por MIDI · Read over MIDI</button>
+    <button id="go">Leer por consola · Read over the console</button>
+    <button id="save" disabled>Descargar copia (.bin) · Download dump</button>
+    <progress id="prog" value="0" max="48" hidden></progress>
+    <p id="status" class="dim"></p>
+  </div>
+
+  <div class="card" id="result" hidden>
+    <h2 id="verdict" style="margin-top:0"></h2>
+    <p id="detail"></p>
+    <table id="recs"></table>
+  </div>
+
+  <details class="card"><summary>Registro · Log</summary><pre id="log"></pre></details>
+</main>
+<script>
+"use strict";
+const BASE = 0x0E7000, SIZE = 0x3000, CHUNK = 256;
+const MAGIC = [0x55, 0xAA, 0xAA, 0x55];
+const RF = {106: 2, 107: 7, 108: 20, 187: 68};               /* the RF trims and their lengths */
+const NAMES = {106: "RF trim", 107: "RF trim", 108: "RF trim", 187: "RF calibration (64 B + CRC)", 113: "BT address?",
+               109: "BT", 102: "BTIF"};
+const $ = (id) => document.getElementById(id);
+let dump = null;
+
+function log(s) { $("log").textContent += s + "\n"; }
+function crc16(data) {
+  let c = 0;
+  for (const b of data) { c ^= b << 8; for (let i = 0; i < 8; i++) c = (c & 0x8000) ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF; }
+  return c;
+}
+function walk(area) {                                       /* -> [{off, id, data}] or null without the magic */
+  for (let i = 0; i < 4; i++) if (area[i] !== MAGIC[i]) return null;
+  const out = [];
+  let off = 4;
+  while (off + 4 <= area.length) {
+    const h = area.subarray(off, off + 4), id = h[1] | (h[2] & 0x0F) << 8, n = h[2] >> 4 | h[3] << 4;
+    if (!n || off + 4 + n > area.length) break;
+    const d = area.subarray(off + 4, off + 4 + n);
+    if ((crc16(d) & 0xFF) !== h[0]) break;
+    out.push({off, id, data: d});
+    off += 4 + n;
+  }
+  return out;
+}
+
+async function readAll(port) {
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  const writer = port.writable.getWriter(), reader = port.readable.getReader();
+  const buf = new Uint8Array(SIZE), got = new Uint8Array(SIZE / 16);
+  let text = "";
+  const pump = (async () => {
+    for (;;) {
+      const {value, done} = await reader.read();
+      if (done) break;
+      text += dec.decode(value, {stream: true});
+      let nl;
+      while ((nl = text.indexOf("\n")) >= 0) {
+        const line = text.slice(0, nl).trim(); text = text.slice(nl + 1);
+        const m = /^([0-9A-F]{6}):((?: [0-9A-F]{2})+)$/.exec(line);
+        if (!m) { if (line) log("< " + line); continue; }
+        const a = parseInt(m[1], 16), bytes = m[2].trim().split(" ").map((x) => parseInt(x, 16));
+        if (a < BASE || a + bytes.length > BASE + SIZE) continue;
+        buf.set(bytes, a - BASE);
+        got[(a - BASE) >> 4] = 1;
+      }
+    }
+  })();
+  await writer.write(enc.encode("\r\n"));
+  for (let k = 0; k < SIZE / CHUNK; k++) {
+    const a = BASE + k * CHUNK, rows = CHUNK / 16;
+    log("> flr 0x" + a.toString(16) + " " + CHUNK);
+    await writer.write(enc.encode(`flr 0x${a.toString(16)} ${CHUNK}\r\n`));
+    const t0 = performance.now();
+    while (got.subarray((a - BASE) >> 4, ((a - BASE) >> 4) + rows).some((x) => !x)) {
+      if (performance.now() - t0 > 3000) throw new Error("sin respuesta en 0x" + a.toString(16) + " (¿USB en CONSOLE?)");
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    $("prog").value = k + 1;
+  }
+  reader.cancel(); await pump.catch(() => {});
+  writer.releaseLock();
+  return buf;
+}
+
+function report(buf) {
+  const rows = [];
+  let vm = null;
+  for (const base of [0x0E8000, 0x0E7000]) {                /* stock V15's VM (measured), then the candidate */
+    const recs = walk(buf.subarray(base - BASE, base - BASE + 0x1000));
+    if (recs && recs.length) { vm = {base, recs}; break; }
+  }
+  const erased = (o, n) => buf.subarray(o, o + n).every((x) => x === 0xFF);
+  $("result").hidden = false;
+  if (!vm) {
+    $("verdict").innerHTML = '<span class="bad">No hay calibración guardada · No stored calibration</span>';
+    $("detail").innerHTML = (erased(0x1000, 0x1000) ? "0xE8000 está borrado (FF). " : "0xE8000 no tiene el formato VM. ") +
+      "La radio se puede calibrar sola al arrancar (como Melodee); no es un problema para el plan. " +
+      "The radio can calibrate itself at start-up; not a blocker.";
+    return;
+  }
+  const last = {};
+  for (const r of vm.recs) last[r.id] = r;
+  const rfOk = Object.keys(RF).every((id) => last[id] && last[id].data.length === RF[id]) &&
+               crc16(last[187].data.subarray(0, 64)) === (last[187].data[64] | last[187].data[65] << 8);
+  $("verdict").innerHTML = rfOk ? '<span class="ok">Calibración presente y válida · Calibration present and valid</span>'
+                                : '<span class="bad">VM presente pero la calibración está incompleta · VM present, calibration incomplete</span>';
+  $("detail").textContent = `VM en 0x${vm.base.toString(16).toUpperCase()}, ${vm.recs.length} registros.`;
+  let html = "<tr><th>id</th><th>bytes</th><th>qué</th><th>datos</th></tr>";
+  for (const id of Object.keys(last).map(Number).sort((a, b) => a - b)) {
+    const d = last[id].data;
+    html += `<tr><td>${id}</td><td>${d.length}</td><td>${NAMES[id] || ""}</td><td class="dim">${
+      Array.from(d.subarray(0, 12), (x) => x.toString(16).padStart(2, "0")).join(" ")}${d.length > 12 ? " …" : ""}</td></tr>`;
+  }
+  $("recs").innerHTML = html;
+}
+
+$("go").onclick = async () => {
+  if (!("serial" in navigator)) { $("status").textContent = "Este navegador no tiene Web Serial: usá Chrome o Edge en una computadora."; return; }
+  $("go").disabled = true; $("prog").hidden = false; $("prog").value = 0; $("log").textContent = "";
+  let port;
+  try {
+    port = await navigator.serial.requestPort();
+    await port.open({baudRate: 115200});
+    await port.setSignals({dataTerminalReady: true});   /* (the console answers only with DTR up) */
+    await new Promise((r) => setTimeout(r, 300));
+    $("status").textContent = "Leyendo 0xE7000–0xE9FFF…";
+    dump = await readAll(port);
+    $("status").textContent = "Listo: 12 KB leídos, nada escrito. Done: 12 KB read, nothing written.";
+    $("save").disabled = false;
+    report(dump);
+  } catch (e) {
+    $("status").innerHTML = '<span class="bad">' + e.message + "</span>";
+    log("! " + e.message);
+  } finally {
+    try { await port?.close(); } catch (e) { /* (already closed) */ }
+    $("go").disabled = false;
+  }
+};
+async function readMidi() {                             /* (V10.10) editor command VM_READ (80): 256 B as nibbles */
+  const acc = await navigator.requestMIDIAccess({sysex: true});
+  const pick = (m) => [...m.values()].find((p) => /FM-1|JIANT|FM1/i.test(p.name)) || [...m.values()][0];
+  const out = pick(acc.outputs), inp = pick(acc.inputs);
+  if (!out || !inp) throw new Error("no se encontró el FM-1 por MIDI (¿conectado por USB?)");
+  log("MIDI: " + inp.name + " / " + out.name);
+  const buf = new Uint8Array(SIZE);
+  let want = -1, done = null;
+  inp.onmidimessage = (e) => {
+    const d = e.data;
+    if (d[0] !== 0xF0 || d[1] !== 0x7D || d[2] !== 0x46 || d[3] !== 0x4C || d[4] !== 80) return;
+    if (d[5] === 127) { done && done(new Error("el FM-1 rechazó la lectura")); return; }
+    if (d[5] !== want || d.length < 6 + 512 + 1) return;
+    for (let i = 0; i < 256; i++) buf[want * 256 + i] = d[6 + 2 * i] << 4 | d[7 + 2 * i];
+    done && done(null);
+  };
+  for (let k = 0; k < SIZE / CHUNK; k++) {
+    want = k;
+    await new Promise((res, rej) => {
+      const t = setTimeout(() => rej(new Error("sin respuesta: el FM-1 necesita JIANT V10.10 o posterior")), 2500);
+      done = (err) => { clearTimeout(t); err ? rej(err) : res(); };
+      out.send([0xF0, 0x7D, 0x46, 0x4C, 80, k, 0xF7]);
+    });
+    $("prog").value = k + 1;
+  }
+  inp.onmidimessage = null;
+  return buf;
+}
+$("gomidi").onclick = async () => {
+  if (!navigator.requestMIDIAccess) { $("status").textContent = "Este navegador no tiene Web MIDI: usá Chrome o Edge."; return; }
+  $("gomidi").disabled = true; $("prog").hidden = false; $("prog").value = 0; $("log").textContent = "";
+  try {
+    $("status").textContent = "Leyendo 0xE7000–0xE9FFF por MIDI…";
+    dump = await readMidi();
+    $("status").textContent = "Listo: 12 KB leídos, nada escrito. Done: 12 KB read, nothing written.";
+    $("save").disabled = false;
+    report(dump);
+  } catch (e) {
+    $("status").innerHTML = '<span class="bad">' + e.message + "</span>";
+    log("! " + e.message);
+  } finally {
+    $("gomidi").disabled = false;
+  }
+};
+$("save").onclick = () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([dump], {type: "application/octet-stream"}));
+  a.download = "fm1-0E7000-0E9FFF.bin";
+  a.click();
+};
+</script>
+</body>
+</html>

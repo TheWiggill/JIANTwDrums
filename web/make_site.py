@@ -35,7 +35,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 BLOCKS, BLK, KEEP = 20, 0x30, 0x2F
-KEEP_OLD = 8                                    # (0.9.9-beta4) the milestones in web/CLASSIC
+KEEP_OLD = 12                                    # (0.9.9-beta4) the milestones in web/CLASSIC
 SAFE = re.compile(r"felucca-[A-Za-z0-9.-]+\.fwsc")
 
 
@@ -179,6 +179,9 @@ def main(pkg, version, out, prev=None):
     for f in ("fukiai.ttf", "FUKIAI-LICENSE.txt", "fm1backup.js"):
         if (HERE / f).exists():
             shutil.copy(HERE / f, ed / f)
+    bt = out / "webapp" / "btcheck"                 # (V10.9) the radio calibration check, read-only (btcheck.html)
+    bt.mkdir(parents=True, exist_ok=True)
+    shutil.copy(HERE / "btcheck.html", bt / "index.html")
     shutil.copy(HERE / "404.html", out / "404.html")
     (out / "index.html").write_text(
         '<!doctype html><meta charset="utf-8"><title>Felucca</title>'

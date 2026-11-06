@@ -71,12 +71,14 @@ data USB cable straight into the computer, and keep it connected until the page 
   MOTION, HARMONY, OCTAVE and SLIDE (melodic). OCT+ a new variation, OCT− the one before; GLO + G4 UNDO.
 - **REC + A3** undo / redo, **REC + B3** quantize on/off, **REC + knob 2** REC Q; REC and PLAY independent.
 - **SEQ + E5 / F5** copy / paste a whole sequence.
-- GEN (HOME + SELECT): the song generator by genre; GLO › LIVE: the six sequences as a live board.
+- GEN (HOME + SELECT): the song generator by genre (V10.8: a part set OFF stays off, the GENRE is kept between
+  visits); GLO › LIVE: the six sequences as a live board.
+- **SEQ › STEP KNOB 4 VEL** (V10.8): the step's velocity 1–127, then ACC, SLD, A+S.
 
 **Connection**
 - USB name **FM-1**, so the apps made for the FM-1 find it; USB STEMS (8 channels: T1–T6 + FX) for recording in a DAW.
 
-The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.7).
+The manual ([EN](docs/MANUAL.md) · [ES](docs/MANUAL.es.md)) and the cheat sheets below describe V10 (V10.61).
 
 ## Reporting a crash
 
@@ -363,8 +365,9 @@ An 8-sound kit (BD SD CP CH OH TM RS CB) generated in real time, Microtonic styl
   quarter of its range; DRUM-X rolls the A and B sides of each sound around the factory kit. **SEQ / LFO / FX +
   SELECT** dice the sequence, the LFO, the effects, each shown **BEFORE** and **NOW** to keep or cancel; **GLO +
   SELECT** is the tempo. **HOME + SELECT** opens
-  **GEN**, the song generator (since 0.6.91; HOME's last three pages since 0.9.2): it opens on **EXPLORE** (0.8.6: no
-  genre, every rule broken: odd metres, exotic modes, any engine on any role), then RANDOM or a genre among 43 (house,
+  **GEN**, the song generator (since 0.6.91; HOME's last three pages since 0.9.2): it starts on **EXPLORE** (0.8.6: no
+  genre, every rule broken: odd metres, exotic modes, any engine on any role; at power-on and NEW PROJECT, V10.8:
+  after that it keeps the genre you picked), then RANDOM or a genre among 43 (house,
   techno, dub, UK garage, funk, post punk, jazz, ambient …), a seed, an energy, a form (a loop, parts, a club song); how much drums,
   bass, chords, arp and lead; complexity, swing, how human. **OCT+** writes the piece from them (OCT+ again: a new
   seed; a knob turned and OCT+: the same piece with that one thing changed), **OCT−** is done. Every piece has one
@@ -409,11 +412,379 @@ With FX held the keys become effects that act while hel…8050 tokens truncated�
   KNOB 3 ROTATE. Pick a lane (BD SD CP CH OH TM RS CB) to change that sound alone. MODES: ACCENT, GHOST, RATCHET, VARY.
 - **Melodic**: KNOB 1 HITS (exactly that many notes), STEPS, ROTATE, KNOB 4 VARY; the notes stay in the SCL key, or in
   the key the other tracks play (else a new one). MODES: MOTION, HARMONY, OCTAVE, SLIDE.
+- **VARY** (V10.16): above 0 the pattern is four turns of the cycle, A A' A'' B, each varied anew (HITS exact in
+  each); a melody answers its own motif.
+- **SEQ › MUTATE** (V10.16, the page after MODES): EVERY (OFF, 1–16 bars), AMOUNT, MODE (ORBIT round the anchor,
+  DRIFT walking on, PULSE mutation and anchor by turns), WHAT (GROOVE, RHYTHM, FEEL, ALL). It mutates on the bar while
+  playing; OCT+ mutates now, OCT− returns to the anchor (what you dialled).
 - **OCT+** a new variation, **OCT−** the one before; **GLO + G4** (or REC held alone and let go) undoes.
 - In one minute: [the manual](docs/MANUAL.md#euclid-and-modes-v106) ·
   [el manual](docs/MANUAL.es.md#euclid-y-modes-v106).
 
+### Bluetooth
+
+- **MIDI by Bluetooth** (V10.13): MENU › SYSTEM › BT ON, connect from an app (**JIANT FM-1**): notes, CC, clock in;
+  MIDI OUT to the app. **PROX** (V10.14–V10.20): how close the **phone** is, as a modulation source (BT row › OCT+:
+  phone away OCT− FAR, phone on the FM-1 OCT+ NEAR; then SRC PROX on a MOD slot). See the manual, § 14.
+
 ## Changelog
+
+### V10.61 (beta)
+- **PROX thresholds** (MENU › SYSTEM › BLUETOOTH, OCT+ for the PROX page): KNOB 1 **MIN** (under it PROX is 0: the
+  phone lets go without taking it far away), KNOB 2 **MAX** (over it PROX is full), KNOB 3 **SPD** (the response, 1
+  as before .. 5 quickest). Over the FAR / NEAR calibration, saved with it.
+
+### V10.60 — public (2026-11-03)
+- Stable installer: everything from V10.47 to V10.60: the INPUT engine (USB audio into a track, IN 1 / IN 2 / 1+2 /
+  STEREO, GATE, KEYS, RING) and MOD SRC FOLLOW; USB HOST audio interfaces at 44.1 and 48 kHz (an experiment); USB
+  IN+OUT without feedback; STEREO IMAGE per voice; DLY R TIME; the roll follows the playhead; GEN's sounds fixed; the
+  master EQ no longer resets; menu and AIR fixes; FX > RPT at slow tempos; more free memory.
+
+### V10.60 (beta)
+- **More room in the firmware** (~4.3 KB free, was 0.8 KB): the conversion of old DIGITAL sounds and the reading of
+  JIANT 0.1-0.5 projects moved into the Bluetooth segment. Nothing changes in use.
+
+### V10.59 (beta)
+- **FX › RPT at slow tempos**: 1/8 works from 41 BPM (was 81) and 1/16 from 21, recorded at half the quality
+  (11 kHz, a lo-fi repeat). Faster repeats sound as before.
+
+### V10.58 (beta)
+- **The master EQ (and TAPE) no longer go back to flat on their own** (a user's report since V10.44): every read of a
+  stored project or section, as some GLO pages do, set the EQ playing to the stored one. They change only when a
+  project is loaded now.
+- **FX › EQ with MENU › DISPLAY › SCOPE ON**: the master's scope live behind the EQ curve (OFF: the curve alone).
+- **MENU in BOTTOM and HUD**: the four cards show at the foot (they were hidden under the panel, a blank band above).
+- **AIR's HOME**: the beings swim under the cards (they crossed the tabs and the values).
+
+### V10.57 (beta)
+- **USB audio interfaces at 48 kHz on HOST** (OP-Z and the many interfaces without 44.1 kHz): set to 48 kHz and
+  converted as they are read. The refusal now reads "NOT USB MIDI OR AUDIO 16BIT 44.1-48K".
+
+### V10.56 (beta)
+- **USB IN+OUT without feedback**: the computer's or the phone's audio no longer plays through the last track by
+  itself (recording into an app that monitors its input, such as Koala, looped into a digital feedback). The input is
+  heard on a track with the INPUT engine; STEMS+IN keeps its own stem as before.
+
+### V10.55 (beta)
+- **GEN's sounds fixed**: since V10.42 GEN put the wrong factory sounds on some roles (a sub bass on the bells, leads
+  on the electric pianos and plucks, a pedal bass on the organs). Each role takes the right kind of sound again.
+- The INPUT engine's meters keep their middle column drawn with no signal coming in.
+
+### V10.54 (beta)
+- **INPUT engine**: the USB audio input on a track of its own (a USB audio interface on HOST behind a powered hub, or the
+  computer's audio with USB IN+OUT). EDIT › INPUT: **SOURCE** IN 1, IN 2, 1+2 (summed) or STEREO (the image kept), so
+  two tracks can take IN 1 and IN 2 each; **GAIN**, **GATE**, **PLAY** THRU (always) or KEYS (only while a note plays,
+  at its envelope: steps gate the input); EDIT › SHAPE: **WIDTH**, **RING** (KEYS: a sine at the note), **BITS**, **RATE**.
+  The track's FILTER, DIST, LEVEL, PAN and sends work as on any part; the page shows both inputs' meters. While a track
+  is INPUT, the input no longer also comes in through the last track. Presets: IN 1, IN 2, IN 1+2, STEREO IN, MIC GATE,
+  SPACE IN, TRANCE GATE, RING IN, CRUSH IN.
+- **MOD SRC FOLLOW**: the input's envelope follower as a modulation source, on any track and destination (an input
+  opening a filter, ducking a pad, driving a send).
+
+### V10.53 (beta)
+- **USB audio interface input** (experimental, a user's ask): with MENU › SYSTEM › USB › HOST, a class compliant USB
+  audio interface on a **powered hub** (the FM-1 does not power the port) is recognised besides MIDI keyboards: its
+  input (16-bit, mono or stereo, 44.1 kHz among its rates — Behringer UM2 / UCA and the like) plays into the FM-1 through
+  the last track, like USB IN+OUT's computer audio (its LEVEL, PAN and effect sends). Not yet tried on hardware;
+  interfaces that need USB high speed or only do 24-bit / 48 kHz are not supported.
+
+### V10.52 (beta)
+- **IMAGE you can see**: a synth's EDIT › STEREO page draws the stereo field from L to R. Each voice sounding is a
+  blob at its place, its size following its level, its note above it; silent voices are a small tick where they
+  would sit; a bar shows how wide IMAGE opens.
+
+### V10.51 (beta)
+- **Fix**: the roll following the playhead (V10.47) did nothing on the FM-1: the panel was never redrawn while the
+  playhead was outside the 16 steps shown. Now it follows.
+
+### V10.50 (beta)
+- **Fix**: on VOICE, V10.49's STEREO page showed and moved LYRIC instead of IMAGE (they shared a slot). A synth's
+  IMAGE is now its own parameter on its own page (old projects: 0 %).
+- **EDIT order**: the sound's pages first (FILTER, MORPH, RETRIG, ROTOR, WORDS, STEREO), then FOCUS, then **VOICE and
+  VOICE 2 last**, in a tab of their own (FM6: FILTER, STEREO, the operators, then VOICE).
+
+### V10.49 (beta)
+- **Delay R TIME** (users' ask): FX › DLY 3, KNOB 4. The right echo gets its own time, as a ratio of TIME: =L (as
+  before), x1/2, x2/3, x3/4, x4/3, x3/2, x2. TIME 1/8 with R TIME x3/2 puts the right echo at 3/16; it stays in time
+  when TIME changes or is modulated. Not with PING-PONG or the grains. Saved with the project.
+- **IMAGE on synths** (users' ask): EDIT › STEREO now also shows on synth tracks. In POLY, IMAGE spreads the voices
+  across the stereo field (each voice its own place, like DRUM-X's sounds); the page shows where the eight voices sit
+  and lights the ones sounding. DIST narrows it, as on DRUM-X.
+
+### V10.48 (beta)
+- **Room for what comes next**: the LOFI, ANIMAL and STRING animations moved to the Bluetooth part of the flash, freeing
+  ~6 KB in the main firmware (it had ~100 bytes left). Nothing changes on screen.
+
+### V10.47 (beta)
+- **The roll follows the playhead** (a user's ask): with a sequence longer than 16 steps, while it plays and nothing
+  was touched for 3 seconds, SEQ › STEP (the piano roll and the drum grid) shows the 16 steps playing. Touching a key
+  or a knob holds the view where it is for 3 seconds, so what you see is what the keys edit.
+
+### V10.46 — public (2026-11-02)
+- Stable installer: everything from V10.36 to V10.46: the SAFE START (a start that hangs in the power setup is retried
+  without it), LFO DRIFT and breathing pads, in-tune random intervals, ANALOG SAW3 / PLS3 with an interval per
+  oscillator, GLO pages reordered with BPM on MIXER, USB HOST (an experiment), presets less alike with more basses and
+  leads, pages that show what they do (LEVELS, MASTER, EQ, PUNCH, SYSTEM 2, MORPH), the LIVE DJ filter fix.
+
+### V10.46 (beta)
+- **Safe start**: if a start hangs between the power-supply setup (added in V10.11) and the UI, the watchdog resets it
+  and the next start skips that setup (as JIANT did up to V10.10), showing SAFE START on screen, until the FM-1 is
+  switched off. Prompted by reports of FM-1s that stayed dark after installing (cause not yet known).
+
+### V10.45 (beta)
+- **Fix**: GLO › LIVE › MANO KNOB 4 is the DJ FILTER again (since V10.37 it changed the tempo; a user's report).
+- **MORPH draws the wave**: on ANALOG's PWM, SYNC, RING, SAW3 and PLS3 the MORPH page shows the wave itself as MORPH
+  bends it (it was a ramp).
+
+### V10.44 (beta)
+- **More pages that show what they do**: FX › MASTER › EQ draws the four bands' curve (LOW / HIGH shelves, the two
+  mids as bells, a dot per band); GLO › SYSTEM 2 draws USB, TRS and BT as boxes with an IN / OUT light that flashes
+  as MIDI passes, and PROX's bar when Bluetooth is linked or in AIR. These pictures (and LEVELS') live in the
+  Bluetooth segment, the app's flash being full.
+
+### V10.43 (beta)
+- **Pages that show what they do**: EDIT › LEVELS / LEVELS 2 (DRUM-X) draw a column per sound, its level the height,
+  lit as the sound plays, the page's four framed. FX › MASTER draws CLIP's curve (in → out, the level now a dot),
+  PUNCH's push as a bar and the duck's gain moving over its curve. FX › PUNCH shows the lane 16 steps a row, every
+  step a box, each recorded punch in its colour and the playhead walking it (an empty lane used to draw nothing).
+
+### V10.42 (beta)
+- **Factory presets less alike, the basics there**: FM6's seven near copies (ICE BELL, DX KEYS, FM PLUCK, SOFT BELL,
+  FM STRINGS, WOOD: the first eight patches bent a little) are now other instruments: **FM LEAD, SQR LEAD, SAW LEAD,
+  SLAP BASS, SUB BASS, BELL PAD** (HARD BASS stays). WHEEL gets **PEDAL BASS** and **DRIVE LEAD** where DUB ORGAN and
+  SOFT KEYS were; LOFI gets a third bass, **PULSE BASS**. Program-change numbers stay where they were (a project keeps
+  its sounds: they are stored in it, not looked up by name).
+
+### V10.41 (beta)
+- **USB HOST** (experimental, a user's ask): MENU › SYSTEM › USB › HOST makes the FM-1's USB port the host of a class
+  compliant **USB-MIDI keyboard or controller**, plugged straight in (or behind a hub), no computer needed. Notes, CC,
+  program change, bend, clock and start / stop come in as USB-MIDI does. The FM-1 does not power the port: use a
+  keyboard with its own power or a powered hub. Never saved (the FM-1 always powers on as a USB device). Input only.
+  From Melodee (Kerem Kilic; the USB host enumeration by recursivefieldinstruments).
+
+### V10.40 (beta)
+- **Web editor follows the knobs that change with the mode**: with ANALOG on SAW3 / PLS3 it shows **INT 3** (−24…24
+  semitones, it used to show NOISE 0…127 and could not send a negative interval), and STRING FDBK's or NOISE LFSR's
+  knobs as the panel names them; changing WAVE / EXCITE from the editor resets the knobs that change meaning, as on the
+  FM-1.
+- **HOME's screen repairs itself faster**: the screen only resends what changed, and very rarely a small 8 × 4 pixel
+  block could stay old for up to ~1.5 minutes on HOME. Now any such block is redrawn within ~10 seconds.
+
+### V10.39 (beta)
+- **ANALOG SAW3 / PLS3: each oscillator its own interval**. In the three-oscillator WAVEs the NOISE knob (EDIT 1, KNOB 4)
+  becomes **INT 3**, oscillator 3's interval (±24 semitones); INT stays oscillator 2's. No noise in those two WAVEs (the
+  factory SAW3 sounds had none: they sound the same). Changing WAVE into or out of them sets that knob to 0.
+
+### V10.38 (beta)
+- **Random intervals stay in tune**: GEN, EXPLORE and the sound dice (EDIT + SELECT) used to give ANALOG's **INT**
+  (oscillator 2's interval) any value, so most generated songs had a dissonant oscillator. Now an interval chosen by
+  chance is **0, a fourth, a fifth or an octave** (5, 7, 12, up or down; also VOICE's SHIFT), and the random macros
+  never aim at it. Turning INT by hand still reaches any value.
+
+### V10.37 (beta)
+- **GLO › MIXER KNOB 4 is BPM** (the tempo at hand; the DJ FILTER stays on LIVE › MANO's KNOB 4), and GLO's pages
+  go **LIVE · MIX · COMPS · GLOBAL · SYSTEM**: the performing ones first, the settings last.
+- **Bluetooth named where MIDI is**: GLOBAL › **CLOCK** reads **USB +BT** (that source follows a clock sent over
+  Bluetooth too), and GLO › **SYSTEM 2** shows Bluetooth's state on KNOB 3 (OFF, ADV, CONN, AIR) next to USB and TRS IN.
+
+### V10.36 (beta)
+- **LFO WAVE DRIFT** (a user's ask, for ambient): a smooth random wander, no steps; with RATE 4BAR … 16BAR drones and
+  pads drift and breathe. The factory pads now **breathe by themselves** (DRIFT on the filter, some a little on pitch):
+  ANALOG SOFT PAD, STRINGS, JUNO PAD, DARK PAD; FM6 PAD, FM STRINGS; PHASE GLASS PAD, VOX PAD; NOISE HISS PAD; LOFI CHIP PAD.
+
+### V10.35 — public (2026-11-02)
+- Stable installer: everything from V10.27 to V10.35: testers' fixes, EUCLID reversible on your own sequence (VARY in
+  two halves), SCENE saved with the project, Bluetooth MIDI pairing (Just Works), a steady MIDI clock in and out, the
+  DRUM-X kit HIP HOP and the pattern BOOM BAP, BLUETOOTH AIR (an experiment).
+
+### V10.35 (beta)
+- **BLUETOOTH AIR** (an experiment): MENU › SYSTEM › BT gets a third value. The radio only listens to the Bluetooth
+  devices around (nothing sent, no MIDI) and PROX follows how strongly they are heard: a hand or a body near the
+  antenna shadows them, no phone in your hand. Calibrate on the PROX page (OCT+ on the BT row) as with a phone.
+
+### V10.34 (beta)
+- **DRUM-X kit HIP HOP** (a user's ask): boom bap: a round kick with a knock, a fat cracking snare, a tight clap,
+  dusty hats, a woody rim, a shaker. It suggests the new pattern **BOOM BAP** (SEQ › PATTERNS 14).
+
+### V10.33 (beta)
+- **MIDI clock steady**. Out (MIDI OUT CLOCK / ALL): each of the 24 pulses a beat leaves at its own time (USB and
+  Bluetooth), not in bursts: a follower reads the tempo you set (104 read 105.1 and wandered before). In (CLK USB /
+  TRS / Bluetooth): the tempo measured over two beats and held as a whole BPM; no more 103 / 105 / 104 jumping.
+
+### V10.32 (beta)
+- **Bluetooth MIDI pairs** with no PIN (Just Works) when the computer or phone asks for it: Windows and the Macs /
+  Androids that refused before now connect. The pairing survives a power-off (nothing to pair again).
+
+### V10.31 (beta)
+- **EUCLID is reversible on your sequence**: it keeps what you had recorded (whole: notes, chords, velocities,
+  components, micro timing) and puts it back when its settings are at rest again (VARY and MODES 0, your own rhythm)
+  or **HITS / DENSITY go to 0** (YOUR SEQUENCE BACK). The whole copy is the last track EUCLID took; for another track
+  taken earlier, its rhythm and notes come back.
+- **SCL › SCENE is saved with the project** (ON and the six roles); an older project loads with SCENE OFF.
+
+### V10.30 (beta)
+- Optimisation by hand: repeated drawing code in one place; every screen exactly as before (checked on 9250
+  renders). About 0.6 KB more flash free (4.4 KB in all).
+
+### V10.29 (beta)
+- Optimisation: more of the code built for size (EUCLID, SCENE, LIVE, MIDI LEARN, the song player, the engines'
+  menus and presets); about 1.8 KB more flash free for what comes next. The sound is unchanged.
+
+### V10.28 (beta)
+- **EUCLID starts at 0** (no HITS, DENSITY 0, MODES and VARY 0): built from nothing.
+- **A sequence the track already has** (recorded, edited, a generator song) is **transformed with its own notes**:
+  VARY moves its hits and keeps its held notes; HITS / STEPS / ROTATE switch to the euclidean rhythm, still with your
+  notes (**YOUR SEQ** / **YOUR NOTES**). DRUM-X: only the lanes it had.
+- **VARY in two halves**: 0–50 varies the one cycle (no bars added, every value its own variation); 51–100 adds the
+  four parts A A' A'' B, further apart the higher.
+
+### V10.27 (beta)
+- Testers' fixes: the **CHORD** page on screen no longer changes the next key's chord (with VOICING LEAD a key could
+  play another inversion after the page was shown).
+- **MENU** (HOME held): KNOB 1..4 each edit their own card's row (all four edited the selected row).
+- **TAPE WOW** wobbles like a warped record: a random, smoothed pitch drift, up to ~±45 cents at 100 (it was ~4 cents).
+- Slower: **LFO RATE** 8BAR and 16BAR (between the slowest Hz and 4BAR); **PLAYHEADS RATE** 1/8 and 1/16; **STRUM**
+  as before up to 64, then up to ~1 s.
+
+### V10.26 — public (2026-11-02)
+- Stable installer: everything from V10.21 to V10.26, tested on hardware: SCENE, the redesigned EUCLID / MUTATE /
+  PRESETS / TOOLS, NUDGE's micro timing, ENV 2, LP24, PLS3, STRING FDBK.
+
+### V10.26 (beta)
+- **SCENE** starts OFF with every track KEEP. **OCT+** dices the roles (each role one track at most: never two tracks
+  doing the same, never two playing chords), **OCT−** all KEEP; turned ON with none set it dices; a role given by hand
+  takes it from the track that had it.
+
+### V10.25 (beta)
+- **SEQ › STRETCH › NUDGE** in two modes: **OCT−** (blue) moves the whole sequence a step, as before; **OCT+** (red)
+  moves the **cursor step in micro timing**, 1/64 of a step a detent (a tester's ask: per-step micro timing back on a
+  knob). PRESETS picks the step.
+
+### V10.24 (beta)
+- **SCL › SCENE**, the multitimbral mode: give each track a role (KEEP, CHORD, ARP, BASS, LEAD); with SCENE ON one key
+  plays them all at once from that note and the key (the kit keeps its sequence). REC records every role's track into
+  its own steps. See the manual, "SCENE".
+- **SEQ › EUCLID** redrawn: each DRUM-X lane a concentric ring in its heat colour, the lane picked bright, VARY's turns
+  (A A′ A″ B) under the ring.
+- **SEQ › MUTATE** redrawn: the anchor's pattern above, the pattern playing below with the changed steps lit, an arc
+  filling to the next mutation; OCT+ MUTATE / OCT− ANCHOR on screen.
+- **SAVE › PRESETS**: two columns (the engines with their beings and counts, the presets); turning plays each sound,
+  **OCT+** keeps it, **OCT−** brings back the sound from before you browsed.
+- **SAVE › TOOLS**: KNOB 1 the scope (TRACK, SOUND, SONG, SYSTEM), KNOB 2 the action, a picture of what it clears;
+  **hold OCT+ a second** to do it (a bar fills; no dialog, UNDO as before).
+
+### V10.23 (beta)
+- **STRING FDBK** is heard: the loop took BLOOM's level twice (about −15 dB); now about four times louder.
+- **EXCITE into FDBK** sounds at once: EDIT 2's knobs become GAIN DIST SPEAKR BLOOM, and GAIN used to inherit
+  STRETCH's 0 (so FDBK sounded like PLUCK until GAIN went up). Each side now keeps its own four values; FDBK starts at
+  GAIN 50 %, BLOOM 31 %.
+
+### V10.22 (beta)
+- **ENV 2** (ENV › after ENV DEST): a second envelope per voice, ATK DEC SUS REL, routed like the LFO: **SRC ENV2** on
+  a MOD slot, to any DEST.
+- **LP24** filter type: a 24 dB/oct low-pass (two poles in series, RES on the second), on every engine.
+- **ANALOG WAVE PLS3**: three pulse oscillators (2 and 3 detuned each way), MORPH sets the pulse width.
+- Tester report "STRUM drops an octave": not reproduced; a test now covers OCT −1 with STRUM, every VOICING and QUANT.
+
+### V10.21 (beta)
+- **SEQ › EUCLID**: the lane rows at the right are named correctly (they were one off, so the lane picked looked like
+  another); the ring shows one cycle (the lane's, ALL's or the melody's) at the turn playing, its playhead going round,
+  also with lanes of different STEPS and VARY's turns.
+- **PROX page**: the instructions say the phone (FAR: phone away, NEAR: phone on the FM-1, top left).
+
+### V10.20 — public (2026-11-01)
+- Stable installer: everything from V10.10 to V10.20 (Bluetooth MIDI, PROX, EUCLID VARY turns, SEQ › MUTATE,
+  SAVE › SECTIONS ERASE), tested on hardware. PROX follows the **phone's** distance (its Bluetooth signal), not a hand.
+
+### V10.20 (beta)
+- **PROX smooth**: one fixed signal reading (the radio's gain and raw value together), the median of nine packets and
+  ~0.3 s of smoothing (V10.18's "the reading that moves most" picked a noisy byte: a random sample and hold). FAR and
+  NEAR closer than 4 levels are refused (FAR AND NEAR TOO CLOSE).
+
+### V10.19 (beta)
+- The PROX page redraws as soon as a reading arrives (it could stay on NOT CONNECTED while connected) and shows the
+  link as seen at the right of LEVEL: **L1 / L0** (the radio's link), the packets PROX read / the good packets received.
+
+### V10.18 (beta)
+- **PROX moves**: the FM-1 now reads all four signal-strength (RSSI) registers of each Bluetooth packet and uses the
+  one that changes with distance (V10.14 read one that, on the hardware, did not move). The PROX page shows the four
+  raw words and which one it uses; once FAR or NEAR is stored that choice stays.
+
+### V10.17 (beta)
+- **SAVE › SECTIONS: ERASE** (KNOB 2): pick a section with KNOB 1, KNOB 2 right, OCT+ asks **ERASE SECT B?**, OCT+
+  erases it: the section is EMPTY again (flash too). The music playing stays. Stopped only.
+
+### V10.16 (beta)
+- **SEQ › EUCLID's VARY varies much more**: with VARY above 0 the pattern is **four turns** of the cycle (STEPS 16:
+  64 steps, as many as fit), **A A' A'' B**: the first close to the grid, the last the most, with rolls at the end on
+  DRUM-X. Hits move one to three steps; HITS stays exact in every turn. A melody's later turns answer the first one's
+  motif (some notes kept, some new). VARY 0: one turn, as before.
+- **SEQ › MUTATE** (EUCLID · MODES · MUTATE): mutations of the EUCLID pattern on the bar, while playing, around the
+  **anchor** (what you dial). KNOB 1 **EVERY** OFF / 1 / 2 / 4 / 8 / 16 bars, KNOB 2 **AMOUNT**, KNOB 3 **MODE**
+  ORBIT (from the anchor) / DRIFT (from the last one) / PULSE (mutation and anchor by turns), KNOB 4 **WHAT** GROOVE
+  (a new variation) / RHYTHM (+ HITS or DENSITY, ROTATE) / FEEL (+ the MODES and VARY) / ALL. On MUTATE, OCT+ mutates
+  now, OCT− goes back to the anchor. A DRUM-X lane picked mutates alone. Not while a song plays; no UNDO points.
+
+### V10.15 (beta)
+- VOICE's English dictionary moved into the Bluetooth area of the flash (14 KB freed in the app for what comes next).
+  Without that area (a broken install) English words are read by the letter rules.
+
+### V10.14 (beta)
+- **PROX**, a modulation source from Bluetooth: how close the connected phone is (its signal strength, filtered).
+  MENU › SYSTEM › BLUETOOTH (ON, connected) › OCT+ opens the PROX page: a meter, OCT− stores FAR, OCT+ NEAR. Then
+  pick **PROX** as a MOD slot's SRC (any destination). It fades to 0 when the phone disconnects.
+
+### V10.13 (beta)
+- **Bluetooth MIDI in and out**: what a connected app sends plays the FM-1 as USB-MIDI does (notes, CC, program change,
+  bend, clock with CLK USB, MIDI LEARN and MAP); what MENU › MIDI OUT lets out also goes to the app. No SysEx (the
+  editor and updates stay on USB).
+- ABOUT's credits and licences moved into the Bluetooth area (flash for the app).
+
+### V10.12 (beta: the first radio test)
+- **MENU › SYSTEM › BLUETOOTH** (OFF by default): ON, with the music stopped, calibrates the radio by itself and
+  advertises **JIANT FM-1** as a Bluetooth MIDI device. The row shows ADV (advertising) or CONN (connected) and the
+  connections since power-on; NO SEG if the Bluetooth code did not install, FAILED if the start failed. No MIDI goes
+  through it yet: this beta tests the radio. If a start hangs, the next boot turns BLUETOOTH OFF by itself.
+- The Bluetooth stack (Optimist's, open source) lives in its own flash area at 0xEA000, written by the installer with
+  the rest of the package and checked before use.
+
+### V10.11
+- **Power supplies set up as the stock firmware does** (the DC-DC converter on; ported from Melodee, GPL-3.0): the
+  radio's prerequisite for Bluetooth. MENU › ABOUT shows **DC** after the CPU and rail line when it took. Nothing
+  else changes: the radio stays off.
+- 0xEA000–0xFBFFF (72 KB) reserved for the Bluetooth code.
+
+### V10.10
+- **The Bluetooth radio's calibration is kept on update.** The stock firmware keeps the radio's RF trims and
+  Bluetooth address at 0xE8000, with its update record at the end of that sector; JIANT's update loader erased the
+  whole sector to clear the record. It now keeps the sector and clears only the record's 256 bytes. (The first step
+  towards Bluetooth MIDI and a proximity sensor: see the BT check page, `webapp/btcheck/`.)
+- **BT check page** (read-only): over MIDI (Android Chrome too) or the serial console, it reads the 12 KB at
+  0xE7000–0xE9FFF and says whether the radio's calibration is there; the dump can be saved.
+
+### V10.9
+- **MENU › LARGE shows the animations** (testers: with LARGE on they were hidden): HOME's strip under the tall
+  cards shows the six tracks' creatures in a row (the scope only if none has one); an EDIT page's strip shows the
+  engine's creature, alive, instead of the page's title.
+
+### V10.8
+- **GEN: a part set OFF stays off**. BASS, CHORDS, ARP or LEAD set to OFF are never turned back on: before, with
+  fewer than two melodic parts on, BASS and CHORDS were forced on. That rule now only fills in parts left on **AUTO**.
+- **GEN keeps the GENRE** you picked between visits (it went back to EXPLORE every time GEN opened). Power-on and
+  NEW PROJECT still start on EXPLORE.
+- **SEQ › STEP (melodic): KNOB 4 is VEL** (was FLAG): 1–127 is the step's velocity (a step with none recorded shows
+  96, what it plays at); a turn stops at 127, and past it, one detent each: **ACC** (accent, plays at 127), **SLD**
+  (slide, keeps the velocity), **A+S**. Turning back down returns to VEL 127. The DRUM grid is unchanged (STEP LANE
+  HIT ACC).
+- **FX › DLY TIME: dotted divisions 1/4D, 1/8D, 1/16D**, placed by length among the others (… 1/2, 1/4D, 1/4, 1/8D,
+  1/8, 1/16D, 8T, 1/16 …). Saved projects keep their times.
+- **Less pitch wobble from the generators** (a tester: GEN sounded like "a passing train"): the random macro routes
+  (GEN, the dice, the power-on macros) never aim at PITCH; GEN's EXPLORE uses a pitched delay seldom (one piece in
+  ten, octaves only) and less glide, vibrato and detune; the FX dice's pitched delay is one in ten, octaves only (was
+  one in five, with fifths and fourths).
+- **"STOP TO EDIT" now reads "SONG PLAYS: STOP IT TO EDIT"**: shown when a song (SONG mode, SAVE + D5, or ARRANGE /
+  TIMELINE PLAY) or a quick chain is playing; editing steps, GEN and EUCLID wait until it stops (or SONG mode is
+  turned off with SAVE + D5, so PLAY plays the loop).
 
 ### V10.7
 - **SEQ › EUCLID on DRUM-X: LANE ALL**. KNOB 4 LANE has nine values, **ALL** (the default) then BD SD CP CH OH TM RS
