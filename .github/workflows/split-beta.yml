@@ -107,8 +107,9 @@ jobs:
               shutil.rmtree(pages/'preview'/sub)
               shutil.copytree(Path('build/new-preview')/sub,pages/'preview'/sub)
           fw=pages/'preview/firmware';versions=json.loads((fw/'versions.json').read_text())
-          assert len(versions)==len(prior)+1 and versions[0]['version']==m['version']
-          for name,h in old.items():assert digest(fw/name)==h,'previous beta package changed'
+          assert versions[0]['version']==m['version'] and len(versions)==min(len(prior)+1,make_site.KEEP_OLD+1)   # (the oldest beyond KEEP_OLD drops off)
+          for name,h in old.items():assert not (fw/name).exists() or digest(fw/name)==h,'previous beta package changed'
+          assert all((fw/v['file']).exists() for v in versions),'a listed package is missing'
           (fw/'SOURCE_COMMIT').write_text(m['source']+'\n')
           (fw/'SHA256SUMS').write_text(''.join(digest(p)+'  '+p.name+'\n' for p in sorted(fw.glob('felucca-*.fwsc'))))
           assert before==protected(),'a public, emulator or non-preview editor file changed'
