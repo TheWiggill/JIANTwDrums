@@ -137,6 +137,8 @@ typedef struct {
                                                 * of a slot, a section's name, a check, set the EQ and TAPE playing) */
     uint8_t scene[4];                          /* (V10.31) SCL > SCENE: ON, then the six roles a nibble each (seq.c
                                                 * scn_on scn_role): FUNC's 'S' 'C' block after 'D' 'A', none before */
+    uint8_t scpat[(NTRK + 1) / 2];                        /* (V10.6k) SCENE's BASS/LEAD PATTERN and DRUM STYLE (seq.c scn_pat), a
+                                                * nibble each: FUNC's 'S' 'P' block after 'K' 'S', none before (= 0) */
     uint8_t dx_tone;                           /* (0.6.36) the kit's TONE (drumx_voice.c: BP, FEEDBK), its byte 7 */
     uint8_t dx_hands;                          /* (0.7.9) the kit's HANDS (drumx_voice.c), byte 0's high nibble (0 before);
                                                 * (0.9.9-snd1) its high nibble here GLUE (eng_drum.c dx_glue): FUNC's 'D' 'G'
@@ -943,6 +945,7 @@ static uint32_t proj_packed_size(const project_t *q)
     for (t = 0; t < NTRK; t++)
         if (q->fit[t]) { n += 2u + NTRK; break; }
     for (i = 0; i < sizeof q->split; i++) if (q->split[i]) { n += 2u + sizeof q->split; break; }
+    for (i = 0; i < sizeof q->scpat; i++) if (q->scpat[i]) { n += 2u + sizeof q->scpat; break; }
     return n;
 }
 static int proj_split_ok(const uint8_t *s)
@@ -1116,6 +1119,8 @@ static int proj_pack(project_store_t *out, const project_t *q)
     }
     for (i = 0; i < sizeof q->split && !q->split[i]; i++) {}
     if (i < sizeof q->split) { b[pos++] = 'K'; b[pos++] = 'S'; memcpy(b + pos, q->split, sizeof q->split); pos += sizeof q->split; }
+    for (i = 0; i < sizeof q->scpat && !q->scpat[i]; i++) {}   /* (V10.6k) SCENE's patterns (the last) */
+    if (i < sizeof q->scpat) { b[pos++] = 'S'; b[pos++] = 'P'; memcpy(b + pos, q->scpat, sizeof q->scpat); pos += sizeof q->scpat; }
     memcpy(b + PROJC_PFX_OFF, q->pfx_lane, sizeof q->pfx_lane);
     b[PROJC_PFX_OFF + sizeof q->pfx_lane] = q->pfx_ltgt > 2u ? 0u : q->pfx_ltgt;
     for (i = 0; i < 4u; i++)
@@ -1429,7 +1434,11 @@ static int proj_unpack_c(project_t *q, const uint8_t *b)
         if (pos + 2u + sizeof q->split > room) return 0;
         memcpy(q->split, b + pos + 2u, sizeof q->split);
         if (!proj_split_ok(q->split)) return 0;
+        pos += 2u + sizeof q->split;
     }
+    memset(q->scpat, 0, sizeof q->scpat);
+    if (pos + 2u + sizeof q->scpat <= room && b[pos] == 'S' && b[pos + 1u] == 'P')   /* (V10.6k) */
+        memcpy(q->scpat, b + pos + 2u, sizeof q->scpat);
     proj_new_tracks(q, nt);                             /* (a FUNC of fewer tracks: the rest at power-on) */
     for (t = nt; t < NTRK; t++)
         memcpy(q->fm6[t], FM6_INIT, FM6_PACKED);
@@ -1724,6 +1733,8 @@ static void project_capture(project_t *p)
         memset(p->scene, 0, sizeof p->scene);
         p->scene[0] = scn_on & 1u;
         for (i = 0; i < NTRK; i++) p->scene[1u + i / 2u] |= (uint8_t)((scn_role[i] & 15u) << (4u * (i & 1u)));
+        memset(p->scpat, 0, sizeof p->scpat);
+        for (i = 0; i < NTRK; i++) p->scpat[i / 2u] |= (uint8_t)((scn_pat[i] & 7u) << (4u * (i & 1u)));
     }
     p->dx_tone = dx_tone;
     p->dx_hands = (uint8_t)(dx_hands | dx_glue << 4);   /* (0.7.9; snd1: GLUE) */
@@ -1948,6 +1959,7 @@ static int project_restore_runtime(const project_t *input)
         for (i = 0; i < NTRK; i++) {
             uint32_t r = (p->scene[1u + i / 2u] >> (4u * (i & 1u))) & 15u;
             scn_role[i] = (uint8_t)(r < SC_N ? r : SC_KEEP);
+            scn_pat[i] = (uint8_t)((p->scpat[i / 2u] >> (4u * (i & 1u))) & 7u);
         }
     }
     dx_tone = p->dx_tone;                               /* (0.6.36: its TONE) */
@@ -2073,7 +2085,7 @@ static __attribute__((noinline)) void system_init(void)   /* (snd8: out of its c
     memset(dx_mot, 0, sizeof dx_mot);
     dx_acoustic = 0;
     memset(split_cfg, 0, sizeof split_cfg);
-    scn_on = 0; memset(scn_role, 0, sizeof scn_role);   /* (V10.31) SCENE */
+    scn_on = 0; memset(scn_role, 0, sizeof scn_role); memset(scn_pat, 0, sizeof scn_pat);   /* (V10.31) SCENE */
     dx_tone = 0;
     dx_hands = 0;
     dx_glue = 0;
@@ -2348,6 +2360,7 @@ static uint32_t autosave_sig(void)
     h = as_mix(h, &dx_acoustic, 1);
     h = as_mix(h, &scn_on, 1);
     h = as_mix(h, scn_role, sizeof scn_role);           /* (V10.31) SCENE */
+    h = as_mix(h, scn_pat, sizeof scn_pat);
     return as_mix(h, proj_name, sizeof proj_name);
 }
 

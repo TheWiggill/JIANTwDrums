@@ -1274,7 +1274,14 @@ static int test_dximg(void)
         scn_on = 1; scn_role[2] = SC_BASS;
         ok &= proj_import(&proj_scratch, &st, sizeof st) && !project_restore_runtime(&proj_scratch);
         ok &= !scn_on && !scn_role[2];
-        bad += check("V10.31 SCENE kept with the project: ON and the six roles; a project without it: OFF, all KEEP", ok);
+        scn_pat[1] = 3; scn_pat[4] = 7; scn_pat[5] = 1;
+        project_capture(&proj_scratch);
+        ok &= proj_pack(&st, &proj_scratch);
+        memset(scn_pat, 0, sizeof scn_pat);
+        ok &= proj_import(&proj_scratch, &st, sizeof st) && !project_restore_runtime(&proj_scratch);
+        ok &= scn_pat[1] == 3u && scn_pat[4] == 7u && scn_pat[5] == 1u && !scn_pat[0] && !scn_pat[2];
+        memset(scn_pat, 0, sizeof scn_pat);
+        bad += check("V10.31 SCENE kept with the project: ON and the six roles; a project without it: OFF, all KEEP; (V10.6k) the PATTERNs/STYLEs too", ok);
         scn_on = 0; memset(scn_role, 0, sizeof scn_role);
         ui_power_on();
     }
