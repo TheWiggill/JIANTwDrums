@@ -307,13 +307,13 @@ static __attribute__((noinline)) int mod_begin(track_t *t)
 static __attribute__((noinline)) void macro_master(void)
 {
     int32_t off[MD_MASTER_END - MD_CLIP] = {0};
-    uint32_t i, k, any = 0;
+    uint32_t i, k, any = 0, sw1 = 0;
     mns_clk++;
     /* (SWARM) USB audio came in: the input is it (an interface plugged in takes over from the swarm at once) */
     if (uin_on)
         ain_mode = 1;
     else {
-        if (ain_any)                                    /* no input this block: the devices heard around */
+        if (ain_sw)                                     /* no input this block, a SWARM track: the surroundings */
             AIN_SWARM(CTL);
         ain_mode = uin_on ? 2u : 0u;
     }
@@ -325,8 +325,8 @@ static __attribute__((noinline)) void macro_master(void)
     track_follow_mask = 0;
     for (i = 0; i < trk_live; i++) {
         const track_t *t = &trk[i];
-        if (t->engine == ENGI_INPUT && !any)
-            ain_tr = (uint8_t)i;                        /* (SWARM: its scale) */
+        if (t->engine == ENGI_INPUT && t->p[P_E0] == AIN_SW && !sw1)
+            ain_tr = (uint8_t)i, sw1 = 1;               /* (SWARM: the first SWARM track's knobs and scale) */
         any |= t->engine == ENGI_INPUT;
         for (k = 0; k < NMSLOT; k++) {
             uint32_t s = (uint32_t)t->p[P_M1SRC + 3u * k], d = (uint32_t)t->p[P_M1DST + 3u * k];
@@ -346,6 +346,7 @@ static __attribute__((noinline)) void macro_master(void)
         }
     }
     ain_any = (uint8_t)any;
+    ain_sw = (uint8_t)sw1;
     clip_eff = (int16_t)clamp(song.g[G_CLIP] + off[0], 0, 100);
     pnch_eff = (int16_t)clamp(song.g[G_PUNCH] + off[1], 0, 100);
     for (k = 0; k < 8u; k++)

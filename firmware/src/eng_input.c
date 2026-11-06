@@ -16,9 +16,10 @@
  * The FOLLOW source of the matrix (mod.c MS_FOLLOW) is the input's envelope, whatever track takes it. */
 static int32_t uin_l[CTL], uin_r[CTL];                  /* (0.7.5) the input's block (usb.c uac_in_fill; was in fx.c) */
 static volatile uint8_t uin_on;
-enum { AIN_IN1, AIN_IN2, AIN_SUM, AIN_ST, AIN_N };
-static const char *const N_AIN_SRC[] = {"IN 1", "IN 2", "1+2", "STEREO"};
+enum { AIN_IN1, AIN_IN2, AIN_SUM, AIN_ST, AIN_SW, AIN_N };   /* (SWARM: the drone of the surroundings) */
+static const char *const N_AIN_SRC[] = {"IN 1", "IN 2", "1+2", "STEREO", "SWARM"};
 static const char *const N_AIN_PLAY[] = {"THRU", "KEYS"};
+static const int16_t SW_FULL[P_COUNT] = {[P_E4] = 127};   /* (SWARM's fill: WIDTH whole, DIST none) */
 static int16_t ain_gg[NTRK];                             /* GATE's gain now, Q15 */
 static uint8_t ain_upd[NTRK];                            /* this block's GATE not yet stepped (ain_block) */
 static uint8_t ain_any;                                  /* a track is INPUT (mod.c macro_master, once a block) */
@@ -33,6 +34,14 @@ static __attribute__((noinline)) void ain_fill(const track_t *t, int32_t *out, u
     uint32_t hold = (1u << (clamp(p[P_E7], 0, 127) * 5 / 127)) - 1u;   /* RATE: 1 .. 32 samples held */
     int32_t g0 = ain_gg[ti], g1 = g0, pk = 0, w = 0;
     g = g * g;                                           /* GAIN: Q12, 64 = 1.0, 127 = +12 dB */
+    if (src == AIN_SW) {                                 /* (SWARM, or USB come in on it: stereo, whole; its knobs are
+                                                          * the swarm's) */
+        src = AIN_ST;
+        g = 4096;
+        thr = sh = 0;
+        hold = 0;
+        p = SW_FULL;
+    }
     if (side && src == AIN_ST) {
         int32_t d = clamp(p[P_DIST], 0, 64);
         w = clamp(p[P_E4], 0, 127) * (d ? 256 - d * 3 : 256) >> 8;   /* (DIST shapes the sum only: narrower) */
@@ -73,40 +82,41 @@ static __attribute__((noinline)) void ain_fill(const track_t *t, int32_t *out, u
             out[i] &= ~((1 << sh) - 1);                  /* BITS */
 }
 
-/* (SWARM) the radio's surroundings as the input (the user's ask: the antenna and the clocks, their relations, a synth
- * that makes itself): with MENU > SYSTEM > BLUETOOTH AIR scanning and no USB input, every device heard around
- * (phones, watches, headphones, laptops, TVs: their advertisements, bt_seg.c BLE_HW_ADV_TAP) is a voice, eight at most.
- * Its address its note (held, in the first INPUT track's ROOT / SCALE); its payload's first 8 bytes its wave; its
- * RSSI (in the range seen) its level; each advertisement an accent, so its own clock (its advertising interval,
- * timed by the FM-1's crystal) its rhythm, and the devices' polyrhythm the swarm's; the ratio of its period to the
- * loudest device's a detune (-25 .. +25 cents: two devices beat at their clocks' relation); its interval's jitter a
- * vibrato; its channel its side (37 L, 38 both, 39 R). A device not heard fades (~6 s), its voice freed after 20 s:
- * a phone that comes in, a new note. Into uin_l / uin_r as an input block: SOURCE GAIN GATE KEYS RING BITS RATE and
- * FOLLOW (its envelope) as with USB. Only while a track is INPUT and no USB input filled the block (mod.c) */
+/* (SWARM) SOURCE SWARM: a drone that makes itself from the surroundings (the user's ask: the antenna and the clocks,
+ * their relations). With MENU > SYSTEM > BLUETOOTH AIR scanning, every device heard around (phones, watches,
+ * headphones, laptops, TVs: their advertisements, bt_seg.c BLE_HW_ADV_TAP) is a voice, eight at most; with none, the
+ * FM-1's own clocks (the audio interrupt's jitter against TIMER4) are one, so it always plays. A voice is a sine: its
+ * note its address's (in the track's ROOT / SCALE), its level its RSSI (the range seen), each advertisement a hit (its
+ * clock its rhythm: the swarm's polyrhythm), its period against the loudest's a detune (two devices beat at their
+ * clocks' relation), its jitter a vibrato. The knobs (input_desc): PLUCK (0 a sustained drone .. a pluck on each hit),
+ * FM (the device's own bytes as the modulator, an envelope on each hit), PLAY (KEYS: the keys transpose it and gate it
+ * at the note's envelope), IMAGE (0 each at its channel's side .. each hit thrown across the field), DRIFT (each hit
+ * bends the pitch, gliding back), OCTAVE (each hit of a device an octave up, over 1..4 octaves, round), SELF (the
+ * voices modulate each other: a voice coming in moves the others). Into uin_l / uin_r once a block (mod.c), the
+ * first SWARM track's knobs; a USB input (computer, phone, interface) takes over the moment it comes in */
 #define SW_N 8u
 #define SW_TPS 24000000u                                 /* TIMER4 ticks a second */
 static struct sw_dev {
-    uint32_t id, last, per, ph, inc;                     /* address hash (0 free); last packet; period (ticks); wave */
-    int32_t acc, amp, jit;                               /* accent; level now; jitter (Q8 of the period) */
+    uint32_t id, last, per, ph, pm, inc;                 /* address hash (0 free); last packet; period; phases; step */
+    int32_t acc, amp, jit, fme, pan, dr;                 /* hit; level; jitter (Q8); FM envelope; pan (Q15, L 0); drift */
     uint16_t lv;                                         /* last RSSI level (0..126) */
-    uint8_t hit, ch, note;
-    int8_t w[8];                                         /* the wave: 8 points */
+    uint8_t hit, ch, note, oct;
+    int8_t w[8];                                         /* its bytes: the FM modulator */
 } sw[SW_N];
-static int32_t sw_lmin = 127, sw_lmax;
-static uint32_t sw_tick;
-static uint8_t ain_tr;                                   /* the first INPUT track (mod.c macro_master) */
-static uint8_t ain_mode;                                 /* what the input is now: 0 none, 1 USB (computer, phone,
-                                                          * interface), 2 SWARM (mod.c macro_master; the INPUT page) */
+static int32_t sw_lmin = 127, sw_lmax, sw_prev;
+static uint32_t sw_tick, sw_rnd = 0x9E3779B9u;
+static int8_t sw_key;                                    /* KEYS: the transpose */
+static uint8_t ain_tr, ain_sw;                           /* the first SWARM (else INPUT) track; a track is SWARM */
+static uint8_t ain_mode;                                 /* what the input is now: 0 none, 1 USB, 2 SWARM (the page) */
 static int32_t scale_snap(const track_t *t, int32_t n);  /* seq.c */
 #ifndef fm1_ticks
 static uint32_t fm1_ticks(void);                         /* (hal/fm1_time.h; the host tests' own) */
 #endif
-void bt_air_tap(const uint8_t *p, uint32_t n, uint32_t w, uint32_t ch)   /* the BLE RX interrupt */
+static uint32_t sw_rand(void) { sw_rnd ^= sw_rnd << 13; sw_rnd ^= sw_rnd >> 17; sw_rnd ^= sw_rnd << 5; return sw_rnd; }
+static void sw_heard(const uint8_t *p, uint32_t n, uint32_t lv, uint32_t ch, uint32_t now)
 {
-    uint32_t i, k = SW_N, o = 0, j = 0, now = fm1_ticks(), id;
+    uint32_t i, k = SW_N, o = 0, j = 0, id;
     struct sw_dev *d;
-    if (n < 8u)
-        return;
     id = ((uint32_t)p[2] | (uint32_t)p[3] << 8 | (uint32_t)p[4] << 16 | (uint32_t)p[5] << 24) ^ ((uint32_t)p[6] << 5 | (uint32_t)p[7] << 13) ^ (p[0] & 15u) << 28;
     id |= 1u;
     for (i = 0; i < SW_N; i++) {
@@ -115,19 +125,16 @@ void bt_air_tap(const uint8_t *p, uint32_t n, uint32_t w, uint32_t ch)   /* the 
                                                          * one first, else the longest unheard) */
     }
     if (k == SW_N) {                                     /* a new device: the oldest's voice (or a free one) */
+        const uint8_t *q = n > 8u ? p + 8 : p + 2;      /* (no divide: the data bytes, or the address with none) */
+        uint32_t m = n > 8u ? n - 8u : 6u, c = 0;
         d = &sw[j];
         d->id = id;
-        d->per = d->jit = 0;
-        d->note = 0;
-        d->amp = 0;
-        {                                                /* (no divide: the data bytes, or the address with none) */
-            const uint8_t *q = n > 8u ? p + 8 : p + 2;
-            uint32_t m = n > 8u ? n - 8u : 6u, c = 0;
-            for (i = 0; i < 8u; i++) {
-                d->w[i] = (int8_t)q[c];
-                if (++c >= m)
-                    c = 0;
-            }
+        d->per = 0;
+        d->jit = d->amp = d->oct = d->note = 0;
+        for (i = 0; i < 8u; i++) {
+            d->w[i] = (int8_t)q[c];
+            if (++c >= m)
+                c = 0;
         }
     } else {
         uint32_t dt = now - (d = &sw[k])->last;
@@ -137,26 +144,40 @@ void bt_air_tap(const uint8_t *p, uint32_t n, uint32_t w, uint32_t ch)   /* the 
             e = e < 0 ? -e : e;
             d->jit += (((int32_t)((uint64_t)(uint32_t)e * 256u / (d->per | 1u))) - d->jit) / 4;
         }
-        for (i = 0; i < 8u && 8u + i < n; i++)           /* the payload moves the wave a little */
-            d->w[i] = (int8_t)((d->w[i] * 3 + (int8_t)p[8u + i]) / 4);
     }
     d->last = now;
-    d->lv = (uint16_t)((w & 63u) + (w >> 8 & 63u));
+    d->lv = (uint16_t)lv;
     d->ch = (uint8_t)ch;
     d->hit = 1;
 }
+void bt_air_tap(const uint8_t *p, uint32_t n, uint32_t w, uint32_t ch)   /* the BLE RX interrupt */
+{
+    if (n >= 8u)
+        sw_heard(p, n, (w & 63u) + (w >> 8 & 63u), ch, fm1_ticks());
+}
 static __attribute__((noinline)) void ain_swarm(uint32_t n)
 {
-    uint32_t i, v, now = fm1_ticks(), ref = 0, rlv = 0, any = 0;
-    int32_t gl[SW_N], gr[SW_N], a0[SW_N], da[SW_N];
+    static const uint8_t SELF_ID[8] = {0, 0, 0x4A, 0x49, 0x41, 0x4E, 0x54, 0x31};   /* (the FM-1's own voice: "JIANT1") */
     const track_t *t = &trk[ain_tr % NTRK];
-    for (v = 0; v < SW_N; v++)                           /* the reference clock: the loudest device heard */
-        if (sw[v].id && sw[v].per && sw[v].lv >= rlv && now - sw[v].last < 2u * SW_TPS)
-            rlv = sw[v].lv, ref = sw[v].per;
+    const int16_t *p = t->p;
+    uint32_t i, v, now = fm1_ticks(), ref = 0, rlv = 0, any = 0, ext = 0;
+    int32_t pl = clamp(p[P_E1], 0, 127), fm = clamp(p[P_E2], 0, 127) * 6, img = clamp(p[P_E4], 0, 127);
+    int32_t dft = clamp(p[P_E5], 0, 127), ocs = clamp(p[P_E6], 0, 127) * 4 / 128, slf = clamp(p[P_E7], 0, 127) * 3;
+    int32_t gl[SW_N], gr[SW_N], a0[SW_N], da[SW_N];
+    sw_rnd += now;                                       /* (the interrupt's own jitter: entropy) */
+    for (v = 0; v < SW_N; v++) {                         /* the reference clock: the loudest device heard */
+        if (sw[v].id && now - sw[v].last < 2u * SW_TPS && (sw[v].id ^ 0x31u) != 0x4A49u) {
+            ext = 1;
+            if (sw[v].per && sw[v].lv >= rlv)
+                rlv = sw[v].lv, ref = sw[v].per;
+        }
+    }
+    if (!ext && !(sw_rand() & 511u))                    /* (none around: the FM-1's own clocks, ~0.7 s apart) */
+        sw_heard(SELF_ID, 8, 40u + (sw_rnd >> 27), 38u, now);
     for (v = 0; v < SW_N; v++) {
         struct sw_dev *d = &sw[v];
         uint32_t age = now - d->last;
-        int32_t lv, tgt, det = 0;
+        int32_t lv, tgt, det = 0, nt;
         a0[v] = da[v] = 0;
         if (!d->id)
             continue;
@@ -166,51 +187,66 @@ static __attribute__((noinline)) void ain_swarm(uint32_t n)
         sw_lmax = lv > sw_lmax ? lv : sw_lmax;
         if (!d->note)                                    /* its note: its address, in the track's scale (C1 .. C5) */
             d->note = (uint8_t)clamp(scale_snap(t, 36 + (int32_t)(d->id >> 9) % 48), 24, 96);
-        if (ref && d->per)                               /* its clock against the reference's: a detune */
-            det = (int32_t)((((uint64_t)d->per << 8) / (ref | 1u)) & 255u) - 128;   /* (divisors never 0: #61) */
-        det = det / 32 + (int32_t)((d->jit * (int32_t)((now >> 18) & 7u)) >> 9);   /* (+ the jitter's vibrato) */
-        d->inc = pitch_inc((uint32_t)clamp((int32_t)d->note * 16 + det, 0, 2047));
-        tgt = age > 6u * SW_TPS ? 0 : 1200 + 9000 * clamp(lv - sw_lmin, 0, 127) / (int32_t)(((uint32_t)(sw_lmax - sw_lmin) & 127u) | 1u);   /* the drone */
-        if (d->hit) {                                    /* an advertisement: an accent */
+        tgt = age > 6u * SW_TPS ? 0 : 1200 + 9000 * clamp(lv - sw_lmin, 0, 127) / (int32_t)(((uint32_t)(sw_lmax - sw_lmin) & 127u) | 1u);
+        if (d->hit) {                                    /* a hit: its accent, FM, image, drift, octave */
+            uint32_t r = sw_rand();
             d->hit = 0;
-            d->acc = tgt * 2;
+            d->acc = tgt * (1 + pl / 32);
+            d->fme = 32767;
+            d->pan = img ? 16384 + ((int32_t)(r & 0xFFFFu) - 32768) * img / 254 : d->ch == 37u ? 6000 : d->ch == 39u ? 26767 : 16384;
+            d->dr = dft ? (int32_t)((r >> 16) % 65u - 32u) * dft / 64 : 0;
+            d->oct = ocs ? (uint8_t)((d->oct + 1u) % (uint32_t)(ocs + 1)) : 0;
         }
-        d->acc -= (d->acc >> 4) + (d->acc > 0);       /* (down to 0) */
+        if (ref && d->per)                               /* its clock against the reference's: a detune */
+            det = (int32_t)((((uint64_t)d->per << 8) / (ref | 1u)) & 255u) - 128;
+        det = det / 32 + (int32_t)((d->jit * (int32_t)((now >> 18) & 7u)) >> 9) + d->dr;   /* (+ jitter, drift) */
+        d->dr -= d->dr / 16 + (d->dr > 0) - (d->dr < 0);   /* (the drift glides back) */
+        nt = (int32_t)d->note + 12 * d->oct + sw_key;
+        d->inc = pitch_inc((uint32_t)clamp(nt * 16 + det, 0, 2047));
+        d->acc -= (d->acc >> (pl > 64 ? 3 : 5)) + (d->acc > 0);   /* (down to 0: a pluck fast, the drone slow) */
+        d->fme -= d->fme >> 5;
         a0[v] = d->amp;
-        d->amp += (tgt + d->acc - d->amp) >> 3;
+        d->amp += (tgt * (127 - pl) / 127 + d->acc - d->amp) >> 3;
         da[v] = (d->amp - a0[v]) >> CTL_LOG2;           /* (n is CTL) */
-        gl[v] = d->ch == 39u ? 14000 : 32767;
-        gr[v] = d->ch == 37u ? 14000 : 32767;
+        gl[v] = 32767 - d->pan / 2;
+        gr[v] = 16384 + d->pan / 2;
         any |= (uint32_t)(d->amp > 8);
     }
-    if (!(++sw_tick & 1023u) && sw_lmax - sw_lmin > 2)   /* (the range relaxes, ~0.7 s a step) */
+    if (!(++sw_tick & 1023u) && sw_lmax - sw_lmin > 2)   /* (the range relaxes, ~1.5 s a step) */
         sw_lmin++, sw_lmax--;
     if (!any) {
         uin_on = 0;
         return;
     }
     for (i = 0; i < n; i++) {
-        int32_t l = 0, r = 0;
+        int32_t l = 0, r = 0, so = (sw_prev * slf) >> 6;
         for (v = 0; v < SW_N; v++) {
             struct sw_dev *d = &sw[v];
-            uint32_t k, f;
-            int32_t x;
+            uint32_t k = d->pm >> 29, f = (d->pm >> 13) & 0xFFFFu;
+            int32_t x, mo;
             if (!a0[v] && !da[v])
                 continue;
-            k = d->ph >> 29;
-            f = (d->ph >> 13) & 0xFFFFu;
-            x = (d->w[k] * (int32_t)(65536u - f) + d->w[(k + 1u) & 7u] * (int32_t)f) >> 8;   /* (Q15) */
+            mo = (d->w[k] * (int32_t)(65536u - f) + d->w[(k + 1u) & 7u] * (int32_t)f) >> 8;   /* (Q15: its bytes) */
+            x = osc_sine(d->ph + (uint32_t)((mo * ((fm * d->fme) >> 15)) << 4) + (uint32_t)(so << 6));
             x = (x * (a0[v] + da[v] * (int32_t)i)) >> 15;
             l += (x * gl[v]) >> 15;
             r += (x * gr[v]) >> 15;
             d->ph += d->inc;
+            d->pm += d->inc * (1u + (d->id >> 5) % 3u);  /* (its modulator at 1, 2 or 3 times) */
         }
         uin_l[i] = l;
         uin_r[i] = r;
+        sw_prev = (l + r) >> 1;
     }
     uin_on = 1;
 }
 static void (*const volatile AIN_SWARM)(uint32_t) = ain_swarm;   /* (mod.c macro_master: RAM code) */
+/* SWARM's knobs on the INPUT pages (the stored values the same slots, 0..127; PLAY as it is) */
+static const param_desc_t SW_DESC[8] = {
+    {"SOURCE", F_ENUM, 0, AIN_N - 1, AIN_IN1, N_AIN_SRC, 0}, {"PLUCK", F_PCT, 0, 127, 0, 0, 0}, {"FM", F_PCT, 0, 127, 0, 0, 0},
+    {"PLAY", F_ENUM, 0, 1, 0, N_AIN_PLAY, 0}, {"IMAGE", F_PCT, 0, 127, 0, 0, 0}, {"DRIFT", F_PCT, 0, 127, 0, 0, 0},
+    {"OCTAVE", F_PCT, 0, 127, 0, 0, 0}, {"SELF", F_PCT, 0, 127, 0, 0, 0}};
+static const param_desc_t *input_desc(const track_t *t, uint32_t k) { return t->p[P_E0] == AIN_SW && k < 8u ? &SW_DESC[k] : 0; }
 
 static void ain_block(struct track *t) { ain_upd[(uint32_t)(t - trk) % NTRK] = 1; }
 
@@ -226,11 +262,16 @@ static __attribute__((noinline)) uint32_t ain_thru(track_t *t, int32_t *out, uin
 /* (called through a pointer: track_render is inlined in RAM code, out of a direct call's reach of the image's end) */
 static uint32_t (*const volatile AIN_THRU)(track_t *, int32_t *, uint32_t) = ain_thru;
 
-static void ain_note_on(struct track *t, voice_t *v) { (void)t; v->ph[0] = 0; }
+static void ain_note_on(struct track *t, voice_t *v)
+{
+    v->ph[0] = 0;
+    if (t->p[P_E0] == AIN_SW)                            /* (SWARM, KEYS: the key transposes the swarm, C4 as it is) */
+        sw_key = (int8_t)clamp((int32_t)v->note - 60, -36, 36);
+}
 /* KEYS: a note's voice plays the input at its envelope, RING at its pitch */
 static void ain_render(struct track *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
 {
-    int32_t b[CTL], ring = clamp(t->p[P_E5], 0, 127) * 258;
+    int32_t b[CTL], ring = t->p[P_E0] == AIN_SW ? 0 : clamp(t->p[P_E5], 0, 127) * 258;
     uint32_t i, ph = v->ph[0];
     if (!t->p[P_E3] || !uin_on || n > CTL)
         return;
@@ -256,6 +297,10 @@ static const preset_t INPUT_PRESETS[] = {
     {"TRANCE GATE", {AIN_ST, 64, 0, 1, 127, 0, 0, 0}, {0, 40, 0, 10}, 0, TAG(FX) | 1, FX(0, 0, 20, 20)},
     {"RING IN", {AIN_IN1, 64, 0, 1, 127, 90, 0, 0}, {0, 64, 127, 30}, 0, TAG(FX) | 1, FX(0, 0, 20, 30)},
     {"CRUSH IN", {AIN_SUM, 72, 0, 0, 127, 0, 90, 60}, {0, 64, 127, 20}, 0, TAG(FX) | 1, FX(10, 0, 0, 15)},
+    /* (SWARM) SOURCE PLUCK FM PLAY IMAGE DRIFT OCTAVE SELF */
+    {"SWARM", {AIN_SW, 0, 20, 0, 40, 20, 0, 20}, {0, 64, 127, 20}, 0, TAG(PAD) | 1, FX(0, 30, 35, 60)},
+    {"SWARM PLUCK", {AIN_SW, 110, 50, 0, 90, 40, 40, 10}, {0, 64, 127, 20}, 0, TAG(PLUCK) | 1, FX(0, 20, 40, 50)},
+    {"SWARM CHOIR", {AIN_SW, 20, 0, 0, 60, 60, 30, 60}, {0, 64, 127, 20}, 0, TAG(PAD) | 1, FX(0, 50, 25, 80)},
 };
 
 static const engine_t ENG_INPUT = {
@@ -278,4 +323,5 @@ static const engine_t ENG_INPUT = {
     .render = ain_render,
     .block = ain_block,
     .knob = {P_E0, P_E1, P_E2, P_E3},
+    .desc = input_desc,
 };

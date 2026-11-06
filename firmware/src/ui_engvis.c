@@ -1946,14 +1946,13 @@ static void vx_swarm(const int32_t *A)
     for (v = 0; v < SW_N; v++) {
         const struct sw_dev *d = &sw[v];
         uint32_t per = d->per | 1u, ph;
-        int32_t side = d->ch == 37u ? 1 : d->ch == 39u ? 5 : 3;
         px[v] = -1;
         if (!d->id || d->amp < 8)
             continue;
         n++;
         ph = (uint32_t)(((uint64_t)((now - d->last) % per) << 32) / per);   /* (its own clock's phase) */
-        px[v] = x0 + side * w / 6 + ((int32_t)(d->id >> 3) % 17 - 8) * w / 64 + (osc_sine(ph) * 6 >> 15);
-        py[v] = y0 + h - 4 - ((int32_t)d->note - 24) * (h - 8) / 72 + (osc_sine(ph + 0x40000000u) * 4 >> 15);
+        px[v] = x0 + w / 8 + d->pan * (w * 3 / 4) / 32767 + (osc_sine(ph) * 6 >> 15);   /* (its place: IMAGE's) */
+        py[v] = y0 + h - 4 - clamp((int32_t)d->note + 12 * d->oct - 24, 0, 108) * (h - 8) / 108 + (osc_sine(ph + 0x40000000u) * 4 >> 15);
         hl[v] = clamp(((int32_t)d->lv - sw_lmin) * 255 / (int32_t)(((uint32_t)(sw_lmax - sw_lmin) & 127u) | 1u), 0, 255);
         if (d->lv >= rlv)
             rlv = d->lv, ref = v;
