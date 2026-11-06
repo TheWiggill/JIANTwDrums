@@ -1524,7 +1524,7 @@ sect:
         else *vp = (int16_t)v;
         excite_turn(TSEL, vp, was);
     }
-    if (vp >= sc_v && vp < sc_v + 3) {                  /* (V10.25) SCENE's SCENE TRACK ROLE */
+    if (vp >= sc_v && vp < sc_v + 4) {                  /* (V10.25) SCENE's SCENE TRACK ROLE; (V10.6j) PATTERN STYLE */
         sc_put((uint32_t)(vp - sc_v), v);
         return;
     }
@@ -2340,6 +2340,7 @@ static void ui_input_frame(void)
     uint32_t lay, combo = 0, lytap, lkeys, glo, kq = 0;
     int32_t s, sel = 0, ks[4] = {0, 0, 0, 0};
     fm6_poll();                                         /* FM6: PTCH turned -> its patch */
+    sc_beat();                                          /* (V10.6j) SCENE's DRUM: a key's beat into the kit */
     mom_poll();                                         /* (0.9.9-seq2e) MOMENTARY's glide back, its header tag */
     {   /* (JIANT 0.6.5) RESO's PITCH and FOLW live in PRE's and DAMP's slots: into RESO a ROOM's values become theirs
          * (DAMP past FOLW's T6: OFF; PRE past 14: 14), out of it the reverb's own defaults back */

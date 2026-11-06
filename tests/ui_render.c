@@ -1140,7 +1140,8 @@ static void setup(int s)
         break;
     case S_SCENE:                                       /* (V10.25) SCL > SCENE on: the six tracks' roles, a C4 played */
         song.sel = 0; scn_on = 1; sc_trk = 5; last_note = 60;
-        { static const uint8_t R0[NTRK] = {SC_KEEP, SC_LEAD, SC_KEEP, SC_ARP, SC_BASS, SC_CHORD}; memcpy(scn_role, R0, sizeof R0); }
+        { static const uint8_t R0[NTRK] = {SC_KEEP, SC_LEAD, SC_ARP, SC_DRUM, SC_BASS, SC_CHORD}; memcpy(scn_role, R0, sizeof R0); }
+        scn_pat[4] = 6; scn_dreq = 8; sc_beat();          /* (V10.6j) BASS BOUNCE; the kit's DRUM a key's beat */
         go_title("SCENE");
         break;
     case S_CHANCE: go_page(GR_CHANCE); step_set_chance(&TSEL->step[0], 65); break;

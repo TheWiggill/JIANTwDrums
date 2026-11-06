@@ -393,8 +393,18 @@ static void rec_release(track_t *t, uint32_t note);
  * key's chord of the scale (its CHORD type, TRI if off), ARP that chord into the track's arp, BASS the key an octave
  * down, LEAD an octave up; KEEP: the track as it is (its sequence plays on, the keys do not reach it). Armed, REC
  * records every track with a role into its own steps. The roles are the session's (RAM) */
-enum { SC_KEEP, SC_CHORD, SC_ARP, SC_BASS, SC_LEAD, SC_N };
+enum { SC_KEEP, SC_CHORD, SC_ARP, SC_BASS, SC_LEAD, SC_DRUM, SC_N };
 static uint8_t scn_on, scn_role[NTRK];   /* (V10.26: all KEEP until set or diced) */
+/* (V10.6j) BASS and LEAD play a pattern over the key's chord (the track's arp: notes, MODE, RATE (N_DIV), GATE, PROB);
+ * the kit's DRUM writes a beat of its own a key (ui_scene.c sc_beat: the main loop, scn_dreq the key + 1) */
+static uint8_t scn_pat[NTRK];
+static volatile uint8_t scn_dreq;
+enum { SN_ROOT, SN_R5, SN_ROCT, SN_TRI, SN_R5O, SN_SEV };
+static const uint8_t SC_PAT[2][8][5] = {
+    {{SN_ROOT, 1, 0, 70, 127}, {SN_ROOT, 1, 1, 40, 127}, {SN_ROCT, 1, 1, 50, 127}, {SN_R5, 1, 1, 55, 127},
+     {SN_TRI, 13, 0, 75, 127}, {SN_ROOT, 1, 2, 35, 127}, {SN_R5O, 11, 1, 50, 127}, {SN_ROCT, 4, 2, 45, 112}},
+    {{SN_TRI, 11, 1, 60, 127}, {SN_SEV, 3, 1, 55, 127}, {SN_TRI, 8, 2, 45, 127}, {SN_SEV, 13, 1, 60, 127},
+     {SN_TRI, 1, 0, 80, 90}, {SN_TRI, 12, 2, 40, 127}, {SN_SEV, 9, 1, 55, 127}, {SN_SEV, 4, 2, 45, 100}}};
 static uint32_t scn_keys;                           /* the keys down that play the scene (their key-up too) */
 static int rec_on(const track_t *t)
 {
@@ -1301,9 +1311,20 @@ static void key_off(uint32_t k, track_t *t)
 /* (V10.25) SCENE: key k down (on) or up on every track with a role; the notes again from the key at the key-up */
 static uint32_t scn_notes(const track_t *t, uint32_t r, uint32_t root, uint8_t *o, int pk)
 {
-    if (r == SC_BASS || r == SC_LEAD) {
-        o[0] = (uint8_t)clamp((int32_t)root + (r == SC_BASS ? -12 : 12), 0, 127);
-        return 1;
+    if (r == SC_BASS || r == SC_LEAD) {                 /* (V10.6j) the pattern's notes: the arp plays them */
+        uint32_t set = SC_PAT[r == SC_LEAD][scn_pat[trk_index(t) % NTRK] & 7u][0], n, i;
+        int32_t b = (int32_t)root - 12;
+        if (set >= SN_TRI && set != SN_R5O) {
+            n = chord_build_mode(t, (uint32_t)clamp(r == SC_LEAD ? (int32_t)root + 12 : b, 0, 127), o,
+                                 (set == SN_SEV ? CD_SEV : CD_TRI) | 0x80u | (pk ? 0x40u : 0u));
+            return n;
+        }
+        o[0] = (uint8_t)clamp(b, 0, 127);
+        n = 1;
+        if (set == SN_R5 || set == SN_R5O) o[n++] = (uint8_t)clamp(b + 7, 0, 127);
+        if (set == SN_ROCT || set == SN_R5O) o[n++] = (uint8_t)clamp(b + 12, 0, 127);
+        for (i = 0; r == SC_LEAD && i < n; i++) o[i] = (uint8_t)clamp(o[i] + 24, 0, 127);
+        return n;
     }
     return chord_build_mode(t, root, o, (t->p[P_CHRD] ? (uint32_t)t->p[P_CHRD] : CD_TRI) | 0x80u | (pk ? 0x40u : 0u));
 }
@@ -1313,7 +1334,12 @@ static void scene_key(uint32_t k, int on)
     uint8_t o[KB_CH + 1];
     for (i = 0; i < trk_live && i < NTRK; i++) {
         track_t *t = &trk[i];
-        if (!scn_role[i] || drum_track(t))
+        if (drum_track(t)) {                            /* (V10.6j) the kit's DRUM: a beat of its own for the key */
+            if (on && scn_role[i] == SC_DRUM)
+                scn_dreq = (uint8_t)(k + 1u);
+            continue;
+        }
+        if (!scn_role[i] || scn_role[i] == SC_DRUM)      /* (DRUM: a kit's alone) */
             continue;
         n = scn_notes(t, scn_role[i], kb_map(t, k), o, 0);
         mc = trk_midi_ch(i);

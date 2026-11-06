@@ -13428,6 +13428,22 @@ static int test_scene(void)
     key_up(white(7));
     for (i = 0; i < 4u; i++) events_block(CTL);
     bad += check("SCENE: the key up ends every role", trk_gates(5) == 0u && trk_gates(4) == 0u && trk_gates(1) == 0u && !trk[3].arp_phys);
+    {   /* (V10.6j) BASS / LEAD play a pattern: the track's arp from SC_PAT; the kit's DRUM: a key writes its beat */
+        uint32_t kicks = 0;
+        scn_pat[4] = 7; sc_setup(4);
+        ok = trk[4].p[P_AMODE] == SC_PAT[0][7][1] && trk[4].p[P_ARATE] == SC_PAT[0][7][2] && trk[4].p[P_AGATE] == SC_PAT[0][7][3];
+        scn_role[0] = SC_DRUM; scn_pat[0] = 0;
+        key_down(white(9));
+        for (i = 0; i < 4u; i++) events_block(CTL);
+        ok &= trk_gates(4) >= 1u && scn_dreq != 0u;
+        key_up(white(9));
+        for (i = 0; i < 4u; i++) events_block(CTL);
+        sc_beat();
+        for (i = 0; i < 16u; i++) kicks += trk[0].step[i].hit & 1u;
+        ok &= kicks == 4u && !scn_dreq && trk[0].p[P_SLEN] == 16;
+        bad += check("SCENE BASS pattern ACID: the arp RND 1/16; the kit's DRUM FOUR: a key writes a four-on-the-floor beat", ok);
+        scn_role[0] = SC_KEEP; scn_pat[4] = 0; sc_setup(4);
+    }
     turn(EN_K3, -1);                                     /* (T5 BASS -> ARP: T4's ARP goes KEEP) */
     bad += check("SCENE: a role another track has: that track KEEP (no two alike)", scn_role[4] == SC_ARP && scn_role[3] == SC_KEEP);
     turn(EN_K1, -1);
