@@ -609,7 +609,7 @@ function lyricText(s, language = "") {
     .replace(/[ñÑ]/g, c => c === "ñ" ? "ny" : "NY");
   if (language === "RU") {
     const abc = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя";
-    const latin = ["a","b","v","g","d","e","yo","zh","z","i","y","k","l","m","n","o","p","r","s","t","u","f","kh","ts","ch","sh","shch","","y","","e","yu","ya"];
+    const latin = ["a","b","v","g","d","e","yo","zh","z","i","j","k","l","m","n","o","p","r","s","t","u","f","kh","ts","ch","sh","shch","","y","","e","yu","ya"];
     text = text.replace(/[а-яё]/gi, c => latin[abc.indexOf(c.toLowerCase())]);
   }
   if (language === "DE") text = text.replace(/[äöüß]/gi, c => ({ä:"ae",ö:"oe",ü:"ue",ß:"ss"})[c.toLowerCase()]);

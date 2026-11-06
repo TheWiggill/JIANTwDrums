@@ -41,7 +41,6 @@ jobs:
           test -s "$T/uboot.boot" && test -s "$T/cfg_tool.bin" && test -s "$T/cfg/eq_cfg_hw.bin"
       - name: FM-1 package and target budgets
         env:
-          FELUCCA_REPIN: keep
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
           JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
         run: |
@@ -117,8 +116,10 @@ jobs:
       - name: Full UI comparison against known baseline
         run: |
           set -euo pipefail
+          mkdir -p build/ui-baseline-gen
+          python3 build/ui-baseline/tools/gen_lyrics.py build/ui-baseline-gen/felucca_lyrics.h
           cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/ui_test.c -lm -o build/song-check/ui-full
-          cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ibuild/ui-baseline/firmware/src build/ui-baseline/tests/ui_test.c -lm -o build/song-check/ui-base
+          cc -O1 -w -Wno-implicit-function-declaration -Ibuild/ui-baseline-gen -Ibuild/gen -Ibuild/ui-baseline/firmware/src build/ui-baseline/tests/ui_test.c -lm -o build/song-check/ui-base
           set +e
           build/song-check/ui-full > build/song-check/ui-full.log
           FULL_RC=$?

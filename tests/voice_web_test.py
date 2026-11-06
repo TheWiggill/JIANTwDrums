@@ -7,6 +7,7 @@ fn=s[a:s.index('\n}',a)+2]
 js="import assert from 'node:assert/strict';\n"+fn+'''
 assert.equal(lyricText('Привет мир','RU'),'Privet mir'.toLowerCase());
 assert.equal(lyricText('щёлк','RU'),'shchyolk');
+assert.equal(lyricText('мой сыр','RU'),'moj syr');
 assert.equal(lyricText('größer','DE'),'groesser');
 assert.equal(lyricText('nǐ hǎo lǜ','ZH'),'ni hao lv');
 assert.equal(lyricText('coração','PT'),'corasa~o');

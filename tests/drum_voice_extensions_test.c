@@ -79,6 +79,18 @@ static int extensions(void)
     key_upk(12);key_upk(26);lanes_b(2);
     lanes_until(5,step_len(5)/8u);ok &= !dxo_n[3];seq_stop();
     bad+=check("EXT quantized choke: latest key replaces fill; old release cannot cancel or restart it",ok);
+    drum_setup();dt->p[P_DKEYMODE]=1;
+    uint32_t quarter=div_samples(dt->p[P_SDIV])/4u;
+    dxo_on(dt,86,0,100,DXO_MIDI+86);
+    for(k=0;k<5;k++) dxo_tick(dt,quarter); /* active, quarter 1 */
+    dxo_on(dt,112,0,100,DXO_MIDI+112);ok=dxo_n[3]==2;
+    dxo_tick(dt,quarter);dxo_tick(dt,quarter);
+    ok &= dxo_n[3]==2&&dxo[3][0].note==0;
+    dxo_tick(dt,quarter);ok &= dxo_n[3]==1&&dxo[3][0].note==26&&dxo[3][0].ph==0;
+    dxo_on(dt,87,0,100,DXO_MIDI+87);dxo_off(dt,DXO_MIDI+87);
+    for(k=0;k<4;k++) dxo_tick(dt,quarter);
+    ok &= dxo_n[3]==1&&dxo[3][0].note==26;
+    bad+=check("EXT stopped clock: choke shares phase; releasing queued key cancels only its replacement",ok);
     dxo_t human={0};human.half=2;human.vel=100;human.ph=255;uint32_t variation=0;
     for(k=0;k<64;k++) {dxp_step(&human,k);variation|=1u<<(human.r>>4);}
     bad+=check("EXT humanize varies velocity per step and keeps the timing grid",variation&&(variation&(variation-1u)));
