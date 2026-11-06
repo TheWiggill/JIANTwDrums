@@ -395,26 +395,47 @@ static void lofi_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const 
  * (their stored numbers kept: 0..2, 8 BYTE; 9..11 FLOAT), 3..7 (where the chip presets were) FLOAT voices at the note:
  * keys, a bass, a pad, a lead, a bell */
 static const preset_t LOFI_PRESETS[] = {
-    /* name, {CHIP, WAVE, ALGO, VAR, MOTION, GRIT / FEEDBK, BEND, LOOP} */
+    /* name, {CHIP, WAVE, ALGO, VAR, MOTION, GRIT / FEEDBK, BEND, LOOP}. (V10.6i, reworked in place: the stored numbers
+     * kept, LOFI_PC and GEN's roles too: 4 6 11) MOTION 0 on all (the time still); the voices to play filtered, the
+     * filter opened by velocity and its envelope; the BYTE ones and FLOAT ARP the experiments, moved by the matrix (the
+     * track's SHP moves VAR, CUT the FILTER page's CUT); INIT FLOAT a bare sine (LOOP 127: one cycle of F01) */
     /* BYTE: 8 bits, ALGO B02 (4 / 4 = 1); B17 (64 / 4 = 16) with VAR 40 (a = 6); B05 folded (BEND), resonant */
-    {"BYTEBEAT", {2, 5, 4, 0, 0, 0, 0, 0}, {0, 80, 110, 40}, 0, 1 | TAG(FX), FX(0, 0, 25, 20), PAT(4)},
-    {"BYTE VAR", {2, 5, 64, 40, 0, 0, 0, 0}, {0, 80, 110, 50}, 0, 1 | TAG(FX), FX(0, 20, 30, 25), PAT(3)},
-    {"BYTE BENT", {2, 5, 16, 0, 0, 24, 70, 0}, {0, 80, 110, 45}, 0, 1 | TAG(FX), FX(10, 10, 30, 25), PAT(4)},   /* (0.5.4: GRIT 24) */
+    {"BYTEBEAT", {2, 5, 4, 0, 0, 0, 0, 0}, {0, 80, 110, 40}, 0, 1 | TAG(FX), FX(0, 0, 25, 20), PAT(4),
+     MODS(MMOD(1, PS_MODW, PD_E(3), 40), MMOD(2, PS_AT, PD_E(6), 40))},      /* MODW mutates the time, AT folds it */
+    {"BYTE VAR", {2, 5, 64, 40, 0, 0, 0, 0}, {0, 80, 110, 50}, 0, 1 | TAG(FX), FX(0, 20, 30, 25), PAT(3),
+     MODS(P_LWAVE, LW_SH, P_LRATE, -8, MMOD(1, PS_LFO, PD_E(3), 24), MMOD(2, PS_RAND, PD_PAN, 30))},   /* a new VAR each 1/8 */
+    {"BYTE BENT", {2, 5, 16, 0, 0, 24, 70, 0}, {0, 80, 110, 45}, 0, 1 | TAG(FX), FX(10, 10, 30, 25), PAT(4),   /* (0.5.4: GRIT 24) */
+     MODS(MENV2(0, 50, 0, 30), MMOD(1, PS_ENV2, PD_E(6), -40), MMOD(2, PS_RAND, PD_REV, 30))},   /* unfolds as it sounds */
     /* FLOAT at the note: F28 a partial struck; F20 odd partials (a hollow square); F12 a deep vibrato (slow, MOTION 0);
      * F24 FM 5:2; F11 a pluck of FM */
-    {"MATH KEYS", {2, 6, 108, 0, 0, 0, 0, 0}, {0, 75, 40, 45}, 0, TAG(KEYS), FX(0, 20, 30, 35), PAT(6)},
-    {"MATH BASS", {2, 6, 76, 0, 0, 0, 0, 0}, {0, 60, 90, 20}, 0, 1 | TAG(BASS), FX(0, 0, 5, 0), PAT(2)},
-    {"MATH PAD", {2, 6, 44, 0, 0, 0, 0, 0}, {60, 90, 110, 85}, 0, TAG(PAD), FX(0, 50, 30, 60), PAT(5)},
-    {"MATH LEAD", {2, 6, 92, 0, 0, 0, 0, 0}, {2, 70, 100, 40}, 0, 1 | TAG(LEAD), FX(0, 0, 35, 25), PAT(4)},
-    {"MATH BELL", {2, 6, 40, 0, 0, 0, 0, 0}, {0, 88, 0, 70}, 0, TAG(BELL), FX(0, 20, 35, 55), PAT(7)},
-    /* (JIANT 0.5, appended) BYTE B11 looped (LOOP 80: a short cycle, a tone at the note), resonant */
-    {"BYTE TONE", {2, 5, 40, 0, 0, 0, 0, 80}, {0, 70, 100, 40}, 0, 1 | TAG(LEAD), FX(0, 0, 30, 20), PAT(4)},
-    /* (JIANT 0.5.1, appended; 0.5.6 floatbeat) FLOAT: F02 FM whose index walks; F03 a nibble-table melody;
-     * F29 FM breathing at 1 Hz, slow */
-    {"FLOAT FM", {2, 6, 4, 0, 0, 0, 0, 0}, {0, 60, 90, 40}, 0, 1 | TAG(FX), FX(0, 15, 25, 25), PAT(4)},
-    {"FLOAT ARP", {2, 6, 8, 0, 0, 0, 0, 0}, {0, 50, 80, 50}, 0, 1 | TAG(PLUCK), FX(0, 25, 30, 30), PAT(3)},
-    {"FLOAT PAD", {2, 6, 112, 0, 0, 0, 0, 0}, {60, 90, 110, 90}, 0, 1 | TAG(PAD), FX(30, 10, 50, 40), PAT(3)},
+    {"MATH KEYS", {2, 6, 108, 0, 0, 0, 0, 0}, {0, 75, 40, 45}, 20, TAG(KEYS), FX(0, 20, 30, 35), PAT(6),
+     MODS(P_FCUT, 84, MMOD(1, PS_VEL, PD_CUT, 20))},
+    {"MATH BASS", {2, 6, 76, 0, 0, 0, 0, 0}, {0, 60, 90, 22}, 24, 1 | TAG(BASS), FX(0, 0, 5, 0), PAT(2),
+     MODS(P_FCUT, 70, P_GLIDE, 10)},
+    {"MATH PAD", {2, 6, 44, 0, 0, 0, 0, 0}, {75, 90, 110, 95}, 0, TAG(PAD), FX(0, 50, 30, 60), PAT(5),
+     MODS(P_FCUT, 96, P_LRATE, 20, P_LD_FLT, 10)},
+    {"MATH LEAD", {2, 6, 92, 0, 0, 0, 0, 0}, {4, 70, 100, 42}, 0, 1 | TAG(LEAD), FX(0, 0, 35, 25), PAT(4),
+     MODS(P_LRATE, 88, P_LD_PIT, 1, P_LFADE, 72, MMOD(1, PS_MODW, PD_VIB, 2), P_GLIDE, 10)},
+    {"MATH BELL", {2, 6, 40, 0, 0, 0, 0, 0}, {0, 88, 0, 70}, 12, TAG(BELL), FX(0, 20, 35, 55), PAT(7),
+     MODS(P_FCUT, 100, MMOD(1, PS_VEL, PD_CUT, 22))},
+    /* (JIANT 0.5, appended) BYTE B11 looped (LOOP 80: a short cycle, a tone at the note), resonant; its LOOP leaps on
+     * the 1/8 (V10.6i), MODW the VAR */
+    {"BYTE TONE", {2, 5, 40, 0, 0, 0, 0, 80}, {0, 70, 100, 40}, 0, 1 | TAG(LEAD), FX(0, 0, 30, 20), PAT(4),
+     MODS(P_LWAVE, LW_SQR, P_LRATE, -8, MMOD(1, PS_LFO, PD_E(7), 6), MMOD(2, PS_MODW, PD_E(3), 30))},
+    /* (V10.6i) a bare sine (was FLOAT FM) */
+    {"INIT FLOAT", {2, 6, 0, 0, 0, 0, 0, 127}, {0, 64, 127, 20}, 0, TAG(KEYS), FX(0, 0, 0, 0)},
+    /* (JIANT 0.5.1, appended; 0.5.6 floatbeat) FLOAT: F03 a nibble-table melody (S&H 1/16 on its filter, each note its
+     * place); F29 FM breathing at 1 Hz, slow (V10.6i: the filter drifting) */
+    {"FLOAT ARP", {2, 6, 8, 0, 0, 0, 0, 0}, {0, 50, 80, 50}, 0, 1 | TAG(PLUCK), FX(0, 25, 40, 30), PAT(3),
+     MODS(P_FCUT, 100, P_LWAVE, LW_SH, P_LRATE, -10, P_LD_FLT, 16, MMOD(1, PS_RAND, PD_PAN, 40))},
+    {"FLOAT PAD", {2, 6, 112, 0, 0, 0, 0, 0}, {80, 90, 110, 100}, 0, 1 | TAG(PAD), FX(30, 10, 50, 40), PAT(3), BREATHE(14, 0, 0),
+     MODS(P_FCUT, 90)},
 };
+/* (V10.6i) browsed: the voices to play, the experiments, INIT (ui.c: in LOFI_ORDER's place; LOFI_PC stays) */
+static const uint8_t MATH_ORDER[] = {3, 4, 5, 6, 7, 11,   /* to play */
+                                     0, 1, 2, 8, 10,      /* experiments */
+                                     9};                  /* INIT */
+_Static_assert(sizeof MATH_ORDER == NELEM(LOFI_PRESETS), "MATH's browsing order: every preset once");
 
 static const engine_t ENG_LOFI = {
     .name = "MATH",

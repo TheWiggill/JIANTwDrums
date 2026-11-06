@@ -335,9 +335,9 @@ static const preset_t ANALOG_PRESETS[] = {
 };
 /* (V10.6i) the browsing order (ui.c preset_order): to play, then the experiments, then the INITs. 4 5 6 in a row:
  * ui_test steps from ACID (TRK_OLD) to SINE KEY to RAVE */
-static const uint8_t ANALOG_ORDER[] = {14, 2, 7, 16, 0, 21, 15, 11, 3, 19, 8, 20, 23, 24, 4, 5,   /* to play */
-                                       6, 17, 12, 18, 13, 1, 22,                                   /* experiments */
-                                       9, 10};                                                     /* INIT */
+static const uint8_t ANALOG_ORDER[] = {14, 2, 7, 0, 21, 15, 11, 3, 19, 8, 20, 23, 24, 4, 5,  /* to play */
+                                       6, 17, 12, 16, 18, 13, 1, 22,                            /* experiments */
+                                       9, 10};                                                  /* INIT */
 _Static_assert(sizeof ANALOG_ORDER == NELEM(ANALOG_PRESETS), "ANALOG's browsing order: every preset once");
 
 static const engine_t ENG_ANALOG = {

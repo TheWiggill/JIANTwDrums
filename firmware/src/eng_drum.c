@@ -733,16 +733,22 @@ static int32_t drum_keys(const track_t *t, uint32_t k)
     return clamp(29 + (int32_t)k, 0, 127);                /* (0.8.5: every octave; OCT ratchets / damps, seq.c dxo_on) */
 }
 
-/* {MRPH, TUNE, TONE, DECY, NOIS, FM, FOLD, DRV}; the kit suggests the BEAT pattern (GM notes) */
+/* {MRPH, TUNE, TONE, DECY, NOIS, FM, FOLD, DRV}; the kit suggests the BEAT pattern (GM notes). (V10.6i) the kits as they
+ * were; a few move the whole kit (the per-block destinations: the knobs, the sends; the LFO FREE, a hit does not restart
+ * it): no RAND -> PAN (one pan for the kit: every hit would throw the kick about too) */
 static const preset_t DRUM_PRESETS[] = {                /* (0.7.2) one a factory kit: drumx_voice.c DX_KITS, this order */
     {"DRUM-X", DRUM_KIT_E, {0, 100, 127, 100}, 0, TAG(DRUM), FX(0, 0, 0, 20), PAT(12)},   /* (core.h: SAMPLE PERC's too) */
     {"909 CLUB", {60, 64, 76, 64, 64, 0, 0, 10}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(0, 0, 0, 16), PAT(12)},
     {"808 BOOM", {58, 60, 56, 76, 60, 0, 0, 0}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(0, 0, 0, 24), PAT(12)},
-    {"LOFI DUST", {70, 64, 50, 54, 76, 0, 0, 20}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(8, 0, 0, 18), PAT(12)},
-    {"INDUSTRIAL", {72, 66, 88, 70, 74, 20, 0, 40}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(16, 0, 10, 30), PAT(12)},
+    {"LOFI DUST", {70, 64, 50, 54, 76, 0, 0, 20}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(8, 0, 0, 18), PAT(12),
+     MODS(MLFO(LW_DRIFT, -3, 0, 0), P_LPHASE, -1, P_LD_SHP, 8)},                 /* MORPH wanders, a worn tape */
+    {"INDUSTRIAL", {72, 66, 88, 70, 74, 20, 0, 40}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(16, 0, 10, 30), PAT(12),
+     MODS(MLFO(LW_SH, -10, 0, 0), P_LPHASE, -1, MMOD(1, PS_LFO, PD_E(6), 16))},   /* FOLD at random on the 16ths */
     {"ACOUSTIC", {56, 64, 58, 62, 64, 0, 0, 0}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(0, 0, 0, 34), PAT(12)},
-    {"DUB ROOTS", {60, 60, 52, 70, 60, 0, 0, 0}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(0, 0, 18, 36), PAT(12)},
-    {"TECHNO RAW", {66, 64, 80, 62, 66, 10, 0, 30}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(10, 0, 0, 14), PAT(12)},
+    {"DUB ROOTS", {60, 60, 52, 70, 60, 0, 0, 0}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(0, 0, 18, 36), PAT(12),
+     MODS(MMOD(1, PS_RAND, PD_DLY, 20))},                                       /* each hit its own throw into the echo */
+    {"TECHNO RAW", {66, 64, 80, 62, 66, 10, 0, 30}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(10, 0, 0, 14), PAT(12),
+     MODS(MLFO(LW_TRI, -1, 0, 0), P_LPHASE, -1, MMOD(1, PS_LFO, PD_E(2), 10))},   /* TONE opens and closes over 4 bars */
     {"BREAKS", {62, 66, 72, 62, 70, 0, 0, 10}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(4, 0, 0, 22), PAT(12)},
     {"HIP HOP", {58, 62, 56, 64, 66, 0, 0, 18}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(6, 0, 0, 20), PAT(14)},   /* (V10.34) */
 };

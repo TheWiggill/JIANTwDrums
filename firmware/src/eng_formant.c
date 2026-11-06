@@ -459,9 +459,9 @@ static const preset_t FORMANT_PRESETS[] = {
     {"UTA JA", {0, 48, 0, 5, 76, 8, 74, 0}, {24, 70, 112, 70}, 0, 1 | TAG(VOX), FX(0, 15, 30, 40), PAT(4), WORDS(LG_JA, 4),
      MODS(MMOD(1, PS_MODW, PD_E(6), 40))},
     {"WORD CHOIR", {0, 64, 16, 0, 45, 20, 62, 0}, {60, 90, 115, 85}, 0, TAG(VOX), FX(0, 70, 15, 90), PAT(5), WORDS(LG_ES, 5),
-     MODS(MMOD(1, PS_RAND, PD_PAN, 40), P_LWAVE, LW_DRIFT, P_LRATE, 30, MMOD(2, PS_LFO, PD_REV, 20))},
+     MODS(MMOD(1, PS_RAND, PD_PAN, 40))},   /* each note elsewhere */
     {"SCAT EN", {0, 64, 0, 0, 96, 4, 76, 0}, {16, 60, 100, 60}, 0, 1 | TAG(VOX), FX(0, 0, 35, 30), PAT(4), WORDS(LG_EN, 17),
-     MODS(MMOD(1, PS_RAND, PD_SHP, 20), MMOD(2, PS_RAND, PD_PAN, 25))},                  /* each syllable its colour */
+     MODS(MMOD(1, PS_RAND, PD_SHP, 20))},   /* each syllable its colour */
     {"ROBOT EN", {0, 64, 0, -3, 127, 0, 90, 0}, {2, 65, 120, 56}, 0, 1 | TAG(VOX), FX(10, 10, 35, 30), PAT(4), WORDS(LG_EN, 6),
      MODS(P_LWAVE, LW_SH, P_LRATE, -10, MMOD(1, PS_LFO, PD_SHP, 30), MMOD(2, PS_LFO, PD_PAN, 30))},   /* S&H 1/16 */
     {"WHISPER JA", {0, 64, 0, 3, 50, 120, 52, 0}, {40, 90, 110, 80}, 0, TAG(VOX), FX(0, 40, 30, 70), PAT(5), WORDS(LG_JA, 7),

@@ -281,7 +281,7 @@ static const preset_t STRING_PRESETS[] = {
     {"PIANO", {SX_HAMMER, 104, 76, 18, 42, 20, 22, 0}, {0, 64, 127, 92}, 0, TAG(KEYS), FX(0, 0, 0, 35), PAT(6),
      MODS(MMOD(1, PS_VEL, PD_SHP, 30), MMOD(2, PS_KEY, PD_E(1), -20))},                  /* the low notes ring longer */
     {"DULCIMER", {SX_HAMMER, 92, 100, 20, 26, 36, 60, 0}, {0, 64, 127, 108}, 0, TAG(PLUCK), FX(0, 10, 10, 40), PAT(5),
-     MODS(MMOD(1, PS_RAND, PD_PAN, 15), MMOD(2, PS_VEL, PD_SHP, 20))},
+     MODS(MMOD(1, PS_VEL, PD_SHP, 20))},
     {"MARIMBA", {SX_MALLET, 56, 40, 64, 72, 80, 70, 0}, {0, 64, 127, 80}, 0, TAG(BELL), FX(0, 0, 0, 30), PAT(5),
      MODS(MMOD(1, PS_VEL, PD_SHP, 30))},
     {"PLUCK BASS", {SX_PLUCK, 62, 36, 20, 0, 50, 10, 0}, {0, 64, 127, 80}, 0, 1 | TAG(BASS), FX(0, 0, 0, 5), PAT(2),
@@ -295,7 +295,7 @@ static const preset_t STRING_PRESETS[] = {
     {"FEEDBACK", {SX_FDBK, 90, 70, 24, 60, 70, 40, 60}, {0, 64, 127, 90}, 0, TAG(LEAD), FX(30, 0, 20, 35), PAT(5),
      MODS(MMOD(1, PS_MODW, PD_E(4), 30), MMOD(2, PS_AT, PD_E(6), 30))},                  /* MODW GAIN, AT SPEAKR */
     {"SHOEGAZE", {SX_FDBK, 110, 50, 30, 55, 100, 90, 70}, {40, 64, 127, 112}, 0, TAG(PAD), FX(20, 30, 30, 70), PAT(5),
-     MODS(P_LWAVE, LW_DRIFT, P_LRATE, 30, P_LD_SHP, 20, MMOD(1, PS_RAND, PD_PAN, 30))},   /* the amp wanders */
+     MODS(P_LWAVE, LW_DRIFT, P_LRATE, 30, P_LD_SHP, 20)},   /* the amp wanders */
     {"SQUEAL", {SX_FDBK, 80, 96, 16, 70, 110, 12, 30}, {0, 64, 127, 80}, 0, TAG(LEAD), FX(40, 0, 25, 30), PAT(4),
      MODS(P_LWAVE, LW_SH, P_LRATE, -11, P_LD_SHP, 30, MMOD(1, PS_MODW, PD_E(5), 40))},   /* harmonics jump */
     {"EBOW", {SX_FDBK, 127, 44, 40, 50, 20, 64, 90}, {20, 64, 127, 100}, 0, TAG(LEAD), FX(0, 20, 20, 50), PAT(5),

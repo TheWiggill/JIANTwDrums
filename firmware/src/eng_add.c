@@ -147,13 +147,13 @@ static const preset_t ADD_PRESETS[] = {
     {"VIBES", {AD_BAR, 0, 72, 127, 0, 0, 76, 0}, {0, 64, 127, 55}, 0, TAG(BELL), FX(0, 25, 0, 40), PAT(6),
      MODS(P_LRATE, 78, P_LD_AMP, 30)},                                                    /* the motor */
     {"GLASS", {AD_WIDE, 0, 118, 127, -20, 0, 80, 30}, {0, 64, 127, 70}, 0, TAG(BELL), FX(0, 20, 20, 60), PAT(5),
-     MODS(MMOD(1, PS_KEY, PD_E(2), -24), MMOD(2, PS_RAND, PD_PAN, 20))},                 /* the high notes softer */
+     MODS(MMOD(1, PS_KEY, PD_E(2), -24))},   /* the high notes softer */
     {"SKIN TOM", {AD_DRUM, 0, 92, 127, 0, 0, 46, 0}, {0, 64, 127, 30}, 0, TAG(DRUM), FX(0, 0, 0, 20), PAT(4),
      MODS(MENV2(0, 25, 0, 20), MMOD(1, PS_ENV2, PD_PITCH, 12))},                         /* the skin falls in pitch */
     {"AIR PAD", {AD_WIDE, 64, 100, 127, -10, 20, 127, 50}, {64, 64, 127, 80}, 0, TAG(PAD), FX(0, 30, 15, 75), PAT(5),
-     MODS(P_FCUT, 100, P_LWAVE, LW_DRIFT, P_LRATE, -2, P_LD_FLT, 20, MMOD(1, PS_RAND, PD_PAN, 25))},
+     MODS(P_FCUT, 100, P_LWAVE, LW_DRIFT, P_LRATE, -2, P_LD_FLT, 20)},
     {"SWELL", {AD_HARM, 0, 104, 127, 0, 0, 127, -50}, {20, 64, 127, 60}, 0, TAG(PAD), FX(0, 20, 20, 50), PAT(5),
-     MODS(MENV2(60, 100, 40, 80), MMOD(1, PS_ENV2, PD_E(1), 50), MMOD(2, PS_RAND, PD_PAN, 30))},   /* HARM into ODD */
+     MODS(MENV2(60, 100, 40, 80), MMOD(1, PS_ENV2, PD_E(1), 50))},   /* HARM into ODD and back */
     {"SUB ADD", {AD_ODD, 0, 20, 40, 0, 0, 127, 0}, {0, 64, 127, 25}, 0, 1 | TAG(BASS), FX(0, 0, 0, 5), PAT(2),
      MODS(P_GLIDE, 10, MMOD(1, PS_VEL, PD_E(3), 30))},                                    /* harder: more partials */
     {"PRIME ORG", {AD_PRIME, 0, 84, 127, 0, 0, 127, 0}, {2, 64, 127, 45}, 0, TAG(KEYS), FX(0, 20, 0, 35), PAT(5),
