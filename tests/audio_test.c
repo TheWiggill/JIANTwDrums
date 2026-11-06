@@ -283,6 +283,62 @@ static void ain_run(uint32_t k, int keys, double *lr, double *rr)
     uin_on = 0;
     *lr = sqrt(l / 9600.0); *rr = sqrt(r / 9600.0);
 }
+/* (SWARM) devices heard around (bt_air_tap, as the radio's interrupt calls it) play on an INPUT track with no USB
+ * input: three devices at their own intervals, then none (they fade) */
+static void sw_pkt(uint32_t dev, uint32_t lv, uint32_t ch)
+{
+    uint8_t p[30];
+    uint32_t i;
+    p[0] = 0x00; p[1] = 28;
+    for (i = 2; i < 30u; i++) p[i] = (uint8_t)(dev * 41u + i * (dev + 3u) * 17u);
+    bt_air_tap(p, 30, lv | lv << 8, ch);
+}
+static FILE *sw_wav;                                     /* (SWARM_WAV=path: the run as 16-bit stereo, to listen) */
+static void sw_run(uint32_t blocks, int pkts, double *rms, double *lr)
+{
+    int32_t out[2 * CTL];
+    uint32_t b, i;
+    double e = 0, el = 0, er = 0;
+    host_us = 0;
+    for (b = 0; b < blocks; b++) {
+        host_clock += CTL * 24000000u / 44100u;
+        if (pkts && b % 70u == 0u) sw_pkt(1, 30, 37);
+        if (pkts && b % 110u == 3u) sw_pkt(2, 20, 38);  /* (~160 ms) */
+        if (pkts && b % 250u == 7u) sw_pkt(3, 10, 39);  /* (~360 ms) */
+        uin_on = 0;                                     /* (no USB input: audio.c) */
+        audio_block(out, CTL);
+        for (i = 0; i < CTL; i++) {
+            double l = out[2u * i] >> OUT_SHIFT, r = out[2u * i + 1u] >> OUT_SHIFT;
+            e += l * l; el += l * l; er += r * r;
+            if (sw_wav) { int16_t o2[2] = {(int16_t)(out[2u * i] >> 8), (int16_t)(out[2u * i + 1u] >> 8)}; fwrite(o2, 2, 2, sw_wav); }
+        }
+    }
+    *rms = sqrt(e / (blocks * (double)CTL));
+    *lr = er > 0 ? 10.0 * log10(el / er) : 99.0;
+}
+static void swarm_input(void)
+{
+    double a, q, lr, q2;
+    uint32_t t, v, n = 0;
+    fresh();
+    lim_env = LIM_T; lev_env = 0; lev_g = lev_cur = 32768; lev_dg = 0; dc_l = dc_r = dce_l = dce_r = 0;
+    song.master_q12 = 4096;
+    for (t = 0; t < NTRK; t++) trk[t].p[P_DIST] = trk[t].p[P_CHOR] = trk[t].p[P_DLY] = trk[t].p[P_REV] = 0;
+    host_preset(&trk[1], ENGI_INPUT, 3);                /* (STEREO) */
+    trk[1].p[P_LEVEL] = 100;
+    if (getenv("SWARM_WAV")) sw_wav = fopen(getenv("SWARM_WAV"), "wb");
+    sw_run(2000, 1, &a, &lr);
+    for (v = 0; v < SW_N; v++) n += sw[v].id != 0;
+    printf("audio: SWARM: %.0f with three devices (%u voices, L/R %.1f dB, periods %u %u %u ticks), ", a, n, lr,
+           sw[0].per, sw[1].per, sw[2].per);
+    if (sw_wav) sw_run(4000, 1, &q, &lr), sw_run(3000, 0, &q, &lr), fclose(sw_wav), sw_wav = 0;
+    sw_run(6000, 0, &q, &lr);
+    sw_run(1000, 0, &q2, &lr);
+    printf("%.1f 10 s after\n", q2);
+    check("INPUT: SWARM: three devices heard are three voices on an INPUT track, each its own period", a > 200.0 && n == 3u &&
+          sw[0].per > 0 && sw[1].per > sw[0].per && sw[2].per > sw[1].per);
+    check("INPUT: SWARM: the devices gone, the swarm fades to silence", q2 < 1.0);
+}
 static void input_engine(void)
 {
     double l, r, l1, r1;
@@ -520,6 +576,7 @@ int main(void)
     boot_keys();
     overload(); dma();
     input_engine();
+    swarm_input();
     usb_in();                                          /* (last: its reverb tail would reach the tests after it) */
     polyphony_headroom();
     drum_budget();

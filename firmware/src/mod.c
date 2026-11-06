@@ -309,6 +309,8 @@ static __attribute__((noinline)) void macro_master(void)
     int32_t off[MD_MASTER_END - MD_CLIP] = {0};
     uint32_t i, k, any = 0;
     mns_clk++;
+    if (!uin_on && ain_any)                             /* (SWARM) no input this block: the devices heard around */
+        AIN_SWARM(CTL);
     ain_follow();
     for (i = 0; i < NTRK; i++) {
         track_env[i] = (int16_t)follow_step(track_env[i], track_pk[i]);
@@ -317,6 +319,8 @@ static __attribute__((noinline)) void macro_master(void)
     track_follow_mask = 0;
     for (i = 0; i < trk_live; i++) {
         const track_t *t = &trk[i];
+        if (t->engine == ENGI_INPUT && !any)
+            ain_tr = (uint8_t)i;                        /* (SWARM: its scale) */
         any |= t->engine == ENGI_INPUT;
         for (k = 0; k < NMSLOT; k++) {
             uint32_t s = (uint32_t)t->p[P_M1SRC + 3u * k], d = (uint32_t)t->p[P_M1DST + 3u * k];
