@@ -99,7 +99,8 @@ def fm6_tables():
          f"#define FM6_AMS_K {int(round(0.07 / 262144 * math.log2(math.e) * 2 ** 24 * 1024))}      /* d/dsensamp of it, Q24 / 1024 */"]
     # 2^(i / 1024) - 1, Q30: the mantissa of Exp2::lookup and Freqlut::lookup (linear between the points, as
     # msfa's: within 6e-8 of 2^x; a Q16 table drifted the partials of a ratio against each other)
-    L += arr("FM6_EXP2", "uint32_t", [int(round((1 << 30) * (2 ** (i / 1024) - 1))) for i in range(1025)], 8)
+    L += arr("FM6_EXP2", "uint32_t", [int(round((1 << 30) * (2 ** (i / 512) - 1))) for i in range(513)], 8)   # (V10.6k: 513
+                                                         # points, half the flash; the lines between them ~-110 dB off)
     lforatio = int(4437500000.0 * CTL / FS)                                  # msfa Lfo::lforatio_ (uint32)
     L += arr("FM6_LFO_DELTA", "uint32_t", [int(s * lforatio) for s in FM6_LFO_SOURCE], 8)
     # msfa note osc_freq: the DETUNE step of note mn, Q24 log2 (0.0209 * exp(-0.396 * lf) / 7 * lf, lf in octaves)

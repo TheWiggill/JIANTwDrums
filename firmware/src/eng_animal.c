@@ -76,13 +76,13 @@ static const param_desc_t *animal_desc(const track_t *t, uint32_t k)
     return n ? &AN_DESC[n - 1u] : 0;
 }
 
-/* 2^(x / 4096) for x <= 0 (Q12 octaves), Q15 (FM6_EXP2: 2^(i / 1024) - 1, Q30) */
+/* 2^(x / 4096) for x <= 0 (Q12 octaves), Q15 (FM6_EXP2: 2^(i / 512) - 1, Q30) */
 static int32_t an_exp2n(int32_t x)
 {
     uint32_t n = (uint32_t)(x < 0 ? -x : 0), o = n >> 12, f = n & 4095u;
     if (o >= 15u)
         return 0;
-    return (int32_t)(((1u << 30) + FM6_EXP2[(4096u - f) >> 2]) >> (16u + o));
+    return (int32_t)(((1u << 30) + FM6_EXP2[(4096u - f) >> 3]) >> (16u + o));
 }
 /* the phase increment of p16 (1/16 semitone; past MIDI 127 too, up to ~20 kHz) with the voice's fine residual */
 static uint32_t an_inc(int32_t p16, int32_t fine)
