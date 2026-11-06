@@ -1965,8 +1965,33 @@ static void gx_sound(track_t *t, uint32_t r)
         t->p[P_LWAVE] = (int16_t)(gr() % 2u); t->p[P_LD_PIT] = 1;
         t->p[P_LRATE] = (int16_t)(line ? grr(GVIB_RLO, GVIB_RHI) : grr(30, 50));
         if (line) { t->p[P_LFADE] = (int16_t)grr(70, 84); t->p[P_LD_FLT] = 0; }
+    } else if (!t->p[P_LD_PIT] && gch(r == RL_PAD || r == RL_TEX ? 85 : r == RL_BASS ? 45 : 65)) {
+        /* (V10.6l, the owner: EXPLORE's interest in movement, not in steps thrown about) the filter breathing: a slow
+         * LFO (a bar to four, or free and slow; S&H on an arp now and then) faded in, the filter half closed under it */
+        static const int8_t SY[5] = {-1, -2, -3, -4, -6};   /* (4 BAR .. 1/2: N_LSYNC) */
+        t->p[P_LWAVE] = (int16_t)(r == RL_ARP && gch(30) ? LW_SH : gch(25) ? LW_DRIFT : gch(50) ? LW_TRI : LW_SIN);
+        t->p[P_LRATE] = (int16_t)(gch(65) ? SY[gr() % 5u] : grr(18, 46));
+        t->p[P_LD_FLT] = (int16_t)((gch(80) ? 1 : -1) * grr(r == RL_BASS ? 6 : 10, r == RL_BASS ? 14 : 26));
+        t->p[P_LFADE] = (int16_t)grr(40, 95);
+        if (t->eng_req != EG_A && t->p[P_FCUT] > 100) {
+            t->p[P_FCUT] = (int16_t)grr(r == RL_BASS ? 62 : 70, 96);
+            t->p[P_FRES] = (int16_t)grr(8, 40);
+        }
+    }
+    if (r != RL_BASS && !t->p[P_M4SRC] && gch(30)) {   /* (V10.6l) a note's own place: RAND on its pan (an arp, a lead) or
+                                                         * the ENV 2 opening the filter a little on each note (the rest; not
+                                                         * where the preset's matrix already reads ENV 2) */
+        if (r == RL_ARP || r == RL_LEAD) { t->p[P_M4SRC] = PS_RAND; t->p[P_M4DST] = PD_PAN; t->p[P_M4AMT] = (int16_t)grr(14, 34); }
+        else if (t->p[P_M1SRC] != PS_ENV2 && t->p[P_M2SRC] != PS_ENV2 && t->p[P_M3SRC] != PS_ENV2) {
+            t->p[P_E2ATK] = (int16_t)grr(20, 70); t->p[P_E2DEC] = (int16_t)grr(50, 100); t->p[P_E2SUS] = 0;
+            t->p[P_M4SRC] = PS_ENV2; t->p[P_M4DST] = PD_CUT; t->p[P_M4AMT] = (int16_t)grr(10, 24);
+        }
     }
     if (gch(15)) t->p[P_DETUNE] = (int16_t)grr(8, 30);   /* (V10.8: was 25 %, 10..50) */
+    if ((r == RL_LEAD || r == RL_ARP) && t->p[P_LD_PIT] &&   /* (V10.6l) a preset's pitch LFO on a line only as a vibrato
+                                                         * (fast, faded in, the filter still): else the filter's alone */
+        (t->p[P_LD_PIT] > 1 || t->p[P_LD_PIT] < 0 || t->p[P_LRATE] < 88 || !t->p[P_LFADE] || t->p[P_LD_FLT] > 4 || t->p[P_LD_FLT] < -4))
+        t->p[P_LD_PIT] = 0;
 }
 /* the step components scattered over the melodic tracks (a bass's never an arpeggio, a jump or a climb) */
 static void gx_comps(void)
@@ -1975,8 +2000,8 @@ static void gx_comps(void)
     uint32_t k;
     for (k = 0; k < NTRK; k++) {
         uint32_t r = gs.role[k], len = dlen(&trk[k]), n, j, tries;
-        if (!gs.act[r] || r == RL_DRUM || (r == RL_TEX && k != gs.trk_of[RL_TEX]) || !gch(r == RL_TEX ? 30 : 75)) continue;
-        n = (uint32_t)grr(1, 2 + (int32_t)gs.complex / 30);
+        if (!gs.act[r] || r == RL_DRUM || (r == RL_TEX && k != gs.trk_of[RL_TEX]) || !gch(r == RL_TEX ? 15 : 35)) continue;
+        n = (uint32_t)grr(1, 1 + (int32_t)gs.complex / 50);   /* (V10.6l: was 75 % of the tracks, 1 to 5 each) */
         for (j = 0, tries = 0; j < n && tries < 24u; tries++) {
             step_t *s = &trk[k].step[gr() % len];
             uint32_t c = GX_COMP[gpickw(GX_COMP_W, NELEM(GX_COMP))], a;

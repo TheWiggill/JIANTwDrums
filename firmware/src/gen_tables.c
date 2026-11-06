@@ -783,6 +783,7 @@ static const uint8_t GX_DIV_W[RL_N][6] = {{0, 8, 80, 0, 0, 12}, {0, 15, 70, 0, 5
 /* the step components it scatters (gen.c gx_comps): their weights on a melodic track */
 static const uint8_t GX_COMP[12] = {CP_RAND, CP_OCT, CP_BEND, CP_ECHO, CP_PULSE, CP_WALK, CP_CLIMB, CP_ARPQ, CP_ARPN,
                                     CP_TONAL, CP_JUMP, CP_REV};
-static const uint8_t GX_COMP_W[12] = {14, 12, 8, 12, 8, 12, 6, 8, 6, 6, 4, 4};
+static const uint8_t GX_COMP_W[12] = {6, 14, 8, 14, 8, 6, 4, 10, 8, 8, 0, 0};   /* (V10.6l, the owner: no JUMP, no REV:
+                                                         * steps thrown about are not music; less RAND and WALK) */
 /* a DRUM-X sound's own way on a step (LM_X2 .. LM_FLAM) */
 static const uint8_t GX_LM_W[LM_N] = {0, 30, 14, 4, 20, 22, 10};
