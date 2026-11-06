@@ -16,6 +16,8 @@
  * The FOLLOW source of the matrix (mod.c MS_FOLLOW) is the input's envelope, whatever track takes it. */
 static int32_t uin_l[CTL], uin_r[CTL];                  /* (0.7.5) the input's block (usb.c uac_in_fill; was in fx.c) */
 static volatile uint8_t uin_on;
+static int32_t sw_l[CTL], sw_r[CTL];                    /* (SWARM) its own block, beside the input's (both can play) */
+static uint8_t sw_on;
 enum { AIN_IN1, AIN_IN2, AIN_SUM, AIN_ST, AIN_SW, AIN_N };   /* (SWARM: the drone of the surroundings) */
 static const char *const N_AIN_SRC[] = {"IN 1", "IN 2", "1+2", "STEREO", "SWARM"};
 static const char *const N_AIN_PLAY[] = {"THRU", "KEYS"};
@@ -34,8 +36,10 @@ static __attribute__((noinline)) void ain_fill(const track_t *t, int32_t *out, u
     uint32_t hold = (1u << (clamp(p[P_E7], 0, 127) * 5 / 127)) - 1u;   /* RATE: 1 .. 32 samples held */
     int32_t g0 = ain_gg[ti], g1 = g0, pk = 0, w = 0;
     g = g * g;                                           /* GAIN: Q12, 64 = 1.0, 127 = +12 dB */
-    if (src == AIN_SW) {                                 /* (SWARM, or USB come in on it: stereo, whole; its knobs are
-                                                          * the swarm's) */
+    const int32_t *bl = uin_l, *br = uin_r;
+    if (src == AIN_SW) {                                 /* (SWARM: its own block, stereo, whole; its knobs are the
+                                                          * swarm's) */
+        bl = sw_l, br = sw_r;
         src = AIN_ST;
         g = 4096;
         thr = sh = 0;
@@ -50,7 +54,7 @@ static __attribute__((noinline)) void ain_fill(const track_t *t, int32_t *out, u
     }
     for (i = 0; i < n; i++) {
         uint32_t j = i & ~hold;
-        int32_t l = uin_l[j], r = uin_r[j], x = src == AIN_IN1 ? l : src == AIN_IN2 ? r : src == AIN_SUM ? l + r : (l + r) >> 1;
+        int32_t l = bl[j], r = br[j], x = src == AIN_IN1 ? l : src == AIN_IN2 ? r : src == AIN_SUM ? l + r : (l + r) >> 1;
         x = (x * g) >> 12;
         if (src == AIN_ST && w)
             dx_sl[i] = -(dx_sr[i] = ((((l - r) * g) >> 13) * w) >> 7);   /* L = sum - sl, R = sum - sr */
@@ -92,8 +96,8 @@ static __attribute__((noinline)) void ain_fill(const track_t *t, int32_t *out, u
  * FM (the device's own bytes as the modulator, an envelope on each hit), PLAY (KEYS: the keys transpose it and gate it
  * at the note's envelope), IMAGE (0 each at its channel's side .. each hit thrown across the field), DRIFT (each hit
  * bends the pitch, gliding back), OCTAVE (each hit of a device an octave up, over 1..4 octaves, round), SELF (the
- * voices modulate each other: a voice coming in moves the others). Into uin_l / uin_r once a block (mod.c), the
- * first SWARM track's knobs; a USB input (computer, phone, interface) takes over the moment it comes in */
+ * voices modulate each other: a voice coming in moves the others). Into its own block (sw_l / sw_r) once a block
+ * (mod.c), the first SWARM track's knobs: SWARM and a USB input (IN 1 IN 2 1+2 STEREO on another track) play together */
 #define SW_N 8u
 #define SW_TPS 24000000u                                 /* TIMER4 ticks a second */
 static struct sw_dev {
@@ -107,7 +111,6 @@ static int32_t sw_lmin = 127, sw_lmax, sw_prev;
 static uint32_t sw_tick, sw_rnd = 0x9E3779B9u;
 static int8_t sw_key;                                    /* KEYS: the transpose */
 static uint8_t ain_tr, ain_sw;                           /* the first SWARM (else INPUT) track; a track is SWARM */
-static uint8_t ain_mode;                                 /* what the input is now: 0 none, 1 USB, 2 SWARM (the page) */
 static int32_t scale_snap(const track_t *t, int32_t n);  /* seq.c */
 #ifndef fm1_ticks
 static uint32_t fm1_ticks(void);                         /* (hal/fm1_time.h; the host tests' own) */
@@ -215,7 +218,7 @@ static __attribute__((noinline)) void ain_swarm(uint32_t n)
     if (!(++sw_tick & 1023u) && sw_lmax - sw_lmin > 2)   /* (the range relaxes, ~1.5 s a step) */
         sw_lmin++, sw_lmax--;
     if (!any) {
-        uin_on = 0;
+        sw_on = 0;
         return;
     }
     for (i = 0; i < n; i++) {
@@ -234,11 +237,11 @@ static __attribute__((noinline)) void ain_swarm(uint32_t n)
             d->ph += d->inc;
             d->pm += d->inc * (1u + (d->id >> 5) % 3u);  /* (its modulator at 1, 2 or 3 times) */
         }
-        uin_l[i] = l;
-        uin_r[i] = r;
+        sw_l[i] = l;
+        sw_r[i] = r;
         sw_prev = (l + r) >> 1;
     }
-    uin_on = 1;
+    sw_on = 1;
 }
 static void (*const volatile AIN_SWARM)(uint32_t) = ain_swarm;   /* (mod.c macro_master: RAM code) */
 /* SWARM's knobs on the INPUT pages (the stored values the same slots, 0..127; PLAY as it is) */
@@ -253,7 +256,7 @@ static void ain_block(struct track *t) { ain_upd[(uint32_t)(t - trk) % NTRK] = 1
 /* THRU (voice.c track_render, after the voices): the input into the part, 1 = it sounds */
 static __attribute__((noinline)) uint32_t ain_thru(track_t *t, int32_t *out, uint32_t n)
 {
-    if (t->p[P_E3] || !uin_on || n > CTL)
+    if (t->p[P_E3] || !(t->p[P_E0] == AIN_SW ? sw_on : uin_on) || n > CTL)
         return 0;
     ain_fill(t, out, n, 1);
     return 1;
@@ -273,7 +276,7 @@ static void ain_render(struct track *t, voice_t *v, int32_t *out, uint32_t n, co
 {
     int32_t b[CTL], ring = t->p[P_E0] == AIN_SW ? 0 : clamp(t->p[P_E5], 0, 127) * 258;
     uint32_t i, ph = v->ph[0];
-    if (!t->p[P_E3] || !uin_on || n > CTL)
+    if (!t->p[P_E3] || !(t->p[P_E0] == AIN_SW ? sw_on : uin_on) || n > CTL)
         return;
     ain_fill(t, b, n, 0);
     for (i = 0; i < n; i++) {

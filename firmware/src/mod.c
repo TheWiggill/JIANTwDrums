@@ -309,14 +309,8 @@ static __attribute__((noinline)) void macro_master(void)
     int32_t off[MD_MASTER_END - MD_CLIP] = {0};
     uint32_t i, k, any = 0, sw1 = 0;
     mns_clk++;
-    /* (SWARM) USB audio came in: the input is it (an interface plugged in takes over from the swarm at once) */
-    if (uin_on)
-        ain_mode = 1;
-    else {
-        if (ain_sw)                                     /* no input this block, a SWARM track: the surroundings */
-            AIN_SWARM(CTL);
-        ain_mode = uin_on ? 2u : 0u;
-    }
+    if (ain_sw)                                         /* (SWARM: a track's SOURCE; its own block, a USB input too) */
+        AIN_SWARM(CTL);
     ain_follow();
     for (i = 0; i < NTRK; i++) {
         track_env[i] = (int16_t)follow_step(track_env[i], track_pk[i]);

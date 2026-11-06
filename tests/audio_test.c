@@ -350,16 +350,27 @@ static void swarm_input(void)
         trk[1].p[P_E6] = 0;
     }
     (void)f0;
-    {   /* an audio device plugged in (USB filled the block): the input is it, the swarm steps aside at once */
+    {   /* SOURCE chooses: SWARM stays SWARM with USB audio coming in; another INPUT track takes the USB input */
         int32_t out[2 * CTL];
-        uint32_t i;
+        uint32_t i, k;
+        double e2 = 0, e1 = 0;
         sw_run(300, 1, &a, &lr);
-        check("INPUT: SWARM plays while no USB audio comes in (the INPUT page shows the swarm)", ain_mode == 2u);
-        for (i = 0; i < CTL; i++) uin_l[i] = uin_r[i] = 1000;
-        uin_on = 1;                                     /* (uac_in_fill: a computer, a phone or an interface) */
-        audio_block(out, CTL);
-        check("INPUT: USB audio in: the input switches to it at once (the page shows its meters)", ain_mode == 1u);
+        host_preset(&trk[2], ENGI_INPUT, 0);            /* (IN 1) */
+        trk[2].p[P_LEVEL] = 100; trk[2].p[P_CHOR] = trk[2].p[P_DLY] = trk[2].p[P_REV] = 0;
+        fx_stems = 1;
+        for (k = 0; k < 200u; k++) {
+            for (i = 0; i < CTL; i++) uin_l[i] = uin_r[i] = (int32_t)(6000.0 * sin(0.05 * (k * CTL + i)));
+            uin_on = 1;                                 /* (uac_in_fill: a computer, a phone or an interface) */
+            host_clock += CTL * 24000000u / 44100u;
+            audio_block(out, CTL);
+            if (k >= 100u) for (i = 0; i < CTL; i++) { e1 += (double)stem_buf[1][i] * stem_buf[1][i]; e2 += (double)stem_buf[2][i] * stem_buf[2][i]; }
+        }
+        printf("audio: SWARM with USB audio in: SWARM track %.0f, IN 1 track %.0f (stems)\n", sqrt(e1 / 6400.0), sqrt(e2 / 6400.0));
+        check("INPUT: SOURCE SWARM and a USB input on another track play together (SWARM is not cancelled)",
+              sw_on && e1 > 6400.0 * 100.0 && e2 > 6400.0 * 100.0);
         uin_on = 0;
+        trk[2].p[P_E0] = AIN_IN1;
+        fx_stems = 0;
     }
     trk[1].p[P_E0] = AIN_IN1;
 }

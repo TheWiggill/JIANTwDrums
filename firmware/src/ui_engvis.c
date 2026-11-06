@@ -1979,7 +1979,7 @@ static void vx_swarm(const int32_t *A)
 }
 static VX_SEG void vx_input(const track_t *t, const int32_t *A, int32_t en_home)
 {
-    if (ain_mode == 2u) {                               /* (SWARM: the devices; USB audio: the meters below) */
+    if (t->p[P_E0] == AIN_SW) {                         /* (SWARM: the devices; the other SOURCEs: the meters below) */
         vx_swarm(A);
         return;
     }
