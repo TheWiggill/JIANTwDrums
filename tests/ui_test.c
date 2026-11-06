@@ -8715,7 +8715,7 @@ static int test_dice_all(void)
             fm += trk[k].eng_req == ENGI_FM6;
             drums += drum_track(&trk[k]);
         }
-        ok = !strncmp(ui.msg, "GEN: ", 5);
+        ok = !strncmp(ui.msg, "GENE: ", 6);
         ok &= moved >= 1u && fm <= 2u && drums == 1u;
         for (r = 0; r < 30u && ok; r++) {               /* thirty more throws: the same holds, every style seen */
             dice_all();
@@ -11885,14 +11885,14 @@ static int test_lz_home(void)
     ok = home_level() == 1u && home_set() && home_macros() && lz_crumb_is("HOME \xB7 BEING \xB7 ROUTES") && lz_count_is("4/7");
     fm1_ms += 1000u;
     turn(EN_SELECT, 1); frame();                                    /* GEN 1 */
-    ok &= gen_on() && gen_page() == 0u && home_level() == 2u && lz_on() && lz_tab_lit(2) && lz_crumb_is("HOME \xB7 GEN \xB7 GEN 1") &&
+    ok &= gen_on() && gen_page() == 0u && home_level() == 2u && lz_on() && lz_tab_lit(2) && lz_crumb_is("HOME \xB7 GENE \xB7 GENE 1") &&
           lz_count_is("5/7");
     k = gp.genre;
     turn(EN_PRESET, 1); frame();
     ok &= gp.genre == (k == GEN_EXPLORE ? 0u : k == NGENRE ? GEN_EXPLORE : k + 1u);   /* PRESETS: the GENRE, KNOB 1's order
                                                          * (0.8.6: EXPLORE, RANDOM, the genres) */
     turn(EN_SELECT, 1); frame();
-    ok &= gen_on() && gen_page() == 1u && lz_crumb_is("HOME \xB7 GEN \xB7 GEN 2") && lz_count_is("6/7");
+    ok &= gen_on() && gen_page() == 1u && lz_crumb_is("HOME \xB7 GENE \xB7 GENE 2") && lz_count_is("6/7");
     turn(EN_SELECT, -2); frame();                                   /* back: ROUTES, GEN shut */
     ok &= !ui.confirm && ui.home && home_level() == 1u && home_set();
     turn(EN_SELECT, 1); frame();

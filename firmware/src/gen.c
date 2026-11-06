@@ -2480,7 +2480,7 @@ static void gen_go(void)
     b[0] = ' '; b[1] = (char)('0' + gp.seed / 1000u % 10u); b[2] = (char)('0' + gp.seed / 100u % 10u);
     b[3] = (char)('0' + gp.seed / 10u % 10u); b[4] = (char)('0' + gp.seed % 10u); b[5] = 0;
     str_cpy(gp.last + k, b, sizeof gp.last - k);
-    ui_say("GEN: ", gp.last);
+    ui_say("GENE: ", gp.last);
     str_cpy(ui.msg2, live.mode ? "PLAY: SONG / SAVE: ALL PARTS" : "UNDO: GLO + G4", sizeof ui.msg2);
     if (play) { if (live.mode) chain_play_ui(); else transport_req = 1; }
     ui.force = 1;
@@ -2753,7 +2753,7 @@ static void gen_cards(void)
 }
 static uint32_t gen_draw_sig(void)
 {
-    return gen_sig() * 31u + gp.page * 7u + str_hash(gp.hot * 977u, gp.last) + ux.gen +
+    return gen_sig() * 31u + gp.page * 7u + str_hash(gp.hot * 977u, gp.last) + ux.gen + anim_fr / 2u * 2246822519u +
         chain_config.count * 7919u + live.mode * 13u + song.playing * 29u +
         (chain.running ? (chain.row + 1u) * 104729u + chain.remaining * 1299709u : 0u);
 }
@@ -2784,8 +2784,28 @@ BTAPP_FN static void gen_panel_bt(void)
 }
 
 
+/* (V10.6d) GENE: a double helix turning under the parts, its rungs the SEED's own bases (two bits a rung, four
+ * colours: each seed its DNA); under ARRANGE's first row when a song is arranged, none past it */
+static void gen_helix(void)
+{
+    uint32_t n = chain_config.count, x, s = gp.seed * 2654435761u + gp.genre * 40503u;
+    int32_t cy = n ? 106 : 94, a = n ? 8 : 16;
+    if (n > 8u)
+        return;
+    for (x = 6; x < 234u; x += 2u) {
+        uint32_t ang = (x * 6u + anim_fr * 4u) << 23;
+        int32_t d = osc_sine(ang) * a >> 15, z = osc_sine(ang + 0x40000000u);
+        if (x % 10u == 0u) {                             /* a rung: a base pair, the seed's */
+            int32_t h = d < 0 ? -d : d;
+            cv_rect((int32_t)x, cy - h, 1, 2 * h + 1, ux_mix(T_SURF, heat_col(40 + 64 * (int32_t)(s >> (x / 10u % 16u * 2u) & 3u)), 70));
+        }
+        cv_rect((int32_t)x, cy + d, 2, 2, z > 0 ? T_THEME : T_DIM);
+        cv_rect((int32_t)x, cy - d, 2, 2, z > 0 ? T_DIM : T_ACCENT);
+    }
+}
 static void gen_panel(void)
 {
     if (bt_hw_seg()) gen_panel_bt(); else graph_proj(chain_config.count ? 2 : 0);
+    gen_helix();
 }
 #include "gen_track.c"
