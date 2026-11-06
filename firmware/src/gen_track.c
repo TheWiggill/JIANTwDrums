@@ -7,7 +7,7 @@ static const char *const TG_ROLE[] = {"BASS","CHORDS","LEAD","ARP"};
 static int trackgen_ok(const track_t *t)
 {return eng_ok(eng_idx(t->eng_req))&&eng_idx(t->eng_req)!=ENGI_INPUT;}
 
-static void trackgen_knob(uint32_t k,int32_t s)
+static __attribute__((noinline)) void trackgen_knob(uint32_t k,int32_t s)
 {
     tg_config_t *c=&tg_config[song.sel%NTRK];
     if(!k) c->genre=gen_genre_next(c->genre,s);
@@ -17,7 +17,7 @@ static void trackgen_knob(uint32_t k,int32_t s)
         *p=(uint8_t)clamp((int32_t)*p+s*(drum_track(TSEL)?5:1),0,drum_track(TSEL)?100:3);
     } else c->energy=(uint8_t)clamp((int32_t)c->energy+s*5,0,100);
 }
-static void trackgen_cards(void)
+static __attribute__((noinline)) void trackgen_cards(void)
 {
     const tg_config_t *c=&tg_config[song.sel%NTRK];char b[12];
     hot_text_column(0,"GENRE",c->genre==GEN_EXPLORE?"EXPLORE":c->genre?GENRE[(c->genre-1u)%NGENRE].name:"RANDOM");
@@ -25,7 +25,7 @@ static void trackgen_cards(void)
     fmt_int(b,c->complex);hot_text_column(2,drum_track(TSEL)?"COMPLEX":"ROLE",drum_track(TSEL)?b:TG_ROLE[c->role%4u]);
     fmt_int(b,c->energy);hot_unit_column(3,"ENERGY",b,"%");
 }
-static void trackgen_make(void)
+static __attribute__((noinline)) void trackgen_make(void)
 {
     track_t *t=TSEL;uint32_t k=trk_index(t),i,j,n,len,f;
     const tg_config_t *c=&tg_config[k];

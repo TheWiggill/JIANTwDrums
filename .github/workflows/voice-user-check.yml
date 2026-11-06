@@ -47,7 +47,7 @@ jobs:
           mkdir -p build/song-check
           python3 tools/build.py > build/song-check/target.log 2>&1 || {
             cat build/song-check/target.log
-            python3 -c "import sys,pathlib;sys.path.insert(0,'tools');import build;p=pathlib.Path('build/felucca.map');r=build.map_inputs(p.read_text()) if p.exists() else [];print('Largest sections:', sorted(r,key=lambda x:x[2],reverse=True)[:35]);print('Save/GEN sections:',[(n,a,z,o) for n,a,z,o in r if n.startswith(('.text.song_', '.text.gen_', '.text.project_save', '.text.lib_scan'))]);print('Cold bank:',[l for l in p.read_text().splitlines() if '_bt_end' in l or '_bt_start' in l] if p.exists() else [])"
+            python3 -c "import sys,pathlib;sys.path.insert(0,'tools');import build;p=pathlib.Path('build/felucca.map');r=build.map_inputs(p.read_text()) if p.exists() else [];print('Largest sections:', sorted(r,key=lambda x:x[2],reverse=True)[:35]);print('Save/GEN sections:',[(n,a,z,o) for n,a,z,o in r if n.startswith(('.text.song_', '.text.gen_', '.text.trackgen', '.text.project_save', '.text.lib_scan'))]);print('Cold bank:',[l for l in p.read_text().splitlines() if '_bt_end' in l or '_bt_start' in l] if p.exists() else [])"
             exit 1
           }
       - name: Firmware memory and reach checks
