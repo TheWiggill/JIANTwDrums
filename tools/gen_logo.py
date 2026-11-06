@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
-"""V10.6k: the power-on logo (assets/ui-art/signature/jiant-fm-logo.jpg, "jiant fm" written in a pink-to-blue pen)
-as strokes, traced by hand over the drawing (its pixels below), smoothed (Catmull-Rom) and resampled every ~STEP px at
+"""V10.6l: the power-on logo, "jiant fm" (assets/ui-art/signature/jiant-fm-logo.jpg), as the owner writes it: his pen's
+path read off his screen recording (below), smoothed (Catmull-Rom) and resampled every ~STEP px at
 the splash's scale. Out: firmware/src/ui_signature.h, SIG_PTS x y bytes a point, a stroke starting where y has bit 7 set.
 
   gen_logo.py OUT.h [--png PREVIEW.png]
@@ -9,20 +9,25 @@ the splash's scale. Out: firmware/src/ui_signature.h, SIG_PTS x y bytes a point,
 import sys, math
 
 W, H, STEP = 220, 126, 3.0
-STROKES = [   # in the drawing's pixels (731 x 733), in the order and direction the hand wrote them (the owner's screen
-              # recording): "jiant" in one line (the j up from its foot, its loop, the i, a, n, the t down and its hook),
-              # the t's bar, the i's dot, the F (stem down, bar), the m
-    [(45, 560), (40, 480), (55, 400), (85, 320), (120, 250), (160, 200), (195, 190), (225, 215), (240, 262),
-     (238, 305), (222, 350), (198, 410), (175, 465), (160, 512), (170, 527), (188, 498), (208, 438), (226, 378), (238, 330),
-     (252, 362), (268, 372), (282, 302), (295, 240), (322, 292), (349, 288), (357, 250), (372, 240), (383, 262),
-     (381, 300), (386, 334), (402, 298), (422, 264), (442, 252), (456, 268), (466, 302), (480, 334), (492, 298),
-     (506, 265), (521, 252), (535, 272), (546, 338), (570, 270), (592, 206), (600, 290), (608, 385), (626, 380), (656, 360)],
-    [(525, 236), (590, 206), (660, 190)],
-    [(276, 122), (310, 158)],
-    [(340, 386), (300, 420), (275, 470), (255, 545)],
-    [(284, 480), (316, 470)],
-    [(340, 545), (390, 462), (440, 412), (470, 405), (476, 422), (456, 480), (430, 545)],
-    [(510, 530), (545, 465), (565, 420), (574, 435), (562, 470), (600, 446), (640, 436), (644, 452), (626, 490), (612, 522)],
+STROKES = [   # the owner's own pen path, from his screen recording of writing it (every ink pixel timed by the frame it
+              # appeared in): in its pixels (936 x 940 canvas), in the order and direction he wrote them
+    # "jiant" in one line: the j up from its foot, over, down to its loop, up to the i's top, down, up to the a's top,
+    # the a's bowl, the n's two arches, up to the t's top, down its stem and out to the right
+    [(105, 580), (112, 515), (140, 410), (175, 340), (215, 280), (255, 240), (300, 210), (330, 201), (352, 215),
+     (362, 245), (360, 295), (350, 330), (325, 390), (290, 450), (260, 495), (250, 505), (257, 500), (280, 440),
+     (315, 380), (355, 320), (390, 285), (440, 235), (445, 229), (415, 305), (390, 370), (382, 388), (410, 345),
+     (450, 300), (490, 265), (537, 235), (525, 248), (500, 270), (483, 305), (478, 345), (485, 370), (505, 371),
+     (525, 355), (535, 325), (537, 290), (540, 270), (556, 320), (572, 367), (590, 310), (610, 262), (622, 310),
+     (635, 362), (655, 310), (677, 267), (690, 320), (702, 372), (722, 335), (740, 290), (765, 230), (785, 157),
+     (778, 200), (780, 290), (787, 365), (795, 370), (840, 340), (897, 296)],
+    [(686, 200), (780, 188), (877, 179)],                                                     # the t's bar
+    [(429, 133), (448, 153)],                                                                 # the i's dot
+    [(267, 652), (290, 595), (315, 540), (350, 475), (380, 455), (425, 445), (486, 437)],     # the F, up
+    [(320, 539), (370, 522), (417, 506)],                                                     # its bar
+    [(415, 649), (475, 570), (530, 515), (575, 477), (600, 465), (614, 470), (615, 490), (605, 535), (580, 595),
+     (550, 640), (530, 655), (570, 585), (600, 552), (630, 520), (660, 490), (680, 485), (686, 495), (683, 540),
+     (670, 595), (642, 632), (680, 580), (720, 540), (760, 510), (800, 487), (814, 495), (814, 530), (805, 590),
+     (790, 640), (772, 672)],                                                                 # the m in one line
 ]
 
 
