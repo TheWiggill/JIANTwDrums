@@ -2181,6 +2181,7 @@ static void draw_graph(void)
                 graph_dximg(t);
             break;
         case GR_ROLL:
+        case GR_TRACKGEN:
         case GR_CHANCE:
         case GR_SHAPE:                               /* (0.6.85) STRETCH: the whole sequence, as the roll shows it */
             cv_oy = 0;

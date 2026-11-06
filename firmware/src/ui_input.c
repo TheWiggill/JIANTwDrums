@@ -1318,6 +1318,7 @@ static void edit_param(uint32_t slot, int32_t steps)
         if(slot==2u) lyric_syl=(uint8_t)clamp((int32_t)lyric_syl+steps,0,19);
         return;
     }
+    if(pg->graph==GR_TRACKGEN) {trackgen_knob(slot,steps);return;}
     if (pg->graph == GR_EVENTS) {                         /* AUTO LIST (ui_events.c) */
         ev_knob(slot, steps);
         return;
@@ -1577,6 +1578,7 @@ static void act_do(void)
     uint32_t c = act_col(), id, k = (uint32_t)song.g[G_SLOT] - 1u;
     if (!c--)
         return;
+    if(cur_page()->graph==GR_TRACKGEN) {trackgen_make();return;}
     if (cur_page()->graph == GR_MOTION) {
         if (chain_busy()) { ui_message("SONG PLAYS: STOP IT TO EDIT"); return; }
         confirm_open(CF_CLEAR_MOTION, song.sel);

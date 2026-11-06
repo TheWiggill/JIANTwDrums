@@ -24,6 +24,10 @@ static void project_load(uint32_t slot);
 static int section_jump(uint32_t s);    /* (song_main.c: 0.6.80, channel 16's PROGRAM CHANGE) */
 static int song_select(uint32_t n);
 static void undo_mark(void);                    /* (0.6.21) project.c: the music before a change, */
+static int trackgen_ok(const track_t *t);
+static void trackgen_knob(uint32_t k,int32_t s);
+static void trackgen_cards(void);
+static void trackgen_make(void);
 static void system_init(void);                  /* (0.6.40) project.c: INIT SYSTEM */
 static int undo_do(void);                       /* .. back (and again: forward) */
 static uint8_t undo_ok;
@@ -584,6 +588,7 @@ static int page_visible(uint32_t i)
         return e == ENGI_ANALOG || ENGINES[e] == &ENG_PHASE ||   /* (0.6.81: every ANALOG WAVE) */
                (ENGINES[e] == &ENG_LOFI && TSEL->p[P_E1] < RW_BYTE);
     }
+    if(PAGES[i].graph==GR_TRACKGEN) return trackgen_ok(TSEL);
     if (PAGES[i].graph == GR_LYRIC || PAGES[i].graph == GR_LYRSTEP)
         return trk_engp(TSEL) == &ENG_FORMANT;
     if (PAGES[i].graph == GR_PATS || PAGES[i].graph == GR_CHANCE)   /* (0.6.37) PHRASES, a step's CHANCE: out of the */
@@ -1963,7 +1968,7 @@ static uint32_t act_cols(void)                   /* the columns that are actions
     if (ui.home)
         return 0;
     if (pg->graph == GR_MOTION || pg->graph == GR_PUNCH) return 8u;   /* (0.6.99) PUNCH: KNOB 4 CLEAR */
-    if (pg->graph == GR_EVENTS) return 16u;     /* AUTO LIST: no knob is an action; OCT+ adds / toggles (ev_oct) */
+    if (pg->graph == GR_EVENTS || pg->graph==GR_TRACKGEN) return 16u;
     if (pg->graph == GR_TOOLS) return 15u;
     if (pg->graph == GR_LYRIC || pg->graph==GR_LYRSTEP) return 8u;
     if (pg->graph == GR_SONG)
@@ -1992,7 +1997,7 @@ static uint32_t shp_rep(void) { return shp_r == 0u ? 1u : shp_r < 8u ? shp_r + 1
 static uint32_t act_col(void)
 {
     if (!ui.home && cur_page()->graph == GR_SONG) return 1u;
-    if (!ui.home && cur_page()->graph == GR_EVENTS) return 5u;
+    if (!ui.home && (cur_page()->graph == GR_EVENTS || cur_page()->graph==GR_TRACKGEN)) return 5u;
     if (!ui.home && (cur_page()->graph == GR_LYRIC || cur_page()->graph==GR_LYRSTEP)) return 4u;
     return !ui.home && cur_page()->graph == GR_PATS ? 2u : ui.act;
 }
@@ -2007,6 +2012,7 @@ static const char *act_name(uint32_t c)          /* column c's action (the foote
     if (cur_page()->graph == GR_EVENTS) return ev_act_name();
     if (cur_page()->graph == GR_LYRIC) return "TYPE";
     if (cur_page()->graph == GR_LYRSTEP) return "PLACE";
+    if (cur_page()->graph == GR_TRACKGEN) return "MAKE";
     if (cur_page()->graph == GR_TOOLS) {
         static const char *const actions[] = {"CLEAR", "INIT", "DELETE", "CLEAR", "INIT"};
         return actions[c < 5u ? c : 4u];
@@ -2034,6 +2040,7 @@ static int act_ready(void)
     if (cur_page()->graph == GR_EVENTS) return ev_act_ready();
     if (cur_page()->graph == GR_LYRIC) return 1;
     if (cur_page()->graph == GR_LYRSTEP) return !chain_busy() && lyr_get(song.sel)[0];
+    if (cur_page()->graph == GR_TRACKGEN) return !chain_busy() && trackgen_ok(TSEL);
     if (cur_page()->graph == GR_TOOLS)                  /* one case per column: CLEAR PAT, INIT, DELETE ROW, CLEAR SONG */
         return !chain_busy() && (c == 0u ? !seq_is_empty(TSEL) || motion_count(TSEL) : c == 1u || c >= 4u ? 1 :
                                  c == 2u ? ui.song_row < chain_config.count : chain_config.count != 0u);

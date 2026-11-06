@@ -765,6 +765,12 @@ static uint32_t glyph(const aafont_t *f, uint32_t ch)
 /* table entry i (glyph i >> psh at phase i & (phases - 1)), unpacked */
 static aag_t ag(const aafont_t *f, uint32_t i)
 {
+    if(!f->gp) {
+        const uint8_t *p=(const uint8_t *)f->gh+5u*i;
+        aag_t g={(uint16_t)(p[0]|(p[1]&15u)<<8), (uint16_t)((p[1]>>4|p[2]<<4)&511u),
+                 (int8_t)((p[2]>>5)-1),p[3]&31u,(p[3]>>5|p[4]<<3)&31u,(p[4]>>2)&31u};
+        return g;
+    }
     const aagh_t *h = &f->gh[i >> f->psh];
     uint32_t v = f->gp[i];
     aag_t g;
@@ -775,6 +781,12 @@ static aag_t ag(const aafont_t *f, uint32_t i)
     g.bw = (uint8_t)((v >> 19) & 127u);
     g.bh = (uint8_t)(v >> 26);
     return g;
+}
+static uint32_t font_advance(const aafont_t *f,uint32_t i)
+{
+    if(f->gp) return f->gh[i>>f->psh].adv;
+    const uint8_t *p=(const uint8_t *)f->gh+5u*i;
+    return (p[1]>>4|p[2]<<4)&511u;
 }
 
 static int32_t kern(const aafont_t *f, uint32_t a, uint32_t b)       /* 1/16 px */
@@ -807,7 +819,7 @@ static int32_t text_w(const aafont_t *f, const char *s)
         uint32_t c = fold(f, (uint8_t)*s);
         if (prev)
             pen += kern(f, prev, c);
-        pen += f->gh[glyph(f, c) >> f->psh].adv;
+        pen += font_advance(f,glyph(f,c));
         prev = c;
     }
     return (pen + 8) >> 4;
@@ -1199,3 +1211,4 @@ static void draw_text_box(uint32_t x, uint32_t y, uint32_t w, const aafont_t *f,
 {
     draw_text_line(x, y, w, f, s, c, T_BG, align);
 }
+

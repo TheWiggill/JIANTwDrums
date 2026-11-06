@@ -20,6 +20,8 @@
 static void lcd_sync(void) {}
 static void lcd_power(uint32_t s) { (void)s; }   /* (MENU > SCREEN OFF: lcd.c) */
 static void lcd_wake_now(void) {}
+static void lcd_fill(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint16_t c)
+{ (void)x;(void)y;(void)w;(void)h;(void)c; }
 static void lcd_blit(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const uint16_t *p)
 { (void)x; (void)y; (void)w; (void)h; (void)p; }
 #include "../firmware/src/gfx.c"
@@ -77,6 +79,13 @@ static uint32_t ref_gi(const aafont_t *f, uint32_t ch)      /* the glyph's numbe
  * phase: offset - gh's (10 bits), bx + 1 (3), by (6), bw (7), bh (6) */
 static aag_t ref_entry(const aafont_t *f, uint32_t gi, uint32_t ph)
 {
+    if(!f->gp) {
+        const uint8_t *p=(const uint8_t*)f->gh+gi*5u;uint64_t v=0;
+        for(uint32_t k=0;k<5;k++) v|=(uint64_t)p[k]<<(8u*k);
+        aag_t g={(uint16_t)(v%4096u),(uint16_t)(v/4096u%512u),(int8_t)(v/2097152u%8u-1),
+                 (uint8_t)(v/16777216u%32u),(uint8_t)(v/536870912u%32u),(uint8_t)(v/17179869184ull%32u)};
+        return g;
+    }
     uint32_t v = f->gp[(gi << f->psh) + ph];
     aag_t g = {(uint16_t)(f->gh[gi].off + v % 1024u), f->gh[gi].adv, (int8_t)((int)(v / 1024u % 8u) - 1),
                (uint8_t)(v / 8192u % 64u), (uint8_t)(v / 524288u % 128u), (uint8_t)(v / 67108864u)};
@@ -208,3 +217,4 @@ int main(void)
     }
     return bad_pen || bad_px ? 1 : 0;
 }
+

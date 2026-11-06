@@ -40,7 +40,7 @@ SIZE_FILES = ["ui.c", "favorites.c", "menu_items.c", "icons.c", "ui_graph.c", "u
               "eng_wheel.c", "bt.c", "click.c",
               # Whole-song SAVE is main-loop storage work, added after this list.
               # As above, anything reached from an ISR remains at -Os.
-              "song_save.c", "eng_input.c", "usb_host.c"]
+              "song_save.c", "eng_input.c", "usb_host.c", "gen_track.c"]
 ISR_ROOTS = ("fm1_alnk0_irq", "fm1_timer5_irq")      # hal/fm1_isr.S: the audio ISR, the key / LED scan (+ USB poll)
 DEF = re.compile(r"^(?:static|void|int|uint\w*|int\w*|const)\b[^;=(]*?\b([A-Za-z_]\w*)\s*\(", re.M)
 IR_DEF = re.compile(r"^(define [^\n]*?@\"?([\w.]+)\"?\([^\n]*\)(?: unnamed_addr| local_unnamed_addr)?)( #\d+[^\n]*\{)$",

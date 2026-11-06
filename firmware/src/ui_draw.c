@@ -1630,6 +1630,7 @@ static void draw_columns(void)
         draw_act_column(3,"PLACE",T_THEME,ICON_AUTO);
         return;
     }
+    if(cur_page()->graph==GR_TRACKGEN) {trackgen_cards();return;}
     if (SPLIT_PAGE(cur_page())) {
         static const char *const labels[8] = {"SPLIT", "LOW TRK", "HIGH TRK", "KEY CUT", "LOW OCT", "HIGH OCT", "MIDI CH", "MIDI CUT"};
         for (uint32_t c = 0; c < 4; c++) {

@@ -2670,19 +2670,22 @@ static void gen_amt_turn(uint8_t *v, int32_t s)         /* OFF, 10 .. 100, AUTO 
     x = clamp(x + s * 10, 0, 110);
     *v = (uint8_t)(x > 100 ? GA_AUTO : x);
 }
+static uint8_t gen_genre_next(uint32_t g,int32_t s)
+{
+    uint32_t pos;
+    g=g>GEN_TOP+1u||!g||g==GEN_EXPLORE?g:g==GEN_TOP+1u?1u:g+1u;
+    pos=g==GEN_EXPLORE?0u:g+1u;
+    pos=(pos+(s>0?1u:GEN_NPOS-1u))%GEN_NPOS;
+    g=pos?pos-1u:GEN_EXPLORE;
+    return (uint8_t)(g>GEN_TOP+1u||!g||g==GEN_EXPLORE?g:g==1u?GEN_TOP+1u:g-1u);
+}
 static void gen_knob(uint32_t k, int32_t s)
 {
     uint32_t p = gp.page;
     gp.hot = (uint8_t)k;
     if (p == 0u) {
         if (k == 0u) {                                  /* (0.8.6) EXPLORE first, then RANDOM, then the genres */
-            uint32_t g = gp.genre, pos;                 /* (0.9.9-gen2) ACID HOUSE shown first of the genres (asked for
-                                                         * most): the knob's order only, gp.genre the genre's own number */
-            g = g > GEN_TOP + 1u || !g || g == GEN_EXPLORE ? g : g == GEN_TOP + 1u ? 1u : g + 1u;
-            pos = g == GEN_EXPLORE ? 0u : g + 1u;
-            pos = (pos + (s > 0 ? 1u : GEN_NPOS - 1u)) % GEN_NPOS;
-            g = pos ? pos - 1u : GEN_EXPLORE;
-            gp.genre = (uint8_t)(g > GEN_TOP + 1u || !g || g == GEN_EXPLORE ? g : g == 1u ? GEN_TOP + 1u : g - 1u);
+            gp.genre=gen_genre_next(gp.genre,s);
         }
         else if (k == 1u) gp.seed = (uint16_t)((gp.seed + 10000u + (uint32_t)clamp(accel(EN_K2, s, 9999), -9999, 9999)) % 10000u);
         else if (k == 2u) gp.energy = (uint8_t)clamp((int32_t)gp.energy + s * 5, 0, 100);
@@ -2785,3 +2788,4 @@ static void gen_panel(void)
 {
     if (bt_hw_seg()) gen_panel_bt(); else graph_proj(chain_config.count ? 2 : 0);
 }
+#include "gen_track.c"
