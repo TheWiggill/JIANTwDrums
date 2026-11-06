@@ -269,35 +269,76 @@ static void analog_dispatch(track_t *t, voice_t *v, int32_t *out, uint32_t n, co
 }
 
 static const preset_t ANALOG_PRESETS[] = {
-    {"SAW LEAD", {0, 12, 64, 0, 90, 30, 10, 12}, {4, 70, 100, 50}, 20, 1 | TAG(LEAD), FX(0, 10, 45, 30), PAT(4)},
-    {"SOFT PAD", {0, 20, 64, 4, 60, 10, 0, 0}, {80, 90, 110, 95}, 10, TAG(PAD), FX(0, 60, 20, 70), PAT(5), BREATHE(14, 0, 0)},
-    {"SQR BASS", {1, 0, 0, 0, 50, 70, 40, 0}, {0, 60, 40, 30}, 30, 1 | TAG(BASS), FX(5, 0, 10, 10), PAT(2)},
-    {"PWM STR", {4, 8, 40, 0, 75, 20, 0, 0}, {60, 80, 110, 85}, 8, TAG(PAD), FX(0, 50, 20, 60), PAT(5)},
-    {"ACID", {0, 0, 0, 0, 50, 100, 25, 0}, {0, 55, 20, 30}, 48, 1 | TAG(BASS), FX(20, 0, 45, 15), PAT(1)},
-    {"SINE KEY", {3, 6, 50, 0, 127, 0, 0, 0}, {2, 80, 30, 70}, 0, TAG(KEYS), FX(0, 30, 25, 40), PAT(6)},
-    {"RAVE", {4, 30, 64, 0, 85, 20, 30, 7}, {20, 80, 110, 60}, 10, 1 | TAG(LEAD), FX(30, 40, 30, 30), PAT(13)},
-    {"SUB BASS", {3, 0, 0, 0, 40, 0, 20, 0}, {0, 60, 100, 20}, 0, 1 | TAG(BASS), FX(0, 0, 0, 10), PAT(8)},
-    {"PLUCK", {0, 8, 50, 0, 30, 40, 0, 0}, {0, 88, 0, 60}, 55, TAG(PLUCK), FX(0, 20, 50, 30), PAT(3)},
-    {"BRASS", {0, 10, 64, 0, 45, 20, 10, 0}, {35, 70, 90, 45}, 40, TAG(LEAD), FX(0, 20, 20, 40), PAT(6)},
-    {"WIND", {0, 0, 0, 90, 30, 90, 0, 0}, {60, 90, 60, 80}, 50, TAG(FX), FX(0, 30, 30, 70), PAT(5)},
-    {"STRINGS", {0, 25, 64, 0, 70, 10, 0, 0}, {70, 90, 115, 90}, 5, TAG(PAD), FX(0, 60, 20, 70), PAT(5), BREATHE(10, 1, 0)},
+    /* (V10.6i, reworked in place: the stored numbers kept, PROGRAM CHANGE and GEN's picks too, gen_tables.c RECIPE) the
+     * sounds to play first, then the experiments moved by the MOD matrix, then two bare INITs (browsed in ANALOG_ORDER).
+     * VIB: MODW 1 = ~0.4 st of vibrato at the full wheel (AMT 64 = LD PIT's whole range) */
+    {"SAW LEAD", {0, 12, 64, 0, 90, 30, 10, 12}, {3, 70, 100, 50}, 20, 1 | TAG(LEAD), FX(0, 10, 45, 30), PAT(4),
+     MODS(P_LRATE, 86, P_LFADE, 60, MMOD(1, PS_MODW, PD_VIB, 2), MMOD(2, PS_VEL, PD_CUT, 12))},   /* (no LFO WAVE / FILTER:
+                                                         * ui_test reads preset 0 as the LFO's defaults) */
+    {"SOFT PAD", {0, 20, 64, 4, 60, 10, 0, 0}, {85, 90, 110, 105}, 10, TAG(PAD), FX(0, 60, 25, 70), PAT(5), BREATHE(14, 0, 0),
+     MODS(MMOD(1, PS_RAND, PD_PAN, 28), MENV2(100, 110, 40, 100), MMOD(2, PS_ENV2, PD_E(1), 16),
+          MMOD(3, PS_KEY, PD_CUT, 20))},                  /* each chord somewhere else, its saws spreading as it swells */
+    {"SQR BASS", {1, 0, 0, 0, 50, 70, 40, 0}, {0, 60, 40, 22}, 30, 1 | TAG(BASS), FX(5, 0, 10, 10), PAT(2),
+     MODS(MMOD(1, PS_VEL, PD_CUT, 16), MMOD(2, PS_KEY, PD_CUT, 16))},
+    {"PWM STR", {4, 8, 40, 0, 75, 20, 0, 0}, {60, 80, 110, 85}, 8, TAG(PAD), FX(0, 50, 20, 60), PAT(5),
+     MODS(MLFO(LW_TRI, 44, 0, 0), P_LD_SHP, 22, MMOD(1, PS_MODW, PD_CUT, 28))},   /* the width swept slowly */
+    {"ACID", {0, 0, 0, 0, 50, 100, 25, 0}, {0, 55, 20, 30}, 48, 1 | TAG(BASS), FX(20, 0, 45, 15), PAT(1),
+     MODS(MMOD(1, PS_VEL, PD_CUT, 18), MMOD(2, PS_MODW, PD_E(5), 12), P_GLIDE, 14)},
+    {"SINE KEY", {3, 6, 50, 0, 127, 0, 0, 0}, {2, 80, 30, 70}, 0, TAG(KEYS), FX(0, 30, 25, 40), PAT(6),
+     MODS(P_LRATE, 84, MMOD(1, PS_MODW, PD_VIB, 1))},    /* (tests/hostsim.c: a plain held sine) */
+    {"RAVE", {4, 30, 64, 0, 85, 20, 30, 7}, {4, 80, 110, 60}, 10, 1 | TAG(LEAD), FX(30, 40, 30, 30), PAT(13),
+     MODS(MLFO(LW_TRI, -8, 0, 0), P_LD_SHP, 30, MMOD(1, PS_RAND, PD_PAN, 30), MMOD(2, PS_MODW, PD_E(1), 30),
+          MMOD(3, PS_AT, PD_E(6), 30))},                  /* the width on the 1/8s, each note elsewhere */
+    {"SUB BASS", {3, 0, 0, 0, 40, 0, 20, 0}, {0, 60, 100, 18}, 0, 1 | TAG(BASS), FX(0, 0, 0, 10), PAT(8),
+     MODS(MMOD(1, PS_VEL, PD_E(6), 16), MENV2(0, 14, 0, 10), MMOD(2, PS_ENV2, PD_PITCH, 3))},   /* a thump on each note */
+    {"PLUCK", {0, 8, 50, 0, 30, 40, 0, 0}, {0, 84, 0, 60}, 55, TAG(PLUCK), FX(0, 20, 50, 30), PAT(3),
+     MODS(MMOD(1, PS_VEL, PD_CUT, 18), MMOD(2, PS_KEY, PD_CUT, 20))},
+    {"INIT SAW", {0, 0, 0, 0, 127, 0, 0, 0}, {0, 64, 127, 20}, 0, TAG(LEAD), FX(0, 0, 0, 0)},
+    {"INIT PWM", {4, 0, 0, 0, 127, 0, 0, 0}, {0, 64, 127, 20}, 0, TAG(KEYS), FX(0, 0, 0, 0)},
+    {"STRINGS", {0, 25, 64, 0, 70, 10, 0, 0}, {75, 90, 115, 95}, 5, TAG(PAD), FX(0, 60, 20, 70), PAT(5), BREATHE(10, 1, 0),
+     MODS(MMOD(1, PS_MODW, PD_CUT, 24), P_DRIFT, 100)},
     /* (JIANT 0.4: TRIO's, folded in) SYNC (ratio 1 + 11/16), RING (1 + 18/16), SAW3 (9 ct a side) */
-    {"SYNC LEAD", {5, 11, 90, 0, 82, 30, 10, 0}, {2, 70, 100, 40}, 18, 1 | TAG(LEAD), FX(0, 10, 40, 25), PAT(4)},
-    {"RING BELL", {6, 18, 100, 0, 110, 20, 0, 0}, {0, 92, 0, 80}, 0, TAG(BELL), FX(0, 20, 35, 55), PAT(7)},
-    {"FAT BASS", {7, 9, 64, 0, 62, 45, 20, -12}, {0, 62, 60, 25}, 40, 1 | TAG(BASS), FX(10, 0, 10, 10), PAT(2)},
+    {"SYNC LEAD", {5, 11, 90, 0, 82, 30, 10, 0}, {2, 70, 100, 40}, 18, 1 | TAG(LEAD), FX(0, 10, 40, 25), PAT(4),
+     MODS(MENV2(0, 60, 10, 30), MMOD(1, PS_ENV2, PD_E(1), 24), MMOD(2, PS_MODW, PD_E(1), 30), P_LRATE, 88,
+          MMOD(3, PS_AT, PD_VIB, 2), P_GLIDE, 16)},     /* each note's sync swept down (ENV 2), MODW higher */
+    {"RING BELL", {6, 18, 100, 0, 110, 20, 0, 0}, {0, 92, 0, 85}, 0, TAG(BELL), FX(0, 20, 35, 55), PAT(7),
+     MODS(MMOD(1, PS_RAND, PD_E(1), 4), MMOD(2, PS_RAND, PD_PAN, 36), MMOD(3, PS_RAND, PD_REV, 20))},   /* each strike
+                                                         * its own metal, place and room */
+    {"FAT BASS", {7, 9, 64, 0, 62, 45, 20, -12}, {0, 62, 60, 25}, 40, 1 | TAG(BASS), FX(10, 0, 10, 10), PAT(2),
+     MODS(MMOD(1, PS_VEL, PD_CUT, 14), MMOD(2, PS_AT, PD_E(6), 30), MMOD(3, PS_MODW, PD_SHP, 30))},   /* MODW: wider */
     /* (0.7.0) a palette for the song generator and the player: pads, a reese, a hoover, a dub stab, a cello, an
      * arp pluck, a lead, keys, an organ */
-    {"JUNO PAD", {4, 14, 64, 2, 58, 12, 0, 0}, {45, 90, 115, 90}, 8, TAG(PAD), FX(0, 70, 25, 60), PAT(5), BREATHE(16, 1, 0)},
-    {"REESE", {7, 22, 64, 0, 44, 20, 25, 0}, {2, 80, 110, 40}, 0, 1 | TAG(BASS), FX(10, 20, 10, 10), PAT(2)},
-    {"HOOVER", {7, 40, 64, 0, 92, 15, 35, 12}, {10, 80, 110, 55}, 12, 1 | TAG(LEAD), FX(25, 50, 35, 35), PAT(13)},
-    {"DUB STAB", {1, 6, 64, 0, 52, 55, 10, 7}, {0, 50, 20, 45}, 50, TAG(KEYS), FX(0, 15, 60, 55), PAT(6)},
-    {"CELLO", {0, 4, 40, 2, 48, 18, 15, -12}, {30, 85, 110, 70}, 10, TAG(PAD), FX(5, 30, 20, 55), PAT(5)},
-    {"ARP PLUCK", {1, 10, 50, 0, 44, 50, 0, 12}, {0, 62, 0, 40}, 60, TAG(PLUCK), FX(0, 25, 55, 35), PAT(3)},
-    {"MOOG LEAD", {2, 6, 40, 0, 72, 40, 40, -12}, {6, 75, 100, 45}, 25, 1 | TAG(LEAD), FX(10, 0, 35, 25), PAT(4)},
-    {"DARK PAD", {0, 18, 64, 6, 38, 30, 10, -12}, {70, 95, 120, 100}, 12, TAG(PAD), FX(0, 55, 30, 75), PAT(5), BREATHE(22, 1, 1)},
-    {"GLASS KEYS", {3, 8, 60, 0, 120, 0, 0, 19}, {0, 82, 20, 65}, 0, TAG(KEYS), FX(0, 35, 35, 50), PAT(6)},
-    {"ORGAN SQR", {1, 4, 64, 0, 100, 0, 5, 12}, {0, 64, 127, 30}, 0, TAG(KEYS), FX(0, 35, 10, 35), PAT(6)},
+    {"JUNO PAD", {4, 14, 64, 2, 58, 12, 0, 0}, {45, 90, 115, 90}, 8, TAG(PAD), FX(0, 70, 25, 60), PAT(5), BREATHE(16, 1, 0),
+     MODS(P_LD_SHP, 12, MMOD(1, PS_VEL, PD_CUT, 12), MMOD(2, PS_MODW, PD_CUT, 24))},   /* the width drifting too */
+    {"REESE", {7, 22, 64, 0, 44, 20, 25, 0}, {2, 80, 110, 40}, 0, 1 | TAG(BASS), FX(10, 20, 10, 10), PAT(2),
+     MODS(MLFO(LW_DRIFT, 30, 0, 6), MMOD(1, PS_LFO, PD_E(1), 12), MMOD(2, PS_MODW, PD_CUT, 30),
+          MMOD(3, PS_AT, PD_E(6), 24))},                  /* the beating wanders */
+    {"HOOVER", {7, 40, 64, 0, 92, 15, 35, 12}, {10, 80, 110, 55}, 12, 1 | TAG(LEAD), FX(25, 50, 35, 35), PAT(13),
+     MODS(MENV2(0, 30, 0, 20), MMOD(1, PS_ENV2, PD_PITCH, -10), MMOD(2, PS_MODW, PD_SHP, 40),
+          MMOD(3, PS_RAND, PD_PAN, 24), P_GLIDE, 20)},  /* each note swoops up ~2 st (ENV 2) */
+    {"DUB STAB", {1, 6, 64, 0, 52, 55, 10, 7}, {0, 50, 20, 45}, 50, TAG(KEYS), FX(0, 15, 60, 55), PAT(6),
+     MODS(MLFO(LW_SH, -10, 0, 14), MMOD(1, PS_RAND, PD_DLY, 30), MMOD(2, PS_RAND, PD_PAN, 24))},   /* S&H on the
+                                                         * cutoff, a throw into the delay now and then */
+    {"CELLO", {0, 4, 40, 2, 48, 18, 15, -12}, {30, 85, 110, 70}, 10, TAG(PAD), FX(5, 30, 20, 55), PAT(5),
+     MODS(MLFO(LW_SIN, 82, 1, 0), P_LFADE, 80, MMOD(1, PS_AT, PD_CUT, 24))},   /* the vibrato comes late */
+    {"ARP PLUCK", {1, 10, 50, 0, 44, 50, 0, 12}, {0, 62, 0, 40}, 60, TAG(PLUCK), FX(0, 25, 55, 35), PAT(3),
+     MODS(MMOD(1, PS_VEL, PD_CUT, 16), MMOD(2, PS_KEY, PD_CUT, 24))},
+    {"MOOG LEAD", {2, 6, 40, 0, 72, 40, 40, -12}, {6, 75, 100, 45}, 25, 1 | TAG(LEAD), FX(10, 0, 35, 25), PAT(4),
+     MODS(P_LRATE, 84, P_LFADE, 50, MMOD(1, PS_MODW, PD_VIB, 2), MMOD(2, PS_AT, PD_CUT, 24), P_GLIDE, 24)},
+    {"DARK PAD", {0, 18, 64, 6, 38, 30, 10, -12}, {70, 95, 120, 105}, 12, TAG(PAD), FX(0, 55, 30, 75), PAT(5), BREATHE(22, 1, 1),
+     MODS(MMOD(1, PS_RAND, PD_PAN, 30), MMOD(2, PS_KEY, PD_CUT, 24), MMOD(3, PS_MODW, PD_E(3), 30),
+          MENV2(110, 120, 60, 110), MMOD(4, PS_ENV2, PD_REV, 30))},   /* (the LFO BREATHE's) the room grows as it swells */
+    {"GLASS KEYS", {3, 8, 60, 0, 120, 0, 0, 19}, {0, 82, 20, 65}, 0, TAG(KEYS), FX(0, 35, 35, 50), PAT(6),
+     MODS(MMOD(1, PS_VEL, PD_E(2), 24), P_LRATE, 40, MMOD(2, PS_LFO, PD_PAN, 14))},   /* harder: more of the 12th */
+    {"ORGAN SQR", {1, 4, 64, 0, 100, 0, 5, 12}, {0, 64, 127, 30}, 0, TAG(KEYS), FX(0, 35, 10, 35), PAT(6),
+     MODS(P_LRATE, 92, MMOD(1, PS_MODW, PD_VIB, 1))},
 };
+/* (V10.6i) the browsing order (ui.c preset_order): to play, then the experiments, then the INITs. 4 5 6 in a row:
+ * ui_test steps from ACID (TRK_OLD) to SINE KEY to RAVE */
+static const uint8_t ANALOG_ORDER[] = {14, 2, 7, 16, 0, 21, 15, 11, 3, 19, 8, 20, 23, 24, 4, 5,   /* to play */
+                                       6, 17, 12, 18, 13, 1, 22,                                   /* experiments */
+                                       9, 10};                                                     /* INIT */
+_Static_assert(sizeof ANALOG_ORDER == NELEM(ANALOG_PRESETS), "ANALOG's browsing order: every preset once");
 
 static const engine_t ENG_ANALOG = {
     .name = "ANALOG",
