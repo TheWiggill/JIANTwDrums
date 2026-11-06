@@ -35,7 +35,7 @@ int main(void)
     }
     printf("GEN SONG: %u genre choices have complete, non-identical parts\n", total);
     make_song(1, 31);
-    nav_put(SEC_HOME, "GEN 1"); frame();
+    nav_put(SEC_HOME, "GENE 1"); frame();
     sig = gen_draw_sig();
     press(B_PLAY); events_block(CTL); song_poll(); frame();
     ok = chain.running && chain.row == 0 && live.cur == 1 && gen_draw_sig() != sig;
@@ -68,14 +68,14 @@ int main(void)
      * the draft buffers and may replace them, even while the previous song plays. */
     make_song(1, 31);
     section_store(1); live.mode = 1;
-    nav_put(SEC_HOME, "GEN 2"); frame();
+    nav_put(SEC_HOME, "GENE 2"); frame();
     press(B_PLAY); events_block(CTL); song_poll();
     uint32_t before_seed = gp.seed; gp.sig = gen_sig();
     press(B_OCTUP); events_block(CTL); song_poll(); frame();
     bad += check("GEN 2 rerolls a playing song as a draft and resumes arrangement playback",
                  song_draft && !gform_kept && chain_config.count >= 4 && song.playing && chain.running && gp.seed != before_seed);
     screen_save("build/song-check", "generator-draft-page2");
-    nav_put(SEC_HOME, "GEN 3"); frame();
+    nav_put(SEC_HOME, "GENE 3"); frame();
     bad += check("GEN 3 keeps real parts visible while editing generator settings", gen_page()==2 && chain_config.count>=4);
     screen_save("build/song-check", "generator-draft-page3");
     seq_stop();song_poll();
