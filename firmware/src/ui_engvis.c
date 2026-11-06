@@ -1578,7 +1578,7 @@ static void vx_whorl(const vxf_t *f, const int32_t *c, int32_t u0, int32_t u1, i
     }
 }
 /* CARACOL */
-static VX_CODE void vx_phase(const track_t *t, const int32_t *A, int32_t en_home)
+static VX_SEG void vx_phase(const track_t *t, const int32_t *A, int32_t en_home)
 {
     const int16_t *p = t->p;
     vxf_t f = vx_uf(A, 110, 48);
@@ -2027,8 +2027,8 @@ static int vx_draw(const track_t *t, int32_t x, int32_t y, int32_t w, int32_t h,
 {
     const engine_t *e = trk_engp(t);
     int32_t A[4] = {x, y, w, h}, cx = x * 16 + w * 8, cy = y * 16 + h * 8, s;
-    if (!bt_hw_seg() && (e == &ENG_LOFI || e == &ENG_ANIMAL || e == &ENG_STRING))
-        return 0;                                        /* (V10.48: those creatures live in the segment) */
+    if (!bt_hw_seg() && (e == &ENG_LOFI || e == &ENG_ANIMAL || e == &ENG_STRING || e == &ENG_PHASE))
+        return 0;                                        /* (V10.48: those creatures live in the segment; V10.6g PHASE's too) */
     if (e == &ENG_FORMANT) {                             /* (the tract ~80 x 62 units about (-20, 37): the crown off) */
         s = vx_fit(w, h, 80, 62);
         vx_voice(t, cx + 5 * s / 4, cy - 37 * s / 16, s, en_home);
