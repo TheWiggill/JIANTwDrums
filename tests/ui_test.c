@@ -13451,6 +13451,20 @@ static int test_scene(void)
         bad += check("SCENE BASS pattern ACID: the arp RND 1/16; the kit's DRUM FOUR: a key writes a four-on-the-floor beat", ok);
         scn_role[0] = SC_KEEP; scn_pat[4] = 0; sc_setup(4);
     }
+    {   /* (V10.6m) GEN: the generator writes T5 a bass line, ARP TRNS + QUANT SEQ; a key moves it to its chord's root */
+        uint32_t notes = 0;
+        scn_pat[4] = SC_GEN; sc_setup(4); sc_gen(4);
+        for (i = 0; i < (uint32_t)trk[4].p[P_SLEN]; i++) notes += trk[4].step[i].time == ST_NOTE && trk[4].step[i].n;
+        ok = notes >= 4u && trk[4].p[P_AMODE] == AM_TRNS && trk[4].p[P_QUANT] == QN_SEQ && trk[4].p[P_SLEN] >= 32;
+        key_down(white(7) + 4u);                         /* (four keys up: a third or a fourth away) */
+        for (i = 0; i < 4u; i++) events_block(CTL);
+        ok &= trk[4].trn != 0 && trk[4].trn >= -5 && trk[4].trn <= 6 && trk_gates(4) == 0u;
+        key_up(white(7) + 4u);
+        for (i = 0; i < 4u; i++) events_block(CTL);
+        bad += check("SCENE BASS GEN: a generated line (ARP TRNS, QUANT SEQ, 2 bars); a key moves it by its root, the nearest way", ok);
+        scn_pat[4] = 0; sc_setup(4);
+        trk[4].p[P_AMODE] = 0; trk[4].p[P_QUANT] = 0; trk[4].trn = 0;
+    }
     turn(EN_K3, -1);                                     /* (T5 BASS -> ARP: T4's ARP goes KEEP) */
     bad += check("SCENE: a role another track has: that track KEEP (no two alike)", scn_role[4] == SC_ARP && scn_role[3] == SC_KEEP);
     turn(EN_K1, -1);

@@ -1734,7 +1734,7 @@ static void project_capture(project_t *p)
         p->scene[0] = scn_on & 1u;
         for (i = 0; i < NTRK; i++) p->scene[1u + i / 2u] |= (uint8_t)((scn_role[i] & 15u) << (4u * (i & 1u)));
         memset(p->scpat, 0, sizeof p->scpat);
-        for (i = 0; i < NTRK; i++) p->scpat[i / 2u] |= (uint8_t)((scn_pat[i] & 7u) << (4u * (i & 1u)));
+        for (i = 0; i < NTRK; i++) p->scpat[i / 2u] |= (uint8_t)((scn_pat[i] % SC_NPAT) << (4u * (i & 1u)));
     }
     p->dx_tone = dx_tone;
     p->dx_hands = (uint8_t)(dx_hands | dx_glue << 4);   /* (0.7.9; snd1: GLUE) */
@@ -1959,7 +1959,7 @@ static int project_restore_runtime(const project_t *input)
         for (i = 0; i < NTRK; i++) {
             uint32_t r = (p->scene[1u + i / 2u] >> (4u * (i & 1u))) & 15u;
             scn_role[i] = (uint8_t)(r < SC_N ? r : SC_KEEP);
-            scn_pat[i] = (uint8_t)((p->scpat[i / 2u] >> (4u * (i & 1u))) & 7u);
+            scn_pat[i] = (uint8_t)((p->scpat[i / 2u] >> (4u * (i & 1u))) & 15u) % SC_NPAT;
         }
     }
     dx_tone = p->dx_tone;                               /* (0.6.36: its TONE) */

@@ -398,6 +398,7 @@ static uint8_t scn_on, scn_role[NTRK];   /* (V10.26: all KEEP until set or diced
 /* (V10.6j) BASS and LEAD play a pattern over the key's chord (the track's arp: notes, MODE, RATE (N_DIV), GATE, PROB);
  * the kit's DRUM writes a beat of its own a key (ui_scene.c sc_beat: the main loop, scn_dreq the key + 1) */
 static uint8_t scn_pat[NTRK];
+enum { SC_GEN = 8, SC_NPAT };                       /* (V10.6m) BASS LEAD's 9th: GEN, the generator's line (ui_scene.c sc_gen) */
 static volatile uint8_t scn_dreq;
 enum { SN_ROOT, SN_R5, SN_ROCT, SN_TRI, SN_R5O, SN_SEV };
 static const uint8_t SC_PAT[2][8][5] = {
@@ -1341,6 +1342,12 @@ static void scene_key(uint32_t k, int on)
         }
         if (!scn_role[i] || scn_role[i] == SC_DRUM)      /* (DRUM: a kit's alone) */
             continue;
+        if ((scn_role[i] == SC_BASS || scn_role[i] == SC_LEAD) && scn_pat[i] % SC_NPAT == SC_GEN) {
+            if (on)                                     /* (V10.6m) GEN: the key's chord moves the line (the root's
+                                                         * interval from the key's, the nearest way; QUANT SEQ: in scale) */
+                t->trn = (int8_t)(((kb_map(t, k) + 132u - (uint32_t)t->p[P_ROOT]) % 12u + 5u) % 12u - 5);
+            continue;
+        }
         n = scn_notes(t, scn_role[i], kb_map(t, k), o, 0);
         mc = trk_midi_ch(i);
         if (on && n > 1u && rec_on(t) && !t->p[P_AMODE])   /* (a chord: into one step, as key_on) */
