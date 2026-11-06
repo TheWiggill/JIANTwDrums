@@ -85,8 +85,10 @@ static uint32_t blk_n = CTL;
 static void ev_at(uint32_t k) { ev_off = k < blk_n ? k : blk_n; }   /* (blk_n: the next block's first) */
 /* a note the FM-1 plays (not a key's): sounded, and with ALL sent as it sounds: the punch-ins' OCT- / OCT+ and RANDOM
  * on it (pfx.c pfx_pit, pfx_rpit: drawn by trk_note_on) */
+static int dxp_overrides(const track_t *t);
 static void seq_note_on(track_t *t, uint32_t note, uint32_t vel)
 {
+    if(dxp_overrides(t)) return; /* held fill owns this track; direct/live notes stay independent */
     uint32_t i = trk_index(t) % NTRK, send = mo_lvl == MO_ALL && note < 128u && mo_plays(t, note) && !pfx_holds(t);
     trk_note_on(t, note, vel);
     if (send) {
@@ -924,6 +926,11 @@ typedef struct {
 } dxo_t;
 static dxo_t dxo[NPART][DXO_N];
 static uint8_t dxo_n[NPART];
+static int dxp_overrides(const track_t *t)
+{
+    uint32_t ti=trk_index(t);
+    return ti<NPART&&dxo_n[ti]&&dxo[ti][0].half>=2u&&dxo[ti][0].ph<16u;
+}
 static step_t dxo_bak[NPART];                           /* the step a held one was last recorded into, as it was */
 static uint8_t dxo_bak_at[NPART];                       /* .. which (its source step + 1; 0 none), entered at play idx */
 static uint16_t dxo_bak_idx[NPART];
@@ -1041,17 +1048,18 @@ static void dxo_on(track_t *t, uint32_t note, int32_t o, uint32_t vel, uint32_t 
 }
 static void dxo_off(track_t *t, uint32_t id)
 {
-    uint32_t ti = trk_index(t), k, j = 0;
+    uint32_t ti = trk_index(t), k, j = 0, ext=0;
     if (ti >= NPART || !dxo_n[ti])
         return;
     for (k = 0; k < dxo_n[ti]; k++)
         if (dxo[ti][k].id != id)
             dxo[ti][j++] = dxo[ti][k];
+        else ext|=dxo[ti][k].half>=2u;
     if (j == dxo_n[ti])
         return;
     dxo_n[ti] = (uint8_t)j;
     if (!j && dxo_bak_at[ti]) {                         /* let go early in a step it was held into: that step back */
-        if (rec_on(t) && dxo_bak_idx[ti] == t->seq_idx && seq_src(t, t->seq_idx) == dxo_bak_at[ti] - 1u &&
+        if (!ext && rec_on(t) && dxo_bak_idx[ti] == t->seq_idx && seq_src(t, t->seq_idx) == dxo_bak_at[ti] - 1u &&
             t->seq_pos < step_samples(t, div_samples((uint32_t)t->p[P_SDIV]), t->seq_idx) / 2u)
             t->step[dxo_bak_at[ti] - 1u] = dxo_bak[ti];
         dxo_bak_at[ti] = 0;
@@ -1077,8 +1085,16 @@ static __attribute__((noinline)) void dxo_rec_hold(track_t *t, uint32_t idx)
             dxo_bak_idx[ti] = (uint16_t)idx;
             bak = 1;
         }
-        if(e->half>=2u) dxp_fire(t,e,e->ph,0,2);
-        else {
+        if(e->half>=2u) {
+            step_t *s=&t->step[src];
+            /* Replace this step's musical contents, including rests in a fill.
+             * Both components, conditions, probability and automation remain. */
+            memset(s,0,__builtin_offsetof(step_t,probability));s->time=ST_REST;memset(s->lm,0,sizeof s->lm);
+            dxp_fire(t,e,e->ph,0,2);
+            s->comp=dxo_bak[ti].comp;s->carg=dxo_bak[ti].carg;
+            s->comp2=dxo_bak[ti].comp2;s->carg2=dxo_bak[ti].carg2;
+            continue; /* hear the live performance once, not its sequencer copy */
+        } else {
             dx_in_rat = e->r;
             rec_drum(t, &t->step[src], e->note, e->vel, 0);
             dx_in_rat = 0;

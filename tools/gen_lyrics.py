@@ -117,7 +117,7 @@ def huff_code(count):
 
 
 EN_BLK = 8                                           # (0.9.0) the dictionary's words a block (an index entry)
-LUT_BITS = {"P": 5, "L": 5, "H": 6}                 # compact accelerators; canonical fallback is exact
+LUT_BITS = {"P": 4, "L": 4, "H": 4}                 # compact accelerators; canonical fallback is exact
 
 
 def huff_lut(code, k):

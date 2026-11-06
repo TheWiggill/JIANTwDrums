@@ -19,7 +19,7 @@ The FX variations do not rewrite the kit or global FX controls. Reverb/delay sti
 
 With ARP OFF, fills and sets start/switch on the next track step (DIV, FIT and swing apply). The last pressed key replaces the active performance at that boundary. Older held keys do not restart it when the latest key is released. A pending replacement released before its boundary is cancelled. Mild per-step velocity humanization (−4…+3 in MIDI velocity) varies successive repetitions without moving hit times off the tempo grid.
 
-Recording expands fills/sets into ordinary GM hits and per-lane ratchets, with the humanized step velocity. Chromatic and per-hit FX sounds retain encoded note values. Both step components and master components remain available. GM notes 35–81 are unchanged. In EXTENDED, external MIDI uses 0–12 for kick, 13–26 for tom; FX at 27–34 and 82–85; 27 fills at 86–112; sets at 113–127. In CLASSIC all previous MIDI bands remain unchanged.
+During an active fill/set, that track's original sequencer hits are suppressed. Without REC the saved pattern stays intact. With REC each occupied step is replaced by the performance, including its rests: previous notes, lane hits and ratchets do not get overdubbed underneath. Humanized step velocity is recorded. The recorded step remains when the key is released, even early in the step. Both step components, conditions, probability and parameter automation are preserved; the master remains available. Chromatic and per-hit FX sounds retain encoded note values. GM notes 35–81 are unchanged. In EXTENDED, external MIDI uses 0–12 for kick, 13–26 for tom; FX at 27–34 and 82–85; 27 fills at 86–112; sets at 113–127. In CLASSIC all previous MIDI bands remain unchanged.
 
 ## VOICE
 

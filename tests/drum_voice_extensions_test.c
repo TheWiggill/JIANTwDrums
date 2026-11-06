@@ -99,17 +99,39 @@ static int extensions(void)
     bad+=check("EXT external keyboard starts ratchet sets",dxo_n[3]==1&&dxo[3][0].half==3);
     dxo_off(dt,DXO_MIDI+113);
     bad+=check("EXT external keyboard releases the performance",!dxo_n[3]);
+    drum_setup();dt->p[P_DKEYMODE]=1;
+    for(k=0;k<16;k++) {
+        dt->step[k]=(step_t){{81},1,ST_NOTE,0,100,1u<<DV_BELL};
+        step_set_lmode(&dt->step[k],DV_BELL,LM_X8);
+    }
+    step_t original[NSTEP];memcpy(original,dt->step,sizeof original);
+    seq_start();lanes_until(1,step_len(1)/8u);dxo_on(dt,86,0,100,DXO_MIDI+86);
+    lanes_until(2,step_len(2)/8u);before=vage;seq_note_on(dt,81,100);
+    ok=dxp_overrides(dt)&&vage==before&&!dxp_overrides(&trk[0]);
+    dxo_off(dt,DXO_MIDI+86);seq_stop();
+    bad+=check("EXT live fill suppresses original sequencer hits without altering its pattern",ok&&!memcmp(original,dt->step,sizeof original));
     /* Recording stores the same lane/rate recipe, not virtual control notes. */
-    drum_setup();dt->p[P_DKEYMODE]=1;song.rec=1u<<3;seq_start();
+    drum_setup();dt->p[P_DKEYMODE]=1;
+    for(k=0;k<16;k++) {
+        dt->step[k]=(step_t){{81},1,ST_NOTE,0,100,1u<<DV_BELL};
+        step_set_lmode(&dt->step[k],DV_BELL,LM_X8);
+        dt->step[k].comp=dt->step[k].comp2=CO_MAKE(CA_SOUND,CC_ALWAYS);
+        dt->step[k].carg=2;dt->step[k].carg2=1;
+    }
+    song.rec=1u<<3;seq_start();
     lanes_until(1,step_len(1)/8u);dxo_on(dt,114,0,100,DXO_MIDI+114);
     lanes_until(5,step_len(5)/4u);dxo_off(dt,DXO_MIDI+114);seq_stop();
     ok=1;n=0;
     for(k=2;k<5;k++) {
         const step_t *s=&dt->step[k];n+=s->hit!=0;ok &= s->vel>=96u&&s->vel<=103u;
+        ok &= !(s->hit&(1u<<DV_BELL))&&!s->n&&!step_lmode(s,DV_BELL)&&
+              s->comp==CO_MAKE(CA_SOUND,CC_ALWAYS)&&s->carg==2&&s->comp2==s->comp&&s->carg2==1;
         for(j=0;j<s->n;j++) ok &= s->note[j]<86;
         for(j=0;j<8;j++) ok &= step_lmode(s,j)<=LM_X4;
     }
-    bad+=check("EXT held recording writes actual GM lanes and per-lane ratchets",ok&&n>=2);
+    bad+=check("EXT recording replaces original notes and ratchets, preserving both components",ok&&n>=2);
+    bad+=check("EXT release keeps the recorded fill; steps outside it remain intact",
+        !dt->step[5].n&&!(dt->step[5].hit&(1u<<DV_BELL))&&dt->step[1].note[0]==81&&dt->step[6].note[0]==81);
     /* Lane view and lane editing must agree with the renderer for encoded FX. */
     step_t *s=&dt->step[7];step_clear(s);s->time=ST_NOTE;s->n=1;s->note[0]=drum_fx_note(10);s->vel=100;
     ok=step_lanes_of(dt,s)==(1u<<DV_TOM);
