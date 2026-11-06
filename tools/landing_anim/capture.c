@@ -101,7 +101,7 @@ int main(int argc, char **argv)
     static const struct { const char *name; uint32_t eng, preset, kind; } E[] = {
         {"analog", ENGI_ANALOG, 0, 0}, {"fm6", ENGI_FM6, 0, 0}, {"phase", ENGI_PHASE, 0, 0}, {"lofi", ENGI_LOFI, 0, 0},
         {"voice", ENGI_VOICE, 0, 1}, {"wheel", ENGI_WHEEL, 0, 2}, {"noise", ENGI_NOISE, 0, 0}, {"drumx", ENGI_DRUM, 0, 3},
-        {"animal", ENGI_ANIMAL, 0, 1},
+        {"animal", ENGI_ANIMAL, 0, 1}, {"string", ENGI_STRING, 0, 0}, {"add", ENGI_ADD, 0, 0},   /* (V10: STRING and ADD) */
     };
     for (i = 0; i < sizeof E / sizeof E[0]; i++) {
         uint32_t s;

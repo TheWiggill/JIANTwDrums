@@ -100,6 +100,12 @@ h1 .fm{display:block;background:var(--heat);-webkit-background-clip:text;backgro
 .ver b{color:var(--yellow);font-weight:500}
 .device{--bc:var(--orange);padding:12px}
 #fm1{display:block;width:100%;max-width:100%;aspect-ratio:840/504}
+/* the LCD: the firmware's own pages over the drawing (web/landing/screens, tools/landing_anim/screens.c), at the
+   screen's place on the 840 x 504 panel (241, 63, 150 x 150) */
+.devwrap{position:relative}
+#lcd{position:absolute;left:28.69%;top:12.5%;width:17.86%;height:29.76%;image-rendering:pixelated;background:#000;transition:opacity .35s}
+#lcd.fade{opacity:0}
+.dev-cap b{color:var(--line);font-weight:500}
 .dev-cap{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:8px;font:500 10px/1.4 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
 
 /* section heads */
@@ -124,7 +130,8 @@ h2{font:400 clamp(24px,3.4vw,36px)/1.2 var(--display);letter-spacing:.01em;margi
 .species{--bc:var(--violet);padding:20px 20px 14px;margin-bottom:14px}
 .species .k{font:500 10px/1.4 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--violet);margin:0 0 6px}
 /* the nine engines: a card each, its clip (anim/<engine>.js) in the FM-1's 4:3 panel, its name under it */
-.zoo{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:6px 0 4px}
+.zoo{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:6px 0 4px}
+@media (max-width:700px){.zoo{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .sp{margin:0;min-width:0;background:#000;border:1px solid rgba(184,112,255,.22);border-radius:6px;padding:6px 6px 8px;display:flex;flex-direction:column;gap:6px}
 .sp canvas{display:block;width:100%;aspect-ratio:4/3}
 .sp figcaption{font:400 18px/1 var(--term);letter-spacing:.06em;color:var(--line);text-align:center}
@@ -143,6 +150,13 @@ h2{font:400 clamp(24px,3.4vw,36px)/1.2 var(--display);letter-spacing:.01em;margi
 .nat .go{font:13px/1.4 var(--mono);color:var(--yellow);white-space:nowrap}
 @media (max-width:600px){.nat{grid-template-columns:minmax(0,1fr)}}
 
+/* the real screens (web/landing/screens): the firmware's pages, recorded moving, pixel for pixel */
+.shots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.shot{--bc:var(--violet);margin:0;padding:8px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.shot img{display:block;width:100%;height:auto;aspect-ratio:1;image-rendering:pixelated;background:#000;border-radius:4px}
+.shot figcaption{font:400 17px/1.1 var(--term);letter-spacing:.04em;color:var(--line)}
+@media (max-width:900px){.shots{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:600px){.shots{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}}
 /* the navigation map (docs/navigation-map.png, tools/gen_nav_map.py): the picture, then the six rules as organs */
 .navfig{--bc:var(--violet);padding:12px;margin:0 0 14px}
 .navfig a{display:block}
@@ -251,8 +265,8 @@ footer .tm{flex-basis:100%;letter-spacing:0}
       <p class="ver"><span data-i18n="ver">Current version:</span> <b id="ver">V10.6c</b></p>
     </div>
     <figure class="device brk" style="margin:0">
-      <canvas id="fm1" role="img" aria-label="Drawing of the M-VAVE FM-1: MASTER, SELECT, PRESETS and ALGORITHM knobs with OCT- and OCT+ on the left, a small square screen showing JIANT's HOME (ECO) as the firmware draws it: the status line, four knob cards and one creature with a face per track, KNOB1 to KNOB4 over a grid of twelve buttons (FX, SCL, ENV, LFO, EDIT, GLO, HOME, SAVE, ARP, SEQ, PLAY/STOP, REC), and two rows of touch keys that light orange as a demo arpeggio plays"></canvas>
-      <figcaption class="dev-cap"><span>M-VAVE FM-1</span><span data-i18n="dev_cap">HOME: one creature per track, swelling with its sound</span></figcaption>
+      <div class="devwrap"><canvas id="fm1" role="img" aria-label="Drawing of the M-VAVE FM-1: MASTER, SELECT, PRESETS and ALGORITHM knobs with OCT- and OCT+ on the left, a small square screen showing JIANT's HOME (ECO) as the firmware draws it: the status line, four knob cards and one creature with a face per track, KNOB1 to KNOB4 over a grid of twelve buttons (FX, SCL, ENV, LFO, EDIT, GLO, HOME, SAVE, ARP, SEQ, PLAY/STOP, REC), and two rows of touch keys that light orange as a demo arpeggio plays"></canvas><img id="lcd" src="screens/home.webp" width="240" height="240" alt="" decoding="async"></div>
+      <figcaption class="dev-cap"><span>M-VAVE FM-1</span><span><b id="lcdname">HOME › ECO</b> · <span data-i18n="dev_cap">on its screen, V10's real pages, one after another</span></span></figcaption>
     </figure>
   </section>
 
@@ -295,7 +309,7 @@ footer .tm{flex-basis:100%;letter-spacing:0}
       <p class="intro" data-i18n="i_in">Each engine is a species, drawn by the firmware itself. On HOME every track is a creature of its engine's species: its shape comes from its knobs, and it swells and heats up with its own audio.</p>
     </div>
     <div class="species brk">
-      <p class="k" data-i18n="zoo_k">Nine of the engines, as the FM-1 draws them</p>
+      <p class="k" data-i18n="zoo_k">Eleven of the twelve engines (INPUT plays your audio), as the FM-1 draws them</p>
       <div class="zoo" id="zoo" role="list">
         <figure class="sp" role="listitem"><canvas data-clip="analog" role="img" aria-label="ANALOG: its creature as the FM-1 draws it"></canvas><figcaption>ANALOG</figcaption></figure>
         <figure class="sp" role="listitem"><canvas data-clip="fm6" role="img" aria-label="FM6: its creature as the FM-1 draws it"></canvas><figcaption>FM6</figcaption></figure>
@@ -306,6 +320,9 @@ footer .tm{flex-basis:100%;letter-spacing:0}
         <figure class="sp" role="listitem"><canvas data-clip="noise" role="img" aria-label="NOISE: its creature as the FM-1 draws it"></canvas><figcaption>NOISE</figcaption></figure>
         <figure class="sp" role="listitem"><canvas data-clip="drumx" role="img" aria-label="DRUM-X: its creature as the FM-1 draws it"></canvas><figcaption>DRUM-X</figcaption></figure>
         <figure class="sp" role="listitem"><canvas data-clip="animal" role="img" aria-label="ANIMAL: its creature as the FM-1 draws it"></canvas><figcaption>ANIMAL</figcaption></figure>
+        <figure class="sp" role="listitem"><canvas data-clip="string" role="img" aria-label="STRING: its creature as the FM-1 draws it"></canvas><figcaption>STRING</figcaption></figure>
+        <figure class="sp" role="listitem"><canvas data-clip="add" role="img" aria-label="ADD: its creature as the FM-1 draws it"></canvas><figcaption>ADD</figcaption></figure>
+        <figure class="sp" role="listitem"><canvas data-clip="eco" role="img" aria-label="HOME: the six tracks' creatures together, as the FM-1 draws them"></canvas><figcaption>HOME</figcaption></figure>
       </div>
     </div>
     <div class="organs">
@@ -315,6 +332,28 @@ footer .tm{flex-basis:100%;letter-spacing:0}
       <div class="org brk"><div class="hd"><span class="circ">D</span><span data-i18n="d_o">membrane</span></div><h3 data-i18n="d_h">Effects and master</h3><p data-i18n="d_p">Delay (its right echo can take a time of its own), five reverbs (SHIMMER, RESO, CLOUD…), chorus, slicer, live punch-in effects, a DJ filter on the whole mix and a master with limiter, clip, punch, tape and a 4-band EQ.</p></div>
       <div class="org brk"><div class="hd"><span class="circ">E</span><span data-i18n="e_o">memory</span></div><h3 data-i18n="e_h">Songs and the generator</h3><p data-i18n="e_p">Four sections per project, ARRANGE and TIMELINE to chain them (each track of a row can play another section, and vary), and a generator that writes a whole song idea: from a genre, or in EXPLORE, breaking every rule.</p></div>
       <div class="org brk"><div class="hd"><span class="circ">F</span><span data-i18n="f_o">roots</span></div><h3 data-i18n="f_h">USB audio and MIDI</h3><p data-i18n="f_p">The FM-1 becomes an audio interface that keeps its time: every track on its own channel into your DAW (STEMS), ready to record each part on its own, and the computer's audio back in (IN+OUT). MIDI over USB, TRS and Bluetooth: play it from a phone or tablet app with no cable, and PROX turns how close the phone is into a modulation source. USB HOST (experimental): a USB-MIDI keyboard or a USB audio interface plugged straight in.</p><span class="go" data-i18n="f_go">A separate product: coming soon</span></div>
+    </div>
+  </section>
+
+  <section id="screens">
+    <div class="head plate">
+      <p class="eyebrow" data-i18n="sc_eb">V10 on screen</p>
+      <h2 data-i18n="sc_h2">The real screens, moving</h2>
+      <p class="intro" data-i18n="sc_in">Recorded from firmware V10.6c itself, running on a simulated FM-1 while a song from the generator plays: nothing redrawn. Every page draws what it does.</p>
+    </div>
+    <div class="shots">
+        <figure class="shot brk"><img src="screens/being.webp" width="240" height="240" loading="lazy" decoding="async" alt="HOME › BEING"><figcaption>HOME › BEING</figcaption></figure>
+        <figure class="shot brk"><img src="screens/gen.webp" width="240" height="240" loading="lazy" decoding="async" alt="HOME › GEN"><figcaption>HOME › GEN</figcaption></figure>
+        <figure class="shot brk"><img src="screens/euclid.webp" width="240" height="240" loading="lazy" decoding="async" alt="SEQ › EUCLID"><figcaption>SEQ › EUCLID</figcaption></figure>
+        <figure class="shot brk"><img src="screens/e_fm6.webp" width="240" height="240" loading="lazy" decoding="async" alt="EDIT › FM6 › OPS"><figcaption>EDIT › FM6 › OPS</figcaption></figure>
+        <figure class="shot brk"><img src="screens/e_operator.webp" width="240" height="240" loading="lazy" decoding="async" alt="EDIT › FM6 › OP ENV"><figcaption>EDIT › FM6 › OP ENV</figcaption></figure>
+        <figure class="shot brk"><img src="screens/e_drumx.webp" width="240" height="240" loading="lazy" decoding="async" alt="EDIT › DRUM-X › KIT"><figcaption>EDIT › DRUM-X › KIT</figcaption></figure>
+        <figure class="shot brk"><img src="screens/mixer.webp" width="240" height="240" loading="lazy" decoding="async" alt="GLO › MIXER"><figcaption>GLO › MIXER</figcaption></figure>
+        <figure class="shot brk"><img src="screens/mano.webp" width="240" height="240" loading="lazy" decoding="async" alt="GLO › LIVE › MANO"><figcaption>GLO › LIVE › MANO</figcaption></figure>
+        <figure class="shot brk"><img src="screens/master.webp" width="240" height="240" loading="lazy" decoding="async" alt="FX › MASTER"><figcaption>FX › MASTER</figcaption></figure>
+        <figure class="shot brk"><img src="screens/e_voice.webp" width="240" height="240" loading="lazy" decoding="async" alt="EDIT › VOICE"><figcaption>EDIT › VOICE</figcaption></figure>
+        <figure class="shot brk"><img src="screens/timeline.webp" width="240" height="240" loading="lazy" decoding="async" alt="SAVE › TIMELINE"><figcaption>SAVE › TIMELINE</figcaption></figure>
+        <figure class="shot brk"><img src="screens/home.webp" width="240" height="240" loading="lazy" decoding="async" alt="HOME › ECO"><figcaption>HOME › ECO</figcaption></figure>
     </div>
   </section>
 
@@ -444,6 +483,8 @@ footer .tm{flex-basis:100%;letter-spacing:0}
 <script src="anim/noise.js"></script>
 <script src="anim/drumx.js"></script>
 <script src="anim/animal.js"></script>
+<script src="anim/string.js"></script>
+<script src="anim/add.js"></script>
 <script src="anim/eco.js"></script>
 <script>
 /* the firmware's creatures, recorded from its own drawing code (tools/landing_anim: capture.c runs the firmware's
@@ -454,7 +495,7 @@ footer .tm{flex-basis:100%;letter-spacing:0}
 const reduce=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
 const TAU=Math.PI*2,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const ANIM=window.JA_ANIM||{};
-const ENG=['analog','fm6','phase','lofi','voice','wheel','noise','drumx','animal'].filter(n=>ANIM[n]);
+const ENG=['analog','fm6','phase','lofi','voice','wheel','noise','drumx','animal','string','add'].filter(n=>ANIM[n]);
 function jaLoad(A){if(A._f)return A;const b=atob(A.d),v=[];let u=0,s=0;
   for(let i=0;i<b.length;i++){const c=b.charCodeAt(i);u+=(c&127)*Math.pow(2,s);if(c&128)s+=7;else{v.push(u%2?-(u+1)/2:u/2);u=0;s=0;}}
   const F=[];let p=0;while(p<v.length){F.push(p);const n=v[p++];for(let k=0;k<n;k++){const o=v[p++];
@@ -556,24 +597,8 @@ const BEAT=60/118,BAR=4*BEAT;
     x.fillStyle='rgba(0,0,0,.45)';rr(x,216,41,199,198,22);x.fill();rr(x,216,39,199,198,22);x.fillStyle=g;x.fill();
     x.strokeStyle='rgba(255,255,255,.1)';x.lineWidth=1;x.stroke();
     const LX=241,LY=63,LS=150;x.save();rr(x,LX,LY,LS,LS,2);x.clip();x.translate(LX,LY);x.scale(LS/240,LS/240);
-    /* HOME > ECO as the firmware draws it (240 x 240): the status line, the tabs, the four knob cards, the lens's
-       panel (240 x 140 at y 84) with the six beings recorded from ui_lzhome.c, the footer */
-    const SS=240,VT='VT323,"IBM Plex Mono",monospace';x.fillStyle='#000';x.fillRect(0,0,SS,SS);
-    x.textBaseline='alphabetic';
-    x.fillStyle='#ff7a1a';rr(x,4,4,14,14,2);x.fill();x.fillStyle='#000';x.font='18px '+VT;x.textAlign='center';x.fillText('1',11,16);
-    x.fillStyle='#b870ff';x.textAlign='left';x.font='22px '+VT;x.fillText('▶ 118',22,17);
-    x.fillStyle='#ff3b2f';x.beginPath();x.arc(78,11,4,0,TAU);x.fill();
-    x.fillStyle='#e8e2f2';x.font='15px '+VT;x.fillText('T1 · ANALOG ACID',88,16);
-    x.strokeStyle='#b870ff';x.lineWidth=1;x.strokeRect(222.5,6.5,13,9);x.fillStyle='#b870ff';x.fillRect(224,8,10,6);
-    [['ECO',40,1],['BEING',120,0],['GEN',200,0]].forEach(([n,X,on])=>{x.textAlign='center';x.fillStyle=on?'#b870ff':'#a39cba';x.font='15px '+VT;x.fillText(n,X,33);});
-    const CARD=[['CUT',.35,'#ff5446'],['RES',.79,'#ffd27a'],['ATK',.15,'#8b7fff'],['REL',.5,'#ff9a3c']];
-    CARD.forEach(([n,v,c],i)=>{const X=6+i*59,w=reduce?v:clamp(v+.12*Math.sin(t*.9+i*1.7),0,1);
-      x.textAlign='left';x.fillStyle='#e8e2f2';x.font='14px '+VT;x.fillText(n,X,49);
-      x.fillStyle=c;x.font='22px '+VT;x.fillText(Math.round(w*100)+'',X,68);const tw=x.measureText(Math.round(w*100)+'').width;
-      x.font='14px '+VT;x.fillText('%',X+tw+3,68);x.fillStyle='#2a2638';x.fillRect(X,72,50,2);x.fillStyle=c;x.fillRect(X,72,50*w,2);});
-    if(ANIM.eco){x.save();x.beginPath();x.rect(0,80,SS,144);x.clip();x.translate(0,82);jaDraw(x,ANIM.eco,t/BAR,1,1);x.restore();}
-    x.fillStyle='#a39cba';x.font='14px '+VT;x.textAlign='center';x.fillText('ECO',SS/2,236);x.textAlign='right';x.fillText('1/7',SS-6,236);
-    x.fillStyle='#b870ff';for(let i=0;i<7;i++)x.fillRect(84+i*10,226,6,2);x.fillStyle='#ffe14d';x.fillRect(84,226,6,2);
+    /* the screen itself is the firmware's: the <img id="lcd"> over it plays its recorded pages */
+    const SS=240;x.fillStyle='#000';x.fillRect(0,0,SS,SS);
     g=x.createLinearGradient(0,0,SS,SS);g.addColorStop(0,'rgba(255,255,255,.07)');g.addColorStop(.45,'rgba(255,255,255,.02)');g.addColorStop(.46,'rgba(255,255,255,0)');
     x.fillStyle=g;x.fillRect(0,0,SS,SS);x.restore();
     rr(x,LX-.5,LY-.5,LS+1,LS+1,2.5);x.strokeStyle='#202022';x.lineWidth=1;x.stroke();
@@ -590,6 +615,20 @@ const BEAT=60/118,BAR=4*BEAT;
   });
 })();
 
+/* the FM-1's screen: V10's own pages, recorded moving (web/landing/screens, tools/landing_anim/screens.c), one after
+   another, each a few seconds; the next one loaded before it shows */
+(function(){
+  const img=document.getElementById('lcd'),name=document.getElementById('lcdname');if(!img)return;
+  const L=[['home','HOME › ECO'],['being','HOME › BEING'],['e_string','EDIT › STRING'],['euclid','SEQ › EUCLID'],
+    ['e_fm6','EDIT › FM6 › OPS'],['mixer','GLO › MIXER'],['e_add','EDIT › ADD'],['master','FX › MASTER'],
+    ['e_drumx','EDIT › DRUM-X › KIT'],['mano','GLO › LIVE › MANO'],['e_wheel','EDIT › WHEEL'],['timeline','SAVE › TIMELINE'],
+    ['e_voice','EDIT › VOICE'],['gen','HOME › GEN'],['e_lofi','EDIT › LOFI'],['e_animal','EDIT › ANIMAL']];
+  let i=0;const pre=new Image();
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  function next(){const n=(i+1)%L.length;pre.src='screens/'+L[n][0]+'.webp';
+    pre.onload=()=>{img.classList.add('fade');setTimeout(()=>{i=n;img.src=pre.src;if(name)name.textContent=L[i][1];img.classList.remove('fade');},350);};}
+  setInterval(()=>{if(!document.hidden)next();},4200);
+})();
 /* the nine engines, each its own clip, as the FM-1 draws it on BEING (ui_engvis.c vx_draw); drawn while on screen */
 (function(){
   const cells=[...document.querySelectorAll('#zoo canvas[data-clip]')].map(c=>({c,A:ANIM[c.dataset.clip],f:fit(c),on:true}));
@@ -603,15 +642,15 @@ const BEAT=60/118,BAR=4*BEAT;
 <script>
 /* languages: EN (the page's own text), ES, PT, FR, 中文, 日本語; the browser's language at first, then the choice (when storage allows) */
 (function(){
-  const ES={live:'gratis · código abierto · GPL-3.0',kicker:'un firmware para el M-VAVE FM-1',down:'entrar al organismo',
+  const ES={sc_in:'Grabadas del propio firmware V10.6c, corriendo en un FM-1 simulado mientras suena un tema del generador: nada redibujado. Cada página dibuja lo que hace.',sc_h2:'Las pantallas reales, en movimiento',sc_eb:'V10 en pantalla',live:'gratis · código abierto · GPL-3.0',kicker:'un firmware para el M-VAVE FM-1',down:'entrar al organismo',
     lede:'Un firmware gratis que convierte al FM-1 en un instrumento completo: seis pistas, once motores de síntesis y uno para tu entrada de audio, un secuenciador profundo y efectos, todo adentro del tecladito. Se instala desde el navegador en un par de minutos, y podés volver al firmware oficial cuando quieras.',
-    cta_install:'Instalar en tu FM-1',cta_emu:'Probarlo en el navegador',cta_editor:'Abrir el editor',ver:'Versión actual:',dev_cap:'HOME: una criatura por pista, se hincha con su sonido',
+    cta_install:'Instalar en tu FM-1',cta_emu:'Probarlo en el navegador',cta_editor:'Abrir el editor',ver:'Versión actual:',dev_cap:'en su pantalla, las páginas reales de V10, una tras otra',
     s_eb:'Empezá acá',s_h2:'Tres pasos, sin programar',s_in:'Todo funciona en el navegador. No hace falta instalar ningún programa, y podés probar JIANT antes de tocar tu FM-1.',
     st1_h:'Probalo en el navegador',st1_p:'El emulador corre el firmware real en tu compu o tu celular. Tocá con el teclado, cargá una canción, escuchá cada motor.',st1_a:'No necesitás un FM-1',st1_b:'Renderiza los stems de una canción desde tu backup',st1_go:'Abrir el emulador',
     st2_h:'Instalalo en tu FM-1',st2_p:'Abrí el instalador en Chrome o Edge, conectá el FM-1 con un cable USB de datos, apretá Instalar y esperá sin desenchufar.',st2_a:'El instalador revisa tu FM-1 primero y guarda un backup',st2_b:'¿Venís de otro firmware custom? Volvé primero al oficial con el botón del instalador (sirven el V16 y el V15 oficiales)',st2_go:'Abrir el instalador',
     st3_h:'Editá y hacé backup',st3_p:'El editor web muestra tus sonidos y ajustes en la pantalla de la compu mientras el FM-1 sigue sonando.',st3_a:'Mandá bancos DX7 a FM6, organizá presets',st3_b:'Backup de todos tus proyectos con un clic',st3_go:'Abrir el editor',
     need:'Necesitás: Chrome o Edge en una computadora (WebUSB y Web MIDI) · un cable USB que pase datos, no solo carga.',
-    i_eb:'Qué tiene adentro',i_h2:'Un organismo, una especie por motor',i_in:'Cada motor es una especie, dibujada por el propio firmware. En HOME cada pista es una criatura de la especie de su motor: su forma sale de sus perillas, y se hincha y se calienta con su propio audio.',zoo_k:'Nueve de los motores, como los dibuja el FM-1',
+    i_eb:'Qué tiene adentro',i_h2:'Un organismo, una especie por motor',i_in:'Cada motor es una especie, dibujada por el propio firmware. En HOME cada pista es una criatura de la especie de su motor: su forma sale de sus perillas, y se hincha y se calienta con su propio audio.',zoo_k:'Once de los doce motores (INPUT toca tu audio), como los dibuja el FM-1',
     a_o:'motores',a_h:'12 motores',a_p:'ANALOG, FM6 (seis operadores, 32 algoritmos, bancos DX7), PHASE, LOFI, VOICE (canta palabras en castellano, inglés y japonés), WHEEL, NOISE, ANIMAL (pájaros, insectos y ranas con modelos físicos), STRING (una cuerda pulsada, golpeada o con arco, y feedback de guitarra), ADD (aditiva) y DRUM-X: sin samples, todo es síntesis. Y INPUT, que pone una entrada de audio USB en una pista propia: con gate desde los pasos, ring, triturada, y seguida como fuente de modulación.',
     b_o:'corazón',b_h:'DRUM-X',b_p:'Una batería de ocho sonidos sintetizados, cada uno con dos caras: MORPH lleva todo el kit de una a la otra, en vivo, y ACOUST le da una voz acústica. En cada octava, las mismas teclas: ratchets arriba, golpes cortos, ghost y flam abajo.',
     c_o:'sistema nervioso',c_h:'Secuenciador de 64 pasos',c_p:'Un piano roll por pista, acordes, probabilidad, ratchets, cabezales extra, grabación fuera de la grilla hasta 1/64 de paso, y EUCLID, que escribe patrones euclidianos en vivo: la batería entera con una perilla DENSITY o carril por carril, las melodías en tonalidad, vueltas de VARY que se contestan y MUTATE, que hace evolucionar el patrón en cada compás.',
@@ -639,15 +678,15 @@ const BEAT=60/118,BAR=4*BEAT;
     q4:'El instalador no encuentra mi FM-1.',a4:'Usá un cable USB que pase datos (muchos solo cargan), conectalo directo a la compu sin hub, y cerrá otros programas que usen el FM-1 por MIDI.',
     nat_k:'Página nueva · frecuencia',nat_h:'La frecuencia en la naturaleza',nat_p:'La materia es luz, el color es frecuencia: una escalera del ciclo solar a los rayos gamma, y cuatro ejemplos que suenan de cómo un sintetizador ya vive ahí.',nat_go:'Subir la escalera →',f_nat:'La frecuencia en la naturaleza',
     tm:'Hecho sobre Felucca de Hügelton Instruments. M-VAVE y FM-1 son marcas de sus respectivos dueños; JIANT no está afiliado ni avalado por ellos, ni por Hügelton Instruments.'};
-  const ZH={live:'免费 · 开源 · GPL-3.0',kicker:'M-VAVE FM-1 的固件',down:'进入有机体',
+  const ZH={sc_in:'直接录自 V10.6c 固件本身：在模拟的 FM-1 上运行，同时播放生成器写的一首曲子，没有任何重绘。每个页面都画出它正在做的事。',sc_h2:'真实的屏幕，动起来',sc_eb:'V10 屏幕实录',live:'免费 · 开源 · GPL-3.0',kicker:'M-VAVE FM-1 的固件',down:'进入有机体',
     lede:'一款免费固件，把 FM-1 变成一件完整的乐器：六条音轨、十一种合成引擎外加一个音频输入引擎、深度音序器和效果器，全部装进这台小键盘里。在浏览器里几分钟就能装好，想回到官方固件随时都可以。',
-    cta_install:'安装到你的 FM-1',cta_emu:'在浏览器里试玩',cta_editor:'打开编辑器',ver:'当前版本：',dev_cap:'HOME：每条音轨一个生物，随声音膨胀',
+    cta_install:'安装到你的 FM-1',cta_emu:'在浏览器里试玩',cta_editor:'打开编辑器',ver:'当前版本：',dev_cap:'屏幕上依次轮播 V10 的真实页面',
     s_eb:'从这里开始',s_h2:'三步完成，无需编程',s_in:'一切都在浏览器中运行。无需安装任何程序，还可以在动你的 FM-1 之前先试玩 JIANT。',
     st1_h:'在浏览器里试玩',st1_p:'模拟器在你的电脑或手机上运行真正的固件。用键盘演奏，载入一首歌，听听每一种引擎。',st1_a:'不需要 FM-1',st1_b:'可从你的备份渲染一首歌的分轨',st1_go:'打开模拟器',
     st2_h:'安装到你的 FM-1',st2_p:'用 Chrome 或 Edge 打开安装器，用可传输数据的 USB 线连接 FM-1，点击安装，等待完成，期间不要拔线。',st2_a:'安装器会先检查你的 FM-1 并保存备份',st2_b:'用过其他自制固件？请先用安装器的按钮恢复到官方固件（V16 或 V15 均可）',st2_go:'打开安装器',
     st3_h:'编辑与备份',st3_p:'网页编辑器在电脑屏幕上显示你的音色和设置，FM-1 同时照常演奏。',st3_a:'把 DX7 音色库发送到 FM6，管理预设',st3_b:'一键备份所有工程',st3_go:'打开编辑器',
     need:'需要：电脑上的 Chrome 或 Edge（WebUSB 与 Web MIDI）· 一根能传数据的 USB 线，而不只是充电线。',
-    i_eb:'里面有什么',i_h2:'一个有机体，每种引擎一个物种',i_in:'每种引擎都是一个物种，由固件亲自绘制。在 HOME 页面，每条音轨都是其引擎物种的一个生物：形状来自它的旋钮，并随自身的音频膨胀、升温。',zoo_k:'其中九种引擎，正如 FM-1 所绘',
+    i_eb:'里面有什么',i_h2:'一个有机体，每种引擎一个物种',i_in:'每种引擎都是一个物种，由固件亲自绘制。在 HOME 页面，每条音轨都是其引擎物种的一个生物：形状来自它的旋钮，并随自身的音频膨胀、升温。',zoo_k:'十二种引擎中的十一种（INPUT 播放你的音频），按 FM-1 的画法',
     a_o:'引擎',a_h:'12 种引擎',a_p:'ANALOG、FM6（六算子、32 种算法、DX7 音色库）、PHASE、LOFI、VOICE（能用西班牙语、英语和日语唱出歌词）、WHEEL、NOISE、ANIMAL（用物理模型模拟鸟、昆虫和青蛙的叫声）、STRING（拨奏、敲击或弓奏的琴弦，还有吉他反馈）、ADD（加法合成）和 DRUM-X：没有采样，一切都是合成的。另有 INPUT：把 USB 音频输入放到一条独立音轨上，可由音序步进门控、环形调制、降采样，还能作为调制源跟随。',
     b_o:'心脏',b_h:'DRUM-X',b_p:'由八种合成声音组成的鼓组，每种声音都有两面：MORPH 可以现场把整个鼓组从一面推到另一面，ACOUST 则赋予它原声鼓的音色。每个八度都是同样的琴键：往上是连击，往下是短击、幽灵音和装饰音（flam）。',
     c_o:'神经系统',c_h:'64 步音序器',c_p:'每条音轨一个钢琴卷帘，和弦、概率、连击、额外播放头，精确到 1/64 步的离网格录音，以及实时生成欧几里得节奏型的 EUCLID：一个 DENSITY 旋钮生成整套鼓，或逐轨生成，旋律保持在调内；VARY 让每一轮互相呼应，MUTATE 让节奏型逐小节演变。',
@@ -675,15 +714,15 @@ const BEAT=60/118,BAR=4*BEAT;
     q4:'安装器找不到我的 FM-1。',a4:'请使用能传输数据的 USB 线（很多线只能充电），直接连到电脑不要经过集线器，并关闭其他通过 MIDI 使用 FM-1 的程序。',
     nat_k:'新页面 · 频率',nat_h:'自然中的频率',nat_p:'物质是光，颜色是频率：一架从太阳周期到伽马射线的阶梯，以及四个会发声的例子，说明合成器早已身在其中。',nat_go:'登上阶梯 →',f_nat:'自然中的频率',
     tm:'基于 Hügelton Instruments 的 Felucca 开发。M-VAVE 和 FM-1 是其各自所有者的商标；JIANT 与它们以及 Hügelton Instruments 均无关联，也未获其认可。'};
-  const JA={live:'無料 · オープンソース · GPL-3.0',kicker:'M-VAVE FM-1 のためのファームウェア',down:'有機体の中へ',
+  const JA={sc_in:'V10.6c ファームウェアそのものをシミュレートした FM-1 で動かし、ジェネレーターの曲を鳴らしながら録画しました。描き直しは一切ありません。各ページは自分のしていることを描きます。',sc_h2:'本物の画面が動く',sc_eb:'画面の V10',live:'無料 · オープンソース · GPL-3.0',kicker:'M-VAVE FM-1 のためのファームウェア',down:'有機体の中へ',
     lede:'FM-1 をひとつの完全な楽器に変える無料のファームウェア。6 トラック、11 のシンセシスエンジンとオーディオ入力用のエンジン 1 つ、奥深いシーケンサーとエフェクトが、この小さなキーボードに収まります。ブラウザから数分でインストールでき、いつでも公式ファームウェアに戻せます。',
-    cta_install:'FM-1 にインストール',cta_emu:'ブラウザで試す',cta_editor:'エディターを開く',ver:'現在のバージョン：',dev_cap:'HOME：トラックごとに一匹の生き物、音にあわせてふくらむ',
+    cta_install:'FM-1 にインストール',cta_emu:'ブラウザで試す',cta_editor:'エディターを開く',ver:'現在のバージョン：',dev_cap:'画面には V10 の本物のページが次々と',
     s_eb:'はじめに',s_h2:'3 ステップ、プログラミング不要',s_in:'すべてブラウザで動きます。ソフトのインストールは不要で、FM-1 に触れる前に JIANT を試せます。',
     st1_h:'ブラウザで試す',st1_p:'エミュレーターが本物のファームウェアをパソコンやスマホで動かします。キーボードで弾き、曲を読み込み、すべてのエンジンを聴けます。',st1_a:'FM-1 がなくても OK',st1_b:'バックアップから曲のステムを書き出せます',st1_go:'エミュレーターを開く',
     st2_h:'FM-1 にインストール',st2_p:'Chrome か Edge でインストーラーを開き、データ通信できる USB ケーブルで FM-1 をつなぎ、「インストール」を押して、抜かずに待ちます。',st2_a:'インストーラーがまず FM-1 を確認し、バックアップを保存します',st2_b:'他のカスタムファームウェアから移る場合は、まずインストーラーのボタンで公式ファームウェア（V16 または V15）に戻してください',st2_go:'インストーラーを開く',
     st3_h:'編集とバックアップ',st3_p:'Web エディターは、FM-1 が鳴り続けたまま、音色と設定をパソコンの画面に表示します。',st3_a:'DX7 のバンクを FM6 に送る、プリセットを整理する',st3_b:'すべてのプロジェクトをワンクリックでバックアップ',st3_go:'エディターを開く',
     need:'必要なもの：パソコンの Chrome または Edge（WebUSB と Web MIDI）· 充電専用ではない、データ通信できる USB ケーブル。',
-    i_eb:'中身',i_h2:'ひとつの有機体、エンジンごとにひとつの種',i_in:'エンジンはそれぞれひとつの種で、ファームウェア自身が描きます。HOME では各トラックがそのエンジンの種の生き物になり、形はノブから生まれ、自分の音でふくらみ、熱を帯びます。',zoo_k:'そのうち 9 つのエンジン、FM-1 が描くとおりに',
+    i_eb:'中身',i_h2:'ひとつの有機体、エンジンごとにひとつの種',i_in:'エンジンはそれぞれひとつの種で、ファームウェア自身が描きます。HOME では各トラックがそのエンジンの種の生き物になり、形はノブから生まれ、自分の音でふくらみ、熱を帯びます。',zoo_k:'12 のエンジンのうち 11（INPUT はあなたのオーディオを鳴らします）、FM-1 が描くとおりに',
     a_o:'エンジン',a_h:'12 のエンジン',a_p:'ANALOG、FM6（6 オペレーター、32 アルゴリズム、DX7 バンク）、PHASE、LOFI、VOICE（スペイン語・英語・日本語で歌詞を歌う）、WHEEL、NOISE、ANIMAL（物理モデルによる鳥・虫・カエルの声）、STRING（はじく・たたく・弓でこする弦、ギターのフィードバックも）、ADD（加算合成）、DRUM-X。サンプルなし、すべてシンセシス。さらに INPUT：USB オーディオ入力を専用のトラックに。ステップでゲートし、リングモジュレーション、ビットクラッシュ、そしてモジュレーション・ソースとして追従します。',
     b_o:'心臓',b_h:'DRUM-X',b_p:'8 つの合成サウンドのドラムキット。各サウンドに A と B の 2 つの顔があり、MORPH でキット全体をライブで行き来でき、ACOUST でアコースティックな響きにもなります。どのオクターブでも同じ鍵盤：上はラチェット、下はショート・ゴースト・フラム。',
     c_o:'神経系',c_h:'64 ステップのシーケンサー',c_p:'トラックごとのピアノロール、コード、確率、ラチェット、追加のプレイヘッド、1/64 ステップ単位でグリッドを外せる録音、そしてユークリッド・パターンをリアルタイムで書く EUCLID（ドラムは DENSITY ひとつでキット全体、またはレーンごと、メロディーはキーの中で。VARY は周回ごとに呼応し、MUTATE は小節ごとにパターンを進化させます）。',
@@ -711,10 +750,10 @@ const BEAT=60/118,BAR=4*BEAT;
     q4:'インストーラーが FM-1 を見つけません。',a4:'データ通信できる USB ケーブルを使い（充電専用のケーブルが多いです）、ハブを通さずパソコンに直接つなぎ、MIDI で FM-1 を使う他のソフトを閉じてください。',
     nat_k:'新しいページ · 周波数',nat_h:'自然の中の周波数',nat_p:'物質は光、色は周波数。太陽周期からガンマ線までのはしごと、シンセがすでにその中にいることを示す 4 つの鳴る例。',nat_go:'はしごを登る →',f_nat:'自然の中の周波数',
     tm:'Hügelton Instruments の Felucca をもとに作られています。M-VAVE と FM-1 は各所有者の商標です。JIANT はそれらおよび Hügelton Instruments とは無関係で、承認も受けていません。'};
-  const PT={live:'grátis · código aberto · GPL-3.0',kicker:'um firmware para o M-VAVE FM-1',down:'entrar no organismo',
+  const PT={sc_in:'Gravadas do próprio firmware V10.6c, rodando num FM-1 simulado enquanto toca uma música do gerador: nada redesenhado. Cada página desenha o que faz.',sc_h2:'As telas reais, em movimento',sc_eb:'V10 na tela',live:'grátis · código aberto · GPL-3.0',kicker:'um firmware para o M-VAVE FM-1',down:'entrar no organismo',
     lede:'Um firmware gratuito que transforma o FM-1 num instrumento completo: seis faixas, onze motores de síntese e mais um para a sua entrada de áudio, um sequenciador profundo e efeitos, tudo dentro do pequeno teclado. Instala-se pelo navegador em poucos minutos, e você pode voltar ao firmware oficial quando quiser.',
     cta_install:'Instalar no seu FM-1',cta_emu:'Experimentar no navegador',cta_editor:'Abrir o editor',ver:'Versão atual:',
-    dev_cap:'HOME: uma criatura por faixa, que incha com o seu som',s_eb:'Comece aqui',s_h2:'Três passos, sem programar',
+    dev_cap:'na tela, as páginas reais do V10, uma depois da outra',s_eb:'Comece aqui',s_h2:'Três passos, sem programar',
     s_in:'Tudo funciona no navegador. Não é preciso instalar nenhum programa, e você pode experimentar o JIANT antes de mexer no seu FM-1.',
     st1_h:'Experimente no navegador',
     st1_p:'O emulador roda o firmware de verdade no seu computador ou celular. Toque com o teclado, carregue uma música, ouça cada motor.',
@@ -728,7 +767,7 @@ const BEAT=60/118,BAR=4*BEAT;
     need:'Você precisa de: Chrome ou Edge num computador (WebUSB e Web MIDI) · um cabo USB que passe dados, não só carga.',i_eb:'O que tem dentro',
     i_h2:'Um organismo, uma espécie por motor',
     i_in:'Cada motor é uma espécie, desenhada pelo próprio firmware. Em HOME cada faixa é uma criatura da espécie do seu motor: a forma vem dos seus knobs, e ela incha e esquenta com o próprio áudio.',
-    zoo_k:'Nove dos motores, como o FM-1 os desenha',a_o:'motores',a_h:'12 motores',
+    zoo_k:'Onze dos doze motores (o INPUT toca o seu áudio), como o FM-1 os desenha',a_o:'motores',a_h:'12 motores',
     a_p:'ANALOG, FM6 (seis operadores, 32 algoritmos, bancos DX7), PHASE, LOFI, VOICE (canta palavras em espanhol, inglês e japonês), WHEEL, NOISE, ANIMAL (pássaros, insetos e sapos com modelos físicos), STRING (uma corda dedilhada, percutida ou com arco, e microfonia de guitarra), ADD (aditiva) e DRUM-X: sem samples, tudo é síntese. E INPUT, que coloca uma entrada de áudio USB numa faixa própria: com gate pelos passos, modulação em anel, bitcrush, e seguida como fonte de modulação.',
     b_o:'coração',b_h:'DRUM-X',
     b_p:'Uma bateria de oito sons sintetizados, cada um com dois lados: MORPH leva o kit inteiro de um ao outro, ao vivo, e ACOUST lhe dá uma voz acústica. Em cada oitava as mesmas teclas: ratchets em cima, golpes curtos, ghost e flam embaixo.',
@@ -777,10 +816,10 @@ const BEAT=60/118,BAR=4*BEAT;
     a4:'Use um cabo USB que passe dados (muitos cabos só carregam), conecte-o direto ao computador sem hub, e feche outros programas que usem o FM-1 por MIDI.',
     f_nat:'A frequência na natureza',
     tm:'Feito sobre o Felucca da Hügelton Instruments. M-VAVE e FM-1 são marcas dos seus respectivos donos; o JIANT não é afiliado a eles nem endossado por eles, nem pela Hügelton Instruments.'};
-  const FR={live:'gratuit · open source · GPL-3.0',kicker:'un firmware pour le M-VAVE FM-1',down:'entrer dans l’organisme',
+  const FR={sc_in:'Enregistrés depuis le firmware V10.6c lui-même, sur un FM-1 simulé pendant qu’un morceau du générateur joue : rien n’est redessiné. Chaque page dessine ce qu’elle fait.',sc_h2:'Les vrais écrans, en mouvement',sc_eb:'V10 à l’écran',live:'gratuit · open source · GPL-3.0',kicker:'un firmware pour le M-VAVE FM-1',down:'entrer dans l’organisme',
     lede:'Un firmware gratuit qui fait du FM-1 un instrument complet : six pistes, onze moteurs de synthèse plus un pour votre entrée audio, un séquenceur profond et des effets, le tout dans le petit clavier. Il s’installe depuis le navigateur en quelques minutes, et vous pouvez revenir au firmware officiel quand vous voulez.',
     cta_install:'Installer sur votre FM-1',cta_emu:'L’essayer dans le navigateur',cta_editor:'Ouvrir l’éditeur',ver:'Version actuelle :',
-    dev_cap:'HOME : une créature par piste, qui gonfle avec son son',s_eb:'Commencer ici',s_h2:'Trois étapes, sans coder',
+    dev_cap:'sur son écran, les vraies pages de V10, l’une après l’autre',s_eb:'Commencer ici',s_h2:'Trois étapes, sans coder',
     s_in:'Tout fonctionne dans le navigateur. Aucun programme à installer, et vous pouvez essayer JIANT avant de toucher à votre FM-1.',
     st1_h:'L’essayer dans le navigateur',
     st1_p:'L’émulateur fait tourner le vrai firmware sur votre ordinateur ou votre téléphone. Jouez au clavier, chargez un morceau, écoutez chaque moteur.',
@@ -794,7 +833,7 @@ const BEAT=60/118,BAR=4*BEAT;
     need:'Il faut : Chrome ou Edge sur un ordinateur (WebUSB et Web MIDI) · un câble USB qui transporte des données, pas seulement la charge.',
     i_eb:'Ce qu’il y a dedans',i_h2:'Un organisme, une espèce par moteur',
     i_in:'Chaque moteur est une espèce, dessinée par le firmware lui-même. Sur HOME chaque piste est une créature de l’espèce de son moteur : sa forme vient de ses potentiomètres, et elle gonfle et chauffe avec son propre son.',
-    zoo_k:'Neuf des moteurs, tels que le FM-1 les dessine',a_o:'moteurs',a_h:'12 moteurs',
+    zoo_k:'Onze des douze moteurs (INPUT joue ton audio), tels que le FM-1 les dessine',a_o:'moteurs',a_h:'12 moteurs',
     a_p:'ANALOG, FM6 (six opérateurs, 32 algorithmes, banques DX7), PHASE, LOFI, VOICE (il chante des mots en espagnol, anglais et japonais), WHEEL, NOISE, ANIMAL (oiseaux, insectes et grenouilles par modèles physiques), STRING (une corde pincée, frappée ou frottée, et le larsen de guitare), ADD (additive) et DRUM-X : aucun sample, tout est synthétisé. Et INPUT, qui place une entrée audio USB sur sa propre piste : gatée par les pas, modulée en anneau, écrasée, et suivie comme source de modulation.',
     b_o:'cœur',b_h:'DRUM-X',
     b_p:'Une batterie de huit sons synthétisés, chacun avec deux faces : MORPH fait passer tout le kit de l’une à l’autre, en direct, et ACOUST lui donne une couleur acoustique. À chaque octave les mêmes touches : ratchets en haut, coups courts, ghost et flam en bas.',

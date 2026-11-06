@@ -206,6 +206,8 @@ jobs:
           cp web/landing/frecuencia.html build/pages/frecuencia.html
           # (0.9.12) the front page's animations, recorded from the firmware's drawing code (tools/landing_anim)
           cp -r web/landing/anim build/pages/anim
+          # (V10) the front page's screens: V10's own pages recorded moving (tools/landing_anim/build_screens.sh)
+          cp -r web/landing/screens build/pages/screens
           # (0.9.11) old and mistyped links (/installer/, /webapp/, a link with ":1:1" stuck to it) to the page they meant
           cp web/404.html build/pages/404.html
           mkdir -p build/pages/docs && cp docs/cheatsheet-controls.pdf docs/cheatsheet-sound.pdf docs/cheatsheet-controls.png docs/cheatsheet-sound.png build/pages/docs/
