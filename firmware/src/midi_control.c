@@ -276,7 +276,9 @@ static void __attribute__((noinline)) midi_cc_map(track_t *t, uint32_t cc, uint3
         if (id == 0xFFFFu)
             return;
         e = MIDI_CC_ENG[eng_idx(t->eng_req)] >> (id == MCC_CUT ? 4 : 0) & 15u;
-        id = e ? P_E0 + e - 1u : id == MCC_CUT ? P_FCUT : P_FRES;   /* (V10.6h) none of its own: the FILTER page's */
+        if (!e && eng_idx(t->eng_req) != ENGI_LOFI)
+            return;
+        id = e ? P_E0 + e - 1u : id == MCC_CUT ? P_FCUT : P_FRES;   /* (V10.6h) MATH: the FILTER page's CUT RES */
     }
     midi_cc_set(t, id, value);
 }
