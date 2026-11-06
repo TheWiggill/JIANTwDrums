@@ -54,7 +54,7 @@ def main(fn, arr):
     shared = {m[1]: " ".join(m[2].split()).rsplit(",", 1)[0]   # (the shared lists: static const int8_t M_x[] = {.., -1};)
               for m in re.finditer(r"static const int8_t (\w+)\[\]\s*=\s*\{(.*?)\};", full, re.S)}
     consts = {}                                      # (the file's and core.h's enums and #defines: an e[] value by name)
-    for src in (re.sub(r"/\*.*?\*/", "", (SRC / "core.h").read_text(), flags=re.S), full):
+    for src in [re.sub(r"/\*.*?\*/", "", (SRC / f).read_text(), flags=re.S) for f in ("core.h", "sing.c")] + [full]:
         for body in re.findall(r"enum\s*\w*\s*\{([^}]*)\}", src):
             n = 0
             for tok in (t.strip() for t in body.split(",")):

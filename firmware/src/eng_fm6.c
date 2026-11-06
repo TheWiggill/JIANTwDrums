@@ -495,7 +495,7 @@ static const preset_t FM6_PRESETS[] = {
     {"FM BASS", {0, 0, 0, 0, 0, 0, 0, 2}, {0, 0, 127, 0}, 0, 1 | TAG(BASS), FX(0, 0, 10, 10), PAT(2),
      MODS(MENV2(0, 35, 0, 15), MMOD(1, PS_ENV2, PD_CUT, 16), P_GLIDE, 10)},    /* bright on the attack */
     {"BRASS", {0, 0, 0, 0, 0, 0, 0, 3}, {8, 0, 127, 15}, 0, TAG(LEAD), FX(0, 25, 20, 40), PAT(4),
-     MODS(P_LRATE, 86, P_LD_PIT, 1, P_LFADE, 70, MMOD(1, PS_MODW, PD_VIB, 2))},   /* a vibrato that comes in */
+     MODS(P_LRATE, 86, P_LFADE, 70, MMOD(1, PS_MODW, PD_VIB, 2))},   /* the wheel brings a vibrato in */
     {"PAD", {0, 0, 0, 0, 0, 0, 30, 4}, {0, 0, 127, 12}, 0, TAG(PAD), FX(0, 60, 30, 70), PAT(5), BREATHE(12, 1, 1),
      MODS(MMOD(1, PS_LFO, PD_PAN, 16), MMOD(2, PS_MODW, PD_CUT, 24))},          /* the drift pans it too */
     {"MARIMBA", {0, 0, 0, 0, 0, 0, 0, 5}, {0, 0, 127, 0}, 0, TAG(PLUCK), FX(0, 0, 25, 40), PAT(3),
@@ -508,7 +508,7 @@ static const preset_t FM6_PRESETS[] = {
      * (0.7.0 had an ice bell and a soft bell, DX keys, a pluck, wood, strings: near copies of the first eight): leads,
      * basses and a bell pad. Program numbers 8..14 as before */
     {"FM LEAD", {16, 2, -30, 0, 0, 0, 8, 3}, {0, 0, 127, 20}, 0, 1 | TAG(LEAD), FX(10, 20, 30, 30), PAT(4),
-     MODS(P_LRATE, 86, P_LD_PIT, 1, P_LFADE, 60, MMOD(1, PS_MODW, PD_VIB, 2), P_GLIDE, 18)},
+     MODS(P_LRATE, 86, P_LFADE, 60, MMOD(1, PS_MODW, PD_VIB, 2), P_GLIDE, 18)},
     {"SQR LEAD", {0, 0, 10, 1, 20, 0, 6, 7}, {0, 30, 110, 25}, 0, 1 | TAG(LEAD), FX(0, 15, 35, 30), PAT(4),
      MODS(P_LRATE, 90, MMOD(1, PS_AT, PD_VIB, 3), P_GLIDE, 20)},               /* aftertouch: the vibrato */
     {"FM GROWL", {0, 3, 10, 0, -10, 2, 0, 2}, {0, 0, 127, 5}, 0, 1 | TAG(BASS), FX(15, 0, 10, 5), PAT(2),

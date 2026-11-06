@@ -1447,9 +1447,9 @@ static int param_kept(uint32_t i)
            (!FELUCCA_FM4 && (i == P_HVEL || i == P_HTIM || i == P_HGAT || i == P_HRQ)) ||   /* (0.6.87) HUMAN: the sequencer's, a sound
                                                          * keeps it (FELUCCA_FM4: DIGITAL's OP SUS / LEVEL there) */
            (!FELUCCA_FM4 && (i == P_CHRD || i == P_CVOI || i == P_CSTR || i == P_CLEN || i == P_TCHAN ||
-                             i == P_MSND || i == P_MPAT || i == P_MAMT || i == P_MMODE || i == P_MCFG));   /* (0.7.0) SCL > CHORD, C.LEN, CHANCE,
-                                                         * MUTATE: the sequencer's too (a community report: browsing
-                                                         * presets switched CHORD off) */
+                             i == P_MCFG));   /* (0.7.0) SCL > CHORD, C.LEN, CHANCE: the sequencer's too (a
+                                                         * community report: browsing presets switched CHORD off); (V10.6i)
+                                                         * MUTATE's old slots are ENV 2's now: a sound's, set by its preset */
 }
 
 /* a retired preset kept as an alias (SAMPLE's, gone with it in JIANT): none now. -> the preset k stands for */
@@ -1457,8 +1457,6 @@ static uint32_t preset_orig(const engine_t *e, uint32_t k) { (void)e; return k; 
 /* the presets of engine e that browsing shows before preset k (k = npresets: all of them) */
 /* (0.5.1) browsing order: LOFI's BYTE presets, then FLOAT's (appended in 0.5.1: the stored numbers stay), then the
  * rest; every other engine in its own order. preset_nth: the preset shown n-th */
-static const uint8_t LOFI_ORDER[12] = {0, 1, 2, 8, 9, 10, 11, 3, 4, 5, 6, 7};   /* (V10.6d MATH: BYTE, FLOAT, the voices) */
-_Static_assert(sizeof LOFI_ORDER == NELEM(LOFI_PRESETS), "LOFI's browsing order: every preset once");
 /* (V10.6i) ANIMAL: the instruments first (in tune, to play a song with), then the experiments and the creatures' calls,
  * then the bare voices (INIT: one mode each, nothing moving); the stored numbers stay (projects, PROGRAM CHANGE) */
 static const uint8_t ANIMAL_ORDER[] = {24, 25, 5, 27, 13, 15, 26, 12, 28, 6, 9,   /* to play */
@@ -1467,12 +1465,16 @@ static const uint8_t ANIMAL_ORDER[] = {24, 25, 5, 27, 13, 15, 26, 12, 28, 6, 9, 
 _Static_assert(sizeof ANIMAL_ORDER == NELEM(ANIMAL_PRESETS), "ANIMAL's browsing order: every preset once");
 static const uint8_t *preset_order(const engine_t *e, uint32_t *n)
 {
-    if (e == &ENG_LOFI) { *n = sizeof LOFI_ORDER; return LOFI_ORDER; }
+    if (e == &ENG_LOFI) { *n = sizeof MATH_ORDER; return MATH_ORDER; }   /* (eng_lofi.c) */
     if (e == &ENG_ANIMAL) { *n = sizeof ANIMAL_ORDER; return ANIMAL_ORDER; }
     if (e == &ENG_ANALOG) { *n = sizeof ANALOG_ORDER; return ANALOG_ORDER; }
     if (e == &ENG_FORMANT) { *n = sizeof VOICE_ORDER; return VOICE_ORDER; }
     if (e == &ENG_STRING) { *n = sizeof STRING_ORDER; return STRING_ORDER; }
     if (e == &ENG_ADD) { *n = sizeof ADD_ORDER; return ADD_ORDER; }
+    if (e == &ENG_PHASE) { *n = sizeof PHASE_ORDER; return PHASE_ORDER; }
+    if (e == &ENG_NOISE) { *n = sizeof NOISE_ORDER; return NOISE_ORDER; }
+    if (e == &ENG_FM6) { *n = sizeof FM6_ORDER; return FM6_ORDER; }
+    if (e == &ENG_WHEEL) { *n = sizeof WHEEL_ORDER; return WHEEL_ORDER; }
     *n = 0;
     return 0;
 }

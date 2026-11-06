@@ -559,10 +559,10 @@ int main(void)
         uint32_t on = 0;
         gen_reset();
         gen_with(1, 5, 50, 0);
-        trk[3].p[P_MSND] = 3; trk[0].p[P_MPAT] = 2;
+        trk[3].p[P_MSND] = 113; trk[0].p[P_MPAT] = 117;   /* (V10.6i: the slots are ENV 2's: a preset may set them) */
         gen_go();
-        for (k = 0; k < NTRK; k++) on += trk[k].p[P_MSND] || trk[k].p[P_MPAT];
-        bad += gcheck("a new piece: the retired MUTATE slots 0 on every track (V10.6: MUTATE gone)", !on);
+        for (k = 0; k < NTRK; k++) on += trk[k].p[P_MSND] == 113 || trk[k].p[P_MPAT] == 117;
+        bad += gcheck("a new piece: the retired MUTATE slots not carried over (V10.6: MUTATE gone; V10.6i: ENV 2's, the sound's)", !on);
     }
     /* ---- (0.6.95) a throw its own: HOUSE over twelve seeds takes more than one drum map and more than one chord
      * play; RANDOM over forty seeds throws mutants ("A+B") a third of the time or so, each playable and storable */

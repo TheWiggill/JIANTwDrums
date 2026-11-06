@@ -209,8 +209,8 @@ async function editorMock() {
     const on = E.parse[E.CMD.DUMP](await rq(E.req.dump()), info);
     await rq(E.req.preset(0, 2));
     const off = E.parse[E.CMD.DUMP](await rq(E.req.dump()), info);
-    ok(on.p[52] === 1 && on.p[53] === 12 && on.p[54] === -30 && off.p.slice(49, 61).every((v) => v === 0),
-      "editor: a factory preset turns every matrix slot off");
+    ok(on.p[52] === 1 && on.p[53] === 12 && on.p[54] === -30 && !(off.p[52] === 1 && off.p[53] === 12 && off.p[54] === -30),
+      "editor: a factory preset replaces the matrix (V10.6i: its own slots, the rest off)");
   }
   {
     /* ROTATE and PITCH (core.h P_SOFS, P_POFS = 81, 82, just before P_E0 83; SHIFT's OFFSET and PITCH until 0.6.91, once the
