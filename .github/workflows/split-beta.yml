@@ -47,7 +47,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: github-pages
-          run-id: 42147981357
+          run-id: 42218401304
           github-token: ${{ github.token }}
           path: build/released
       - name: Exact tested firmware
