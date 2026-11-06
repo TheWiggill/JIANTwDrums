@@ -1461,10 +1461,9 @@ static const uint8_t LOFI_ORDER[12] = {0, 1, 2, 8, 9, 10, 11, 3, 4, 5, 6, 7};   
 _Static_assert(sizeof LOFI_ORDER == NELEM(LOFI_PRESETS), "LOFI's browsing order: every preset once");
 /* (V10.6i) ANIMAL: the instruments first (in tune, to play a song with), then the experiments and the creatures' calls,
  * then the bare voices (INIT: one mode each, nothing moving); the stored numbers stay (projects, PROGRAM CHANGE) */
-static const uint8_t ANIMAL_ORDER[] = {24, 25, 29, 27, 30, 31, 26, 33, 28, 32, 34,
-                                       35, 36, 37, 38, 39, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
-                                       19, 20, 21, 22, 23,
-                                       40, 41, 42, 43, 44};
+static const uint8_t ANIMAL_ORDER[] = {24, 25, 5, 27, 13, 15, 26, 12, 28, 6, 9,   /* to play */
+                                       3, 17, 16, 2, 0, 1, 4, 7, 10, 11, 14, 20, 21, 22, 23,   /* experiments, calls */
+                                       19, 8, 18};                                          /* INIT */
 _Static_assert(sizeof ANIMAL_ORDER == NELEM(ANIMAL_PRESETS), "ANIMAL's browsing order: every preset once");
 static const uint8_t *preset_order(const engine_t *e, uint32_t *n)
 {

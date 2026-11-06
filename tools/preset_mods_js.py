@@ -50,8 +50,29 @@ def expand(txt, ids):
 
 def main(fn, arr):
     ids = param_ids()
-    s = (SRC / fn).read_text()
-    s = re.sub(r"/\*.*?\*/", "", s[s.index(f"{arr}[] = {{"):], flags=re.S)
+    full = re.sub(r"/\*.*?\*/", "", (SRC / fn).read_text(), flags=re.S)
+    shared = {m[1]: " ".join(m[2].split()).rsplit(",", 1)[0]   # (the shared lists: static const int8_t M_x[] = {.., -1};)
+              for m in re.finditer(r"static const int8_t (\w+)\[\]\s*=\s*\{(.*?)\};", full, re.S)}
+    consts = {}                                      # (the file's and core.h's enums and #defines: an e[] value by name)
+    for src in (re.sub(r"/\*.*?\*/", "", (SRC / "core.h").read_text(), flags=re.S), full):
+        for body in re.findall(r"enum\s*\w*\s*\{([^}]*)\}", src):
+            n = 0
+            for tok in (t.strip() for t in body.split(",")):
+                if not tok:
+                    continue
+                if "=" in tok:
+                    a, b = (x.strip() for x in tok.split("=", 1))
+                    try:
+                        n = int(eval(b.replace("u", ""), {}, consts))
+                    except Exception:
+                        continue
+                    consts[a] = n
+                else:
+                    consts[tok] = n
+                n += 1
+        for a, b in re.findall(r"#define (\w+) \(?(-?\d+)\)?\s*$", src, re.M):
+            consts.setdefault(a, int(b))
+    s = full[full.index(f"{arr}[] = {{"):]
     s = s[:s.index("\n};")]
     tags = {"BASS": 1, "LEAD": 2, "PAD": 3, "KEYS": 4, "PLUCK": 5, "BELL": 6, "VOX": 7, "DRUM": 8, "FX": 9}
     body = s.split("{", 1)[1]
@@ -69,12 +90,17 @@ def main(fn, arr):
     for ent in ents:
         m = re.match(r'\{"([^"]+)",\s*\{([^}]*)\},\s*\{([^}]*)\},\s*(-?\d+),\s*([^,]*),\s*FX\(([^)]*)\)(.*)\}$', ent)
         name, e, env, fenv, mono, fx, rest = m.groups()
-        e = [int(eval(x, {}, {"AN_CMOS": 0, "AN_PULSE": 1, "AN_WHSTL": 2, "AN_WING": 3, "AN_GLOTT": 4})) for x in e.split(",")]
+        e = [int(eval(x, {}, consts)) for x in e.split(",")]
         mono1 = 1 if re.match(r"\s*1\s*\|", mono) else 0
         pat = re.search(r"PAT\((\d+)\)", rest)
         mods = re.search(r"MODS\((.*)\)\s*$", rest.strip().rstrip(","))
-        mod = expand(mods.group(1), ids) if mods else []
-        print(f'P("{name}", {e}, [{env.replace(" ", "").replace(",", ", ")}], {mono1}, {pat.group(1) if pat else 0}, 0, {mod})'.replace("'", ""))
+        named = re.search(r"\.mod\s*=\s*(\w+)", rest)
+        mod = expand(mods.group(1), ids) if mods else expand(shared[named.group(1)], ids) if named else []
+        w = re.search(r"WORDS\(([^,]+),([^)]+)\)", rest)
+        b = re.search(r"BREATHE\(([^,]+),([^,]+),([^)]+)\)", rest)
+        xp = (int(eval(w[1], {}, consts)) | int(eval(w[2], {}, consts)) << 2) if w else \
+            (int(b[1]) | int(b[2]) << 6 | int(b[3]) << 7) if b else 0
+        print(f'P("{name}", {e}, [{env.replace(" ", "").replace(",", ", ")}], {mono1}, {pat.group(1) if pat else 0}, {xp}, {mod})'.replace("'", ""))
 
 
 if __name__ == "__main__":
