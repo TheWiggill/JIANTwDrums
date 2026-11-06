@@ -2,7 +2,8 @@
  * Selected-track generation. Context and a temporary track live on the main
  * stack; no audio buffers, project-format changes or new DSP path. */
 typedef struct { uint16_t seed; uint8_t genre,role,complex,energy; } tg_config_t;
-static tg_config_t tg_config[NTRK] = {[0 ... NTRK-1]={1,0,0,50,50}};
+/* Keep the new UI settings out of the compiler's merged DSP globals. */
+static tg_config_t tg_config[NTRK] __attribute__((section(".data.trackgen"))) = {[0 ... NTRK-1]={1,0,0,50,50}};
 static const char *const TG_ROLE[] = {"BASS","CHORDS","LEAD","ARP"};
 static int trackgen_ok(const track_t *t)
 {return eng_ok(t->eng_req)&&t->eng_req!=ENGI_INPUT;}
