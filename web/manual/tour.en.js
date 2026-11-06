@@ -1,0 +1,136 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Juan Ignacio Antonucci (Juan Jiant)
+// The tutorial's words in English (tour.js: the steps; [X] = the control X's keycap).
+(window.JTOUR_TEXT = window.JTOUR_TEXT || {}).en = {
+ui: {
+  t_eb: "Tutorial · start here", t_h2: "Learn JIANT step by step",
+  t_in: "A guided walk through the whole system. At each step the FM-1 drawing lights what to touch and the screen shows what you will see. Touch it to go on, or use Next. You can also jump to a chapter or a question.",
+  t_on: "Tutorial", t_off: "Free explore", t_next: "Next", t_prev: "Back", t_skip: "Skip step",
+  t_restart: "Start over", t_chapters: "Chapters", t_questions: "Common questions", t_step: "Step",
+  t_of: "of", t_do: "Touch on the drawing:", t_hold: "hold", t_then: "and", t_good: "Well done! That's it.", t_free: "This step is for reading: go on with Next.",
+  t_finish: "You finished the tour. You now know all of JIANT: keep exploring the panel, search any command below or try it in the emulator.",
+  t_emu: "Try it in the emulator", t_progress: "done"
+},
+chapters: {
+  welcome: { t: "Welcome", d: "What JIANT is and how this tutorial works." },
+  panel: { t: "The panel", d: "The FM-1's knobs, buttons and keys." },
+  sound: { t: "Your first sound", d: "Pick a track, change the sound, play it and reshape it." },
+  nav: { t: "Getting around", d: "The six rules that hold in every section." },
+  gen: { t: "A song in a minute", d: "The GEN generator writes a whole song." },
+  edit: { t: "Engines and EDIT", d: "Twelve synthesis engines and how to edit them." },
+  seq: { t: "The sequencer", d: "Writing and recording notes, locks and patterns." },
+  euclid: { t: "EUCLID and MUTATE", d: "Euclidean rhythms and melodies that change by themselves." },
+  mix: { t: "Mix, effects and live", d: "Mutes, solos, tempo, effects and punch-in." },
+  mod: { t: "Modulation, scale and arpeggio", d: "ENV, LFO, macros, SCL and ARP." },
+  song: { t: "Saving and building the song", d: "Sections, ARRANGE, TIMELINE and projects." },
+  connect: { t: "MENU and connections", d: "Settings, tracks, USB, MIDI, Bluetooth and audio input." },
+  next: { t: "Keep learning", d: "Where to look when you want more." }
+},
+steps: {
+  "welcome.hello": { t: "Hello, this is JIANT FM", d: "JIANT is a free firmware that turns the M-VAVE FM-1 into a complete instrument: six tracks, twelve synthesis engines, a 64-step sequencer, effects, modulation and whole songs, no computer needed. This tutorial walks you through all of it, step by step." },
+  "welcome.how": { t: "How it works", d: "At each step the drawing lights what you have to touch. Try it now: touch the [SELECT] knob. When a step says \"hold A and touch B\", touch A and then B, in that order." },
+  "welcome.emu": { t: "No FM-1? No problem", d: "If your FM-1 isn't at hand, the emulator is at the bottom of this page: the same firmware running in the browser. Computer keys work as buttons (1 … = FX … REC) and as the keyboard (Z to ' and Q to O). You can follow the tutorial with the emulator open in another tab." },
+
+  "panel.master": { t: "MASTER: the volume", d: "Top left, [MASTER] is the output volume. Nothing else." },
+  "panel.algorithm": { t: "ALGORITHM: the track", d: "[ALGORITHM] picks the track, T1 to T6, from any page. The track is always ALGORITHM's. With the factory setting (TRACKS 4) it stops at T4." },
+  "panel.presets": { t: "PRESETS: the sounds", d: "[PRESETS] always loads presets: the track's sounds on any page, patterns on the SEQ pages and the genre on GEN. It never changes your page or track." },
+  "panel.select": { t: "SELECT: the pages", d: "[SELECT] walks the pages of the section you're in, one a detent, stopping at the first and the last. Holding a button and turning SELECT opens special functions (you'll see them)." },
+  "panel.knobs": { t: "KNOB 1–4: the four cards", d: "The four knobs on the right drive the four cards on screen. When a page picks something (a step, a kit sound, a row), [KNOB 1] picks it. On HOME they are the engine's four most useful controls." },
+  "panel.buttons": { t: "The twelve buttons", d: "Each button is a section: FX, SCL, ENV, LFO, EDIT, GLO on top; HOME, SAVE, ARP, SEQ, PLAY and REC below. Tapped, it goes into the section. Held, it opens its layer of shortcuts. Touch [SEQ]." },
+  "panel.keys": { t: "The 27 keys", d: "F3 to G5 play the selected track. While you hold a button they become that layer's shortcuts, and on the DRUM-X grid they are steps. Touch [C4]." },
+  "panel.oct": { t: "OCT− and OCT+", d: "They shift the keyboard's octave (both together: back to 0). On action pages and in dialogs they are NO / YES: [OCT+] confirms, [OCT−] cancels or goes back." },
+
+  "sound.home": { t: "HOME: the ecosystem", d: "Touch [HOME]. Each track is a creature with a face: its shape comes from its knobs, it swells and heats up with its own sound and shuts its eyes on every hit. The selected track is the biggest." },
+  "sound.track": { t: "Pick a track", d: "Turn [ALGORITHM]. At power-on: T1 DRUM-X (drums), T2 VOICE (it sings), T3 ANIMAL (a bird), T4 LOFI. T5 ANALOG and T6 FM6 appear with TRACKS 6." },
+  "sound.browse": { t: "Change the sound", d: "Turn [PRESETS]: it goes through every engine's factory sounds, then yours. The sound changes without cutting what is playing." },
+  "sound.play": { t: "Play", d: "Play the keys, for example [E4]. [OCT−] and [OCT+] shift the octave down or up." },
+  "sound.shape": { t: "Shape it", d: "On HOME, [KNOB 1] to [KNOB 4] are the engine's four most useful controls (e.g. CUT, RES, ATK, REL). Turn [KNOB 2] and watch the creature change." },
+  "sound.dice": { t: "The sound dice", d: "Hold [EDIT] and turn [SELECT]: the sound is rolled again and you hear it at once. The screen shows BEFORE and NOW." },
+  "sound.keep": { t: "Like it? Keep it", d: "[OCT+] (OK) keeps the new sound, [OCT−] (CANCEL) brings the old one back. SELECT again rolls again." },
+  "sound.jump": { t: "Jump engine to engine", d: "Hold [EDIT] and turn [PRESETS]: it jumps to the first sound of the next engine, its name on screen, instead of every preset one by one." },
+
+  "nav.rule1": { t: "Rule 1: SELECT walks the pages", d: "Every section is a chain of pages. [SELECT] moves one a detent and stops at the ends. Lost? Turn SELECT to see where you are." },
+  "nav.rule2": { t: "Rule 2: the button goes in, or on", d: "From another section, the button takes you back to the page you were on there. Already inside, it jumps to the first page of the next group and goes round. Touch [FX] twice." },
+  "nav.rule3": { t: "Rule 3: PRESETS loads presets", d: "Always: sounds on any page, patterns in SEQ, the genre in GEN. It never changes page. Turn [PRESETS]." },
+  "nav.rule4": { t: "Rule 4: KNOB 1 picks", d: "When a page picks something (a step, a bar, a slot, a stage, an operator, the kit's sound, a row), [KNOB 1] picks it." },
+  "nav.rule5": { t: "Rule 5: hold = the layer", d: "Hold a button: the keys and knobs change function while it is down and the screen maps what each key does. Hold [GLO] and look at the keys on the drawing." },
+  "nav.rule6": { t: "Rule 6: the screen tells you where you are", d: "On top, the tabs are the section's groups (yours lit, a dot per page). At the foot: SECTION · GROUP · page and n/N, for example FX · DELAY · DLY 2  6/16." },
+  "nav.menu": { t: "The MENU", d: "Hold [HOME] for a moment (about 0.7 s): the MENU opens with the settings (screen, audio, MIDI, USB, system). The same rules: SELECT its pages, ALGORITHM its tabs, HOME closes it." },
+
+  "gen.open": { t: "Open the generator", d: "Hold [HOME] and turn [SELECT] (or tap HOME until the GEN tab). It starts on EXPLORE: no genre, every rule broken. With [KNOB 1] or PRESETS you can pick one of the genres or RANDOM." },
+  "gen.make": { t: "Make it", d: "Touch [OCT+]: a whole song idea appears, with engines, sounds, parts, scale, tempo and effects." },
+  "gen.play": { t: "Listen", d: "Touch [PLAY]. Touch PLAY again to stop." },
+  "gen.again": { t: "Another one?", d: "[OCT+] again: a new seed, a new piece. [OCT−] goes back to HOME." },
+  "gen.parts": { t: "Adjust the parts", d: "Turn [SELECT] one detent right: GEN 2. Lower DRUMS or ARP with the knobs and touch OCT+: the same piece with that changed." },
+  "gen.undo": { t: "Undo", d: "Hold [GLO] and touch [G4]: UNDO, back to what was there before the last big change (again: redo). Also: hold REC alone and let go without touching anything else." },
+
+  "edit.engines": { t: "Twelve engines", d: "Any track can use any engine: DRUM-X, VOICE, ANIMAL, LOFI, ANALOG, FM6, PHASE, WHEEL, NOISE, STRING, ADD and INPUT (the audio coming in over USB). Everything is synthesis: no samples. Touch [EDIT] to edit the track's." },
+  "edit.pages": { t: "EDIT's pages", d: "Turn [SELECT]: EDIT 1 and EDIT 2 (the engine's parameters), then TONE with FILTER, VOICE and each engine's own pages. Every engine draws its creature and its scope." },
+  "edit.focus": { t: "FOCUS", d: "Tap [EDIT] until FOCUS: one parameter, large. KNOB 1 picks it, KNOB 2 sets it, KNOB 3 gives it a modulation source and KNOB 4 how much." },
+  "edit.fm6": { t: "FM6", d: "Six-operator FM with 32 algorithms and DX7 banks (sent from the web editor). Its OPERATOR pages edit each operator; KNOB 1 picks it." },
+  "edit.drum": { t: "DRUM-X", d: "A kit of eight synthesized sounds (BD SD CP CH OH TM RS CB), each with two sides: MORPH moves the whole kit from one to the other, live. In every octave the same keys: ratchets above, short, ghost and flam hits below." },
+  "edit.init": { t: "Start from scratch, or go back", d: "Hold [EDIT]: [F3] INIT sets the engine's sound to its plain defaults; G3 RECALL brings it back as the section stored it. Both ask first and leave the steps alone." },
+  "edit.store": { t: "Save a sound", d: "With the music stopped, tap [SAVE] until the SOUND tab, page USER: KNOB 1 picks the slot (U01–U32), KNOB 4 right to SAVE and OCT+; type the name with the keys and OCT+ again. Your sounds show in PRESETS after the factory ones." },
+
+  "seq.roll": { t: "The piano roll", d: "Touch [SEQ]: the STEP page is a piano roll of up to 64 steps per track. KNOB 1 moves the cursor along the steps, KNOB 2 transposes, KNOB 3 is the length (TIME) and KNOB 4 the velocity (VEL)." },
+  "seq.steprec": { t: "Step recording", d: "With the music stopped, on STEP, touch [REC]: the screen says KEYS WRITE STEPS." },
+  "seq.write": { t: "Write notes", d: "Play a note or a chord, for example [C4]: it goes into the cursor's step and, when you let go, the cursor moves on. While the keys are held, KNOB 1 sets how many steps it lasts; ARP writes it as an arpeggio." },
+  "seq.length": { t: "Longer or shorter", d: "[KNOB 3] (TIME) on a note lengthens it to the right (ties) or shortens it to the left, down to a rest. It works on any note, recorded or written." },
+  "seq.clear": { t: "Clear a step", d: "Hold [SEQ] and touch [G5] (CLR STEP): it clears the cursor's step and its locks." },
+  "seq.live": { t: "Record live", d: "Touch [REC] on any other page (or with the music running): the track is armed and starts. What you play is recorded quantized, over what is there, and knob moves become automation. The click and the count-in are in MENU › AUDIO." },
+  "seq.lock": { t: "Parameter locks", d: "On STEP, hold a step (the note you're entering, or a grid key) and turn a knob, for example [KNOB 2]: that step gets its own value. With the step held, SELECT changes the page of parameters." },
+  "seq.grid": { t: "The DRUM-X grid", d: "On a DRUM-X track, STEP is a grid: the white keys are the 16 steps, black keys 1–8 pick the sound (BD SD CP…) and black key 9 held sets accents." },
+  "seq.patterns": { t: "Ready-made patterns", d: "On any SEQ page, turn [PRESETS]: PHRASES opens with patterns. OCT+ loads the one picked into the track, OCT− goes back." },
+  "seq.tools": { t: "SEQ TOOLS", d: "Hold [SEQ]: F3 CLEAR, G3 REVERSE, A3 / B3 SHIFT, F4 clears the automation. The knobs: LEN (length), DIV, SWING, GATE. Holding SEQ and turning SELECT rolls the sequence dice." },
+
+  "euclid.go": { t: "EUCLID", d: "Pick the track, tap [SEQ] until the EUCL tab (or turn SELECT to EUCLID). This page writes euclidean rhythms: the hits spread as evenly as possible." },
+  "euclid.density": { t: "A whole kit from one knob", d: "On a DRUM-X track with LANE on ALL, turn [KNOB 1] (DENSITY 1–8): the whole drum kit. KNOB 2 STEPS sets the length and KNOB 3 ROTATE the groove." },
+  "euclid.lane": { t: "Sound by sound", d: "Turn [KNOB 4] (LANE) to one sound (BD, SD, CH…): HITS, STEPS and ROTATE now write that one only." },
+  "euclid.modes": { t: "MODES", d: "[SELECT] one detent right: MODES. On DRUM-X: ACCENT, GHOST, RATCHET, VARY. On a melodic track: MOTION (leaps), HARMONY (chords), OCTAVE and SLIDE." },
+  "euclid.vary": { t: "Variations", d: "[OCT+] makes a new variation and OCT− goes back to the one before. To undo: GLO + G4." },
+  "euclid.mutate": { t: "MUTATE", d: "One more detent of [SELECT]: MUTATE changes the pattern by itself while it plays. KNOB 1 EVERY (how many bars), KNOB 2 AMOUNT, KNOB 3 MODE (ORBIT comes back, DRIFT walks away, PULSE alternates) and KNOB 4 what changes. OCT− brings the original back." },
+  "euclid.melodic": { t: "Melodies in key", d: "On a melodic track EUCLID writes notes in the scale: set it first on [SCL] (ROOT and SCALE), or let it find the key in the other tracks. KNOB 1 HITS gives exactly that many notes." },
+
+  "mix.glo": { t: "GLO: the mix", d: "Touch [GLO]: the MIXER, the tracks as channels with LEVEL, PAN and reverb. Tapping GLO again: GLOBAL (tempo, swing, clock), SYSTEM and LIVE." },
+  "mix.mutes": { t: "Mute tracks", d: "Hold [GLO] and touch a black key: black keys 1–6 mute T1–T6 (touch again to unmute). Try [F#3]. Black keys 7–10 mute drum groups and E4 clears every mute." },
+  "mix.solo": { t: "Solo", d: "With [GLO] held, the white keys F3–D4 solo T1–T6 while you hold them. Try [F3]." },
+  "mix.tempo": { t: "Tempo", d: "Hold [GLO] and turn [SELECT]: the tempo, from any page. With GLO held, F4 is TAP and PLAY restarts from the top." },
+  "mix.fx": { t: "FX: the effects", d: "Touch [FX]: per-track sends and distortion, buses, delay, five reverbs, chorus, slicer, the MASTER (limiter, clip, punch, tape, EQ) and PUNCH. Each FX tap jumps to the next module." },
+  "mix.punch": { t: "Punch-in: live effects", d: "Hold [FX] and touch [F3]: REPEAT 1/8 while you hold it. Other keys: G3/A3 shorter repeats, B3 GLITCH, C4 TAPE STOP, STUTTER, FREEZE, SHUFFLE. The knobs are macros: STEPS, TRANSPOSE, MUTATE, FILTER." },
+  "mix.mano": { t: "LIVE: MANO and the DJ filter", d: "Tap [GLO] until the LIVE tab: MANO turns the keys into live modifiers over the six sequences, and KNOB 4 is the DJ filter on the whole mix. RIELES shows the six sequences as rails." },
+
+  "mod.env": { t: "ENV: envelopes", d: "Touch [ENV]: the track's envelope (attack, decay, sustain, release) and where it goes (filter, pitch, shape). On STAGE, KNOB 1 picks the stage and KNOB 2 sets it." },
+  "mod.lfo": { t: "LFO", d: "Touch [LFO]: the wave and its rate, and on LFO DEST how much it moves four destinations. MSEQ is a 16-step modulation sequencer." },
+  "mod.matrix": { t: "The MOD matrix", d: "Tap [LFO] until the MOD tab: four slots that connect a source (LFO, envelope, velocity, macros, FOLLOW, PROX…) to a destination, each with its amount." },
+  "mod.macros": { t: "Macros M1–M4", d: "Hold [LFO] and turn [KNOB 1]: the four knobs are the macros M1–M4. Let go and they stay latched on every page until you touch LFO again. F3 rolls new routes, G3 clears them." },
+  "mod.scale": { t: "SCL: the scale", d: "Touch [SCL]: ROOT, SCALE and QUANT, so everything stays in key. Hold SCL and touch a key: that note is the root. CHORD makes each key play a chord of the scale." },
+  "mod.arp": { t: "ARP", d: "Touch [ARP]: the track's arpeggiator (MODE, RATE, OCT, and on ARP 2 GATE, SWING and PROB)." },
+
+  "song.idea": { t: "How a song is built", d: "Each project has four sections, A to D, holding the music of all six tracks. You make music, store it into a section and chain the sections. There are 8 projects." },
+  "song.sections": { t: "Store into a section", d: "Stop the music and touch [SAVE]: it opens TIMELINE. Turn SELECT one detent right: SECTIONS." },
+  "song.storea": { t: "Store A", d: "Turn KNOB 4 until its card says OCT+ and touch [OCT+]. Type a name with the keys (or keep the one offered) and OCT+ again. The screen says SAVED." },
+  "song.storeb": { t: "A variation in B", d: "Change something (a few steps, a mute). On SECTIONS turn [KNOB 1] to B and store as before." },
+  "song.arrange": { t: "ARRANGE: chaining", d: "[SELECT] two detents right: ARRANGE, the song's rows. OCT+ adds a row, KNOB 2 its section and KNOB 3 how many bars. One row for A, one for B, then PLAY: the song plays the rows in order." },
+  "song.timeline": { t: "TIMELINE", d: "[SAVE] opens TIMELINE: the song left to right, a lane per track. Each row can take a track from another section (FROM) and vary it there only (VAR: MUTE, FILL, HALF, REV, OCT…)." },
+  "song.live": { t: "Sections live", d: "Hold [SAVE]: [F3] G3 A3 B3 play section A–D (on the next bar), C4–F4 store into A–D, D5 toggles LOOP / SONG. SAVE + OCT+ stores into the section playing." },
+  "song.projects": { t: "Projects and autosave", d: "On SAVE › PROJECT › PROJECTS you pick one of 8 projects. Settings save themselves; the music is stored into a section when you ask. Back everything up with the web editor." },
+
+  "connect.menu": { t: "The MENU", d: "Hold [HOME]: the MENU. SCREEN (skins AIR, COLORS, HUD and palettes), AUDIO (click, count-in), MIDI, USB and SYSTEM." },
+  "connect.tracks": { t: "4 or 6 tracks", d: "Tap [GLO] until SYSTEM: KNOB 1 TRACKS picks 4 (the default, lighter) or 6 tracks, and LOAD how hard the processor works." },
+  "connect.usb": { t: "USB: audio and MIDI", d: "MENU › USB › USB AUDIO: STEREO, STEMS (each track on its own channel into your DAW), IN+OUT (audio both ways) or HOST (a USB-MIDI keyboard plugged straight in). MIDI over USB, TRS and Bluetooth." },
+  "connect.input": { t: "The INPUT engine", d: "INPUT puts the audio coming in over USB on a track (IN 1, IN 2, 1+2 or stereo), with its effects and its sequence. MOD's FOLLOW source lets that audio modulate other things." },
+  "connect.bt": { t: "Bluetooth MIDI and PROX", d: "MENU › SYSTEM › BT ON: connect a Bluetooth MIDI app (it shows as JIANT FM-1). PROX is a modulation source from how close the phone is." },
+  "connect.editor": { t: "The web editor", d: "The web editor (Chrome or Edge) shows your sounds and settings on the computer screen while the FM-1 keeps playing, sends DX7 banks to FM6 and backs up every project with one click." },
+
+  "next.cheat": { t: "The cheat sheets", d: "On the front page there are two sheets to print: the controls and the sound pages, to keep next to the FM-1." },
+  "next.search": { t: "How do I…?", d: "Further down this page is the reference: type what you want to do and the command appears, with its screen and the emulator keys to use. There are step-by-step recipes and the navigation map too." },
+  "next.done": { t: "Done!", d: "You've walked through all of JIANT. Touch any control on the drawing in Free explore to see everything it does, or come back to any chapter whenever you like." }
+},
+questions: {
+  q_sound: { q: "How do I change the sound?" }, q_lost: { q: "I'm lost, how do I get back?" }, q_undo: { q: "How do I undo?" },
+  q_song: { q: "How do I make a quick song?" }, q_melody: { q: "How do I record a melody?" }, q_beat: { q: "How do I make a beat?" },
+  q_save: { q: "How do I save?" }, q_chain: { q: "How do I chain parts?" }, q_mute: { q: "How do I mute a track?" },
+  q_live: { q: "What live effects are there?" }, q_tempo: { q: "How do I change the tempo?" }, q_daw: { q: "How do I connect it to my computer?" },
+  q_tracks: { q: "Why do I only see 4 tracks?" }, q_engine: { q: "Which engines are there?" }
+}
+};

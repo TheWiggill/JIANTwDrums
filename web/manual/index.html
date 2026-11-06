@@ -188,6 +188,40 @@ kbd.cap.big{font-size:24px;background:var(--yellow)}
 footer.foot{display:flex;justify-content:space-between;gap:10px 18px;flex-wrap:wrap;padding:16px 14px;border-top:1px solid var(--rule);font:11px/1.6 var(--mono);color:var(--dim)}
 footer.foot a{color:var(--line)}
 
+/* the tutorial (tour.js): on by default; the chapters and questions over the panel, the step's card in the info panel,
+   the controls to touch lit on the drawing (the next one pulsing) */
+body.touring .fhead,body:not(.touring) .thead{display:none}
+.tour{--bc:var(--yellow);padding:12px 14px;margin:0 0 14px;display:grid;gap:8px;min-width:0}
+.tmode{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.tmode button{font:500 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--line);background:transparent;border:1px solid var(--rule);padding:9px 12px;cursor:pointer}
+.tmode button[aria-pressed="true"]{background:var(--yellow);color:var(--void);border-color:var(--yellow)}
+.tpct{flex:1 1 120px;height:4px;background:rgba(239,230,200,.12);max-width:240px}.tpct b,.tbar b{display:block;height:100%;background:var(--heat)}
+.tpcn{font:12px var(--mono);color:var(--dim)}
+.tlab{font:500 10px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);margin:2px 0 0}
+.tch{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;min-width:0}
+.tch button{flex:none;font:500 13px/1.2 var(--body);color:var(--line);background:#131218;border:1px solid var(--rule);border-radius:8px;padding:6px 10px 6px 6px;cursor:pointer;display:flex;gap:6px;align-items:center;white-space:nowrap}
+.tch button i{font:400 15px/1 var(--term);font-style:normal;background:var(--violet);color:var(--void);border-radius:50%;min-width:20px;height:20px;display:inline-grid;place-items:center}
+.tch button.full i{background:#6fe08a}
+.tch button[aria-pressed="true"]{border-color:var(--yellow);background:#2a2410}
+.tqs summary{cursor:pointer;font:500 12px var(--mono);letter-spacing:.06em;color:var(--cyan)}
+.tq{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tq button{font:14px/1.3 var(--body);color:var(--line);background:rgba(5,4,9,.7);border:1px solid rgba(63,224,230,.35);border-radius:16px;padding:6px 12px;cursor:pointer;text-align:left}
+.tq button:hover,.tch button:hover{border-color:var(--yellow)}
+.tbar{height:3px;background:rgba(239,230,200,.12);margin:6px 0 10px}
+.ttitle{font:400 clamp(20px,2.4vw,26px)/1.2 var(--display);color:var(--line);margin:0 0 8px}
+.ttext{margin:0 0 10px;font-size:16px}
+.ttext kbd.cap,.tdo kbd.cap{font-size:16px;padding:2px 5px 0}
+.tdo{margin:0 0 8px;font:500 13px/2 var(--mono);color:var(--dim)}.tdo.dim{font-family:var(--body);font-style:italic}
+.tdo .nx kbd{background:var(--yellow);box-shadow:0 0 0 2px rgba(255,225,77,.35)}.tdo .ok kbd{background:#6fe08a}
+.tok{margin:0 0 8px;font:600 15px var(--body);color:#6fe08a}
+.tnav{display:flex;justify-content:space-between;gap:10px;margin-top:14px;flex-wrap:wrap}
+.tnav .ghost[disabled]{opacity:.35;cursor:default}
+#fm1 .ctl.tgt .btn,#fm1 .ctl.tgt .cap,#fm1 .ctl.tgt .pill{stroke:var(--yellow);stroke-width:2.5}
+#fm1 .ctl.tnext .btn,#fm1 .ctl.tnext .cap,#fm1 .ctl.tnext .pill{stroke:var(--yellow);stroke-width:3.5;animation:tpulse 1.1s ease-in-out infinite}
+#fm1 .ctl.tdone .btn,#fm1 .ctl.tdone .cap,#fm1 .ctl.tdone .pill{stroke:#6fe08a;stroke-width:3}
+#fm1 .ctl.nudge .btn,#fm1 .ctl.nudge .cap,#fm1 .ctl.nudge .pill{animation:tpulse .25s ease-in-out 4}
+@keyframes tpulse{50%{stroke:var(--mag);stroke-width:6}}
+@media (max-width:900px){body.touring .panel .info{order:-1}}
 @media (max-width:900px){.panel{grid-template-columns:minmax(0,1fr)}.info{position:static}}
 @media (max-width:600px){.device{overflow-x:auto;overscroll-behavior-x:contain}#fm1{width:660px;max-width:none}.wrap{gap:56px}.cmds,#map,#news,.news{grid-template-columns:minmax(0,1fr)}.iname{font-size:34px}.top nav{display:none}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
@@ -198,8 +232,8 @@ footer.foot a{color:var(--line)}
 <div class="wrap">
   <header class="top brk">
     <span><a href="../" style="text-decoration:none"><b>JIANT</b> / FM</a> · MANUAL · <span data-i="ver">firmware</span> <b id="ver"></b></span>
-    <nav aria-label="Secciones"><a href="#panel" data-i="nav_panel">El panel</a><a href="#ref" data-i="nav_ref">¿Cómo hago…?</a><a href="#maps" data-i="nav_map">Mapa</a><a href="#new" data-i="nav_new">Novedades</a><a href="#emu" data-i="nav_emu">Emulador</a></nav>
-    <div class="lang" role="group" aria-label="Idioma / Language"><button type="button" data-lang="es" aria-pressed="true">ES</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div>
+    <nav aria-label="Secciones"><a href="#panel" data-ti="t_on">Tutorial</a><a href="#panel" data-i="nav_panel">El panel</a><a href="#ref" data-i="nav_ref">¿Cómo hago…?</a><a href="#maps" data-i="nav_map">Mapa</a><a href="#new" data-i="nav_new">Novedades</a><a href="#emu" data-i="nav_emu">Emulador</a></nav>
+    <div class="lang" role="group" aria-label="Idioma / Language"><button type="button" data-lang="es" aria-pressed="true">ES</button><button type="button" data-lang="en" aria-pressed="false">EN</button><button type="button" data-lang="pt" aria-pressed="false" lang="pt">PT</button><button type="button" data-lang="fr" aria-pressed="false" lang="fr">FR</button><button type="button" data-lang="ja" aria-pressed="false" lang="ja">日本語</button><button type="button" data-lang="zh" aria-pressed="false" lang="zh">中文</button></div>
   </header>
 
   <section>
@@ -209,9 +243,17 @@ footer.foot a{color:var(--line)}
   </section>
 
   <section id="panel">
-    <p class="eyebrow" data-i="p_eb">El panel</p>
-    <h2 data-i="p_h2">Tocá un control</h2>
-    <p class="intro" data-i="p_in"></p>
+    <div class="thead">
+      <p class="eyebrow" data-ti="t_eb">Tutorial · empezá acá</p>
+      <h2 data-ti="t_h2">Aprendé JIANT paso a paso</h2>
+      <p class="intro" data-ti="t_in"></p>
+    </div>
+    <div class="fhead">
+      <p class="eyebrow" data-i="p_eb">El panel</p>
+      <h2 data-i="p_h2">Tocá un control</h2>
+      <p class="intro" data-i="p_in"></p>
+    </div>
+    <div class="tour brk" id="tour" hidden></div>
     <div class="panel">
       <div>
         <figure class="device brk" style="margin:0">
@@ -270,6 +312,13 @@ footer.foot a{color:var(--line)}
 <aside id="pagebox" class="brk" hidden aria-live="polite"></aside>
 <div id="zoom" hidden data-close><img alt=""></div>
 <script src="data.js"></script>
+<script src="tour.js"></script>
+<script src="tour.es.js"></script>
+<script src="tour.en.js"></script>
+<script src="tour.pt.js"></script>
+<script src="tour.fr.js"></script>
+<script src="tour.ja.js"></script>
+<script src="tour.zh.js"></script>
 <script src="nav.js"></script>
 <script src="manual.js"></script>
 </body>

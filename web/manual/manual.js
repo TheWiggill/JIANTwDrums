@@ -26,7 +26,7 @@ for (let n = 0, w = 0, b = 0; n < 27; n++) {
 const CONTROL_IDS = [...KNOBS.map((k) => k[0]), "OCT-", "OCT+", ...ROW1, ...ROW2];
 
 // ------------------------------------------------------------------------------------------- text
-const L = (a, lang) => Array.isArray(a) ? (lang === "en" ? a[1] : a[0]) : (a == null ? "" : String(a));
+const L = (a, lang) => Array.isArray(a) ? (lang !== "es" ? a[1] : a[0]) : (a == null ? "" : String(a));
 const norm = (s) => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
   .replace(/[−–]/g, "-").replace(/[›>·,;:()"“”/.¿?¡!]/g, " ").replace(/\s+/g, " ").trim();
 const tokens = (k) => (String(k).match(/OCT[+-]|[^+]+/g) || []).map((x) => x.trim()).filter(Boolean);   /* "A+B"; OCT+ is one */
@@ -42,21 +42,21 @@ const EMU_KEY = {};
 function emuKey(tok, lang) {
   if (EMU_BTN[tok]) return EMU_BTN[tok];
   if (EMU_KEY[tok]) return EMU_KEY[tok];
-  if (tok === "STEP") return lang === "en" ? "a grid key" : "una tecla de la grilla";
-  return lang === "en" ? "mouse wheel on " + tok : "rueda del mouse sobre " + tok;
+  if (tok === "STEP") return lang !== "es" ? "a grid key" : "una tecla de la grilla";
+  return lang !== "es" ? "mouse wheel on " + tok : "rueda del mouse sobre " + tok;
 }
 function emuHint(k, lang) {
   const t = tokens(k);
   if (!t.length) return "";
   const keys = t.map((x) => { const k = emuKey(x, lang); return k.length <= 3 ? "«" + k + "»" : k; });
-  if (t.length === 1) return (lang === "en" ? "Emulator: " : "Emulador: ") + keys[0];
-  return (lang === "en" ? "Emulator: hold " : "Emulador: mantené ") + keys[0] +
-         (lang === "en" ? " + " : " + ") + keys.slice(1).join(" + ");
+  if (t.length === 1) return (lang !== "es" ? "Emulator: " : "Emulador: ") + keys[0];
+  return (lang !== "es" ? "Emulator: hold " : "Emulador: mantené ") + keys[0] +
+         (lang !== "es" ? " + " : " + ") + keys.slice(1).join(" + ");
 }
 
 // ------------------------------------------------------------------------------------------- search
 function entryText(e, lang) {
-  return norm([L(e.t, lang), L(e.d, lang), e.k || "", tokens(e.k || "").join(" "), L(e.t, lang === "en" ? "es" : "en"),
+  return norm([L(e.t, lang), L(e.d, lang), e.k || "", tokens(e.k || "").join(" "), L(e.t, lang !== "es" ? "es" : "en"),
                (e.steps || []).map((s) => L(s, lang)).join(" "), sectionName(e.s, lang)].join(" "));
 }
 function sectionName(id, lang) { const s = M.sections.find((x) => x.id === id); return s ? L(s.t, lang) : id; }
@@ -143,7 +143,14 @@ const UI = {
     foot: "JIANT FM · Juan Jiant · Buenos Aires", home: "Home", manualmd: "Full manual (text)" }
 };
 
-const API = { KNOBS, ROW1, ROW2, KEYS, CONTROL_IDS, keyName, norm, tokens, emuHint, search, keyLayers, keyLabel, allShots, UI, L, sectionName };
+const LANGS = ["es", "en", "pt", "fr", "ja", "zh"];
+/* (the tutorial's languages) the page's words in pt fr ja zh: tour.<lang>.js's "page", over the English */
+function uiOf(l) {
+  if (UI[l]) return UI[l];
+  const T = G.JTOUR_TEXT && G.JTOUR_TEXT[l];
+  return T && T.page ? Object.assign({}, UI.en, T.page, { lang: l }) : UI.en;
+}
+const API = { LANGS, uiOf, KNOBS, ROW1, ROW2, KEYS, CONTROL_IDS, keyName, norm, tokens, emuHint, search, keyLayers, keyLabel, allShots, UI, L, sectionName };
 G.JMANUAL = API;
 if (typeof document === "undefined" || !document.getElementById("fm1")) return;
 
@@ -155,10 +162,10 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&l
 let lang = "es", cur = null, layer = "", sec = "all";
 const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
                 set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } } };
-const u = (k) => UI[lang][k] || k;
+const u = (k) => uiOf(lang)[k] || UI.en[k] || k;
 const shotSrc = (n) => "shots/" + n + ".png";
 function caps(k) {
-  return tokens(k).map((t) => `<kbd class="cap${/^[A-G]#?\d$/.test(t) ? " note" : ""}">${esc(t === "STEP" ? (lang === "en" ? "STEP held" : "PASO") : t.replace("-", "−"))}</kbd>`)
+  return tokens(k).map((t) => `<kbd class="cap${/^[A-G]#?\d$/.test(t) ? " note" : ""}">${esc(t === "STEP" ? (lang !== "es" ? "STEP held" : "PASO") : t.replace("-", "−"))}</kbd>`)
     .join('<span class="plus">+</span>');
 }
 
@@ -213,10 +220,10 @@ function drawPanel() {
   }
   $$(".ctl", svg).forEach((g) => {
     const id = g.dataset.ctl;
-    g.addEventListener("mouseenter", () => show(id));
-    g.addEventListener("focus", () => show(id));
-    g.addEventListener("click", () => { show(id, true); });
-    g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); show(id, true); } });
+    g.addEventListener("mouseenter", () => { if (!tour.on) show(id); });
+    g.addEventListener("focus", () => { if (!tour.on) show(id); });
+    g.addEventListener("click", () => { if (tour.on) tourTouch(id); else show(id, true); });
+    g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (tour.on) tourTouch(id); else show(id, true); } });
   });
   paintLayer();
 }
@@ -304,7 +311,7 @@ function renderChips() {
 // ------------------------------------------------------------------------------------------- the map
 const ORDER = ["HOME", "EDIT", "SEQ", "FX", "GLO", "ENV", "LFO", "SCL", "ARP", "SAVE"];
 function renderMap() {
-  const T = NAV.lang[lang];
+  const T = NAV.lang[lang] || NAV.lang.en;
   let h = "";
   for (const s of ORDER) {
     const chains = NAV.chains.filter((c) => c.sec === s);
@@ -351,9 +358,133 @@ function renderNews() {
     `<details class="older"><summary>${u("n_more")} (${esc(M.news[4].v)} – ${esc(M.news[M.news.length - 1].v)})</summary><div class="news">${M.news.slice(4).map(card).join("")}</div></details>`;
 }
 
+// ------------------------------------------------------------------------------------------- the tutorial (tour.js)
+// On by default: the info panel is the step's card, the drawing lights what to touch (the next one pulsing), the LCD
+// shows the step's screen; touching the lit controls in order is the step done, and the next one follows. Free
+// explore is the manual as before. The place in the tour and the steps done are kept (when storage allows).
+const TOUR = G.JTOUR;
+const tour = { on: false, i: 0, k: 0, done: new Set(), timer: 0 };
+const tu = (k) => (TOUR ? TOUR.tx(lang, "ui", k) : "") || k;
+/* a tour text: escaped, [X] a keycap */
+const rich = (s) => esc(s).replace(/\[([^\]]+)\]/g, (m, t) => `<kbd class="cap${/^[A-G]#?\d$/.test(t) ? " note" : ""}">${t.replace("OCT-", "OCT−")}</kbd>`);
+function tourSave() {
+  store.set("jiant-tour", tour.on ? "on" : "off");
+  store.set("jiant-tour-pos", TOUR.flat[tour.i].key);
+  store.set("jiant-tour-done", [...tour.done].join(","));
+}
+function tourMarks() {
+  const st = TOUR.flat[tour.i], tg = tour.on ? TOUR.targets(st) : [];
+  $$(".ctl").forEach((g) => {
+    const n = tg.indexOf(g.dataset.ctl);
+    g.classList.toggle("tgt", n >= 0 && n >= tour.k);
+    g.classList.toggle("tnext", n >= 0 && n === tour.k);
+    g.classList.toggle("tdone", n >= 0 && n < tour.k);
+  });
+  // a combination: the first button stays held while the next is touched
+  $$(".ctl.button").forEach((g) => g.classList.toggle("held", tour.on && tg.length > 1 && tour.k >= 1 && g.dataset.ctl === tg[0]));
+}
+/* on a phone the drawing scrolls sideways: bring the control to touch into view */
+function tourScrollTo(id) {
+  const dev = $(".device"), g = $(`.ctl[data-ctl="${id}"]`);
+  if (!dev || !g || dev.scrollWidth <= dev.clientWidth + 2) return;
+  const b = g.getBoundingClientRect(), d = dev.getBoundingClientRect();
+  dev.scrollTo({ left: dev.scrollLeft + (b.left + b.width / 2) - (d.left + d.width / 2), behavior: "smooth" });
+}
+function renderTourBar() {
+  const box = $("#tour");
+  if (!box || !TOUR) return;
+  box.hidden = false;
+  const st = TOUR.flat[tour.i];
+  const chips = TOUR.CHAPTERS.map((c, ci) => {
+    const n = c.steps.length, d = c.steps.filter((s) => tour.done.has(c.id + "." + s.id)).length;
+    return `<button type="button" data-tch="${ci}" aria-pressed="${tour.on && st.ci === ci}"${d === n ? ' class="full"' : ""}><i>${ci + 1}</i>${esc(TOUR.tx(lang, "chapters", c.id, "t"))}${d === n ? " ✓" : ""}</button>`;
+  }).join("");
+  const qs = TOUR.QUESTIONS.map((q) => `<button type="button" data-tq="${q.go}">${esc(TOUR.tx(lang, "questions", q.id, "q"))}</button>`).join("");
+  const pct = Math.round(tour.done.size * 100 / TOUR.flat.length);
+  const open = box.querySelector("details.tqs") && box.querySelector("details.tqs").open;
+  box.innerHTML = `<div class="tmode" role="group" aria-label="${esc(tu("t_on"))}">
+      <button type="button" data-tmode="on" aria-pressed="${tour.on}">${esc(tu("t_on"))}</button><button type="button" data-tmode="off" aria-pressed="${!tour.on}">${esc(tu("t_off"))}</button>
+      <span class="tpct" aria-hidden="true"><b style="width:${pct}%"></b></span><span class="tpcn">${pct}% ${esc(tu("t_progress"))}</span></div>
+    <p class="tlab">${esc(tu("t_chapters"))}</p><div class="tch">${chips}</div>
+    <details class="tqs"${open ? " open" : ""}><summary>${esc(tu("t_questions"))}</summary><div class="tq">${qs}</div></details>`;
+  $$("[data-ti]").forEach((e) => { e.textContent = tu(e.dataset.ti); });
+}
+function renderTour(ok) {
+  const st = TOUR.flat[tour.i], ch = TOUR.CHAPTERS[st.ci], tg = TOUR.targets(st);
+  const inCh = ch.steps.length, last = tour.i === TOUR.flat.length - 1;
+  layer = st.layer || "";
+  paintLayer();
+  tourMarks();
+  if (st.shot) setLcd(st.shot);
+  let todo;
+  if (tg.length) {
+    const parts = tg.map((t, n) => `<span class="${n < tour.k ? "ok" : n === tour.k ? "nx" : ""}">${n === 0 && tg.length > 1 ? esc(tu("t_hold")) + " " : ""}${rich("[" + t + "]")}</span>`);
+    todo = `<p class="tdo">${esc(tu("t_do"))} ${parts.join(' <span class="plus">+</span> ')}</p>`;
+  } else todo = `<p class="tdo dim">${esc(tu("t_free"))}</p>`;
+  $("#info").innerHTML = `<p class="ikind">${st.ci + 1}. ${esc(TOUR.tx(lang, "chapters", ch.id, "t"))} · ${esc(tu("t_step"))} ${st.si + 1} ${esc(tu("t_of"))} ${inCh}</p>
+    <div class="tbar" aria-hidden="true"><b style="width:${Math.round((st.si + 1) * 100 / inCh)}%"></b></div>
+    <h3 class="ttitle">${esc(TOUR.tx(lang, "steps", st.key, "t"))}</h3>
+    <p class="ttext">${rich(TOUR.tx(lang, "steps", st.key, "d"))}</p>
+    ${todo}
+    <p class="tok" role="status"${ok ? "" : " hidden"}>${esc(tu("t_good"))}</p>
+    ${last ? `<p class="ttext">${esc(tu("t_finish"))}</p><p><a class="btn hot" href="#emu">${esc(tu("t_emu"))}</a></p>` : ""}
+    ${st.shot ? `<figure class="ishot"><img src="${shotSrc(st.shot)}" alt="${esc(u("screen"))}: ${esc(st.shot)}" width="240" height="240" loading="lazy" data-zoom><figcaption>${u("screen")}</figcaption></figure>` : ""}
+    <div class="tnav"><button type="button" class="ghost" data-tgo="-1"${tour.i ? "" : " disabled"}>← ${esc(tu("t_prev"))}</button>
+      ${last ? `<button type="button" class="ghost" data-trestart>${esc(tu("t_restart"))}</button>` : `<button type="button" class="btn hot" data-tgo="1">${esc(tu("t_next"))} →</button>`}</div>`;
+  if (tg[tour.k]) tourScrollTo(tg[tour.k]);
+}
+function tourGo(i, fromUser) {
+  clearTimeout(tour.timer);
+  tour.i = Math.max(0, Math.min(TOUR.flat.length - 1, i));
+  tour.k = 0;
+  renderTour(false);
+  renderTourBar();
+  tourSave();
+  if (fromUser && matchMedia("(max-width: 900px)").matches) $("#info").scrollIntoView({ block: "start", behavior: "smooth" });
+}
+function tourTouch(id) {
+  const st = TOUR.flat[tour.i], tg = TOUR.targets(st);
+  if (!tg.length || tour.k >= tg.length) return;
+  if (id !== tg[tour.k]) {                       /* not that one: the one to touch pulses harder */
+    const g = $(`.ctl[data-ctl="${tg[tour.k]}"]`);
+    if (g) { g.classList.toggle("nudge", false); void g.getBoundingClientRect(); g.classList.toggle("nudge", true); }
+    return;
+  }
+  tour.k++;
+  if (tour.k < tg.length) { renderTour(false); return; }
+  tour.done.add(st.key);
+  renderTour(true);
+  renderTourBar();
+  tourSave();
+  if (tour.i < TOUR.flat.length - 1) tour.timer = setTimeout(() => tourGo(tour.i + 1), 1400);
+}
+function tourMode(on) {
+  tour.on = !!(on && TOUR);
+  document.body.classList.toggle("touring", tour.on);
+  if (tour.on) { tourGo(tour.i); return; }
+  clearTimeout(tour.timer);
+  tourMarks();
+  layer = "";
+  paintLayer();
+  $$(".ctl.button").forEach((g) => g.classList.toggle("held", false));
+  renderTourBar();
+  show(cur || "SELECT");
+  tourSave();
+}
+function tourInit() {
+  if (!TOUR) return;
+  const pos = TOUR.indexOf(store.get("jiant-tour-pos") || "");
+  tour.i = pos >= 0 ? pos : 0;
+  (store.get("jiant-tour-done") || "").split(",").filter((k) => TOUR.indexOf(k) >= 0).forEach((k) => tour.done.add(k));
+  const q = new URLSearchParams(location.search).get("tour");
+  tour.on = q ? q !== "off" : store.get("jiant-tour") !== "off";
+  document.body.classList.toggle("touring", tour.on);
+}
+
 // ------------------------------------------------------------------------------------------- language and wiring
 function setLang(l) {
-  lang = l === "en" ? "en" : "es";
+  lang = LANGS.includes(l) ? l : "en";
+  if (lang !== "es" && lang !== "en" && !(G.JTOUR_TEXT && G.JTOUR_TEXT[lang])) lang = "en";
   document.documentElement.lang = lang;
   $$("[data-i]").forEach((e) => { e.textContent = u(e.dataset.i); });
   $$("[data-iph]").forEach((e) => { e.placeholder = u(e.dataset.iph); });
@@ -365,7 +496,7 @@ function setLang(l) {
   $("#ver").textContent = NAV.version;
   store.set("jiant-lang", lang);
   renderChips(); renderRef(); renderMap(); renderNews(); paintLayer();
-  show(cur || "SELECT");
+  if (tour.on) { renderTour(false); renderTourBar(); } else { renderTourBar(); show(cur || "SELECT"); }
 }
 function zoom(src) {
   const d = $("#zoom");
@@ -375,16 +506,22 @@ function zoom(src) {
 function init() {
   drawPanel();
   let l = new URLSearchParams(location.search).get("lang") || store.get("jiant-lang");
-  if (!l) l = (navigator.language || "es").toLowerCase().startsWith("en") ? "en" : "es";
+  if (!l) { const nl = (navigator.language || "es").toLowerCase().slice(0, 2); l = LANGS.includes(nl) ? nl : "en"; }
+  tourInit();
   setLang(l);
   $$(".lang button").forEach((b) => b.addEventListener("click", () => setLang(b.dataset.lang)));
   $("#q").addEventListener("input", renderRef);
-  $("#ctlsel").addEventListener("change", (e) => { if (e.target.value) show(e.target.value, true); });
+  $("#ctlsel").addEventListener("change", (e) => { if (e.target.value) { if (tour.on) tourTouch(e.target.value); else show(e.target.value, true); } });
   document.addEventListener("click", (e) => {
     const t = e.target.closest("button, img[data-zoom], [data-close]");
     if (!t) return;
     if (t.dataset.close !== undefined) { t.closest("#pagebox, #zoom").hidden = true; return; }
     if (t.matches("img[data-zoom]")) { zoom(t.src); return; }
+    if (t.dataset.tmode) { tourMode(t.dataset.tmode === "on"); return; }
+    if (t.dataset.tch !== undefined) { if (!tour.on) tourMode(true); tourGo(TOUR.flat.findIndex((x) => x.ci === +t.dataset.tch), true); return; }
+    if (t.dataset.tq) { if (!tour.on) tourMode(true); tourGo(TOUR.indexOf(t.dataset.tq), true); return; }
+    if (t.dataset.tgo) { tourGo(tour.i + +t.dataset.tgo, true); return; }
+    if (t.dataset.trestart !== undefined) { tour.done.clear(); tourGo(0, true); return; }
     if (t.dataset.layer !== undefined) { layer = t.dataset.layer; paintLayer(); if (cur && !M.controls[cur]) show(cur); return; }
     if (t.dataset.sec && t.closest("#secs")) { sec = t.dataset.sec; renderRef(); return; }
     if (t.classList.contains("pg")) { showPage(t.dataset.sec, t.dataset.ce, +t.dataset.i); return; }

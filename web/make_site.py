@@ -79,7 +79,8 @@ def earlier(prev, version, product):
     return out
 
 
-MANUAL_FILES = ("index.html", "manual.js", "data.js", "nav.js", "sw.js")
+MANUAL_FILES = ("index.html", "manual.js", "data.js", "nav.js", "sw.js", "tour.js", "tour.es.js", "tour.en.js", "tour.pt.js", "tour.fr.js",
+                "tour.ja.js", "tour.zh.js")   # (the tutorial: tour.js and its words, one file a language)
 
 
 def manual(out):
@@ -87,7 +88,7 @@ def manual(out):
     emulator): its five files and the screens they name, nothing else from web/manual"""
     src, dst = HERE / "manual", Path(out) / "manual"
     names = set()
-    for f in ("nav.js", "data.js"):
+    for f in ("nav.js", "data.js", "tour.js"):
         names |= set(re.findall(r"""(?:"shot":"|\bshot:\s*')([\w-]+)""", (src / f).read_text(encoding="utf-8")))
     for m in re.findall(r"\bshots:\s*\[([^\]]*)\]", (src / "data.js").read_text(encoding="utf-8")):
         names |= set(re.findall(r"'([\w-]+)'", m))
