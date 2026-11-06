@@ -496,9 +496,25 @@ int main(void)
         for (k = 0; k < chain_config.count; k++) if (chain_config.row[k].slot > 3u || !chain_config.row[k].bars) bad += gcheck("  a row's section and bars", 0);
         gen_reset();
         gen_with(1, 31, 60, 2);
-        bad += gcheck("FORM SONG (HOUSE): four sections (intro, build, drop, break), six rows, the drop longest",
-                      live.mode == 1 && chain_config.count == 6u && (dice_secs & 15u) == 15u &&
-                      chain_config.row[2].slot == 0u && chain_config.row[2].bars > chain_config.row[0].bars);
+        {   /* (V10.6m) the club plan (gen_parts' rows): a drum intro (the kick and the hats: the snare's and the
+             * percussion's groups out), grooves, a break (D), a four-bar build (C), the drop's first loop (B: the crash)
+             * and the drop the longest row; every row a scene; the fills a row's (the drums from D, the fill section) */
+            uint32_t r, c = chain_config.count, longest = 0, fills = 0, scn = 0, at_c = CHAIN_ROWS, d = gs.trk_of[RL_DRUM];
+            for (r = 0; r < c; r++) {
+                if (chain_config.row[r].bars > chain_config.row[longest].bars) longest = r;
+                fills += row_src(r, d, chain_config.row[r].slot) == 3u && chain_config.row[r].slot == 0u;
+                scn += song_idx.scene[song_cur][r].on & 1u;
+                if (chain_config.row[r].slot == 2u && at_c == CHAIN_ROWS) at_c = r;
+            }
+            if (c < 10u || at_c == CHAIN_ROWS) printf("  plan: %u rows, C at %u\n", c, at_c);
+            bad += gcheck("FORM SONG (HOUSE, V10.6m): the club plan, 10..16 rows, four sections, the drop (A) longest",
+                          live.mode == 1 && c >= 10u && c <= CHAIN_ROWS && (dice_secs & 15u) == 15u &&
+                          chain_config.row[longest].slot == 0u && chain_config.row[0].slot == 0u &&
+                          (song_idx.scene[song_cur][0].mute >> 4) == (DXG_SNARE | DXG_PERC));
+            bad += gcheck("  a break (D), then a build (C) of four bars, then the drop's crash loop (B); a scene a row, fills from D",
+                          at_c > 0u && at_c + 1u < c && chain_config.row[at_c - 1u].slot == 3u && chain_config.row[at_c].bars == 4u &&
+                          chain_config.row[at_c + 1u].slot == 1u && scn == c && fills >= 2u);
+        }
         {   /* the BUILD section holds automation on the chords (the filter opening), the BREAK no drums */
             project_t p;
             int ok = proj_import(&p, &proj_slot[2], sizeof(project_store_t)) && p.motion.count >= 4u;
@@ -518,10 +534,10 @@ int main(void)
             gen_reset();
             chain_config = keep;                        /* (the index back from flash) */
             gen_with(1, 32, 60, 2);
-            ok = live.mode == 1 && chain_config.count == 6u && (dice_secs & 15u) == 15u;
+            ok = live.mode == 1 && chain_config.count >= 10u && (dice_secs & 15u) == 15u;   /* (V10.6m: the plan's rows) */
             section_store(1);
             gen_with(1, 33, 60, 2);
-            ok &= live.mode == 1 && chain_config.count == 6u && song_draft && !gform_kept;
+            ok &= live.mode == 1 && chain_config.count >= 10u && song_draft && !gform_kept;
             bad += gcheck("FORM generates a complete draft even when prior parts were stored", ok);
         }
     }
@@ -565,7 +581,7 @@ int main(void)
         bad += gcheck("a new piece: the retired MUTATE slots not carried over (V10.6: MUTATE gone; V10.6i: ENV 2's, the sound's)", !on);
     }
     /* ---- (0.6.95) a throw its own: HOUSE over twelve seeds takes more than one drum map and more than one chord
-     * play; RANDOM over forty seeds throws mutants ("A+B") a third of the time or so, each playable and storable */
+     * play; RANDOM over forty seeds throws mutants ("A+B") one time in seven or so (V10.6m), each playable and storable */
     {
         uint32_t seeds, maps = 0, plays = 0, mut = 0, bad_mut = 0;
         uint8_t seen_m[64] = {0}, seen_p[16] = {0};
@@ -576,6 +592,28 @@ int main(void)
             if (!seen_p[gs.g->pads]) { seen_p[gs.g->pads] = 1; plays++; }
         }
         bad += gcheck("ITALO x 12 seeds: two drum maps at least, two chord plays at least (gen5: HOUSE keeps its own)", maps >= 2u && plays >= 2u);
+        {   /* (V10.6m) the top end a genre's own: JAZZ, BOSSA, DUB and AFROBEAT keep their maps, their closed hats never
+             * more than the map's (no sixteenths from the pools); EBM's throws differ (its maps, its riffs) */
+            static const uint8_t KEEP[4] = {35, 36, 33, 37};
+            uint32_t g2, own = 1, ebm_m = 0, ebm_b = 0;
+            uint8_t sm[64] = {0}, sb[128] = {0};
+            for (g2 = 0; g2 < 4u; g2++)
+                for (seeds = 1; seeds <= 6u; seeds++) {
+                    uint32_t d, i2, n = 0, lim = 0;
+                    gen_with(KEEP[g2], seeds, 70, 0);
+                    d = gs.trk_of[RL_DRUM];
+                    for (i2 = 0; i2 < 16u; i2++) lim += gm_level(DRUM_MAP_I[GENRE[KEEP[g2] - 1u].drum][3], i2) != 0u;
+                    for (i2 = 0; i2 < 16u; i2++) n += trk[d].step[i2].time == ST_NOTE && (trk[d].step[i2].hit & 8u);
+                    if (gs.g->drum != GENRE[KEEP[g2] - 1u].drum || n > lim + 2u) { own = 0; printf("  %s %u: map %u, hats %u of %u\n", gs.g->name, seeds, gs.g->drum, n, lim); }
+                }
+            bad += gcheck("JAZZ BOSSA DUB AFROBEAT x 6: their own maps, no pool's sixteenth hats (V10.6m)", own);
+            for (seeds = 1; seeds <= 10u; seeds++) {
+                gen_with(13, seeds, 50, 0);
+                if (!sm[gs.g->drum]) { sm[gs.g->drum] = 1; ebm_m++; }
+                if (!sb[gs.ba]) { sb[gs.ba] = 1; ebm_b++; }
+            }
+            bad += gcheck("EBM x 10 seeds: three drum maps at least, five riffs at least (V10.6m)", ebm_m >= 3u && ebm_b >= 5u);
+        }
         for (seeds = 1; seeds <= 40u; seeds++) {
             gen_with(0, seeds, 50, 0);
             if (gs.mutant) {
@@ -586,8 +624,8 @@ int main(void)
                 for (i = 0; i < 16u; i++) events_block(CTL);
             }
         }
-        if (mut < 8u || mut > 28u || bad_mut) printf("  mutants: %u of 40, %u bad\n", mut, bad_mut);
-        bad += gcheck("RANDOM x 40 seeds: 8..28 mutants, named A+B, a tempo range, storable, playing", mut >= 8u && mut <= 28u && !bad_mut);
+        if (mut < 2u || mut > 14u || bad_mut) printf("  mutants: %u of 40, %u bad\n", mut, bad_mut);
+        bad += gcheck("RANDOM x 40 seeds: 2..14 mutants (V10.6m: 15 %), named A+B, a tempo range, storable, playing", mut >= 2u && mut <= 14u && !bad_mut);
     }
     /* ---- (0.6.94) the snare a snare: mostly noise, shorter than the factory kit's, its own FEEDBK */
     {
