@@ -37,6 +37,18 @@ int main(void)
 {
     int bad=0,ok=1;unsigned count=0;
     ui_power_on();song.playing=1;
+    {
+        const uint8_t *packed[]={ABOUT_PROJECT_PACK,ABOUT_CREDITS_PACK};
+        const char *raw[]={ABOUT_PROJECT,ABOUT_CREDITS};
+        const size_t size[]={sizeof ABOUT_PROJECT,sizeof ABOUT_CREDITS};
+        char text[ABOUT_MAX];
+        for(unsigned k=0;k<2;k++) {
+            char *d=text;unsigned n=packed[k][0]|(unsigned)packed[k][1]<<8;
+            for(unsigned i=0;i<n;i++) d=about_byte(d,text+sizeof text,packed[k][2+i]);
+            ok &= d-text==(ptrdiff_t)size[k]&&!memcmp(raw[k],text,size[k]);
+        }
+        bad+=check("compressed ABOUT and credits retain every original byte",ok);
+    }
     /* Start with an actual HOME song context, then generate into individual
      * engines while preserving that context and every other track. */
     song.playing=0;gp.genre=1;gp.form=0;gen_go();song.playing=1;
@@ -55,6 +67,26 @@ int main(void)
     for(unsigned g=0;g<=NGENRE;g++) ok &= verify(&trk[0],g,0,16);
     ok &= verify(&trk[0],GEN_EXPLORE,0,16);
     bad+=check("track GEN all drum genres and EXPLORE are bounded, deterministic and isolated",ok);
+    ui_power_on();song.sel=1;set_engine_of(&trk[1],ENGI_ANALOG);trk[1].engine=ENGI_ANALOG;
+    ok=1;song.playing=1;
+    for(unsigned scale=0;scale<NELEM(SCALE_MASK);scale++) {
+        trk[1].p[P_SCALE]=(int16_t)scale;
+        for(unsigned role=0;role<4;role++) ok &= verify(&trk[1],GEN_EXPLORE,role,18);
+    }
+    bad+=check("track GEN respects every selected scale, including non-heptatonic scales",ok);
+    ui_power_on();song.sel=1;set_engine_of(&trk[1],ENGI_ANALOG);trk[1].engine=ENGI_ANALOG;
+    song.playing=1;
+    static project_t before,generated,reloaded;static project_store_t stored;
+    project_capture(&before);trackgen_make();project_capture(&generated);
+    ok=proj_pack(&stored,&generated)&&proj_import(&reloaded,&stored,sizeof stored);
+    ok &= !memcmp(reloaded.t[1].step,generated.t[1].step,sizeof generated.t[1].step);
+    bad+=check("track GEN result round trips through the existing project format",ok);
+    ok=!undo_do();project_capture(&reloaded);
+    for(unsigned k=0;k<NTRK;k++) ok &= !memcmp(before.t[k].step,reloaded.t[k].step,sizeof before.t[k].step);
+    bad+=check("track GEN existing UNDO restores all previous patterns",ok);
+    chain.armed=1;project_capture(&before);trackgen_make();project_capture(&generated);
+    ok=!memcmp(&before,&generated,sizeof before);chain.armed=0;
+    bad+=check("track GEN cannot overwrite an armed arrangement",ok);
     song.sel=1;set_engine_of(&trk[1],ENGI_ANALOG);trk[1].engine=ENGI_ANALOG;
     song.playing=0;go_page(GR_TRACKGEN);ui.force=1;frame();
     ok=page_visible(ui.page)&&act_col()==5&&strstr(ui.col[0],"GENRE");

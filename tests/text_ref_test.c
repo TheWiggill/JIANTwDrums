@@ -106,6 +106,10 @@ static void ref_unpack(const aafont_t *f, const aag_t *g)
 {
     uint32_t n = (uint32_t)g->bw * g->bh, k = 0, pos = 0;
     const uint8_t *d = f->data + g->off;
+    if (f->bits) {
+        for (k = 0; k < n; k++) alpha[k] = ((d[k >> 3] >> (7u-(k&7u)))&1u)*15u;
+        return;
+    }
     if (!f->hc) {
         for (k = 0; k < n; k++) alpha[k] = (d[k >> 1] >> ((k & 1u) ? 0 : 4)) & 15u;
         return;
@@ -163,12 +167,12 @@ static int32_t ref_text(int32_t x, int32_t y, const aafont_t *f, const char *s, 
 
 int main(void)
 {
-    const aafont_t *F[3] = {&AF_S, &AF_M, &AF_L};
+    const aafont_t *F[4] = {&AF_S, &AF_M, &AF_L, &AF_X};
     uint32_t n = 0, bad_px = 0, bad_pen = 0;
     for (uint32_t p = 0; p < NPALETTES; p++) {
         palette_set(p);
         for (uint32_t k = 0; k < 2u; k++)
-            for (uint32_t f = 0; f < 3u; f++)
+            for (uint32_t f = 0; f < 4u; f++)
                 for (uint32_t s = 0; s < NSTR; s++) {
                     uint16_t fg = k ? T_TEXT : T_THEME, bg = k ? T_BG : T_SURF;
                     int32_t e0, e1;
@@ -185,7 +189,7 @@ int main(void)
            n, bad_pen, bad_px, bad_pen || bad_px ? "FAIL" : "ok");
     {                                                     /* (0.9.0) every pair of codes: gfx.c's search = the scan */
         uint32_t bad_k = 0, nz = 0;
-        for (uint32_t f = 0; f < 3u; f++)
+        for (uint32_t f = 0; f < 4u; f++)
             for (uint32_t a = 0; a < 256u; a++)
                 for (uint32_t b = 0; b < 256u; b++) {
                     int32_t r = ref_kern(F[f], a, b);

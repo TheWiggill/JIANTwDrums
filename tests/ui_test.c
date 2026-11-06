@@ -35,6 +35,7 @@
 #ifndef FELUCCA_CDC
 #define FELUCCA_CDC 1                                    /* (as src/felucca.c: the console built in, MENU > USB SERIAL) */
 #endif
+#define ABOUT_NOTICE_TEXT 1 /* independent expected text for packed notices */
 #include <stddef.h>
 #include <stdint.h>
 #define main hostsim_main
@@ -3014,7 +3015,7 @@ static int test_menu_tabs(void)
             for (s = L[k]; *s; s += str_len(s) + 1u, n++)
                 ok &= (uint8_t)*s >= 1u && (uint8_t)*s <= 12u && s[1];
         ok &= n == 52u && str_eq(ABOUT_CREDITS + 1, "CREDITS") && str_eq(ABOUT_PROJECT + 1, "THE PROJECT") &&
-              menu_lines(ABOUT_CREDITS, 0, 0) > 46 * 18 && menu_scroll_max() > 60 * 18;
+              menu_lines(ABOUT_CREDITS_PACK, 0, 0) > 46 * 18 && menu_scroll_max() > 60 * 18;
     }
     bad += check("V10.13 ABOUT: THE PROJECT, CREDITS and LICENSES as lines of the Bluetooth segment (kind, text), all read", ok);
 

@@ -58,10 +58,9 @@ static __attribute__((noinline)) void trackgen_make(void)
     if(count==7u) for(i=0,j=0;i<12;i++) if((mask>>i)&1u) gs.sc[j++]=(uint8_t)i;
     gs.len=len;gs.energy=c->energy;
     uint32_t r=drum_track(t)?RL_DRUM:RL_BASS+c->role%4u;
-    gs.role[k]=(uint8_t)r;gs.act[r]=1;gs.trk_of[r]=(uint8_t)k;
+    gs.role[k]=(uint8_t)r;gs.act[r]=1;
     static const uint8_t amount[4]={GP_BASS,GP_CHORDS,GP_LEAD,GP_ARP};
     gs.amt[r==RL_DRUM?GP_DRUMS:amount[c->role%4u]]=c->energy;
-    gs.kick=gs.snare=0;
     for(i=0;i<NTRK;i++) if(i!=k&&drum_track(&trk[i]))
         for(j=0;j<(uint32_t)clamp(trk[i].p[P_SLEN],1,NSTEP);j++)
             if(trk[i].step[j].time==ST_NOTE) gs.kick|=(uint64_t)(trk[i].step[j].hit&1u)<<j;
