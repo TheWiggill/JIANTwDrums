@@ -38,7 +38,8 @@ static uint32_t lib_gen(void);
 static int project_recall_sound(uint32_t slot, uint32_t k);
 static int undo_sound(uint32_t k);                 /* (0.6.65) project.c: the sound dice's CANCEL */
 static int project_recall_slot(void);
-static uint32_t chain_prepare(void);
+static uint32_t chain_prepare_at(uint32_t r0);       /* (V10.6o) song_main.c: the song from a row */
+#define chain_prepare() chain_prepare_at(0)
 static int up_used(uint32_t k);              /* user presets: upreset.c */
 static int up_load(uint32_t k);
 static uint32_t up_count(void);
@@ -326,7 +327,7 @@ static struct {
     uint8_t uslot;               /* SAVE > USER: the selected user preset slot */
     uint8_t ppick;               /* SEQ > PATTERNS: the pattern picked (pat_count list index) */
     uint8_t song_row;            /* SONG: row selected, count selects the next empty row */
-    uint8_t song_tk;             /* (add15) TIMELINE: the lane KNOB 2 picks: 0 the rows (SEC), 1..6 T1..T6 */
+    uint8_t part;                /* (V10.6o) SAVE > PARTS: the section KNOB 1 picks (0..3 A..D; was add15's song_tk) */
     uint8_t ev_row;              /* SEQ > AUTO LIST (ui_input.c ev_*): the row selected (the track's count: + ADD LOCK) */
     uint8_t ev_step, ev_id;      /* .. + ADD LOCK: the step and the parameter a lock is added on */
     uint8_t uboot;               /* main.c: seconds left before UPDATE MODE (OCT- + OCT+ held), 0 = none */
@@ -756,6 +757,10 @@ static uint8_t cp_add_lane;
 #define MSG_NOFILE "\x01"                      /* the no-file icon (ICON_X_NOFILE) */
 
 static int chain_busy(void) { return chain.running || chain.armed; }
+static uint32_t part_scan(uint32_t s);                 /* (V10.6o) song_main.c: PARTS / TIMELINE's picture, the song's way */
+static int chain_goto(uint32_t r, uint32_t hold);
+static void chain_cut(void);
+static int section_jump(uint32_t s);
 /* (0.6.22) ARRANGE: the rows 0..count-1, + ADD (while there is room), then the song's END row */
 static uint32_t song_end_row(void) { return chain_config.count < CHAIN_ROWS ? chain_config.count + 1u : CHAIN_ROWS; }
 /* Main loop only, with interrupts enabled. PLAY may be consumed between reads;
@@ -993,8 +998,11 @@ static void comp_vname(const track_t *t, const step_t *s, uint32_t a, uint32_t v
 static uint8_t gl_cur, gl_trk;
 static const uint8_t GA_LIST[] = {CA_NONE, CA_MUTE, CA_STUT, CA_OCTU, CA_OCTD, CA_RATCH, CA_TRANS, CA_ARP, CA_JUMP, CA_RAND, CA_CHORD};
 static uint32_t gco_slot(void) { return ui.page > 0u && PAGES[ui.page - 1u].graph == GR_GCOMP; }
-static int gco_on(void) { return !ui.home && !ui.menu && !ui.confirm && !ui.layer && cur_page()->graph == GR_GCOMP; }
-static int ckeys_on(void) { return !ui.home && !ui.menu && !ui.confirm && !ui.layer && cur_page()->graph == GR_COMP; }   /* (seq2g) */
+static int keys_pg(uint32_t g) { return !ui.home && !ui.menu && !ui.confirm && !ui.layer && cur_page()->graph == g; }   /* (V10.6o) */
+static int gco_on(void) { return keys_pg(GR_GCOMP); }
+static int ckeys_on(void) { return keys_pg(GR_COMP); }   /* (seq2g) */
+/* (V10.6o) PARTS, TIMELINE: the keys are the page's (silent): F3..B3 the parts; T1..T6's mutes, F4..B4 a track's FROM */
+static int skeys_on(void) { return keys_pg(GR_SONG) && cur_page()->title[0] != 'A'; }
 static uint32_t ga_idx(uint32_t a)
 {
     uint32_t i;
@@ -1989,6 +1997,7 @@ static void dx_knob(const page_t *pg, uint32_t k, int32_t s);
 static void dx_cards(const page_t *pg);
 static void dx_kit3_knob(uint32_t k, int32_t s);      /* (0.6.54) KIT 3: TONE's BP, FEEDBK */
 #define SONG_TRK(pg) ((pg)->graph == GR_SONG && (pg)->title[0] == 'T')   /* (add15-beta5) TIMELINE (was ARRANGE 2) */
+#define SONG_PARTS(pg) ((pg)->graph == GR_SONG && (pg)->title[0] == 'P')   /* (V10.6o) PARTS */
 #define DX_KIT3(pg) ((pg)->graph == GR_DXIMG && (pg)->title[0] == 'K')   /* (0.6.58) GR_DXIMG: KIT 3, or STEREO (IMAGE) */
 static void dx_kit3_cards(void);
 static uint32_t dx_sig(void);
@@ -2055,8 +2064,8 @@ static const char *act_name(uint32_t c)          /* column c's action (the foote
         static const char *const actions[] = {"CLEAR", "INIT", "DELETE", "CLEAR", "INIT"};
         return actions[c < 5u ? c : 4u];
     }
-    if (cur_page()->graph == GR_SONG)                   /* (0.8.5) SAVE's lens: OCT+ adds a row (PLAY plays) */
-        return "ADD";
+    if (cur_page()->graph == GR_SONG)                   /* (0.8.5) SAVE's lens: OCT+ adds a row (PLAY plays); PARTS: */
+        return SONG_PARTS(cur_page()) ? "LOOP" : "ADD";   /* the part loops */
     if (cur_page()->graph == GR_PATS)
         return "LOAD";
     if (cur_page()->graph == GR_USER)
@@ -2082,6 +2091,8 @@ static int act_ready(void)
     if (cur_page()->graph == GR_TOOLS)                  /* one case per column: CLEAR PAT, INIT, DELETE ROW, CLEAR SONG */
         return !chain_busy() && (c == 0u ? !seq_is_empty(TSEL) || motion_count(TSEL) : c == 1u || c >= 4u ? 1 :
                                  c == 2u ? ui.song_row < chain_config.count : chain_config.count != 0u);
+    if (SONG_PARTS(cur_page()))
+        return project_used(ui.part);
     if (cur_page()->graph == GR_SONG)
         return !chain_busy() && chain_config.count < CHAIN_ROWS;
     if (cur_page()->graph == GR_PATS)

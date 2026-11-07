@@ -1410,32 +1410,35 @@ static void draw_columns(void)
         dx_kit3_cards();
         return;
     }
-    if (SONG_TRK(cur_page())) {                        /* (beta5) TIMELINE: ROW LANE, then SECT BARS or FROM VAR */
-        uint32_t row = ui.song_row < chain_config.count ? ui.song_row : chain_config.count - 1u, k = ui.song_tk, s, v;
+    if (SONG_PARTS(cur_page())) {                      /* (V10.6o) PARTS: PART, its ROW in the song, its loop's BARS, PLAY */
+        uint32_t s = ui.part & 3u, r = ui.song_row;
+        val[0] = (char)('A' + s); val[1] = 0;
+        hot_text_column(0, "PART", val);
+        if (r < chain_config.count && chain_config.row[r].slot == s) fmt_frac(val, (int32_t)r + 1, (int32_t)chain_config.count);
+        else str_cpy(val, "--", sizeof val);
+        text_column(1, "ROW", val, val[0] != '-' ? VAL(1u) : T_DIM);
+        if (song_bars(s)) fmt_int(val, (int32_t)song_bars(s));
+        else str_cpy(val, "--", sizeof val);
+        text_column(2, "BARS", val, T_DIM);
+        text_column(3, "PLAY", live.mode ? "SONG" : "LOOP", VAL(3u));
+        return;
+    }
+    if (SONG_TRK(cur_page())) {                        /* (V10.6o) TIMELINE: ROW, SECT, BARS, the ALGORITHM track's VAR */
+        uint32_t row = ui.song_row < chain_config.count ? ui.song_row : chain_config.count - 1u, v;
         if (!chain_config.count) {
             hot_text_column(0, "ROW", "--");
             empty_column(1); empty_column(2); empty_column(3);
             return;
         }
-        s = chain_config.row[row].slot & 3u;
         fmt_frac(val, (int32_t)row + 1, (int32_t)chain_config.count);
         hot_text_column(0, "ROW", val);
-        if (!k) str_cpy(val, "SEC", sizeof val);
-        else { val[0] = 'T'; val[1] = (char)('0' + k); val[2] = 0; }
-        text_column(1, "LANE", val, VAL(1u));
-        if (!k) {
-            val[0] = (char)('A' + s); val[1] = 0;
-            text_column(2, "SECT", val, VAL(2u));
-            fmt_int(val, chain_config.row[row].bars);
-            text_column(3, "BARS", val, VAL(3u));
-            return;
-        }
-        v = song_idx.tsrc[song_cur][row] >> (3u * (k - 1u)) & 7u;
-        if (!v) { str_cpy(val, "ROW ", sizeof val); val[4] = (char)('A' + s); val[5] = 0; }
-        else { val[0] = (char)('A' + v - 1u); val[1] = 0; }
-        text_column(2, "FROM", val, v ? VAL(2u) : T_DIM);
-        v = row_var(row, k - 1u);
-        text_column(3, "VAR", RV_NAME[v < RV_N ? v : 0], v ? VAL(3u) : T_DIM);
+        val[0] = (char)('A' + (chain_config.row[row].slot & 3u)); val[1] = 0;
+        text_column(1, "SECT", val, VAL(1u));
+        fmt_int(val, chain_config.row[row].bars);
+        text_column(2, "BARS", val, VAL(2u));
+        v = row_var(row, song.sel % NTRK);
+        val[0] = 'T'; val[1] = (char)('1' + song.sel % NTRK); str_cpy(val + 2, " VAR", 5);
+        text_column(3, val, RV_NAME[v < RV_N ? v : 0], v ? VAL(3u) : T_DIM);
         return;
     }
     if (cur_page()->graph == GR_SONG) {

@@ -650,7 +650,7 @@ enum { S_HOME, S_HOME_IDLE, S_MESSAGE, S_MESSAGE_KEY, S_MESSAGE_NOFILE, S_PRESET
        S_ROLL_LOCKS, S_ROLL_LOCK_HELD, S_DRUM_LOCKS, S_DRUM_LOCK_HELD, S_MOTION_LOCKS, S_AUTO_LIST, S_AUTO_LIST_ADD, S_AUTO_LIST_DRUM, S_REC_LAYER, S_REC_LAYER_SET, S_REC_LAYER_SONG, S_MACRO_LAYER, S_MSEQ, S_DIST_PAGE, S_DLY2, S_REVERB2, S_CHORUS, S_MASTER, S_LFO_DEST, S_LFO2, S_LFO2_FREE,
        S_COUNTIN, S_COUNTIN2, S_MENU_AUDIO, S_HEAD_PLAY_REC, S_HEAD_REC_OTHER, S_HEAD_BPM_TURN, S_HEAD_BPM_LOCK,
        S_HEAD_BPM_LOCKED, S_HEAD_GLO_TURN, S_HEAD_DOWNBEAT, S_HEAD_BEAT_2,
-       S_SAVE_LIB, S_SAVE_TOOLS, S_SAVE_PROJ, S_SAVE_ARR, S_SAVE_SOUND, S_SAVE_PRESETS, S_SAVE_TL, S_PG0, S_PG_END = S_PG0 + 16,
+       S_SAVE_LIB, S_SAVE_TOOLS, S_SAVE_PROJ, S_SAVE_ARR, S_SAVE_SOUND, S_SAVE_PRESETS, S_SAVE_TL, S_SAVE_PARTS, S_SAVE_PARTS_LOOP, S_SAVE_TL_LOOP, S_PG0, S_PG_END = S_PG0 + 16,
        S_FXL_SENDS, S_FXL_DIST, S_FXL_PAN, S_FXL_BUSES, S_FXL_DELAY, S_FXL_DELAY2, S_FXL_REVERB, S_FXL_SLICER, S_FXL_MASTER,
        S_HOME_MACROS, S_HOME_BEING, S_HOME_ROUTES, S_GEN_LEAD,
        S_ED_FILTER, S_ED_FILTER_BP, S_ED_VOICE2, S_ED_FOCUS, S_ED_FOCUS_MOD, S_ED_OPERATOR,
@@ -687,7 +687,7 @@ static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "message", "mes
     "roll_locks", "roll_lock_held", "drum_locks", "drum_lock_held", "motion_locks", "auto_list", "auto_list_add", "auto_list_drum", "layer_rec", "layer_rec_set", "layer_rec_song", "layer_macro", "mseq", "dist", "dly2", "reverb2", "chorus", "master", "lfo_dest", "lfo2", "lfo2_free",
     "countin", "countin_2bars", "menu_audio", "head_play_rec", "head_rec_other", "head_bpm_turn", "head_bpm_lock",
     "head_bpm_locked", "head_glo_turn", "head_downbeat", "head_beat_2",
-    "save_library", "save_tools", "save_project", "save_arrange", "save_sound", "save_presets", "save_timeline", "pg_retrig", "pg_rotor", "pg_length", "pg_modes", "pg_dly3", "pg_slbus", "pg_tape", "pg_eq", "pg_system2", "pg_comps", "pg_comps2", "pg_kit2", "pg_kit3", "pg_kit4", "pg_levels", "pg_levels2", "pg_xmod",
+    "save_library", "save_tools", "save_project", "save_arrange", "save_sound", "save_presets", "save_timeline", "save_parts", "save_parts_loop", "save_timeline_loop", "pg_retrig", "pg_rotor", "pg_length", "pg_modes", "pg_dly3", "pg_slbus", "pg_tape", "pg_eq", "pg_system2", "pg_comps", "pg_comps2", "pg_kit2", "pg_kit3", "pg_kit4", "pg_levels", "pg_levels2", "pg_xmod",
     "fx_track_sends", "fx_track_dist", "fx_track_pan", "fx_buses", "fx_effect_delay", "fx_effect_delay2", "fx_effect_reverb",
     "fx_effect_slicer", "fx_effect_master",
     "home_macros", "home_being", "home_routes", "gen_lead",
@@ -1640,7 +1640,8 @@ static void setup(int s)
         nav_scene(PG[s - S_PG0].sec, PG[s - S_PG0].t);
         break;
     }
-    case S_SAVE_LIB: case S_SAVE_TOOLS: case S_SAVE_PROJ: case S_SAVE_ARR: case S_SAVE_SOUND: case S_SAVE_PRESETS: case S_SAVE_TL: {
+    case S_SAVE_LIB: case S_SAVE_TOOLS: case S_SAVE_PROJ: case S_SAVE_ARR: case S_SAVE_SOUND: case S_SAVE_PRESETS: case S_SAVE_TL:
+    case S_SAVE_PARTS: case S_SAVE_PARTS_LOOP: case S_SAVE_TL_LOOP: {
         static const char *const PN[NSONG] = {"", "ACID 03", "DUB KIT", "", "BOSQUE", "", "TRANCE A", ""};
         static const uint8_t PM[NSONG] = {0, 3, 1, 0, 15, 0, 5, 0};
         static const chain_row_t AR[6] = {{1, 16}, {2, 16}, {0, 32}, {3, 8}, {2, 16}, {0, 32}};
@@ -1648,6 +1649,8 @@ static void setup(int s)
         static const uint8_t UK[7] = {0, 1, 2, 4, 6, 9, 13}, UE[7] = {ENGI_ANALOG, ENGI_FM6, 2, ENGI_ANALOG, ENGI_ANIMAL, ENGI_FM6, 3};
         uint32_t k, e0 = TSEL->eng_req;
         song.playing = 0;
+        if (s >= S_SAVE_TL) { for (k = 0; k < NTRK; k += 2u) my_steps(&trk[k]); fm1_ms += 1000u; }   /* (V10.6o: more tracks
+                                                         * play; the sections read again) */
         project_save_as(0, "NOCHE LARGA"); project_save_as(1, "NOCHE B"); project_save_as(2, "NOCHE C");
         for (k = 0; k < NSONG; k++) { str_cpy(lib.name[k], PN[k], sizeof lib.name[k]); lib.mask[k] = PM[k]; }
         chain_config.count = 6;
@@ -1663,9 +1666,18 @@ static void setup(int s)
         else if (s == S_SAVE_PROJ) { nav_scene(SEC_SAVE, "SECTIONS"); ui.act = 4; }
         else if (s == S_SAVE_ARR) nav_scene(SEC_SAVE, "ARRANGE");
         else if (s == S_SAVE_SOUND) { nav_scene(SEC_SAVE, "USER"); ui.act = 4; }
-        else if (s == S_SAVE_TL) {   /* (V10.1) T2 from C, T4 muted, T6 HALF on row 2; T1 THIN on row 4 */
-            song_idx.tsrc[song_cur][1] = 3u << 3; song_idx.tvar[song_cur][1] = RV_MUTE << 12 | RV_HALF << 20;
-            song_idx.tvar[song_cur][3] = RV_THIN; ui.song_row = 1; ui.song_tk = 2; nav_scene(SEC_SAVE, "TIMELINE");
+        else if (s == S_SAVE_TL || s == S_SAVE_TL_LOOP) {   /* (V10.1) T2 from C, T4 muted, T6 HALF on row 2; T1 THIN on
+                                                         * row 4; (V10.6o) T3 muted by row 2's scene; _LOOP: row 2 held */
+            song_idx.tsrc[song_cur][1] = 1u << 3; song_idx.tvar[song_cur][1] = RV_MUTE << 12 | RV_HALF << 20 | RV_FILL << 4;
+            song_idx.tvar[song_cur][3] = RV_THIN; song_idx.scene[song_cur][1].on = 1; song_idx.scene[song_cur][1].mute = 4;
+            ui.song_row = 1; song.sel = 2;
+            if (s == S_SAVE_TL_LOOP) { chain.running = 1; chain.hold = 1; chain.row = 1; chain.remaining = 9; }
+            nav_scene(SEC_SAVE, "TIMELINE");
+        }
+        else if (s == S_SAVE_PARTS || s == S_SAVE_PARTS_LOOP) {   /* (V10.6o) B picked; _LOOP: C looping */
+            ui.part = s == S_SAVE_PARTS ? 1 : 2; ui.song_row = s == S_SAVE_PARTS ? 0 : 1;
+            if (s == S_SAVE_PARTS_LOOP) { live.cur = 2; song.playing = 1; }
+            nav_scene(SEC_SAVE, "PARTS");
         }
         else nav_scene(SEC_SAVE, "PRESETS");
         ui.msg_t = 0;

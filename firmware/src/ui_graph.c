@@ -1055,7 +1055,11 @@ static int graph_project_used(uint32_t slot)
     static uint8_t mask, ready;
     if (!ready || fm1_ms - ms >= 500u || (ui.force && frame != ui.frame)) {
         uint32_t i; mask = 0;
-        for (i = 0; i < 4u; i++) mask |= (uint8_t)((project_name(i, graph_pname[i]) != 0) << i);
+        for (i = 0; i < 4u; i++) {
+            mask |= (uint8_t)((project_name(i, graph_pname[i]) != 0) << i);
+            part_play.b[i] = (uint8_t)((mask >> i) & 1u ? part_scan(i) : 0u);   /* (V10.6o) PARTS, TIMELINE: its tracks
+                                                         * (proj_scratch as read) */
+        }
         graph_pname_sig = fnv(2166136261u, graph_pname, sizeof graph_pname);
         ready = 1; ms = fm1_ms; frame = ui.frame;
     }
@@ -1553,9 +1557,12 @@ static uint32_t graph_signature(void)
         if (pg->graph == GR_USER || pg->graph == GR_BROWSE)
             h ^= bg_energy() > 2 ? anim_fr * 2654435761u : 0u;   /* (the being moves with the sound) */
         if (pg->graph == GR_SONG) {                  /* (ARRANGE: as SLOTS', the rows and where the song is) */
-            for (i = 0; i < CHAIN_ROWS; i++)         /* (add15: ARRANGE 2's tracks) */
-                h = (h ^ song_idx.tsrc[song_cur][i] ^ song_idx.tvar[song_cur][i] * 31u) * 16777619u;
-            h ^= (ui.song_tk + 1u) * 2654435761u;
+            for (i = 0; i < CHAIN_ROWS; i++)         /* (add15: ARRANGE 2's tracks; V10.6o: the rows' mutes) */
+                h = (h ^ song_idx.tsrc[song_cur][i] ^ song_idx.tvar[song_cur][i] * 31u ^
+                     (uint32_t)song_idx.scene[song_cur][i].mute << 7 ^ (uint32_t)song_idx.scene[song_cur][i].on << 3) * 16777619u;
+            h ^= (ui.part + 1u) * 2654435761u + song.sel * 977u + (uint32_t)(live.req + 2) * 7919u + live.mode * 131u +   /* (PARTS: */
+                 chain.hold * 31u + song.playing * 3u + (song.playing ? anim_fr / 8u * 40503u : 0u) +   /* the part, what */
+                 part_play.w * 104729u;               /* loops, pulsing; its tracks) */
             for (i = 0; i < 4u; i++) h ^= (uint32_t)graph_project_used(i) << (20u + i);
             h += graph_pname_sig + (uint32_t)(live.cur + 1) * 40503u;
         }

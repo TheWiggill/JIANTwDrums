@@ -138,8 +138,8 @@ static void chain_start(void)                         /* (seq_start) */
     if (!chain.armed)
         return;
     chain.armed = 0;
-    if (!sec_stage.ready || sec_stage.row != 0u)
-        return;                                       /* (cannot happen: chain_prepare staged row 0) */
+    if (!sec_stage.ready || sec_stage.row >= CHAIN_ROWS)
+        return;                                       /* (cannot happen: chain_prepare staged its first row) */
     chain.rec = song.rec;
     song.rec = 0;                                     /* a song plays, it does not record */
     chain.running = 1;
@@ -150,6 +150,7 @@ static void chain_stop(void)                          /* (seq_stop) */
 {
     chain.armed = 0;
     chain.armed_bar = 0;
+    chain.hold = 0;
     live.req = -1;
     srec_stop();
     if (!chain.running)
@@ -172,7 +173,7 @@ static void chain_tick(uint32_t n)
     chain.carry = chain.bar_pos;
     srec_bar();
     if (chain.running) {
-        uint32_t next = chain.row + 1u;
+        uint32_t next = chain.row + !chain.hold;      /* (V10.6o: held, the same row again) */
         if (chain.remaining > 1u) {
             chain.remaining--;
             return;
@@ -194,7 +195,8 @@ static void chain_tick(uint32_t n)
         }
         return;
     }
-    if (chain.armed_bar && sec_stage.ready && sec_stage.row == 0u) {   /* a quick chain from this bar */
+    if (chain.armed_bar && sec_stage.ready && sec_stage.row < CHAIN_ROWS) {   /* a quick chain (V10.6o: a song's row) from
+                                                         * this bar */
         chain.armed_bar = 0;
         chain.running = 1;
         chain.rec = song.rec;

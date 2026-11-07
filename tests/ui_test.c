@@ -7541,7 +7541,7 @@ static void tl_drum(void)
  * the level's other set, SAVE from elsewhere always USER, PRESETS the slot / project) */
 static int test_save_lens(void)
 {
-    static const char *const CH[8] = {"TIMELINE", "SECTIONS", "PROJECTS", "ARRANGE", "TOOLS", "SAVE SONG AS", "USER", "PRESETS"};
+    static const char *const CH[9] = {"TIMELINE", "PARTS", "SECTIONS", "PROJECTS", "ARRANGE", "TOOLS", "SAVE SONG AS", "USER", "PRESETS"};
     static const char *const TP[2] = {"PROJECTS", "USER"};
     int bad = 0, ok;
     uint32_t pr;
@@ -7550,12 +7550,12 @@ static int test_save_lens(void)
     press(B_SAVE); frame();
     ok = save_on() && save_level() == SV_PROJ && SONG_TRK(cur_page()) && ui.act == 0u && lz_on() &&
          card_y() == LZ_CARD_Y && graph_y() == LZ_GRAPH_Y && foot_y() == LZ_FOOT_Y && lz_tab_lit(0) &&
-         lz_crumb_is("SAVE \xB7 SONG \xB7 TIMELINE") && lz_count_is("1/8");
-    bad += check("V10.1 SAVE from HOME at power-on: SONG's TIMELINE; the tabs (SONG lit), the crumb, 1/8", ok);
-    bad += check("V10.1 SAVE: one chain TIMELINE SECTIONS PROJECTS ARRANGE TOOLS SAVE SONG AS USER PRESETS; a SAVE tap the next group, round",
-                 chain_walk(B_SAVE, CH, 8, TP, 2));
+         lz_crumb_is("SAVE \xB7 SONG \xB7 TIMELINE") && lz_count_is("1/9");
+    bad += check("V10.1 SAVE from HOME at power-on: SONG's TIMELINE; the tabs (SONG lit), the crumb, 1/9", ok);
+    bad += check("V10.1 SAVE: one chain TIMELINE PARTS SECTIONS PROJECTS ARRANGE TOOLS SAVE SONG AS USER PRESETS; a SAVE tap the next group, round",
+                 chain_walk(B_SAVE, CH, 9, TP, 2));
     ui_power_on(); go_home(); frame(); press(B_SAVE); frame();
-    turn(EN_SELECT, 3); frame();                                             /* ARRANGE, left there */
+    turn(EN_SELECT, 4); frame();                                             /* ARRANGE, left there */
     go_home(); frame(); press(B_SAVE); frame();
     ok = cur_page()->graph == GR_SONG && !SONG_TRK(cur_page()) && save_level() == SV_PROJ;   /* (the page left) */
     turn(EN_SELECT, -2); frame();
@@ -7604,26 +7604,76 @@ static int test_save_lens(void)
     ok &= chain_config.count == 1u && chain_config.row[0].slot == 2u;
     bad += check("V10.4 ARRANGE / TIMELINE: OCT- asks DELETE ROW? for the row picked (OCT+ deletes, OCT- keeps it)", ok);
     ui_power_on();
-    go_home(); frame();                                                      /* (add15) ARRANGE 2 */
+    go_home(); frame();                                                      /* (V10.6o) TIMELINE, the owner's mock-up B */
+    my_steps(&trk[0]); my_steps(&trk[2]); trk[2].p[P_MUTE] = 1;
+    section_store(0); section_store(1); section_store(2);
     chain_config.count = 2;
     chain_config.row[0] = (chain_row_t){0, 4}; chain_config.row[1] = (chain_row_t){1, 4};
     memset(song_idx.tsrc[song_cur], 0, sizeof song_idx.tsrc[song_cur]);
+    memset(song_idx.tvar[song_cur], 0, sizeof song_idx.tvar[song_cur]);
+    memset(song_idx.scene[song_cur], 0, sizeof song_idx.scene[song_cur]);
     press(B_SAVE); frame();
     nav_put(SEC_SAVE, "TIMELINE"); frame();
-    ok = SONG_TRK(cur_page()) && !SONG_TRK(&PAGES[nv_page(SEC_SAVE, 3)]) && SONG_TRK(&PAGES[nv_page(SEC_SAVE, 0)]);
+    ok = SONG_TRK(cur_page()) && !SONG_TRK(&PAGES[nv_page(SEC_SAVE, 4)]) && SONG_TRK(&PAGES[nv_page(SEC_SAVE, 0)]);
     turn(EN_K1, 1); frame();                                                 /* row 2 */
-    turn(EN_K2, 1); frame(); turn(EN_K2, 1); frame(); turn(EN_K2, 1); frame();   /* lane T3 (0 is SEC) */
-    turn(EN_K3, 1); frame(); turn(EN_K3, 1); frame(); turn(EN_K3, 1); frame();   /* FROM C */
-    ok &= ui.song_row == 1u && ui.song_tk == 3u && song_idx.tsrc[song_cur][1] == 3u << 6 && !song_idx.tsrc[song_cur][0] &&
-          row_src(1, 2, 1) == 2u && row_src(1, 0, 1) == 1u;
-    turn(EN_K4, 1); frame();                                                 /* (beta4) VAR: MUTE */
-    ok &= row_var(1, 2) == RV_MUTE && !row_var(1, 0) && !row_var(0, 2);
-    turn(EN_K4, 1); frame();
-    ok &= row_var(1, 2) == RV_THIN;
-    turn(EN_K2, -3); frame();                                                /* (beta5) lane SEC: the row's section, its bars */
-    turn(EN_K3, 1); frame(); turn(EN_K4, 1); frame();
-    ok &= ui.song_tk == 0u && chain_config.row[1].slot == 2u && chain_config.row[1].bars == 5u;
-    bad += check("add15 SAVE > TIMELINE: lane T3 FROM C, VAR (MUTE, THIN); lane SEC the row's section and bars", ok);
+    turn(EN_K2, 1); frame();                                                 /* its section C */
+    turn(EN_K3, 2); frame();                                                 /* 6 bars */
+    ok &= ui.song_row == 1u && chain_config.row[1].slot == 2u && chain_config.row[1].bars == 6u && chain_config.row[0].slot == 0u;
+    track_select(2); frame();
+    turn(EN_K4, 1); frame(); turn(EN_K4, 1); frame();                        /* T3's VAR: MUTE, THIN */
+    ok &= row_var(1, 2) == RV_THIN && !row_var(1, 0) && !row_var(0, 2);
+    tl_key(8);                                                               /* G4: T3 FROM B */
+    ok &= row_src(1, 2, 2) == 1u && row_src(1, 0, 2) == 2u;
+    tl_key(8);                                                               /* (again: the row's own) */
+    ok &= row_src(1, 2, 2) == 2u;
+    bad += check("V10.6o TIMELINE: KNOB 1 the row, 2 its section, 3 its bars, 4 the ALGORITHM track's VAR; F4..B4 its FROM", ok);
+    tl_key(1);                                                               /* G3: T2 muted in row 2 (a scene) */
+    ok = song_idx.scene[song_cur][1].on & 1u && (song_idx.scene[song_cur][1].mute >> 1) & 1u && !song_idx.scene[song_cur][0].on;
+    tl_key(1);
+    ok &= !((song_idx.scene[song_cur][1].mute >> 1) & 1u);
+    tl_key(5);                                                               /* D4: T6 */
+    ok &= (song_idx.scene[song_cur][1].on >> 2) & 1u;
+    bad += check("V10.6o TIMELINE: a white key mutes / unmutes its track in the row (its scene; T5 T6 in .on)", ok);
+    press(B_OCTUP); frame();                                                 /* a copy of row 2 after it */
+    ok = chain_config.count == 3u && ui.song_row == 2u && chain_config.row[2].slot == 2u && chain_config.row[2].bars == 6u &&
+         row_var(2, 2) == RV_THIN && (song_idx.scene[song_cur][2].on >> 2) & 1u;
+    press(B_OCTDN); frame(); press(B_OCTUP); frame();                        /* DELETE ROW? yes */
+    ok &= chain_config.count == 2u && !ui.confirm;
+    bad += check("V10.6o TIMELINE: OCT+ a copy of the row after it (scene, VAR), OCT- deletes it (DELETE ROW?)", ok);
+    ui.song_row = 1;
+    press(B_PLAY); frame();                                                  /* stopped: row 2 loops */
+    ok = chain.armed && chain.hold && sec_stage.row == 1u && transport_req == 1u;
+    chain.armed = 0; transport_req = 0; song.playing = 1; chain.running = 1; chain.row = 1; chain.remaining = 6;
+    press(B_PLAY); frame();                                                  /* on it: the song goes on */
+    ok &= !chain.hold && chain.running && transport_req == 0u;
+    press(B_PLAY); frame();                                                  /* then PLAY stops, as anywhere */
+    ok &= transport_req == 2u;
+    chain_stop(); chain.running = 0; song.playing = 0; transport_req = 0; chain.ended = 0;
+    bad += check("V10.6o TIMELINE: PLAY loops the cursor's row; PLAY again the song goes on from it; again: STOP", ok);
+    chain_config.row[1].slot = 1; ui.song_row = 0;
+    nav_put(SEC_SAVE, "PARTS"); frame();                                     /* (V10.6o) PARTS, the owner's mock-up A */
+    frames(600);                                                             /* (the sections read: their tracks) */
+    ok = SONG_PARTS(cur_page()) && keys_mode() == 2u && (part_play.b[0] & 5u) == 1u;
+    turn(EN_K1, -3); frame(); turn(EN_K1, 1); frame();                       /* B */
+    press(B_OCTUP); frame();
+    ok &= ui.part == 1u && live.cur == 1 && !live.mode && !chain.running && transport_req == 1u;
+    transport_req = 0;
+    press(B_OCTDN); frame();                                                 /* the song from B's row */
+    ok &= live.mode && chain.armed && !chain.hold && ui.song_row == 1u && sec_stage.row == 1u;
+    chain.armed = 0; transport_req = 0;
+    bad += check("V10.6o PARTS: KNOB 1 + OCT+ the part loops (LOOP, live.cur); OCT- the song again from its row", ok);
+    ui.song_row = 0;
+    tl_key(2);                                                               /* A3: C at once (stopped) */
+    ok = ui.part == 2u && live.cur == 2 && !live.mode;
+    transport_req = 0;
+    tl_key(1);                                                               /* G3: B */
+    ok &= ui.part == 1u && live.cur == 1;
+    transport_req = 0;
+    turn(EN_K2, 1); frame();                                                 /* KNOB 2: B's row in the song */
+    ok &= ui.song_row == 1u;
+    turn(EN_K4, 1); frame();                                                 /* KNOB 4: PLAY plays the SONG */
+    ok &= live.mode == 1u;
+    bad += check("V10.6o PARTS: F3..B3 pick and loop A..D; KNOB 2 the part's row, KNOB 4 LOOP / SONG", ok);
     memset(song_idx.tvar[song_cur], 0, sizeof song_idx.tvar[song_cur]);
     chain_config.count = 0;
     ui_power_on();

@@ -785,6 +785,8 @@ static const page_t PAGES[] = {
                                                          * mutations on the bar: EVERY AMOUNT MODE WHAT */
     {"SAVE SONG AS", FAM_SAVE, SC_GLOBAL, GR_SONGSAVE, {0xFF, 0xFF, 0xFF, G_SAVE}},
     {"RHYTHM", FAM_SEQ, SC_TRACK, GR_STEPS, {P_SLEN, 0xFF, 0xFF, P_SDIV}},
+    {"PARTS", FAM_SAVE, SC_GLOBAL, GR_SONG, {0xFF, 0xFF, 0xFF, 0xFF}},   /* (V10.6o) the song's four sections as cards: KNOB 1 one,
+                                                         * OCT+ it loops, OCT- the song from its row (ui_lzsave.c graph_parts) */
 };
 #define SPLIT_PAGE(pg) ((uint32_t)((pg)->graph - GR_SPLIT) < 2u)
 #define FIT_PAGE(pg) ((pg)->fam == FAM_SEQ && (pg)->id[0] == P_SLEN && (pg)->id[1] == 0xFFu)

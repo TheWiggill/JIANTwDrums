@@ -1236,6 +1236,104 @@ static void fit_ui_edit(track_t *t, int16_t *param, int16_t value)
 }
 static void fit_ui_set(track_t *t, uint8_t value) { fit_ui_edit(t, 0, value); }
 
+/* (V10.6o) SAVE > PARTS and TIMELINE (the owner's mock-ups A and B; ui_lzsave.c graph_parts graph_tl) */
+/* song row d becomes row s (its scene, tracks, variations with it; ARRANGE's and TIMELINE's ADD, DELETE ROW); s past the
+ * rows: an empty one (A, 4 bars) */
+static void row_copy(uint32_t d, uint32_t s)
+{
+    if (s < CHAIN_ROWS) {
+        chain_config.row[d] = chain_config.row[s];
+        song_idx.scene[song_cur][d] = song_idx.scene[song_cur][s];
+        song_idx.tsrc[song_cur][d] = song_idx.tsrc[song_cur][s];
+        song_idx.tvar[song_cur][d] = song_idx.tvar[song_cur][s];
+    } else {
+        chain_config.row[d] = (chain_row_t){0, 4};
+        memset(&song_idx.scene[song_cur][d], 0, sizeof(scene_t));
+        song_idx.tsrc[song_cur][d] = song_idx.tvar[song_cur][d] = 0;
+    }
+}
+/* the song's row of part s: d = 0 the cursor's if it is s's, else s's first; else s's next / previous (round); none: the
+ * cursor's */
+static uint32_t part_row(uint32_t s, int32_t d)
+{
+    uint32_t n = chain_config.count, r = ui.song_row, k;
+    if (!d && r < n && chain_config.row[r].slot == s)
+        return r;
+    if (!d) r = n - 1u;                                 /* (its first) */
+    for (k = 0; k < n; k++)
+        if (chain_config.row[r = (r + (d < 0 ? n - 1u : 1u)) % n].slot == s)
+            return r;
+    return ui.song_row;
+}
+/* OCT+ / F3..B3: part s loops (what plays: in on the next bar, the song cut; stopped: now, and PLAY) */
+static void parts_audition(uint32_t s)
+{
+    ui.part = (uint8_t)s;
+    chain_cut();
+    live.mode = 0;
+    if (!section_jump(s) && !song.playing && !transport_busy())
+        transport_req = 1;
+}
+/* OCT-: the song again, from the row picked of the part (its first: KNOB 2) */
+static void parts_song(void)
+{
+    live.mode = 1;
+    ui.song_row = (uint8_t)part_row(ui.part, 0);
+    if (!chain_goto(ui.song_row, 0))
+        ui_message("THE SONG");
+}
+/* TIMELINE's PLAY: stopped, the cursor's row round and round; held, PLAY on it lets the song go on, on another row
+ * that row held; else (a song going on, a loop) 0: PLAY stops as anywhere */
+static int tl_play(void)
+{
+    uint32_t r = ui.song_row;
+    if (ui.home || !SONG_TRK(cur_page()) || seq_counting() || (song.playing && !(chain.running && chain.hold)))
+        return 0;
+    if (song.playing && chain.row == r && !chain.loop) {
+        fm1_irq_off();
+        chain.hold = 0;
+        sec_stage.ready = 0;                            /* (song_poll stages the next row) */
+        fm1_irq_on();
+        ui_message("THE SONG GOES ON");
+    } else if (!chain_goto(r, 1))
+        ui_message("LOOP ROW");
+    return 1;
+}
+/* TIMELINE's keys: F3..D4 T1..T6 muted / sounding in the cursor's row (its scene: none yet, the state now, as
+ * ARRANGE's SCENE; the row playing: at once), F4..B4 the ALGORITHM track's FROM A..D (its letter again: the row's own) */
+static void tl_keys(uint32_t pressed)
+{
+    uint32_t k, p, r = ui.song_row;
+    for (k = 0; k < 27u; k++) {
+        if (!((pressed >> k) & 1u) || key_black(k))
+            continue;
+        p = key_place(k);
+        if (SONG_PARTS(cur_page())) {
+            if (p < 4u) parts_audition(p);
+            continue;
+        }
+        if (r >= chain_config.count)
+            continue;
+        if (p < NTRK) {
+            scene_t *sc = &song_idx.scene[song_cur][r];
+            uint32_t b;
+            if (!sc->on)
+                scene_capture(sc);
+            if (p < 4u) sc->mute ^= (uint8_t)(1u << p);
+            else sc->on ^= (uint8_t)(1u << (p - 3u));
+            b = p < 4u ? (sc->mute >> p) & 1u : (sc->on >> (p - 3u)) & 1u;
+            if (chain.running && !chain.loop && chain.row == r)
+                trk[p].p[P_MUTE] = (int16_t)b;
+            ui_message(b ? "MUTED IN THE ROW" : "PLAYS IN THE ROW");
+        } else if (p >= 7u && p <= 10u && !chain_busy()) {
+            uint32_t *m = &song_idx.tsrc[song_cur][r], sh = 3u * (song.sel % NTRK), v = p - 6u;
+            *m = (*m & ~(7u << sh)) | ((*m >> sh & 7u) == v || chain_config.row[r].slot == v - 1u ? 0u : v) << sh;
+        } else
+            continue;
+        song_idx_touch();
+    }
+}
+
 static void edit_param(uint32_t slot, int32_t steps)
 {
     int16_t *vp;
@@ -1329,33 +1427,31 @@ static void edit_param(uint32_t slot, int32_t steps)
         else if (slot == 3u) ui.act = steps > 0 ? 4u : 0u;
         return;
     }
-    if (SONG_TRK(pg)) {                                 /* (beta5) TIMELINE: ROW LANE, then the lane's two: SEC (the row's
-                                                         * section, its bars) or a track (FROM, VAR) */
+    if (SONG_PARTS(pg)) {                               /* (V10.6o) PARTS: KNOB 1 the part, 2 the song's row of it (OCT-
+                                                         * plays from there), 4 what PLAY plays (LOOP / SONG); 3 nothing */
+        if (slot == 0u)
+            ui.part = (uint8_t)clamp((int32_t)ui.part + steps, 0, 3);
+        else if (slot == 1u)
+            ui.song_row = (uint8_t)part_row(ui.part, steps);
+        else if (slot == 3u)
+            live.mode = steps > 0;
+        return;
+    }
+    if (SONG_TRK(pg)) {                                 /* (V10.6o) TIMELINE: ROW, its SECT, its BARS, the VAR of the track
+                                                         * ALGORITHM picks (its mute: the keys) */
         chain_row_t *r;
-        uint32_t k, sh;
         if (slot == 0u) {
             ui.song_row = (uint8_t)clamp((int32_t)ui.song_row + steps, 0, chain_config.count ? chain_config.count - 1 : 0);
-            return;
-        }
-        if (slot == 1u) {
-            ui.song_tk = (uint8_t)clamp((int32_t)ui.song_tk + steps, 0, NTRK);
             return;
         }
         if (chain_busy()) { ui_message("SONG PLAYS: STOP IT TO EDIT"); return; }
         if (!chain_config.count) { ui_message("NO ROW"); return; }
         if (ui.song_row >= chain_config.count) ui.song_row = chain_config.count - 1u;   /* (ARRANGE's ADD / END) */
         r = &chain_config.row[ui.song_row];
-        k = ui.song_tk;
-        if (!k) {                                       /* SEC: the row's section, its bars */
-            if (slot == 2u) r->slot = (uint8_t)clamp((int32_t)r->slot + steps, 0, 3);
-            else r->bars = (uint8_t)clamp((int32_t)r->bars + steps, 1, (int32_t)CHAIN_BARS);
-        } else if (slot == 2u) {                        /* FROM: the row's own (0), A..D */
-            uint32_t *m = &song_idx.tsrc[song_cur][ui.song_row];
-            sh = 3u * (k - 1u);
-            *m = (*m & ~(7u << sh)) | (uint32_t)clamp((int32_t)(*m >> sh & 7u) + steps, 0, 4) << sh;
-        } else {                                        /* VAR */
-            uint32_t *w = &song_idx.tvar[song_cur][ui.song_row];
-            sh = 4u * (k - 1u);
+        if (slot == 1u) r->slot = (uint8_t)clamp((int32_t)r->slot + steps, 0, 3);
+        else if (slot == 2u) r->bars = (uint8_t)clamp((int32_t)r->bars + steps, 1, (int32_t)CHAIN_BARS);
+        else {
+            uint32_t *w = &song_idx.tvar[song_cur][ui.song_row], sh = 4u * (song.sel % NTRK);
             *w = (*w & ~(15u << sh)) | (uint32_t)clamp((int32_t)(*w >> sh & 15u) + steps, 0, RV_N - 1) << sh;
         }
         song_idx_touch();
@@ -1610,18 +1706,24 @@ static void act_do(void)
     }
     if (cur_page()->graph == GR_TOOLS)                   /* (V10.24) OCT+ held: tools_arm, on the press */
         return;
-    if (cur_page()->graph == GR_SONG) {                 /* (0.8.5) SAVE > PROJECT's ARRANGE: OCT+ adds a row after the
-                                                         * last (its section and bars), the new one selected; PLAY plays */
-        chain_row_t *r;
+    if (SONG_PARTS(cur_page())) {                       /* (V10.6o) PARTS: the part picked loops */
+        parts_audition(ui.part);
+        return;
+    }
+    if (cur_page()->graph == GR_SONG) {                 /* (0.8.5) SAVE > PROJECT's ARRANGE: OCT+ adds a row; (V10.6o) after
+                                                         * the one picked, a copy of it (its scene, tracks, variations; on
+                                                         * ADD / END: of the last; none: A, 4 bars), the new one selected */
+        uint32_t n = chain_config.count, c = ui.song_row < n ? ui.song_row : n - 1u, i;
         if (chain_busy()) { ui_message("SONG PLAYS: STOP IT TO EDIT"); return; }
-        if (chain_config.count >= CHAIN_ROWS) { ui_message("16 ROWS"); return; }
-        r = &chain_config.row[chain_config.count];
-        r->slot = chain_config.count ? chain_config.row[chain_config.count - 1u].slot : 0u;
-        r->bars = chain_config.count ? chain_config.row[chain_config.count - 1u].bars : 4u;
-        memset(&song_idx.scene[song_cur][chain_config.count], 0, sizeof song_idx.scene[0][0]);   /* (no scene yet) */
-        song_idx.tsrc[song_cur][chain_config.count] = 0;
-        song_idx.tvar[song_cur][chain_config.count] = 0;
-        ui.song_row = chain_config.count++;
+        if (n >= CHAIN_ROWS) { ui_message("16 ROWS"); return; }
+        if (!n) {
+            row_copy(0, CHAIN_ROWS);                    /* (no scene yet) */
+            c = (uint32_t)-1;
+        } else
+            for (i = n; i > c; i--)
+                row_copy(i, i - 1u);
+        ui.song_row = (uint8_t)(c + 1u);
+        chain_config.count++;
         song_idx_touch();
         ui_message("ROW ADDED");
         return;
@@ -2626,15 +2728,9 @@ static void ui_input_frame(void)
             } else if (kind == CF_DEL_ROW) {
                 uint32_t r = ui.confirm_trk;
                 if (!chain_busy() && r < chain_config.count) {
-                    for (; r + 1u < chain_config.count; r++) {
-                        chain_config.row[r] = chain_config.row[r + 1u];
-                        song_idx.scene[song_cur][r] = song_idx.scene[song_cur][r + 1u];   /* (its scene with it) */
-                        song_idx.tsrc[song_cur][r] = song_idx.tsrc[song_cur][r + 1u];     /* (.. and its tracks') */
-                        song_idx.tvar[song_cur][r] = song_idx.tvar[song_cur][r + 1u];
-                    }
-                    memset(&song_idx.scene[song_cur][r], 0, sizeof(scene_t));
-                    song_idx.tsrc[song_cur][r] = 0;
-                    song_idx.tvar[song_cur][r] = 0;
+                    for (; r + 1u < chain_config.count; r++)
+                        row_copy(r, r + 1u);            /* (its scene, its tracks' with it) */
+                    row_copy(r, CHAIN_ROWS);
                     song_idx_touch();
                     chain_config.count--;
                     if (ui.song_row > chain_config.count) ui.song_row = chain_config.count;
@@ -2743,11 +2839,12 @@ static void ui_input_frame(void)
         b = panel_btn_of(id);
         switch (b) {
         case B_PLAY:
-            if (layer_play())                           /* (GLO held: RESTART) */
+            if (layer_play() || tl_play())              /* (GLO held: RESTART; V10.6o TIMELINE: the row loops) */
                 break;
             if (song.playing || chain_busy() || seq_counting())   /* (a count-in: PLAY stops it) */
                 transport_req = 2;
-            else if ((!ui.home && cur_page()->graph == GR_SONG) || live.mode)   /* (the song layer's SONG mode) */
+            else if ((!ui.home && cur_page()->graph == GR_SONG && !SONG_PARTS(cur_page())) || live.mode)   /* (the song
+                                                         * layer's SONG mode; PARTS: as KNOB 4 says) */
                 chain_play_ui();
             else
                 transport_req = 1;
@@ -2844,6 +2941,8 @@ static void ui_input_frame(void)
     } else if (act_cols() && (oct & 1u)) {              /* OCT- drops it, or (none picked) goes HOME; PHRASES: back to */
         if (cur_page()->graph == GR_PATS && !ui.home)   /* the SEQ page it was opened on */
             nav_go(SEC_SEQ, nav_cur(), 0);
+        else if (SONG_PARTS(cur_page()))                 /* (V10.6o) PARTS: back to the song */
+            parts_song();
         else if (cur_page()->graph == GR_SONG) {         /* (V10.4) ARRANGE, TIMELINE: OCT+ adds a row, OCT- deletes
                                                          * the one picked (DELETE ROW?, as TOOLS) */
             if (chain_busy()) ui_message("SONG PLAYS: STOP IT TO EDIT");
@@ -2861,6 +2960,8 @@ static void ui_input_frame(void)
         gco_keys(notes);
     } else if (ckeys_on()) {                            /* (seq2g) SEQ > COMP: the keys pick the step */
         comp_keys(notes);
+    } else if (skeys_on()) {                            /* (V10.6o) PARTS, TIMELINE: theirs */
+        tl_keys(notes);
     } else if (song.grid && song.grid != 3u) {         /* (p2: 3, LIVE's MANO: its board, ui_live.c) */
         grid_keys(notes);
     } else if (song.seq_mode && cur_page()->graph == GR_ROLL) {   /* STEP (not CHANCE: its knobs only) */

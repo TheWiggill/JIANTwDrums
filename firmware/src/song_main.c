@@ -199,14 +199,28 @@ static uint32_t section_bars(uint32_t s)
     }
     return bars > CHAIN_BARS ? CHAIN_BARS : bars;
 }
+/* (V10.6o) PARTS / TIMELINE: section s as proj_scratch holds it (just decoded: graph_project_used): its tracks that
+ * play (part_play) */
+static uint32_t part_scan(uint32_t s)
+{
+    const project_t *p = &proj_scratch;
+    uint32_t k, i, n, m = 0;
+    for (k = 0; k < NTRK; k++) {
+        n = (uint32_t)clamp(p->t[k].p[P_SLEN], 1, NSTEP);
+        for (i = 0; i < n && p->t[k].step[i].time != ST_NOTE; i++) {}
+        if (i < n && !p->t[k].p[P_MUTE])
+            m |= 1u << k;
+    }
+    return m;
+}
 
-/* Main loop only: PLAY a song. 0 = armed, 1 = no rows, 2 = busy, 3 + s = section s not saved */
-static uint32_t chain_prepare(void)
+/* Main loop only: PLAY a song (V10.6o: from row r0). 0 = armed, 1 = no rows, 2 = busy, 3 + s = section s not saved */
+static uint32_t chain_prepare_at(uint32_t r0)
 {
     uint32_t i;
     if (transport_busy())
         return 2;
-    if (!chain_valid(&chain_config) || !chain_config.count)
+    if (!chain_valid(&chain_config) || r0 >= chain_config.count)
         return 1;
     for (i = 0; i < chain_config.count; i++)
         if (!proj_import(&proj_scratch, &proj_slot[chain_config.row[i].slot], sizeof(project_store_t)))
@@ -217,8 +231,8 @@ static uint32_t chain_prepare(void)
     chain.loop = 0;
     chain.pass = 0;
     chain.ended = 0;
-    if (song_stage(chain.config.row[0].slot, 0))
-        return 3u + chain.config.row[0].slot;
+    if (song_stage(chain.config.row[r0].slot, r0))
+        return 3u + chain.config.row[r0].slot;
     RING_PUBLISH();
     chain.armed = 1;
     transport_req = 1;
@@ -243,6 +257,47 @@ static int section_load(uint32_t s)
     return 0;
 }
 
+/* (V10.6o) what plays stops being a song or a quick chain (the music it brought plays on, the song's REC arming back);
+ * a live jump asked for forgotten */
+static void chain_cut(void)
+{
+    fm1_irq_off();                                    /* (the ISR may be applying one) */
+    if (chain.running && !chain.loop) {
+        song.rec = chain.rec;
+        scene_pfx = 0;
+    }
+    chain.running = 0;
+    chain.armed_bar = 0;
+    chain.hold = 0;
+    live.req = -1;
+    fm1_irq_on();
+}
+/* (V10.6o) the song from row r (PARTS' OCT-, TIMELINE's PLAY): playing, on the next bar; stopped, now. hold: that row
+ * round and round until PLAY lets it go (tl_play). 0 done */
+static int chain_goto(uint32_t r, uint32_t hold)
+{
+    if (!song.playing) {
+        uint32_t rc = transport_busy() ? 2u : chain_prepare_at(r);
+        if (rc) {
+            ui_message(rc == 1u ? "ADD A SONG ROW" : rc == 2u ? "STOP FIRST" : "SECTION EMPTY");
+            return 1;
+        }
+    } else {
+        if (r >= chain_config.count || !chain_valid(&chain_config)) { ui_message("ADD A SONG ROW"); return 1; }
+        chain_cut();
+        chain.config = chain_config;
+        chain.loop = 0;
+        chain.pass = 0;
+        chain.ended = 0;
+        chain.kept = 0;
+        chain.scn = 0;
+        if (song_stage(chain.config.row[r].slot, r)) { ui_message("SECTION EMPTY"); return 1; }
+        RING_PUBLISH();
+        chain.armed_bar = 1;                          /* (chain_tick: on the next bar) */
+    }
+    chain.hold = (uint8_t)hold;
+    return 0;
+}
 /* the song layer (ui_layer.c), main loop. Section s: in on the next bar (stopped: now). 0 done */
 static int section_jump(uint32_t s)
 {
@@ -263,11 +318,7 @@ static int section_jump(uint32_t s)
         ui_say("SECTION ", b);
         return 0;
     }
-    fm1_irq_off();                                    /* (the ISR may be applying one) */
-    chain.running = 0;                                /* (a single section ends a quick chain) */
-    chain.armed_bar = 0;
-    live.req = -1;
-    fm1_irq_on();
+    chain_cut();                                      /* (a single section ends a quick chain) */
     if (song_stage(s, SEC_LIVE))
         return 1;
     live.req = (int8_t)s;
@@ -317,11 +368,7 @@ static void quick_chain(const uint8_t *s, uint32_t n)
             ui_say(b, " IS EMPTY");
             return;
         }
-    fm1_irq_off();
-    chain.running = 0;
-    chain.armed_bar = 0;
-    live.req = -1;
-    fm1_irq_on();
+    chain_cut();
     chain_defaults(&chain.config);
     chain.config.count = (uint8_t)n;
     for (i = 0; i < n; i++) {
@@ -490,7 +537,7 @@ static void song_poll(void)
         ui.force = 1;
     }
     if (chain.running && !sec_stage.ready) {
-        uint32_t next = chain.row + 1u;
+        uint32_t next = chain.row + !chain.hold;      /* (V10.6o: held, the row again) */
         if (next >= chain.config.count && (chain.loop || SONG_END(&chain.config) == SONG_FOREVER ||
                                            (SONG_END(&chain.config) >= 2u && chain.pass + 1u < SONG_END(&chain.config))))
             next = 0;                                 /* (0.6.22: the song's END: round again) */

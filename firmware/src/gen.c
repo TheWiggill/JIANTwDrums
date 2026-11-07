@@ -2972,9 +2972,7 @@ BTAPP_FN static void gen_panel_bt(void)
     if (chain_config.count) {
         /* Reuse the actual arrangement, not FORM's illustrative BCADCA chips.
          * Progress refreshes per bar; no new high-rate animation or DSP work. */
-        proj_gene = 1;                                   /* (V10.6i) the lanes leave the helix a band of its own */
-        graph_proj(2);
-        proj_gene = 0;
+        graph_proj(2);                                   /* (V10.6i) the lanes leave the helix a band of its own */
         cv_rect(0, 124, 240, 16, T_SURF);
         if (chain.running) {
             v[0] = (char)('A' + (uint32_t)live.cur % 4u); v[1] = ' ';
@@ -3024,7 +3022,7 @@ static void gen_helix(void)
 }
 static void gen_panel(void)
 {
-    if (bt_hw_seg()) gen_panel_bt(); else { proj_gene = 1; graph_proj(chain_config.count ? 2 : 0); proj_gene = 0; }
+    if (bt_hw_seg()) gen_panel_bt(); else graph_proj(chain_config.count ? 2 : 0);
     gen_helix();
 }
 #include "gen_track.c"

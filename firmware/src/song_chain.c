@@ -109,7 +109,11 @@ static struct {
     uint8_t rec, kept;                /* kept: bit 0 snapshot valid; bits 1..3 original section + 1 (0 none) */
     uint32_t carry;                   /* samples past the bar line at the end of the block: the first step's */
     uint32_t bar_pos;                 /* samples into the bar (while playing) */
+    uint8_t hold;                     /* (V10.6o) TIMELINE's PLAY: the row round and round (PLAY again: the song goes on) */
 } chain;
+/* (V10.6o) PARTS / TIMELINE: each section's tracks that play (steps, not muted: bit k), read with the sections' names
+ * (ui_graph.c graph_project_used, song_main.c part_scan) */
+static union { uint8_t b[4]; uint32_t w; } part_play;
 static struct {
     volatile int8_t req;              /* a section asked for (staged), in on the next bar; -1 none */
     volatile int8_t cur;              /* the section playing: jumped to, loaded or stored; -1 none */
