@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
+// Portions Copyright (C) 2026 Juan Ignacio Antonucci (Juan Jiant)
 // Local, complete musical archives. Requests name whitelisted objects, never flash addresses.
 // 8: the FM6 patch bank of 1.0..1.0.2 (listed empty since 1.0.3: a restore of an older archive's bank moves its patches
 // into the user presets restored before it); 9: the user presets' FM6 patches (1.0.3).
@@ -94,14 +95,34 @@ export function readBackup(file) {
   if (!objects[0].size || !objects[1].size) throw new Error("Backup is missing the current music or settings");
   return { ...file, objects };
 }
-export async function captureBackup(request, firmware, onProgress = () => {}) {
-  const manifest = bkManifest(await request([BACKUP_CMD.LIST, []], { timeout: 3000, retries: 0 }));
+/* (0.9.11) a manifest as the device lists it, every object kept: the archive of another firmware (Felucca with its user
+ * samples 32..34, Skiff with its pattern bank 16..31), to restore with that firmware's own editor. Ids unique, current
+ * music (0) and settings (1) there, an object at most 3840 bytes (a user sample 81920) */
+export function bkManifestAll(a) {
+  if (a[0] !== 1) throw new Error("Unsupported archive protocol");
+  bkCheck(a[1]);
+  if (a.length !== 3 + a[2] * 11) throw new Error("Incomplete archive manifest");
+  const all = Array.from({ length: a[2] }, (_, i) => {
+    const p = 3 + i * 11, o = { id: a[p], size: bkR32(a, p + 1), crc: bkR32(a, p + 6) };
+    if (o.size > (BACKUP_RETIRED(o.id) ? 81920 : 3840) || (!o.size && o.crc)) throw new Error("Archive object too large");
+    return o;
+  });
+  if (new Set(all.map((o) => o.id)).size !== all.length || all[0]?.id !== 0 || all[1]?.id !== 1) throw new Error("Unexpected archive object");
+  all.skipped = 0;
+  return all;
+}
+/* opt.complete: every object the device lists (another firmware's archive, bkManifestAll), not only JIANT's */
+export async function captureBackup(request, firmware, onProgress = () => {}, opt = {}) {
+  /* (0.9.11) longer waits and a retry (LIST and GET only read): the LIST first stops playback and packs the music */
+  const manifest = (opt.complete ? bkManifestAll : bkManifest)(await request([BACKUP_CMD.LIST, []], { timeout: 8000, retries: 1 }));
   const objects = [], total = manifest.reduce((n, o) => n + o.size, 0); let done = 0;
   for (const o of manifest) {
     const bytes = new Uint8Array(o.size);
     for (let off = 0; off < o.size; off += BACKUP_CHUNK) {
       const size = Math.min(BACKUP_CHUNK, o.size - off);
-      const a = await request([BACKUP_CMD.GET, [o.id, ...bkU32(off), size & 127, size >>> 7]], { timeout: 1000, retries: 1 });
+      /* a late reply to an earlier try names another chunk: match skips it */
+      const match = (r) => r[0] === o.id && r.length >= 7 && (() => { try { return bkR32(r, 2) === off; } catch (_) { return false; } })();
+      const a = await request([BACKUP_CMD.GET, [o.id, ...bkU32(off), size & 127, size >>> 7]], { timeout: 2500, retries: 2, match });
       bkCheck(a[1]);
       if (a[0] !== o.id || bkR32(a, 2) !== off || (a[7] | a[8] << 7) !== size) throw new Error("Unexpected backup reply");
       bytes.set(bkUnpack(a.slice(9), size), off);
@@ -111,7 +132,8 @@ export async function captureBackup(request, firmware, onProgress = () => {}) {
     objects.push({ ...o, data: bkBase64(bytes) });
   }
   const file = { format: "felucca-backup", version: 1, firmware, created: new Date().toISOString(), objects };
-  readBackup(file); return file;
+  if (!opt.complete) readBackup(file);
+  return file;
 }
 export async function restoreBackup(request, file, onProgress = () => {}) {
   const archive = readBackup(file); // Validate every byte before the first destructive request.
@@ -139,20 +161,38 @@ export async function restoreBackup(request, file, onProgress = () => {}) {
 }
 
 // Installer connection: no editor page or watcher owns this input simultaneously.
+// (0.9.11) opt.retries: a request that timed out is sent again (only for requests that read); opt.match: a reply of the
+// command that fails it is not this request's (a late reply to an earlier try) and is skipped
 export class BackupConnection {
   constructor(input, output) {
     this.input = input; this.output = output; this.pending = null;
     input.onmidimessage = (e) => {
       const d = e.data;
       if (d.length < 6 || d[0] !== 240 || d[1] !== 125 || d[2] !== 70 || d[3] !== 76 || d.at(-1) !== 247) return;
-      if (this.pending?.cmd === d[4]) { const p = this.pending; this.pending = null; clearTimeout(p.timer); p.resolve(Array.from(d.slice(5, -1))); }
+      const p = this.pending;
+      if (p?.cmd !== d[4]) return;
+      const body = Array.from(d.slice(5, -1));
+      if (p.match && !p.match(body)) return;
+      this.pending = null; clearTimeout(p.timer); p.resolve(body);
     };
   }
-  async request([cmd, args], opt = {}) {
-    if (this.pending || this.closed || this.input.state === "disconnected" || this.output.state === "disconnected") throw new Error("Backup connection closed or busy");
+  async request(r, opt = {}) {
+    for (let k = 0; ; k++) {
+      try { return await this.once(r, opt); }
+      catch (e) {
+        if (!e.timeout || k >= (opt.retries || 0) || this.closed) throw e;
+        await new Promise((res) => setTimeout(res, 150 * (k + 1)));
+      }
+    }
+  }
+  once([cmd, args], opt) {
+    if (this.pending || this.closed || this.input.state === "disconnected" || this.output.state === "disconnected") return Promise.reject(new Error("Backup connection closed or busy"));
     return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => { this.pending = null; reject(new Error("Backup timed out. Keep the FM-1 connected and stopped.")); }, opt.timeout || 1200);
-      this.pending = { cmd, timer, resolve, reject };
+      const timer = setTimeout(() => {
+        this.pending = null;
+        const e = new Error("Backup timed out. Keep the FM-1 connected and stopped."); e.timeout = true; reject(e);
+      }, opt.timeout || 1200);
+      this.pending = { cmd, timer, resolve, reject, match: opt.match };
       try { this.output.send([240, 125, 70, 76, cmd, ...args, 247]); }
       catch (e) { clearTimeout(timer); this.pending = null; reject(e); }
     });
