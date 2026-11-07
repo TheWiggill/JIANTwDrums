@@ -419,7 +419,7 @@ static void fm1_main(void)
              * go cancels it */
             static uint32_t t0;
             uint32_t both = (1u << panel.btn[B_OCTDN]) | (1u << panel.btn[B_OCTUP]);
-            if ((fm1_in.buttons & both) != both) {
+            if ((fm1_in.buttons & both) != both || kx_g[0] || kx_g[1]) {   /* (V10.6z4: on a note, the expression keys) */
                 if (ui.uboot) {
                     ui.uboot = 0;
                     ui.force = 1;                       /* what the countdown covered */

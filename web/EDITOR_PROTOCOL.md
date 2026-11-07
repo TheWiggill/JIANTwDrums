@@ -973,6 +973,13 @@ JIANT appends (index = id; count 23 since 0.9.7): 18 TRACKS (4 / 6, AUDIO), 19 L
 20 MIDI OUT (KEYS / CLOCK / ALL / OFF, CONTROL), 21 SKIN (DISPLAY; 0.9.7: the values in the menu's order, 0 AIR,
 1 COLORS, 2 BOTTOM, 3 HUD, AIR the default of new settings; 0.8.9 had 0 COLORS, 1 BOTTOM, 2 HUD) and (0.9.7) 22 SCOPE
 (0 OFF, 1 ON; OFF the default: an engine's EDIT pages the creature on the whole panel, DISPLAY).
+V10.6z4 appends index 26, id 26 **OCT BEND** (AUDIO; count 27): 0 OFF, 1 "1 ST", 2 "2 ST" (the default), 3 "3 ST",
+4 "4 ST", 5 "5 ST", 6 "7 ST", 7 "12 ST": OCT+ held while a key's note sounds bends it up this far, OCT− a vibrato (the
+expression keys; OFF: OCT is the octave then too). A synth track records them as automation of id 90 (`P_LN7`, a
+DRUM track's lane 8 level, 127 on every synth part): 127 − (bit 0 vibrato, bit 1 bend), 124..127; an editor shows or
+leaves such records on a synth track as it likes (their value is not a level there). With MIDI OUT ALL they go out as
+CC1 and pitch bend (full = OCT BEND's range). GATE's `DESC` default is 127 (100 %) since V10.6z4 (64 before); stores
+still leave out 64, so a project or user preset saved at 50 % loads 50 %.
 
 The device's AUDIO tab shows SPEAKER EQ, USB LEVEL, CLICK, CLICK LEVEL, COUNT-IN (index 9, 10, 12, 13, 14).
 CLICK: the metronome while the transport runs: OFF, REC (while a track is armed), ON (always); CLICK LEVEL its

@@ -226,7 +226,7 @@ static void proj_new_tracks(project_t *q, uint32_t from)
     uint32_t i, k;
     for (i = from; i < NTRK; i++) {
         for (k = 0; k < P_COUNT; k++)
-            q->t[i].p[k] = param_desc_of(trk_old_engine(i), k)->def;
+            q->t[i].p[k] = param_store_def(trk_old_engine(i), k);
         q->t[i].engine = (uint8_t)trk_old_engine(i);
         q->t[i].preset = PROJ_DEF_SOUND;
         for (k = 0; k < NSTEP; k++) {
@@ -489,7 +489,7 @@ static int proj_fm_kept(const project_t *q, uint32_t t)
 {
     return q->t[t].engine == ENGI_FM6 || memcmp(q->fm6[t], FM6_INIT, FM6_PACKED) != 0;
 }
-static int16_t proj_pdef(uint32_t engine, uint32_t i) { return param_desc_of(engine, i)->def; }
+static int16_t proj_pdef(uint32_t engine, uint32_t i) { return param_store_def(engine, i); }
 /* the bytes q takes as FUNC up to the tail (PROJC_PFX_OFF: the room); more than the room: SECTION FULL */
 static int proj_sc_used(const project_t *q) { return q->scene[0] || q->scene[1] || q->scene[2] || q->scene[3]; }   /* (V10.31) */
 static int proj_fg_used(const project_t *q)            /* (0.6.52) a FUGUE head on: its block is written */
@@ -1154,7 +1154,7 @@ BTAPP_FN static int proj_unpack_bt(project_t *q, const uint8_t *b, uint32_t st)
         for (i = 0; i < np; i++) { if (b[pos] > 191u) return 0; values[i] = (int16_t)b[pos++] - 64; }
         q->t[t].engine = b[pos++]; q->t[t].preset = b[pos++];
         if (q->t[t].engine >= NENGINES) return 0;
-        for (i = 0; i < P_COUNT; i++) def[i] = param_desc_of(q->t[t].engine, i)->def;
+        for (i = 0; i < P_COUNT; i++) def[i] = param_store_def(q->t[t].engine, i);
         params_by_count(q->t[t].p, values, np, def);
         for (i = 0; i < NSTEP; i++) {
             step_t *s = &q->t[t].step[i]; uint32_t meta;

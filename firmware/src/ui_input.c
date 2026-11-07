@@ -1839,6 +1839,43 @@ slot_action:
     }
 }
 
+/* (V10.6z4) the expression keys (seq.c kx_block): OCT- / OCT+ pressed while a key's note sounds (MENU > AUDIO > OCT
+ * BEND not OFF), where OCT would change the octave: the tracks the keys hold notes of vibrato / bend while it is held,
+ * the octave as it was; with no note held, the octave as ever. Both held so: no UPDATE MODE (main.c) */
+static const uint8_t XB_SEMI[8] = {0, 1, 2, 3, 4, 5, 7, 12};
+static uint8_t kx_recd KX_BSS;                          /* the selected track's gates as last recorded */
+/* OCT- / OCT+ pressed where they are the octave: the octave (both: back to 0), or with a note held the expression */
+static __attribute__((noinline)) void oct_key(uint32_t b, uint32_t both)
+{
+    uint32_t k, m = 0;
+    for (k = 0; k < 27u; k++)
+        if (kb_on[k])
+            m |= 1u << (kb_trk[k] % NTRK);
+    if (kx_semi && m) {
+        kx_g[b == B_OCTUP] |= (uint8_t)m;
+        return;
+    }
+    if ((fm1_in.buttons & both) == both)
+        song.octave = 0;
+    else
+        song.octave += b == B_OCTDN ? (song.octave > -3 ? -1 : 0) : (song.octave < 3 ? 1 : 0);
+    if (drum_track(TSEL) && !song.grid)         /* (0.8.5) the kit's octaves: what this one does */
+        ui_message(drum_oct_label(TSEL,song.octave));
+}
+/* a frame: OCT let go ends its gates; recording, the selected track's into its automation (motion.c) */
+static __attribute__((noinline)) void kx_frame(void)
+{
+    uint32_t g, i = song.sel;
+    kx_semi = XB_SEMI[(oct_xp ^ 2u) & 7u];
+    for (g = 0; g < 2u; g++)
+        if (!((fm1_in.buttons >> panel.btn[g ? B_OCTUP : B_OCTDN]) & 1u))
+            kx_g[g] = 0;
+    g = ((kx_g[0] >> i) & 1u) | ((kx_g[1] >> i) & 1u) << 1;
+    if (g != kx_recd && rec_on(TSEL) && !drum_track(TSEL))   /* (only recording: else it would become the base) */
+        (void)motion_capture(TSEL, P_XPR, (int16_t)(127 - (int32_t)g));
+    kx_recd = (uint8_t)g;
+}
+
 /* OCT- / OCT+ where they answer (the dialogs, the menu, action pages): on release, and only a press
  * that began there; both down together (UPDATE MODE, main.c) is no tap. Bit 0 OCT-, bit 1 OCT+ */
 static uint32_t oct_taps(uint32_t pressed, int here)
@@ -2571,6 +2608,7 @@ static void ui_input_frame(void)
             oct |= 2u;                                  /* (the dialog's OK, below, this frame) */
         }
     }
+    kx_frame();                                         /* (V10.6z4) the expression keys let go, recorded */
     layer_masks();                                      /* seq.c: keys pressed with a layer's button are its own */
     live_frame();                                       /* (p2) GLO > LIVE: MANO's keys, OCT- held, the modifiers */
     {   /* (0.6.67) a button held + SELECT (rule 5): its dice (HOME the generator, GEN; EDIT the sound, SEQ the sequence,
@@ -2934,12 +2972,7 @@ static void ui_input_frame(void)
                                                          * (V10.16) MUTATE: a mutation now, back to the anchor */
                 break;
             }
-            if ((fm1_in.buttons & both) == both)
-                song.octave = 0;
-            else
-                song.octave += b == B_OCTDN ? (song.octave > -3 ? -1 : 0) : (song.octave < 3 ? 1 : 0);
-            if (drum_track(TSEL) && !song.grid)         /* (0.8.5) the kit's octaves: what this one does */
-                ui_message(drum_oct_label(TSEL,song.octave));
+            oct_key(b, both);                           /* (V10.6z4: a note held, the expression keys) */
             break;
         }
         default:                                        /* page buttons (GLO SCL ENV LFO EDIT ARP): when let go */

@@ -179,8 +179,11 @@ static __attribute__((noinline)) void mo_knobs(void)
             mo_send(0xB0u | ch, NRPN_CC[k], x & 127u);
     }
 }
+static void kx_block(void);
 static __attribute__((noinline)) void mo_block(uint32_t n)   /* events_block: the setting changed; the clock */
 {
+    kx_block();                                     /* (V10.6z4) the expression keys (from here: RAM code calls none
+                                                     * of the image's last functions) */
     if (mo_kr != mo_kw)
         mo_knobs();
     if (mo_lvl != mo_last) {
@@ -204,6 +207,47 @@ static __attribute__((noinline)) void mo_block(uint32_t n)   /* events_block: th
             off = n - mo_pulse_acc / 24u;
             midi_out_event_at(0x0Fu | 0xF8u << 8, (t0 + off * 8000000u / ((uint32_t)FS / 3u)) | 1u);
         }
+    }
+}
+
+/* (V10.6z4, the owner) the expression keys: OCT- or OCT+ held while a key's note sounds (ui_input.c oct_key; with no
+ * note held they are the octave, as ever). OCT- a vibrato faded in as a mod wheel raised and out again (~200 ms), 5.5 Hz,
+ * +-0.35 semitone; OCT+ a bend up along a fixed curve (smoothstep: eased in and landing, ~300 ms, and back so), up to
+ * MENU > AUDIO > OCT BEND's semitones (kx_semi; OFF: no expression keys). Into the track's pitch bend (voice.c kx_q8,
+ * beside MIDI's): every engine follows, DRUM none. Recording, they are automation of P_XPR (the gates: the same curves
+ * play back); MIDI OUT ALL sends them as CC1 (the vibrato's depth) and pitch bend (full: the range; set the receiver's
+ * bend range to OCT BEND's) */
+#define KX_BSS __attribute__((section(".bss.kx")))   /* (out of the merged statics, as fx.c's djf: theirs keep their places) */
+static volatile uint8_t kx_g[2] KX_BSS;            /* the keys' gates: tracks (bit i) with OCT- (vibrato), OCT+ (bend) held */
+static volatile uint8_t kx_semi KX_BSS;            /* the bend's range, semitones (0: OFF) */
+static uint16_t kx_amt[NTRK][2] KX_BSS, kx_ph[NTRK] KX_BSS;   /* the ramps (vibrato depth, bend: 0..65535), the vibrato's phase */
+static uint8_t kx_mo[NTRK][2] KX_BSS;              /* MIDI OUT's last CC1, bend MSB - 64 */
+#define KX_STEP(ms) (int32_t)(65536u * CTL / ((uint32_t)FS / 1000u * (ms)))   /* a block's step of a ramp of ms */
+static __attribute__((noinline)) void kx_block(void)
+{
+    uint32_t i, k, g;
+    for (i = 0; i < NTRK; i++) {
+        int32_t x, q, v;
+        g = 127u - (uint32_t)trk[i].p[P_XPR];
+        g = ((kx_g[0] >> i) & 1u) | ((kx_g[1] >> i) & 1u) << 1 | (g < 4u ? g : 0u);
+        if (drum_track(&trk[i]))
+            g = 0;
+        for (k = 0; k < 2u; k++)
+            kx_amt[i][k] = (uint16_t)clamp(kx_amt[i][k] + ((g >> k) & 1u ? 1 : -1) * (k ? KX_STEP(300) : KX_STEP(200)), 0, 65535);
+        kx_ph[i] = (uint16_t)(kx_amt[i][0] ? kx_ph[i] + 65536u * 11u * CTL / 2u / (uint32_t)FS : 0u);   /* 5.5 Hz, from its middle */
+        q = (int16_t)kx_ph[i];
+        x = (kx_amt[i][1] + 8) >> 4;                /* Q12 (0..4096) */
+        x = (x * x >> 12) * (3 * 4096 - 2 * x) >> 12;   /* smoothstep */
+        v = q * (32768 - (q < 0 ? -q : q)) >> 13;   /* a sine, near enough (Q15) */
+        kx_q8[i] = ((90 * (int32_t)kx_amt[i][0] >> 16) * v >> 15) + ((int32_t)kx_semi * x >> 4);
+        if (mo_lvl != MO_ALL)
+            continue;
+        q = kx_amt[i][0] >> 9;
+        v = kx_semi ? x * 63 >> 12 : 0;             /* (the bend's MSB above the middle: 0..63) */
+        if (q != kx_mo[i][0])
+            mo_send(0xB0u | i, 1u, (uint32_t)(kx_mo[i][0] = (uint8_t)q));   /* (track i: channel i, trk_midi_ch) */
+        if (v != kx_mo[i][1])
+            mo_send(0xE0u | i, 0u, (uint32_t)(kx_mo[i][1] = (uint8_t)v) + 64u);
     }
 }
 
@@ -778,6 +822,54 @@ static uint8_t rec_at, rec_late;                        /* (0.8.5) the step (pla
 #else
 #define REC_LAT 0                                        /* (the host's tests, the emulator: no DAC between) */
 #endif
+/* (V10.6z4, the owner: "the feel of how I play is never recorded") a held note's end as played: its length (from where
+ * it was played, rh_p; its start where it was recorded, MICRO) into the LEN of the step it ends in (n/16, CT_LEN; a TIE's
+ * too), the last TIE given back when it ends in that one's first 1/32 (or before it: a quantised start); held to the
+ * step's end, the track's GATE (it reaches the next step: 0 at 120 and up, else 15/16). A legato (the next note down
+ * before this one is up, rec_legato): held to it, and on LEGATO / UNISON with SLIDE, so it plays back as one envelope
+ * gliding (GLIDE's time; 0: SLIDE's ~45 ms) as the keys played it; MONO and POLY retrigger, touching */
+static void rec_len(track_t *t, step_t *s, int32_t e, int32_t l)
+{
+    int32_t v = l > 0 ? (e * 16 + l / 2) / l : 16;
+    s->ctime = (uint8_t)((s->ctime & 7u) | (uint32_t)(v >= 16 ? (t->p[P_SGATE] >= 120 ? 0 : 15) : v < 1 ? 1 : v) << 3);
+}
+static __attribute__((noinline)) void rec_end(track_t *t)
+{
+    uint32_t len = t->p[P_SLEN] > 0 ? (uint32_t)t->p[P_SLEN] : 1u, period = div_samples((uint32_t)t->p[P_SDIV]);
+    uint32_t i = t->seq_idx % len, s0 = t->rh_start % len, tie = t->rh_ties, j;
+    int32_t l = (int32_t)step_samples(t, period, i), e = (int32_t)t->seq_pos - (int32_t)t->ext - REC_LAT - t->rh_p, o = 0;
+    if (tie)                                        /* in its last tie: where it started as recorded (MICRO) */
+        o = ST_MICRO(&t->step[seq_src(t, s0)]) * (int32_t)step_samples(t, period, s0) / 64;
+    else if (i != s0) {                             /* (recorded into the next step, not in it yet) */
+        e -= l;
+        i = s0;
+        l = (int32_t)step_samples(t, period, i);
+    }
+    if (tie && (e + o) * 32 < l) {                  /* it ends in that tie's first 1/32 (or before: a quantised
+                                                     * start): the tie as it was, the step before to its end */
+        if (seq_src(t, i) == t->rh_last)
+            t->step[t->rh_last] = t->rh_bak;
+        tie = --t->rh_ties;
+        i = (i ? i : len) - 1u;
+        l = (int32_t)step_samples(t, period, i);
+        e += l;
+    }
+    if (tie)
+        e += o;                                     /* (a tie: from its place; the note's own step: its length) */
+    j = seq_src(t, i);
+    if (j < NSTEP && (t->step[j].time == ST_TIE || (t->step[j].time == ST_NOTE && i == s0)))
+        rec_len(t, &t->step[j], e, l);
+}
+static void rec_legato(track_t *t, uint32_t p)  /* p: the step before the next note's (play index), the held one's last */
+{
+    step_t *s = &t->step[seq_src(t, p)];
+    uint32_t m = trk_vmode(t);
+    if (p != t->rh_start && (!t->rh_ties || s->time != ST_TIE))
+        return;
+    rec_len(t, s, 1, 0);
+    if (m == V_LEGATO || m == V_UNISON)
+        s->flags |= SF_SLIDE;
+}
 static void rec_note_at(track_t *t, uint32_t note, uint32_t vel)
 {
     uint32_t len = t->p[P_SLEN] > 0 ? (uint32_t)t->p[P_SLEN] : 1u, idx = t->seq_idx % len, k;
@@ -786,7 +878,8 @@ static void rec_note_at(track_t *t, uint32_t note, uint32_t vel)
                  - REC_LAT;                         /* (p8, the owner: live notes landed late) what was heard: the
                                                          * sequencer a half buffer and a block ahead of the DAC, the key
                                                          * up to a half more: the press placed where its sound was heard */
-    uint32_t next = t->seq_pos < 0x7FFFFFFFu && gp > (int32_t)(sl / 2u);
+    uint32_t next = gp > (int32_t)(sl / 2u);       /* (V10.6z4: the block PLAY starts in, before its first step,
+                                                     * seq_pos 0x7FFFFFFF: into step 1, was the last step) */
     int32_t mic = 0;
     step_t *s;
     if (next)
@@ -816,6 +909,7 @@ static void rec_note_at(track_t *t, uint32_t note, uint32_t vel)
         s->flags = 0;
         s->vel = 0;
         s->lm[0] = s->lm[1] = s->lm[2] = 0;         /* (p1: no note of it once) */
+        s->ctime &= 7u;                             /* (V10.6z4) LEN: the track's GATE until the release says (rec_end) */
         ST_MICRO_SET(s, mic);                       /* (0.6.88) its place off the grid (REC Q) */
     }
     for (k = 0; k < s->n && s->note[k] != note; k++)
@@ -830,7 +924,7 @@ static void rec_note_at(track_t *t, uint32_t note, uint32_t vel)
         step_set_lmode(s, s->n - 1u, rep ? LM_ONCE : LM_NONE);
     }
     s->time = ST_NOTE;
-    if (vel > 110)
+    if (vel > 126)                                  /* (V10.6z4: an accent plays 127; 111..126 came back 127) */
         s->flags |= SF_ACCENT;
     if (vel > s->vel)
         s->vel = (uint8_t)vel;
@@ -843,9 +937,12 @@ static void rec_note_at(track_t *t, uint32_t note, uint32_t vel)
             t->rskip[t->rskip_n++] = (uint8_t)note;
     }
     if (!t->rh_n || t->rh_start != idx) {           /* a new hold (one in another step ends) */
+        if (t->rh_n)                                /* (V10.6z4) .. still held: a legato, into this one */
+            rec_legato(t, (idx ? idx : len) - 1u);
         t->rh_n = 0;
         t->rh_start = (uint8_t)idx;
         t->rh_ties = 0;
+        t->rh_p = (int16_t)(t->seq_pos < 0x7FFFFFFFu ? clamp(next ? gp - (int32_t)sl : gp, -32768, 32767) : 0);
     }
     for (k = 0; k < t->rh_n && t->rh_note[k] != note; k++)
         ;
@@ -876,6 +973,7 @@ static void rec_hold(track_t *t, uint32_t idx, uint32_t len)
     s->time = ST_TIE;
     s->flags &= SF_MFINE;                           /* (0.9.1: MICRO kept whole, as its sixteenth in cwhen) */
     s->vel = 0;
+    s->ctime = 0;                                   /* (V10.6z4: a TIE's LEN is where the note ends: rec_end) */
     s->hit = s->acc = 0;
     s->lm[0] = s->lm[1] = s->lm[2] = 0;
 }
@@ -902,9 +1000,8 @@ static void rec_release_at(track_t *t, uint32_t note)
             t->rh_note[k++] = t->rh_note[i];
     if (k == t->rh_n || (t->rh_n = (uint8_t)k))
         return;                                     /* not one of them, or others still held */
-    if (t->rh_ties && seq_src(t, t->seq_idx) == t->rh_last &&
-        t->seq_pos < step_samples(t, div_samples((uint32_t)t->p[P_SDIV]), t->seq_idx) / 2u)
-        t->step[t->rh_last] = t->rh_bak;            /* released early in it: not held into this step */
+    rec_end(t);                                     /* (V10.6z4) its length, as held (was: the steps it reached, a
+                                                     * tie kept past its middle; one step, the track's GATE) */
 }
 static void rec_release(track_t *t, uint32_t note)
 {
@@ -2365,6 +2462,9 @@ static void seq_release(track_t *t)
     uint32_t i;
     for (i = 0; i < t->seq_n; i++)
         seq_note_off(t, t->seq_notes[i]);
+    for (i = t->ss_i; i < t->ss_n; i++)             /* (V10.6z4) a slide's note-off still queued (seq_step) */
+        if (!t->ss_vv[i])
+            seq_note_off(t, t->ss_nn[i]);
     t->seq_n = 0;
     t->seq_hold = 0;
     t->slide_glide = 0;                             /* live MONO / LEG keys must not glide after it */
@@ -2582,7 +2682,8 @@ static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint
         vel = (s->flags & SF_ACCENT) ? 127u : (s->vel ? s->vel : 96u);
     } else if (s->time == ST_TIE) {
         if (t->seq_n) {
-            t->seq_off = gate + unit / 2u + ev_off;
+            t->seq_off = (CT_LEN(s) ? unit * CT_LEN(s) / 16u : gate + unit / 2u) + ev_off;   /* (V10.6z4) LEN: where the
+                                                         * held note ends in it (rec_end) */
             t->seq_hold = (s->flags & SF_SLIDE) != 0 || next_tie || chord_auto(t, len);   /* chains hold at any GATE /
                                                          * swing; (0.6.81) GLIDE on POLY: to the next chord */
         }
@@ -2714,7 +2815,8 @@ static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint
             uint32_t d = hum_rnd() % (HUM_TMAX * ht / 127u + 1u), cap = unit / 3u;
             hdel = d < cap ? d : cap;
         }
-        if (t->mic > 0 && hits == 1u && !bend && !slide_in && !(skip & SEQ_REP))   /* (0.6.88) TIMING late: on top */
+        if (t->mic > 0 && hits == 1u && !bend && !(skip & SEQ_REP))   /* (0.6.88) TIMING late: on top (V10.6z4: a SLIDE
+                                                         * into it too: the note before held to it, below) */
             hdel += fit_scale_samples(step_samples(t, period, t->seq_idx), (uint32_t)t->mic, 6u);   /* (0.9.1: 64ths) */
     }
     sk0 = sk;                                       /* (the notes the step sounds, strummed or not: seq_notes) */
@@ -2795,7 +2897,13 @@ static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint
         for (i = 0; i < t->seq_n; i++) {
             for (j = 0; j < m && nn[j] != t->seq_notes[i]; j++)
                 ;
-            if (j == m)
+            if (j < m)
+                continue;
+            if (hdel && t->ss_n < sizeof t->ss_nn) {   /* (V10.6z4) the slide's note late: this one up as it comes
+                                                         * in (seq_due: a velocity 0 is a note-off), legato */
+                t->ss_nn[t->ss_n] = t->seq_notes[i];
+                t->ss_vv[t->ss_n++] = 0;
+            } else
                 seq_note_off(t, t->seq_notes[i]);
         }
     t->seq_n = 0;
@@ -2904,7 +3012,10 @@ static void seq_due(track_t *t, uint32_t n)
                 if (lt)
                     t->dtch = (uint8_t)lt;
             }
-            seq_note_on(t, t->ss_nn[t->ss_i], t->ss_vv[t->ss_i]);
+            if (t->ss_vv[t->ss_i])
+                seq_note_on(t, t->ss_nn[t->ss_i], t->ss_vv[t->ss_i]);
+            else
+                seq_note_off(t, t->ss_nn[t->ss_i]);
             t->dtch = 0;
             t->ss_i++;
             t->ss_due += t->ss_gap;

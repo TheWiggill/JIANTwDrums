@@ -258,7 +258,7 @@ static void up_values(const up_rec_t *r, int16_t *v)   /* mapped and clamped for
     int16_t def[P_COUNT];
     uint32_t i;
     for (i = 0; i < P_COUNT; i++)
-        def[i] = param_desc_of(r->engine, i)->def;
+        def[i] = param_store_def(r->engine, i);
     up_params(r, v, def);
     for (i = 0; i < P_COUNT; i++)
         v[i] = (int16_t)param_fit(param_desc_of(r->engine, i), v[i]);   /* (a retired KIT: the kit it plays) */

@@ -1613,6 +1613,7 @@ static uint32_t voice_block(track_t *t, const engine_t *e, voice_t *v, int32_t *
 /* render one block of a part into out (cleared here); returns the voices rendered */
 /* Channel bend is live performance state, outside projects/presets. Q8 semitones. */
 static int32_t midi_bend_q8[NTRK], midi_bend_target[NTRK];
+static int32_t kx_q8[NTRK] __attribute__((section(".bss.kx")));                             /* (V10.6z4) OCT- / OCT+ held on a note: seq.c kx_block */
 static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
 {
     const engine_t *e = ENGINES[t->engine];
@@ -1631,7 +1632,7 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
         /* ~6 ms smoothing, with an exact landing (no permanent small offset); (ctl64: a quarter a block of 32, a half of 64) */
         midi_bend_q8[ti] += d > 0 ? (d < 4 ? d : (d + 3) / (128 / (int32_t)CTL)) : (d > -4 ? d : (d - 3) / (128 / (int32_t)CTL));
     }
-    bend = midi_bend_q8[ti];
+    bend = midi_bend_q8[ti] + kx_q8[ti];
     bend16 = bend >= 0 ? bend / 16 : -((-bend + 15) / 16);
     bend_fine = (bend - bend16 * 16) * 2367 / 2560;
     uint32_t nr = 0, fade = t->xf_on && t->xf, snap = fade && xf_snap_t == ti;

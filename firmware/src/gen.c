@@ -221,7 +221,7 @@ static uint32_t gq_fix(const gch_t *c, uint32_t q)
 }
 /* a progression the mode and the genre take: every chord major or minor (ii and vii diminished in jazz and film), a
  * secondary dominant only where the genre has them, a borrowed chord only where it borrows */
-static int gprog_ok(const gprog_t *p)
+BTAPP_FN static int gprog_ok(const gprog_t *p)   /* (V10.6z4: gen_pick's only, in the segment with it) */
 {
     uint32_t k;
     for (k = 0; k < p->n; k++) {

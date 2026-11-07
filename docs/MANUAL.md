@@ -135,6 +135,7 @@ layer's shortcuts; on the DRUM grid they are steps and lanes; on the NAME screen
 | Step keys held (SEQ, the roll / grid) + **SELECT** / a step key + **REC** | **COPY** those steps / **PASTE** them from that step (see Copy and paste). |
 | **OCT− + OCT+** held at power-on | HARDWARE CALIBRATION. |
 | **OCT− + OCT+** held 5 s while running | Update mode (UBOOT), with a countdown from 2 s; let go to cancel. |
+| A note held + **OCT−** / **OCT+** (V10.6z4) | **Expression keys**: OCT− held fades in a vibrato like raising a mod wheel (~200 ms), OCT+ held bends the note up along a fixed smooth curve (~300 ms) to MENU > AUDIO > **OCT BEND**'s range (default 2 semitones); both ease back when let go. With no note held, OCT− / OCT+ change the octave as ever (OCT BEND OFF: always). Recorded as automation while recording (REC + EDIT clears it); with MIDI OUT ALL sent as CC1 and pitch bend (set the receiver's bend range to OCT BEND's). Both held on a note never starts UBOOT. |
 
 ---
 
@@ -1050,6 +1051,14 @@ Press **REC** anywhere (not on STEP while stopped): the track is armed and the t
 recorded into the pattern, quantized to its steps, overdubbing. Knob moves on the selected track are recorded as
 **automation**. MENU > AUDIO has the **CLICK** (OFF / REC / ON), **CLICK LEVEL** and **COUNT-IN** (OFF, 1 BAR, 2 BARS).
 
+How a note is held is recorded too (V10.6z4): its **length** goes into the step it ends in (the step's LEN, in 1/16 of a
+step; a note held to the step's end, or tied, plays the track's GATE), a **legato** (the next key down before the last
+one is up) on a LEGATO / UNISON track records a **SLIDE** so it plays back as one gliding envelope, even when the next
+note came in late (MONO and POLY: the notes touch, retriggered), and the **velocity** is kept as played (only 127 marks an
+accent; 111–126 used to come back as 127). REC Q (100 % by default) snaps where notes start, not how long they are; set
+it to 0 % (REC + B3) to keep your timing too. A note played in the very first moment after PLAY goes to step 1 (it went
+to the last step).
+
 ### Pattern pages
 
 - **COMP** (step components v2, 0.9.9-seq2d): up to two per step, **COMP** the first (C1), **COMP 2** the second
@@ -1109,7 +1118,10 @@ recorded into the pattern, quantized to its steps, overdubbing. Knob moves on th
   how much of it (127: all of it). A chord held over TIEs on slow steps (e.g. DIV 1/4 at 120 BPM: ten steps, 5 s)
   slides that slowly and smoothly; new notes fade in as they glide.
 - **PATTERN** (the PATTERN group's first page): LEN (1–64), DIV, SWING, GATE — the pattern's length, its step's note value, its
-  swing and the length of every note (a step's own length: STEP's TIE, or MICRO for its start).
+  swing and the length of every note (a step's own length: STEP's TIE, or MICRO for its start). GATE is **100 %** for new
+  tracks (V10.6z4; INIT, a new project, power-on; was 50 %): notes play their whole step and retrigger the next one (a
+  SLIDE or TIE makes them legato). Projects and user presets keep the GATE they were saved with (one saved at 50 % loads
+  50 %); clearing steps leaves GATE as it is; GEN sets its own per part.
 - **Moving a note or a chord** that came in early or late: **NOTE**, KNOB 1 FOCUS on the step, KNOB 3 **MOVE** moves
   it sideways a step at a time (FOCUS ALL: the whole chord with its TIEs; one note focused: that note alone).
 - **STRETCH** (0.6.85; the PATTERN group, after PATTERN): reshapes the whole sequence of the selected track **as the knob turns** (0.6.92;
@@ -2111,6 +2123,7 @@ the footer **MENU · DISPLAY · SKIN  2/26**. The header says MENU · DISPLAY.
 | AUDIO | CLICK LEVEL | LOW, MID, HIGH |
 | AUDIO | COUNT-IN | OFF, 1 BAR, 2 BARS |
 | AUDIO | TRACKS | **4** (default), 6 |
+| AUDIO | OCT BEND | OFF, 1, **2** (default), 3, 4, 5, 7, 12 ST — (V10.6z4) the expression keys: OCT+ held on a note bends up this far, OCT− a vibrato; OFF: OCT is the octave even with a note held (see Useful combinations) |
 | SYSTEM | USB | CONSOLE (the serial console with stereo USB audio, the default; was USB SERIAL ON), STEREO (audio + MIDI only, class 0; was OFF: helps macOS 13–15 see the USB audio input), STEMS (0.7.1: an 8-channel audio input, see "Stems" below), IN+OUT (0.7.5: stereo audio both ways, see "USB audio in" below), STEMS+IN (0.8.0: the stems with the audio output too, see "Stems with a voice" below) |
 | SYSTEM | RESTORE LAST | **OFF** (default: no autosave, power-on at zero), ON (the last session back at power-on) |
 | SYSTEM | LOAD | ECO, LITE, **FULL** (default) |

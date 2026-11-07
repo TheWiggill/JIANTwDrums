@@ -124,6 +124,13 @@ jobs:
           set -euo pipefail
           cc -O1 -g -w -Wno-implicit-function-declaration -fsanitize=address,bounds -Ibuild/gen -Ifirmware/src tests/app_contract_test.c -lm -o build/song-check/app-contract
           ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 build/song-check/app-contract | tee build/song-check/app-contract.log
+      - name: Expression keys and the feel of live recording (V10.6z4)
+        run: |
+          set -euo pipefail
+          cc -O1 -g -w -Wno-implicit-function-declaration -fsanitize=address,bounds -Ibuild/gen -Ifirmware/src tests/expr_keys_test.c -lm -o build/song-check/expr-keys
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 build/song-check/expr-keys | tee build/song-check/expr-keys.log
+          cc -O1 -g -w -Wno-implicit-function-declaration -fsanitize=address,bounds -Ibuild/gen -Ifirmware/src tests/legato_rec_test.c -lm -o build/song-check/legato-rec
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 LEGATO_REC_VERBOSE=1 build/song-check/legato-rec | tee build/song-check/legato-rec.log
       - name: Verified pre-split baseline for UI regression comparison
         uses: actions/checkout@v4
         with:

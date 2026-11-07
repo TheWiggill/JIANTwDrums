@@ -130,7 +130,7 @@ static const param_desc_t TP[P_COUNT] = {
     [P_SLEN] = PD("LEN", F_STEPS, 1, NSTEP, 16),
     [P_SDIV] = PE("DIV", N_DIV, 2),
     [P_SSWING] = PD("SWING", F_PCT, 0, 100, 0),
-    [P_SGATE] = PD("GATE", F_PCT, 1, 127, 64),
+    [P_SGATE] = PD("GATE", F_PCT, 1, 127, 127),   /* (V10.6z4, the owner: 100 %, was 50 %; stored as before: param_store_def) */
     [P_DIST] = PD("DIST", F_PCT, 0, 127, 0),
     [P_CHOR] = PD("CHORUS", F_PCT, 0, 127, 0),
     [P_DLY] = PD("DLY", F_PCT, 0, 127, 0),
@@ -336,6 +336,13 @@ static const param_desc_t *track_desc(const track_t *t, uint32_t id)
 static const param_desc_t *param_desc_of(uint32_t e, uint32_t id)
 {
     return id >= P_E0 ? &ENGINES[e]->edit[id - P_E0] : &TP[id];
+}
+/* (V10.6z4) the default a store (projects, user presets) leaves out or fills in: GATE's 50 % as every store before
+ * (its value then not written), so one saved at the old default loads 50 %, a new track's 100 % is written */
+#define GATE_STORE_DEF 64
+static int16_t param_store_def(uint32_t e, uint32_t id)
+{
+    return id == P_SGATE ? GATE_STORE_DEF : param_desc_of(e, id)->def;
 }
 
 /* a retired F_ENUM value kept as an alias (the sample engines' SET / SRC aliases left with them in JIANT): none now.

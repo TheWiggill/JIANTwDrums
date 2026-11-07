@@ -289,7 +289,8 @@ static uint32_t motion_thin(uint32_t m)
         for (i = 0; i < motion.count; i++) {
             const motion_event_t *e = &motion.event[i];
             id = e->param;
-            if (MOTION_TRK(e) != k || id >= P_COUNT || ((seen[id / 32u] >> (id % 32u)) & 1u)) continue;
+            if (MOTION_TRK(e) != k || id >= P_COUNT || ((seen[id / 32u] >> (id % 32u)) & 1u) ||
+                (id == P_XPR && !drum_track(&trk[k]))) continue;   /* (V10.6z4: the expression keys' gates, kept) */
             seen[id / 32u] |= 1u << (id % 32u);
             { const param_desc_t *d = motion_desc(&trk[k], id); gone += motion_thin_id(k, id, (d->max - d->min) / 32 + 1); }
             i = (uint32_t)-1;                             /* (the records moved: from the start, the ids done skipped) */

@@ -182,6 +182,9 @@ enum {                          /* per-track parameters */
  * place (vcons_rank, params.c param_turn) is the value + 33, mod 128 (127 at 32: 50 .. 98 % left of it, 103 .. 400 %
  * right). vcons_q6: the length, 1/64 (sing.c sy_enter) */
 #define P_VCONS P_LN1
+/* (V10.6z4) a synth's expression keys as the sequencer recorded them (seq.c kx_block, ui_input.c kx_frame), in DRUM-X's
+ * lane 8 level (127 every synth part holds): 127 - (bit 0 OCT- VIBRATO, bit 1 OCT+ BEND), automation only */
+#define P_XPR P_LN7
 static inline uint32_t vcons_rank(int32_t v) { return ((uint32_t)v + 33u) & 127u; }
 static inline uint32_t vcons_q6(int32_t v)
 {
@@ -751,6 +754,8 @@ typedef struct track {
     uint8_t engine, preset;      /* engine: what the audio ISR renders */
     uint8_t eng_req;             /* engine the UI asked for (the ISR switches at a block start) */
     uint8_t user;                /* user preset slot + 1 the sound came from (UI), 0 = none */
+    int16_t rh_p;                /* (V10.6z4, in what was padding) a recorded held note: where it was played, samples from
+                                  * its step's place (seq.c rec_end: its length) */
     voice_t v[NVOICE];
     /* LFO */
     uint32_t lfo_ph;

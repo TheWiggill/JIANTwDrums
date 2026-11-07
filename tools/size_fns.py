@@ -102,11 +102,24 @@ def main(src, dst):
     isr = isr_reach(ir)
     # Sparse MIDI control dispatch runs per received message, never per rendered sample.
     # Keep synthesis, clocks, DMA, note release and ownership queries at -Os.
-    input_size = {"midi_event", "midi_control", "midi_cc_map", "midi_cc_set", "midi_learned", "midi_route_ch14"}
+    input_size = {"midi_event", "midi_control", "midi_cc_map", "midi_cc_set", "midi_learned", "midi_route_ch14",
+                  # (V10.6z4) live recording: once a note, a release or a step a held note reaches (seq.c), never a sample
+                  "rec_note_at", "rec_end", "rec_drum", "rec_hold", "rec_len", "rec_repeats", "cin_keep", "dxo_rec_hold",
+                  # .. and what runs once a transport start / stop, a section or song row, a chord or scene key, a
+                  # punch-in press, an automation record (the UI's calls, the ISR's few)
+                  "chord_build_mode", "scene_key", "scn_notes", "seq_start", "seq_stop", "motion_capture", "motion_put",
+                  "motion_djf_set", "sec_apply", "chain_apply", "midi_nrpn",
+                  "perf_press", "perf_switch", "cin_record", "cin_block", "latch_release", "scene_capture",
+                  "srec_finish", "srec_add",
+                  # .. and a track's step (its components, its automation): once a step, a pass
+                  "motion_step", "motion_unlock", "motion_restore", "seq_step",
+                  "arp_pick", "dxp_fire", "pfx_fire", "fg_play", "midi_clock_pulse", "rev_state_clear", "mo_knobs",
+                  "mo_flush_of"}
     cold_ui = {"mod_dst_ok", "mod_dst_offer_bt", "mod_dst_name_bt", "gen_value", "gen_cards_bt", "gen_panel_bt",
                "song_remove_parts", "song_copy_section",
                "proj_unpack_bt", "about_load", "bt_prox_panel", "bt_prox_input",
-               "fm4_abs", "fm4_lg", "fm4_ms", "fm4_samples", "fm4_rate", "fm4_fall", "fm4_level", "fm4_outlevel", "fm4_convert_bt"}
+               "fm4_abs", "fm4_lg", "fm4_ms", "fm4_samples", "fm4_rate", "fm4_fall", "fm4_level", "fm4_outlevel", "fm4_convert_bt",
+               "crash_log_put", "cpu_status", "cpu_put"}   # (V10.6z4: a crash's record, the CPU menu)
     names, hit = ((size_names() | cold_ui) - isr) | input_size, set()
     def mark(m):
         if m.group(2) not in names:

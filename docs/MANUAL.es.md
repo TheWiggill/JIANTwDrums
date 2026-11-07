@@ -138,6 +138,7 @@ atajos de esa capa; en la grilla DRUM son pasos y carriles; en la pantalla NAME 
 | Teclas de paso mantenidas (SEQ, el roll / la grilla) + **SELECT** / una tecla de paso + **REC** | **COPIAR** esos pasos / **PEGARLOS** desde ese paso (ver Copiar y pegar). |
 | **OCT− + OCT+** mantenidos al encender | HARDWARE CALIBRATION. |
 | **OCT− + OCT+** mantenidos 5 s con el equipo funcionando | Modo de actualización (UBOOT), con una cuenta regresiva desde los 2 s; soltá para cancelar. |
+| Una nota mantenida + **OCT−** / **OCT+** (V10.6z4) | **Teclas de expresión**: OCT− mantenido hace entrar un vibrato como al subir una rueda de modulación (~200 ms), OCT+ mantenido dobla la nota hacia arriba con una curva suave fija (~300 ms) hasta el rango de MENU > AUDIO > **OCT BEND** (2 semitonos por defecto); al soltar vuelven solas. Sin ninguna nota mantenida, OCT− / OCT+ cambian la octava como siempre (OCT BEND OFF: siempre). Se graban como automatización al grabar (REC + EDIT la borra); con MIDI OUT ALL salen como CC1 y pitch bend (poné el rango de bend del receptor igual al de OCT BEND). Las dos mantenidas sobre una nota nunca inician UBOOT. |
 
 ---
 
@@ -1097,6 +1098,14 @@ Lo que tocás se graba en el patrón, cuantizado a sus pasos, en overdub. Los mo
 seleccionada se graban como **automatización**. MENU > AUDIO tiene el **CLICK** (OFF / REC / ON), **CLICK LEVEL** y
 **COUNT-IN** (OFF, 1 BAR, 2 BARS).
 
+También se graba cómo mantenés cada nota (V10.6z4): su **duración** va al paso donde termina (el LEN del paso, en 1/16
+de paso; una nota mantenida hasta el final del paso, o ligada, toca el GATE de la pista), un **legato** (la tecla
+siguiente apretada antes de soltar la anterior) en una pista LEGATO / UNISON graba un **SLIDE**, así vuelve como una sola
+envolvente que se desliza, aunque la nota siguiente haya entrado tarde (MONO y POLY: las notas se tocan, con nuevo
+ataque), y la **velocity** queda como la tocaste (solo 127 marca acento; 111–126 volvían como 127). REC Q (100 % por
+defecto) cuantiza dónde empiezan las notas, no cuánto duran; ponelo en 0 % (REC + B3) para conservar también tu
+timing. Una nota tocada justo en el primer instante después de PLAY va al paso 1 (iba al último).
+
 ### Páginas de patrón
 
 - **COMP** (step components v2, 0.9.9-seq2d): hasta dos por paso, **COMP** el primero (C1), **COMP 2** el segundo
@@ -1160,7 +1169,10 @@ seleccionada se graban como **automatización**. MENU > AUDIO tiene el **CLICK**
   fija cuánto de ese tramo (127: todo). Un acorde sostenido con TIEs en pasos lentos (p. ej. DIV 1/4 a 120 BPM: diez
   pasos, 5 s) se desliza así de lento y suave; las notas nuevas aparecen a medida que se deslizan.
 - **PATTERN** (la primera página del grupo PATTERN): LEN (1–64), DIV, SWING, GATE — el largo del patrón, la figura de su paso, su
-  swing y la duración de todas las notas (la de un paso solo: el TIE de STEP, o MICRO para su entrada).
+  swing y la duración de todas las notas (la de un paso solo: el TIE de STEP, o MICRO para su entrada). GATE es **100 %**
+  en las pistas nuevas (V10.6z4; INIT, proyecto nuevo, encendido; antes 50 %): las notas duran todo su paso y la siguiente
+  vuelve a atacar (un SLIDE o un TIE las hace legato). Los proyectos y presets de usuario conservan el GATE con que se
+  guardaron (uno guardado al 50 % carga al 50 %); borrar pasos no toca el GATE; GEN pone el suyo en cada parte.
 - **Mover una nota o un acorde** que entró antes o después: **NOTE**, KNOB 1 FOCUS en el paso, KNOB 3 **MOVE** lo
   corre de a un paso a los costados (FOCUS ALL: el acorde entero con sus TIE; una nota enfocada: esa sola).
 - **STRETCH** (0.6.85; grupo PATTERN, después de PATTERN): cambia la forma de toda la secuencia de la pista elegida **mientras girás la
@@ -2241,6 +2253,7 @@ SKIN  2/26**. El encabezado dice MENU · DISPLAY.
 | AUDIO | CLICK LEVEL | LOW, MID, HIGH |
 | AUDIO | COUNT-IN | OFF, 1 BAR, 2 BARS |
 | AUDIO | TRACKS | **4** (por defecto), 6 |
+| AUDIO | OCT BEND | OFF, 1, **2** (por defecto), 3, 4, 5, 7, 12 ST — (V10.6z4) las teclas de expresión: OCT+ mantenido sobre una nota dobla hasta acá, OCT− un vibrato; OFF: OCT es la octava aunque haya una nota mantenida (ver Combinaciones útiles) |
 | SYSTEM | USB | CONSOLE (la consola serie con audio USB estéreo, por defecto; era USB SERIAL ON), STEREO (solo audio + MIDI, clase 0; era OFF: ayuda a que macOS 13–15 vea la entrada de audio USB), STEMS (0.7.1: entrada de audio de 8 canales, ver "Stems" más abajo), IN+OUT (0.7.5: audio estéreo en los dos sentidos, ver "Entrada de audio USB" más abajo), STEMS+IN (0.8.0: los stems con la salida de audio también, ver "Stems con una voz" más abajo) |
 | SYSTEM | RESTORE LAST | **OFF** (por defecto: sin autoguardado, el encendido arranca en cero), ON (la última sesión vuelve al encender) |
 | SYSTEM | LOAD | ECO, LITE, **FULL** (por defecto) |
