@@ -207,7 +207,7 @@ static const preset_t PHASE_PRESETS[] = {
      * BELL TOWER WIRE), a bare INIT SAW (browsed in PHASE_ORDER). The track's CUT / SHP / FILTER ENV move DCW here */
     {"BRASS", {0, 0, 32, 90, 6, 0, 0, 0}, {20, 70, 95, 42}, 0, TAG(LEAD), FX(0, 20, 20, 40), PAT(6),
      MODS(P_LRATE, 88, P_LFADE, 74, MMOD(1, PS_MODW, PD_VIB, 2), MMOD(2, PS_VEL, PD_CUT, 16))},
-    {"ORGAN", {3, 0, 40, 0, 0, 0, 0, 0}, {2, 127, 127, 28}, 0, TAG(KEYS), FX(0, 40, 0, 30), PAT(6),
+    {"ORGAN", {3, 0, 40, 0, 0, 0, 0, 0}, {2, 40, 64, 28}, 0, TAG(KEYS), FX(0, 40, 0, 30), PAT(6),
      MODS(P_LRATE, 70, P_LD_SHP, 3, MMOD(1, PS_MODW, PD_LRATE, 20))},          /* MODW: the rotor fast */
     {"STRING", {0, 4, 50, 40, 12, 0, 0, 0}, {55, 90, 110, 80}, 0, TAG(PAD), FX(0, 50, 20, 60), PAT(5),
      MODS(P_LRATE, 30, P_LD_SHP, 5, MMOD(1, PS_AT, PD_CUT, 20))},
@@ -231,7 +231,7 @@ static const preset_t PHASE_PRESETS[] = {
      MODS(MMOD(1, PS_MODW, PD_CUT, 20))},
     {"DIGI STAB", {4, 2, 75, 70, 0, 1, 0, 0}, {0, 55, 20, 40}, 0, TAG(KEYS), FX(5, 10, 45, 40), PAT(6),
      MODS(MMOD(1, PS_VEL, PD_CUT, 20))},
-    {"INIT SAW", {0, 0, 64, 0, 0, 0, 0, 0}, {0, 64, 127, 20}, 0, TAG(LEAD), FX(0, 0, 0, 0)},   /* (was SYN BASS) */
+    {"INIT SAW", {0, 0, 64, 0, 0, 0, 0, 0}, {0, 64, 66, 20}, 0, TAG(LEAD), FX(0, 0, 0, 0)},   /* (was SYN BASS) */
     {"VOX PAD", {5, 4, 35, 30, 10, 0, 0, 0}, {70, 95, 115, 100}, 0, TAG(PAD), FX(0, 55, 25, 70), PAT(5), BREATHE(14, 0, 0),
      MODS(MMOD(1, PS_AT, PD_E(2), 16))},                                       /* AT: the vowel opens */
     {"HARP", {3, 0, 70, 90, 0, 0, 0, 0}, {0, 85, 0, 70}, 0, TAG(PLUCK), FX(0, 15, 40, 55), PAT(3),

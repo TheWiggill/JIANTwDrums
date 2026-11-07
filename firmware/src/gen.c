@@ -103,7 +103,9 @@ static void gclear(step_t *s) { memset(s, 0, sizeof *s); s->time = ST_REST; }
 /* (0.8.6) EXPLORE: on (this piece is EXPLORE's), the engine gen_sound takes (-1: the recipe's); (V10.6n) its oddities
  * (GXO_: one or two a piece) and the role that is the odd one (its timbre, its components or its playhead) */
 static struct { uint8_t on, odd, orole; int8_t eng; } gx = {0, 0, 0, -1};
-enum { GXO_POLY = 1, GXO_SCALE = 2, GXO_TIMBRE = 4, GXO_TEMPO = 8, GXO_GLITCH = 16, GXO_FLOAT = 32, GXO_COMPS = 64, GXO_HEAD = 128 };
+enum { GXO_POLY = 1, GXO_SCALE = 2, GXO_TIMBRE = 4, GXO_TEMPO = 8, GXO_GLITCH = 16, GXO_FLOAT = 32, GXO_AN = 64, GXO_VO = 128 };   /* (the
+                                                         * GENE fix: the components every piece's, the playheads half
+                                                         * the pieces'; the last two bits ANIMAL and VOICE taken: gen_sound) */
 /* (gen5) the club's four on the floor (HOUSE DEEP HOUSE TECH HOUSE, V10.6n: MINIMAL TECHNO's map, the first four): the
  * kick in front, the parts the records give it (no arp, no texture), the stabs' figures off the records */
 static int gclub(void) { return !gx.on && gs.g->drum <= DM_TECHNO; }
@@ -471,12 +473,14 @@ static void gen_drums(track_t *t, uint32_t len)
     gseed(GS_DRUMS);
     gs.kick = gs.snare = 0;
     for (l = 0; l < 8u; l++) map[l] = DRUM_MAP_I[g->drum][l];
-    if ((g->drum < DM_CUMBIA || (gx.on && g->drum < DM_SPARSE)) && g->lead <= LD_NONE) {   /* (0.6.97) a throw's own top end
+    if ((g->drum < DM_CUMBIA || g->fills == FL_LINEAR || (gx.on && g->drum < DM_SPARSE)) && g->lead <= LD_NONE) {   /* (0.6.97) a throw's own top end
                                                          * (gen6: an archetype's as written): the hats, the open hats and
                                                          * the percussion from the pools now and then; the snare and the
                                                          * clap swapped now and then. (V10.6m) The club's four on the floor
                                                          * only (and EXPLORE; V10.6n: by the map, HOUSE .. HBASS): cumbia's,
-                                                         * the dembow's, tribal's, the breaks' patterns are theirs */
+                                                         * the dembow's, tribal's patterns are theirs; (the GENE fix) the
+                                                         * breaks' and drum & bass's back on them (the linear fill's:
+                                                         * their open hats, hats, ghosts) */
         if (gch(50)) map[3] = HAT_POOL_I[gr() % 8u];
         if (gch(40)) map[4] = OH_POOL_I[gr() % 6u];
         if (gch(35)) map[6] = RS_POOL_I[gr() % 6u];
@@ -563,10 +567,11 @@ static void gen_drums(track_t *t, uint32_t len)
     }
     if (GSP_EDIT(g->spec)) gidm_edit(t, len, GSP_EDIT(g->spec));
     {   /* the fill: the phrase's last bar; the genre's kind. (V10.6m) A song's patterns have none: the fill is a row's,
-         * the last loop before the section changes (gen_parts: the fill section's drums, gs.drum_fill) */
+         * the last loop before the section changes (gen_parts: the fill section's drums, gs.drum_fill). (the GENE fix) The
+         * linear fill's genres (breaks, drum & bass) keep it in the loop: their turn is the pattern's second bar */
         uint32_t fl = gs.drum_fill ? gs.drum_fill : g->fills, last = bars - 1u, base = last * 16u, k;
         int32_t e = (int32_t)gs.energy;
-        if (gs.song ? gs.drum_fill != 0u : bars >= 2u && fl != FL_NONE && (bars >= 4u || gch(50))) {
+        if (gs.drum_fill || (!(gs.song && g->fills != FL_LINEAR) && bars >= 2u && fl != FL_NONE && (bars >= 4u || gch(50)))) {
             uint32_t lane = map[1] ? 1u : map[2] ? 2u : 6u;
             switch (fl) {
             case FL_ROLL:
@@ -1491,6 +1496,11 @@ static void gen_sound(track_t *t, uint32_t role, uint32_t ri)
                                                          * first where the third is the FM6: never FM6 again) */
     e = r->o[o][0]; pre = r->o[o][1];
     if (gx.eng >= 0 && (uint32_t)gx.eng != e) { e = (uint32_t)gx.eng; pre = 255; }   /* (0.8.6) EXPLORE: any engine */
+    if (gx.on) {                                        /* (EXPLORE: ANIMAL and VOICE on one track each at most) */
+        uint32_t b = e == ENGI_ANIMAL ? GXO_AN : e == EG_VO ? GXO_VO : 0u;
+        if (gx.odd & b) { e = EG_PH; pre = 255; }
+        gx.odd |= (uint8_t)b;
+    }
     gs.fm6 += e == ENGI_FM6;
     set_engine_of(t, e);
     en = trk_engp(t);
@@ -1828,9 +1838,12 @@ static void gmot(track_t *t, uint32_t step, uint32_t id, int32_t v, int ramp)
 /* (V10.6n) FUGA's kinds: the subject alone (the lead), the answer with it (the arp's track), the bass's entry */
 enum { GT_INTROK, GT_INTRO, GT_GROOVE, GT_BREAK, GT_BUILD, GT_DROP, GT_GROOVE2, GT_OUTRO, GT_V1, GT_V2, GT_V3, GT_SEC };
 #define GTF(cap, bass, nodr, grp) (uint8_t)((cap) | (bass) << 2 | (nodr) << 3 | (grp) << 4)
-static const uint16_t GT_PRIO[GT_SEC] = {0x2, 0x2, 0x324, 0x4532, 0x542, 0x5423, 0x342, 0x2, 0x3, 0x43, 0x43};
-static const uint8_t GT_FL[GT_SEC] = {GTF(0, 0, 0, DXG_SNARE | DXG_PERC), GTF(0, 0, 0, 0), GTF(1, 1, 0, 0), GTF(3, 0, 1, 0),
-                                      GTF(3, 0, 0, 0), GTF(3, 1, 0, 0), GTF(2, 1, 0, 0), GTF(0, 1, 0, 0), GTF(1, 0, 1, 0),
+/* (the fix of V10.6m's bare intros: four bars of kick and hats, then drums alone, read as nothing happening) the
+ * opening row the drums with their snare (the percussion out) and the chords or the texture; the next the bass and two
+ * layers; the grooves two; the outro one */
+static const uint16_t GT_PRIO[GT_SEC] = {0x452, 0x5342, 0x342, 0x4532, 0x542, 0x5423, 0x432, 0x2, 0x3, 0x43, 0x43};
+static const uint8_t GT_FL[GT_SEC] = {GTF(1, 0, 0, DXG_PERC), GTF(2, 1, 0, 0), GTF(2, 1, 0, 0), GTF(3, 0, 1, 0),
+                                      GTF(3, 0, 0, 0), GTF(3, 1, 0, 0), GTF(2, 1, 0, 0), GTF(1, 1, 0, 0), GTF(1, 0, 1, 0),
                                       GTF(2, 0, 1, 0), GTF(2, 1, 1, 0)};
 #define GPL(t, bars) (uint8_t)((t) | ((bars) / 4) << 4)   /* a plan's row: its kind, its bars (SONG's; PARTS: half) */
 /* the plans, one after the other (GPLAN: each one's first row and its rows): the club's; PARTS' A B A C; (V10.6n) the
@@ -2068,8 +2081,7 @@ static const gxf_t GX_FIELD[] = {   /* (p3, the owner: "90 % of EXPLORE's pieces
     GXF(arp[1], 0, AP_N - 1, 0), GXF(lead, 0, LD_NONE - 1, 0),   /* (never NONE: LEAD OFF is the knob's) */
     GXF(amt[GP_DRUMS], 35, 70, 12), GXF(amt[GP_BASS], 35, 75, 0), GXF(amt[GP_CHORDS], 25, 70, 25),
     GXF(amt[GP_ARP], 15, 60, 45), GXF(amt[GP_LEAD], 20, 55, 40), GXF(rtype, 0, 4, 0), GXF(dtime, 0, 7, 0),
-    GXF(wet, 10, 95, 0), GXF(dtype, 0, 3, 0), GXF(form, FM_CLUB, FM_ARC, 0), GXF(human, 0, 45, 0),   /* (V10.6n: the
-                                     * layers entering one by one: the club's plan or the arc's) */
+    GXF(wet, 10, 95, 0), GXF(dtype, 0, 3, 0), GXF(human, 0, 45, 0),   /* (the form the arc's: gx_genre) */
 };
 /* (V10.6n) the drums by the tempo (the study's 6.2): slow (half time, broken), the middle (four on the floor, breaks,
  * electro), fast (drum & bass, the Amen, hard) */
@@ -2082,11 +2094,11 @@ static void gx_genre(ggenre_t *m)
 {   /* (V10.6n, the study's 6.2: "rare but musical") one or two oddities a piece (a 3:4 layer over a cycle of 48, an
      * exotic mode, an odd timbre on one role, an extreme tempo, the drums edited, a floating harmony, one track's
      * components or playhead), everything else coherent: the tempo's drums, a common mode, the recipes' engines */
-    uint32_t odd = 1u << (gr() % 7u), lo, k;
-    if (gch(45)) odd |= 1u << (gr() % 7u);
-    if ((odd & GXO_COMPS) && gch(50)) odd ^= GXO_COMPS | GXO_HEAD;   /* (the odd track's components, or a playhead on it) */
+    uint32_t odd = 1u << (gr() % 6u), lo, k;
+    if (gch(45)) odd |= 1u << (gr() % 6u);
     gx.odd = (uint8_t)odd;
-    lo = (uint32_t)(odd & GXO_TEMPO ? (gch(50) ? grr(60, 76) : grr(168, 180)) : grr(92, 134));
+    lo = (uint32_t)(odd & GXO_TEMPO ? (gch(50) ? grr(60, 76) : grr(168, 180)) : grr(76, 154));   /* (76 .. 160 BPM; was
+                                                         * 92 .. 134: every piece the same pulse) */
     memset(m, 0, sizeof *m);
     m->name = "EXPLORE";
     m->bpm_lo = (uint8_t)lo;
@@ -2096,6 +2108,7 @@ static void gx_genre(ggenre_t *m)
         ((uint8_t *)m)[f->off] = (uint8_t)(gch(f->z) ? 0 : grr(f->lo, f->hi));
     }
     m->drum = GX_DFAM[lo < 100u ? 0 : lo < 136u ? 1 : 2][gr() % 6u];
+    m->form = FM_ARC;                                   /* (the layers entering one by one, never the club's bare intro) */
     if (m->cbars == 2u && gch(40)) m->cbars = 4;        /* (a chord a bar, two, four) */
     for (k = 0; k < 4u; k++) m->scale[k] = odd & GXO_SCALE ? GX_SCALE[gpickw(GX_SCALE_W, NELEM(GX_SCALE))] : GX_SCALE[gr() % 4u];
     if (odd & GXO_FLOAT) {                              /* (fourths, or a pedal under the chords) */
@@ -2142,14 +2155,15 @@ static void gx_prog(void)
     if (!gs.pn) { gs.pdeg[0] = 0; gs.pq[0] = Q_TRI; gs.pn = 1; }
     if (gs.pn == 2u && (gx.odd & GXO_POLY)) gs.pn = 1;
 }
-/* (V10.6n) the odd timbre: one role's engine far from its recipe's (ANIMAL, WHEEL, MATH, ADD, FM6: never VOICE or NOISE
- * on a pitched part); the other roles their recipe's */
+/* (V10.6n) the odd timbre: the odd role's engine far from its recipe's; (the fix: V10.6n's EXPLORE half ANALOG) any
+ * other role's too, 40 % of the time (the bass 20 %): ANIMAL, WHEEL, MATH, ADD, FM6, PHASE, a VOICE on the lead or the
+ * texture (gen_sound: ANIMAL and VOICE once a piece) */
 static int8_t gx_engine(uint32_t r)
 {
-    static const uint8_t E[5] = {ENGI_ANIMAL, EG_WH, EG_LO, ENGI_ADD, EG_FM};
+    static const uint8_t E[7] = {ENGI_ANIMAL, EG_WH, EG_LO, ENGI_ADD, EG_FM, EG_PH, EG_VO};
     uint32_t e;
-    if (!(gx.odd & GXO_TIMBRE) || r != gx.orole) return -1;
-    e = E[gr() % 5u];
+    if (((gx.odd & GXO_TIMBRE) == 0u || r != gx.orole) && !gch(r == RL_BASS ? 20 : 40)) return -1;
+    e = E[gr() % (r == RL_LEAD || r == RL_TEX ? 7u : 6u)];
     return (int8_t)(e == EG_FM && gs.fm6 >= 2u ? EG_WH : e);
 }
 /* the sound past its recipe: a VOICE singing words (any language, a dice's phrase or scat), a distortion's type, a
@@ -2189,9 +2203,11 @@ static void gx_sound(track_t *t, uint32_t r)
         }
     }
     if (gch(15)) t->p[P_DETUNE] = (int16_t)grr(8, 30);   /* (V10.8: was 25 %, 10..50) */
-    if ((r == RL_LEAD || r == RL_ARP) && t->p[P_LD_PIT] &&   /* (V10.6l) a preset's pitch LFO on a line only as a vibrato
-                                                         * (fast, faded in, the filter still): else the filter's alone */
-        (t->p[P_LD_PIT] > 1 || t->p[P_LD_PIT] < 0 || t->p[P_LRATE] < 88 || !t->p[P_LFADE] || t->p[P_LD_FLT] > 4 || t->p[P_LD_FLT] < -4))
+    if (t->p[P_LD_PIT] && (r == RL_LEAD || r == RL_ARP   /* (V10.6l) a preset's pitch LFO on a line only as a vibrato
+                                                         * (fast, faded in, the filter still): else the filter's alone;
+                                                         * (an exotic engine's preset) on the rest a slow drift at most */
+        ? t->p[P_LD_PIT] > 1 || t->p[P_LD_PIT] < 0 || t->p[P_LRATE] < 88 || !t->p[P_LFADE] || t->p[P_LD_FLT] > 4 || t->p[P_LD_FLT] < -4
+        : t->p[P_LD_PIT] != 1 || (r != RL_BASS && t->p[P_LRATE] > 60)))
         t->p[P_LD_PIT] = 0;
 }
 /* the step components on the odd role's track (V10.6n: one track; a bass's never an arpeggio, a jump or a climb) */
@@ -2330,7 +2346,8 @@ static void gen_post(void)
             }
         }
     }
-    if (gx.on && (gx.odd & GXO_COMPS)) gx_comps();      /* (0.8.6) EXPLORE: wilder ones (V10.6n: the odd track's) */
+    if (gx.on) gx_comps();                              /* (0.8.6) EXPLORE: wilder ones (V10.6n: the odd track's; every
+                                                         * piece's) */
     for (k = 0; k < NTRK; k++)                          /* (seq2d) the CP_* written above as components v2 */
         comp_migrate(trk[k].step, dlen(&trk[k]));
 }
@@ -2616,6 +2633,9 @@ static void gen_make(void)
                                                          * at 1/16 or (where its period still divides the cycle) 1/8 */
                     if (r > RL_BASS && gs.pn == 1u && !gch(GX_KEEP[r])) len >>= 1u + (len > 32u && gch(40));
                     t->p[P_SDIV] = (int16_t)(r > RL_BASS && len * 2u <= gs.len && gch(20) ? 1 : 2);
+                    if (r >= RL_LEAD && gch(50)) { len = GX_LEN[gr() % NELEM(GX_LEN)]; t->p[P_SDIV] = 2; }   /* (the
+                                                         * lead, the arp, the texture off the bar half the time: a
+                                                         * polymeter over the drums' and the bass's cycle) */
                 } else {
                     if (r == RL_TEX && gs.complex > 60u && gch(40)) len = (uint32_t)grr(5, 7) * 2u + (gch(50) ? 1u : 0u);
                     if (gs.mutant && (r == RL_ARP || r == RL_LEAD) && gch(50)) {   /* (0.6.95) a mutant: a part in
@@ -2695,7 +2715,7 @@ static void gen_make(void)
     }
     rng_state = gq | 1u;
     macro_dice(3);
-    if (gx.on && (gx.odd & GXO_HEAD)) gx_heads();   /* (0.8.6) EXPLORE: PLAYHEADS (before the sections: each
+    if (gx.on && gch(50)) gx_heads();                  /* (0.8.6) EXPLORE: PLAYHEADS, half the pieces (before the sections: each
                                                          * holds them); (V10.6) MUTATE gone */
     if ((g->spec & GSP_THIRDS) && gs.trk_of[RL_LEAD] < NTRK && gs.act[RL_LEAD]) {   /* (V10.6n) cumbia's second voice */
         fg_set_t *f = &fg_set[gs.trk_of[RL_LEAD]][0];

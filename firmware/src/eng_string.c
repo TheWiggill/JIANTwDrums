@@ -298,7 +298,7 @@ static const preset_t STRING_PRESETS[] = {
      MODS(P_LWAVE, LW_DRIFT, P_LRATE, 30, P_LD_SHP, 20)},   /* the amp wanders */
     {"SQUEAL", {SX_FDBK, 80, 96, 16, 70, 110, 12, 30}, {0, 64, 127, 80}, 0, TAG(LEAD), FX(40, 0, 25, 30), PAT(4),
      MODS(P_LWAVE, LW_SH, P_LRATE, -11, P_LD_SHP, 30, MMOD(1, PS_MODW, PD_E(5), 40))},   /* harmonics jump */
-    {"EBOW", {SX_FDBK, 127, 44, 40, 50, 20, 64, 90}, {20, 64, 127, 100}, 0, TAG(LEAD), FX(0, 20, 20, 50), PAT(5),
+    {"EBOW", {SX_FDBK, 127, 44, 40, 50, 20, 64, 90}, {20, 64, 67, 100}, 0, TAG(LEAD), FX(0, 20, 20, 50), PAT(5),
      MODS(P_LRATE, 84, P_LD_PIT, 1, P_LFADE, 80, MMOD(1, PS_AT, PD_E(4), 25))},
 };
 /* (V10.6i) the browsing order: to play, then the experiments, then INIT */

@@ -154,7 +154,7 @@ static const preset_t ADD_PRESETS[] = {
      MODS(P_FCUT, 100, P_LWAVE, LW_DRIFT, P_LRATE, -2, P_LD_FLT, 20)},
     {"SWELL", {AD_HARM, 0, 104, 127, 0, 0, 127, -50}, {20, 64, 127, 60}, 0, TAG(PAD), FX(0, 20, 20, 50), PAT(5),
      MODS(MENV2(60, 100, 40, 80), MMOD(1, PS_ENV2, PD_E(1), 50))},   /* HARM into ODD and back */
-    {"SUB ADD", {AD_ODD, 0, 20, 40, 0, 0, 127, 0}, {0, 64, 127, 25}, 0, 1 | TAG(BASS), FX(0, 0, 0, 5), PAT(2),
+    {"SUB ADD", {AD_ODD, 0, 20, 40, 0, 0, 127, 0}, {0, 64, 80, 25}, 0, 1 | TAG(BASS), FX(0, 0, 0, 5), PAT(2),
      MODS(P_GLIDE, 10, MMOD(1, PS_VEL, PD_E(3), 30))},                                    /* harder: more partials */
     {"PRIME ORG", {AD_PRIME, 0, 84, 127, 0, 0, 127, 0}, {2, 64, 127, 45}, 0, TAG(KEYS), FX(0, 20, 0, 35), PAT(5),
      MODS(P_LRATE, 84, P_LD_PIT, 1, P_LFADE, 60)},

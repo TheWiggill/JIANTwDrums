@@ -293,8 +293,8 @@ static const preset_t ANALOG_PRESETS[] = {
      MODS(MMOD(1, PS_VEL, PD_E(6), 16), MENV2(0, 14, 0, 10), MMOD(2, PS_ENV2, PD_PITCH, 3))},   /* a thump on each note */
     {"PLUCK", {0, 8, 50, 0, 30, 40, 0, 0}, {0, 84, 0, 60}, 55, TAG(PLUCK), FX(0, 20, 50, 30), PAT(3),
      MODS(MMOD(1, PS_VEL, PD_CUT, 18), MMOD(2, PS_KEY, PD_CUT, 20))},
-    {"INIT SAW", {0, 0, 0, 0, 127, 0, 0, 0}, {0, 64, 127, 20}, 0, TAG(LEAD), FX(0, 0, 0, 0)},
-    {"INIT PWM", {4, 0, 0, 0, 127, 0, 0, 0}, {0, 64, 127, 20}, 0, TAG(KEYS), FX(0, 0, 0, 0)},
+    {"INIT SAW", {0, 0, 0, 0, 127, 0, 0, 0}, {0, 64, 60, 20}, 0, TAG(LEAD), FX(0, 0, 0, 0)},
+    {"INIT PWM", {4, 0, 0, 0, 127, 0, 0, 0}, {0, 64, 71, 20}, 0, TAG(KEYS), FX(0, 0, 0, 0)},
     {"STRINGS", {0, 25, 64, 0, 70, 10, 0, 0}, {75, 90, 115, 95}, 5, TAG(PAD), FX(0, 60, 20, 70), PAT(5), BREATHE(10, 1, 0),
      MODS(MMOD(1, PS_MODW, PD_CUT, 24), P_DRIFT, 100)},
     /* (JIANT 0.4: TRIO's, folded in) SYNC (ratio 1 + 11/16), RING (1 + 18/16), SAW3 (9 ct a side) */

@@ -240,8 +240,8 @@ static __attribute__((noinline)) void dx_run_fx(const dx_lane_t *L, dx_voice_t *
     ta = dx_tau((uint32_t)q[DXP_DECAY]);
     tn = (L->mode >> 4) & 1u ? (ta >> 2 < 8000u ? ta >> 2 : 8000u) : ta;   /* SNAP: a quarter, 8 ms at most (V10.6q: a click) */
     tp = ((L->mode >> 5) & 3u) == DXM_LONG ? (uint32_t)clamp((int32_t)(ta / 2u), 4000, 250000)
-                                           : (uint32_t)clamp((int32_t)(ta / 12u), 1000, 15000);   /* (V10.6q: was / 6, 40 ms:
-                                                          * a long kick's drop a zap, the note late) */
+                                           : (uint32_t)clamp((int32_t)(ta / 8u), 1000, 25000);    /* (V10.6q: / 12, 15 ms: thin;
+                                                          * / 6, 40 ms: a zap. / 8, 25 ms: the click and the body) */
     p16 = 384 + q[DXP_PITCH] * 12 + tune16;
     depth = q[DXP_PMOD] * 6;
     ea0 = v->live ? v->ea : 1 << 30;                     /* (V10.6q) the block's start: a hit struck again while it rings

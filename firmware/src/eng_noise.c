@@ -259,7 +259,7 @@ static const preset_t NOISE_PRESETS[] = {
      MODS(P_LRATE, 10, P_LD_FLT, 20, P_LD_AMP, 30)},
     {"HISS PAD", {NZ_ANLG, 90, 95, 110, 127, 0, 20, 0}, {80, 90, 115, 100}, 0, TAG(PAD), FX(0, 40, 30, 85), PAT(5), BREATHE(24, 0, 1),
      MODS(MMOD(1, PS_AT, PD_E(3), 30))},
-    {"INIT NOISE", {NZ_ANLG, 0, 127, 0, 0, 0, 0, 0}, {0, 64, 127, 20}, 0, TAG(FX), FX(0, 0, 0, 0)},
+    {"INIT NOISE", {NZ_ANLG, 0, 127, 0, 0, 0, 0, 0}, {0, 64, 57, 20}, 0, TAG(FX), FX(0, 0, 0, 0)},
     {"TAPE AIR", {NZ_ANLG, 75, 60, 20, 64, 0, 50, 10}, {90, 90, 120, 110}, 0, TAG(FX), FX(0, 30, 25, 70), PAT(5),
      MODS(P_LWAVE, LW_DRIFT, P_LRATE, -1, P_LD_SHP, 10)},
 };

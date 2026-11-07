@@ -499,10 +499,14 @@ int main(void)
         for (k = 0; k < chain_config.count; k++) if (chain_config.row[k].slot > 3u || !chain_config.row[k].bars) bad += gcheck("  a row's section and bars", 0);
         gen_reset();
         gen_with(G_HOUSE, 31, 60, 2);
-        {   /* (V10.6m) the club plan (gen_parts' rows): a drum intro (the kick and the hats: the snare's and the
-             * percussion's groups out), grooves, a break (D), a four-bar build (C), the drop's first loop (B: the crash)
-             * and the drop the longest row; every row a scene; the fills a row's (the drums from D, the fill section) */
-            uint32_t r, c = chain_config.count, longest = 0, fills = 0, scn = 0, at_c = CHAIN_ROWS, d = gs.trk_of[RL_DRUM];
+        {   /* (V10.6m) the club plan (gen_parts' rows): a drum intro (the GENE fix: the drums with their snare, only the
+             * percussion's group out, and a layer with them: not four bars of kick and hats), grooves, a break (D), a
+             * four-bar build (C), the drop's first loop (B: the crash) and the drop the longest row; every row a scene;
+             * the fills a row's (the drums from D, the fill section) */
+            uint32_t r, c = chain_config.count, longest = 0, fills = 0, scn = 0, at_c = CHAIN_ROWS, d = gs.trk_of[RL_DRUM], on0 = 0;
+            const scene_t *s0 = &song_idx.scene[song_cur][0];
+            for (r = 0; r < NTRK; r++)                  /* (row 1's tracks playing: the drums and a layer at least) */
+                on0 += gs.act[gs.role[r]] && !(r < 4u ? (s0->mute >> r) & 1u : (s0->on >> (r - 3u)) & 1u);
             for (r = 0; r < c; r++) {
                 if (chain_config.row[r].bars > chain_config.row[longest].bars) longest = r;
                 fills += row_src(r, d, chain_config.row[r].slot) == 3u && chain_config.row[r].slot == 0u;
@@ -513,7 +517,7 @@ int main(void)
             bad += gcheck("FORM SONG (HOUSE, V10.6m): the club plan, 10..16 rows, four sections, the drop (A) longest",
                           live.mode == 1 && c >= 10u && c <= CHAIN_ROWS && (dice_secs & 15u) == 15u &&
                           chain_config.row[longest].slot == 0u && chain_config.row[0].slot == 0u &&
-                          (song_idx.scene[song_cur][0].mute >> 4) == (DXG_SNARE | DXG_PERC));
+                          (s0->mute >> 4) == DXG_PERC && d < 4u && !((s0->mute >> d) & 1u) && on0 >= 2u);
             bad += gcheck("  a break (D), then a build (C) of four bars, then the drop's crash loop (B); a scene a row, fills from D",
                           at_c > 0u && at_c + 1u < c && chain_config.row[at_c - 1u].slot == 3u && chain_config.row[at_c].bars == 4u &&
                           chain_config.row[at_c + 1u].slot == 1u && scn == c && fills >= 2u);
@@ -667,7 +671,7 @@ int main(void)
         static const uint32_t SEEDS = 60u;
         uint32_t sd, nmel_bad = 0, page_bad = 0, chord_bad = 0, key_bad = 0, key_col = 0, key_appr = 0, nn = 0;
         uint32_t store_bad = 0, budget_bad = 0, quiet = 0, loud = 0, odd = 0, poly = 0, divs = 0, comps = 0, lms = 0, heads = 0, words = 0;
-        uint32_t anchor_bad = 0, odd_bad = 0;
+        uint32_t anchor_bad = 0, odd_bad = 0, offbar = 0, offs = 0;
         uint32_t nbpm = 0, nsc = 0, nlen = 0, ndm = 0, neng = 0, same = 0, bpm_lo = 999, bpm_hi = 0, name_bad = 0;
         uint8_t seen_bpm[256] = {0}, seen_sc[16] = {0}, seen_len[NSTEP + 1] = {0}, seen_dm[64] = {0}, seen_eng[NENGINES] = {0};
         uint32_t sig[60];
@@ -687,7 +691,7 @@ int main(void)
             if (vmax > vref) vref = vmax;
         }
         for (sd = 0; sd < SEEDS; sd++) {
-            uint32_t mel = 0, fm = 0, an = 0, vo = 0, dk = 0, l0 = 0, lens_differ = 0, clip, vmax, kk, per = 1, ctr = 0, htr = 0;
+            uint32_t mel = 0, fm = 0, an = 0, vo = 0, dk = 0, l0 = 0, lens_differ = 0, clip, vmax, kk, per = 1, ctr = 0, htr = 0, offb = 0;
             double rms;
             int32_t peak;
             uint32_t h = 2166136261u;
@@ -710,10 +714,14 @@ int main(void)
                 if (!gs.act[r] || (r == RL_TEX && k != gs.trk_of[RL_TEX])) continue;
                 if (!l0) l0 = len; else if (len != l0) lens_differ = 1;
                 if (!seen_len[len]) { seen_len[len] = 1; nlen++; }
-                {   /* (V10.6n) the period: every loop (at its DIV) inside one cycle of 48 or 64 */
+                {   /* (V10.6n) the period: the bass's and the chords' loops (at their DIV) inside one cycle of 48 or 64;
+                     * (the GENE fix) the lead, the arp, the texture off the bar now and then (a polymeter over it) */
                     uint32_t L = len * (t->p[P_SDIV] == 1 ? 2u : 1u), a = per, b2 = L;
-                    while (b2) { uint32_t x = a % b2; a = b2; b2 = x; }
-                    per = per / a * L;
+                    if (r >= RL_LEAD) { offb += L % 16u != 0u; offbar += L % 16u != 0u; }
+                    else {
+                        while (b2) { uint32_t x = a % b2; a = b2; b2 = x; }
+                        per = per / a * L;
+                    }
                 }
                 if (r == RL_BASS && gs.act[RL_DRUM] && gs.trk_of[RL_DRUM] < NTRK && dlen(&trk[gs.trk_of[RL_DRUM]]) != len) anchor_bad++;
                 odd += len % 4u != 0u;
@@ -742,7 +750,8 @@ int main(void)
                 for (i = 0; i < len; i++) if (t->step[i].time == ST_NOTE && t->step[i].comp) { ctr++; break; }
             }
             poly += lens_differ;
-            if (per > 64u || ctr + htr > 1u) { odd_bad++; printf("  EXPLORE seed %u: period %u, %u tracks with components, %u with heads\n", gp.seed, per, ctr, htr); }
+            if (per > 64u || ctr > 1u || htr > 1u) { odd_bad++; printf("  EXPLORE seed %u: period %u, %u tracks with components, %u with heads\n", gp.seed, per, ctr, htr); }
+            offs += offb != 0u;
             if (mel < 2u) { nmel_bad++; printf("  EXPLORE seed %u: %u melodic parts playing\n", gp.seed, mel); }
             if (fm > 2u || an > 1u || vo > 1u || dk > 1u) budget_bad++;
             {   /* the CHORD page: an in-scale type on the chord track, its chords in the key */
@@ -788,8 +797,9 @@ int main(void)
                       !key_bad && (key_col + key_appr) * 100u < nn * 12u);
         bad += gcheck("  (V10.6n) varied: 20 tempos from under 90 to over 150 BPM, 6 keys, 3 loop lengths (none odd), 10 drum maps",
                       nbpm >= 20u && bpm_lo < 90u && bpm_hi > 150u && nsc >= 6u && nlen >= 3u && !odd && ndm >= 10u);
-        bad += gcheck("  (V10.6n) rare but musical: the drums and the bass one loop, every loop inside a cycle of 48 or 64, one odd track",
-                      !anchor_bad && !odd_bad);
+        printf("gen:   %u loops off the bar (the lead, the arp, the texture) in %u pieces\n", offbar, offs);
+        bad += gcheck("  rare but musical: drums + bass one loop, bass + chords in a cycle of 48 / 64, lead / arp / texture off the bar in 1/3",
+                      !anchor_bad && !odd_bad && offs * 3u >= SEEDS && offbar >= 30u);
         bad += gcheck("  the oddities: polyrhythm in some, DIVs, components, DRUM-X octaves, PLAYHEADS",
                       poly && divs && comps && lms && heads);
         bad += gcheck("  the engines: six at least, VOICE among them, singing words",

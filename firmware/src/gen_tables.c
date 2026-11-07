@@ -683,6 +683,9 @@ static const uint8_t GX_LEADS[8] = {SR_LEAD, SR_VOXLEAD, SR_CHIP, SR_HOOVER, SR_
 static const uint8_t GX_TEX[8] = {SR_NOISE, SR_TEXTURE, SR_DRONE, SR_CHOIR, SR_PAD, SR_ORGAN, SR_BELL, SR_STRINGS};
 /* how often a role keeps the cycle (V10.6n: else half of it or a quarter, over one chord: gen.c gen_make) */
 static const uint8_t GX_KEEP[RL_N] = {60, 70, 80, 45, 45, 50};
+/* (the fix of V10.6n's: every loop on the bar) the lead's, the arp's, the texture's loop off the bar half the time:
+ * beats of their own over the cycle (gen.c gen_make; whole beats: no odd step) */
+static const uint8_t GX_LEN[10] = {12, 20, 24, 28, 36, 40, 44, 52, 56, 60};
 /* the step components it scatters (gen.c gx_comps): their weights on a melodic track */
 static const uint8_t GX_COMP[12] = {CP_RAND, CP_OCT, CP_BEND, CP_ECHO, CP_PULSE, CP_WALK, CP_CLIMB, CP_ARPQ, CP_ARPN,
                                     CP_TONAL, CP_JUMP, CP_REV};

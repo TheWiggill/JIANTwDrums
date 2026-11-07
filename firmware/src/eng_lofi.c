@@ -412,7 +412,7 @@ static const preset_t LOFI_PRESETS[] = {
      MODS(P_FCUT, 84, MMOD(1, PS_VEL, PD_CUT, 20))},
     {"MATH BASS", {2, 6, 76, 0, 0, 0, 0, 0}, {0, 60, 90, 22}, 24, 1 | TAG(BASS), FX(0, 0, 5, 0), PAT(2),
      MODS(P_FCUT, 70, P_GLIDE, 10)},
-    {"MATH PAD", {2, 6, 44, 0, 0, 0, 0, 0}, {75, 90, 110, 95}, 0, TAG(PAD), FX(0, 50, 30, 60), PAT(5),
+    {"MATH PAD", {2, 6, 44, 0, 0, 0, 0, 0}, {75, 90, 78, 95}, 0, TAG(PAD), FX(0, 50, 30, 60), PAT(5),
      MODS(P_FCUT, 96, P_LRATE, 20, P_LD_FLT, 10)},
     {"MATH LEAD", {2, 6, 92, 0, 0, 0, 0, 0}, {4, 70, 100, 42}, 0, 1 | TAG(LEAD), FX(0, 0, 35, 25), PAT(4),
      MODS(P_LRATE, 88, P_LFADE, 72, MMOD(1, PS_MODW, PD_VIB, 2), P_GLIDE, 10)},
@@ -423,12 +423,12 @@ static const preset_t LOFI_PRESETS[] = {
     {"BYTE TONE", {2, 5, 40, 0, 0, 0, 0, 80}, {0, 70, 100, 40}, 0, 1 | TAG(LEAD), FX(0, 0, 30, 20), PAT(4),
      MODS(P_LWAVE, LW_SQR, P_LRATE, -8, MMOD(1, PS_LFO, PD_E(7), 6), MMOD(2, PS_MODW, PD_E(3), 30))},
     /* (V10.6i) a bare sine (was FLOAT FM) */
-    {"INIT FLOAT", {2, 6, 0, 0, 0, 0, 0, 127}, {0, 64, 127, 20}, 0, TAG(KEYS), FX(0, 0, 0, 0)},
+    {"INIT FLOAT", {2, 6, 0, 0, 0, 0, 0, 127}, {0, 64, 80, 20}, 0, TAG(KEYS), FX(0, 0, 0, 0)},
     /* (JIANT 0.5.1, appended; 0.5.6 floatbeat) FLOAT: F03 a nibble-table melody (S&H 1/16 on its filter, each note its
      * place); F29 FM breathing at 1 Hz, slow (V10.6i: the filter drifting) */
     {"FLOAT ARP", {2, 6, 8, 0, 0, 0, 0, 0}, {0, 50, 80, 50}, 0, 1 | TAG(PLUCK), FX(0, 25, 40, 30), PAT(3),
      MODS(P_FCUT, 100, P_LWAVE, LW_SH, P_LRATE, -10, P_LD_FLT, 16, MMOD(1, PS_RAND, PD_PAN, 40))},
-    {"FLOAT PAD", {2, 6, 112, 0, 0, 0, 0, 0}, {80, 90, 110, 100}, 0, 1 | TAG(PAD), FX(30, 10, 50, 40), PAT(3), BREATHE(14, 0, 0),
+    {"FLOAT PAD", {2, 6, 112, 0, 0, 0, 0, 0}, {80, 90, 69, 100}, 0, 1 | TAG(PAD), FX(30, 10, 50, 40), PAT(3), BREATHE(14, 0, 0),
      MODS(P_FCUT, 90)},
 };
 /* (V10.6i) browsed: the voices to play, the experiments, INIT (ui.c: in LOFI_ORDER's place; LOFI_PC stays) */
