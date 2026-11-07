@@ -131,7 +131,6 @@ typedef struct {
     uint16_t dx_mute;                          /* its mutes (eng_drum.c: the groups DXG_* in the first reserved byte, the
                                                 * sounds' DXM_LANE in the second) */
     uint8_t dx_mot[4];                         /* (0.5.1) the kit's X-MOD (eng_drum.c), in its reserved bytes 3..6 */
-    uint8_t dx_acoustic; /* ADD15: optional final DA extension, 0 in older projects. */
     int8_t eq[4];                              /* (V10.58) the master's EQ and TAPE as stored: applied when the project is */
     uint8_t tp[2];                             /* loaded (project_restore_runtime), never by a read (until V10.57 every read
                                                 * of a slot, a section's name, a check, set the EQ and TAPE playing) */
@@ -631,7 +630,6 @@ static void proj_fm6_init(project_t *q)
     memcpy(q->dx, DX_KIT_DEF, sizeof q->dx);
     q->dx_mute = 0;
     memset(q->dx_mot, 0, sizeof q->dx_mot);
-    q->dx_acoustic = 0;
     memset(q->eq, 0, sizeof q->eq);
     memset(q->tp, 0, sizeof q->tp);
     memset(q->scene, 0, sizeof q->scene);
@@ -906,7 +904,7 @@ static int proj_gl_used(const project_t *q)            /* (0.9.9-seq2f) a global
 }
 static uint32_t proj_packed_size(const project_t *q)
 {
-    uint32_t n = (q->dx_acoustic ? 3u : 0u) + (proj_sc_used(q) ? 6u : 0u) + (q->g[G_DRTIM] ? 3u : 0u) + 68u + sizeof q->chain + 4u + q->motion.count * sizeof q->motion.event[0] + 2u + G_SL_N, t, i;
+    uint32_t n = (proj_sc_used(q) ? 6u : 0u) + (q->g[G_DRTIM] ? 3u : 0u) + 68u + sizeof q->chain + 4u + q->motion.count * sizeof q->motion.event[0] + 2u + G_SL_N, t, i;
     if (proj_djf_events(&q->motion))                    /* (0.9.1) the DJ FILTER's records: their block's head */
         n += 3u;
     if (proj_mf_tracks(q))                              /* (0.9.1) MICRO's 64ths: their block */
@@ -1103,7 +1101,6 @@ static int proj_pack(project_store_t *out, const project_t *q)
     }
     pos += proj_tp(q, b, pos, 0);                       /* (0.9.9-snd8) the master's TAPE, when on (after DRIVE's) */
     pos += proj_eq((project_t *)(uintptr_t)q, b, pos, 0);
-    if(q->dx_acoustic) { b[pos++]='D';b[pos++]='A';b[pos++]=q->dx_acoustic&127u; }                          /* (p9) its EQ, when set */
     if (proj_sc_used(q)) {                              /* (V10.31) SCENE, when on or a role set (last: before, it stops here) */
         b[pos++] = 'S'; b[pos++] = 'C';
         memcpy(b + pos, q->scene, sizeof q->scene);
@@ -1408,7 +1405,9 @@ static int proj_unpack_c(project_t *q, const uint8_t *b)
     }
     pos += proj_tp(q, b, pos, room);                    /* (0.9.9-snd8) the master's TAPE (else 0) */
     pos += proj_eq(q, b, pos, room);
-    if(pos+3u<=room && b[pos]=='D' && b[pos+1u]=='A') { q->dx_acoustic=b[pos+2u]&127u; pos += 3u; }        /* (p9) its EQ (else flat) */
+    if (pos + 3u <= room && b[pos] == 'D' && b[pos + 1u] == 'A')   /* (ADD15) DRUM-X's ACOUST, retired in V10.6o: a project
+                                                         * saved with it set skips its value (the rest loads as stored) */
+        pos += 3u;
     memset(q->scene, 0, sizeof q->scene);
     if (pos + 2u + sizeof q->scene <= room && b[pos] == 'S' && b[pos + 1u] == 'C') {   /* (V10.31) SCENE (else OFF, all KEEP) */
         memcpy(q->scene, b + pos + 2u, sizeof q->scene);
@@ -1579,7 +1578,6 @@ BTAPP_FN static int proj_unpack_bt(project_t *q, const uint8_t *b, uint32_t st)
         memcpy(q->dx, DX_KIT_DEF, sizeof q->dx);
         q->dx_mute = 0;
         memset(q->dx_mot, 0, sizeof q->dx_mot);
-        q->dx_acoustic = 0;
     memset(q->scene, 0, sizeof q->scene);
     q->dx_tone = 0;
         q->dx_hands = 0;
@@ -1722,7 +1720,6 @@ static void project_capture(project_t *p)
     memcpy(p->dx, dx_kit, sizeof p->dx);
     p->dx_mute = dx_mute;
     memcpy(p->dx_mot, dx_mot, sizeof p->dx_mot);
-    p->dx_acoustic = dx_acoustic;
     {                                                   /* (V10.58) the master's EQ and TAPE */
         uint32_t k;
         for (k = 0; k < 4u; k++) p->eq[k] = (int8_t)eq_v[k];
@@ -1896,7 +1893,6 @@ static void sound_put(project_t *p, uint32_t k)
     if (e == ENGI_DRUM) {
         memcpy(dx_kit, dx_kit_ok(p->dx) ? p->dx : DX_KIT_DEF, sizeof dx_kit);
         memcpy(dx_mot, p->dx_mot, sizeof dx_mot);
-        dx_acoustic = p->dx_acoustic & 127u;
         dx_tone = p->dx_tone;
         dx_hands = p->dx_hands & 15u;
         dx_glue = p->dx_hands >> 4;
@@ -1946,7 +1942,6 @@ static int project_restore_runtime(const project_t *input)
     memcpy(dx_kit, dx_kit_ok(p->dx) ? p->dx : DX_KIT_DEF, sizeof dx_kit);   /* (the section's DRUM-X kit) */
     dx_mute_set(p->dx_mute);
     memcpy(dx_mot, p->dx_mot, sizeof dx_mot);           /* (0.5.1: the kit's X-MOD) */
-    dx_acoustic = p->dx_acoustic & 127u;
     {                                                   /* (V10.58) the master's EQ and TAPE, as stored (was set by the read) */
         uint32_t k;
         for (k = 0; k < 4u; k++) eq_v[k] = clamp(p->eq[k], -12, 12);
@@ -2083,7 +2078,6 @@ static __attribute__((noinline)) void system_init(void)   /* (snd8: out of its c
     gl_touch();
     memcpy(dx_kit, DX_KIT_DEF, sizeof dx_kit);
     memset(dx_mot, 0, sizeof dx_mot);
-    dx_acoustic = 0;
     memset(split_cfg, 0, sizeof split_cfg);
     scn_on = 0; memset(scn_role, 0, sizeof scn_role); memset(scn_pat, 0, sizeof scn_pat);   /* (V10.31) SCENE */
     dx_tone = 0;
@@ -2357,7 +2351,6 @@ static uint32_t autosave_sig(void)
     h = as_mix(h, lyr_txt, sizeof lyr_txt);             /* (0.8.5) VOICE's lyrics */
     h = as_mix(h, glane, sizeof glane);                 /* (0.9.9-seq2f) the global lane */
     h = as_mix(h, &gl_mono, 1);
-    h = as_mix(h, &dx_acoustic, 1);
     h = as_mix(h, &scn_on, 1);
     h = as_mix(h, scn_role, sizeof scn_role);           /* (V10.31) SCENE */
     h = as_mix(h, scn_pat, sizeof scn_pat);

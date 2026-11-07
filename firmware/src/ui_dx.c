@@ -98,8 +98,7 @@ static void dx_knob(const page_t *pg, uint32_t k, int32_t s)
  * 4 GLUE (the bus's, eng_drum.c dx_glue: KIT 3's free knob) */
 static void dx_kit3_knob(uint32_t k, int32_t s)
 {
-    if(cur_page()->title[4]=='4') {
-        if(!k) dx_acoustic=(uint8_t)clamp((int32_t)dx_acoustic+s,0,127);
+    if(cur_page()->title[4]=='4') {                    /* KIT 4: KNOB 2 the KEY MAP (V10.6o: KNOB 1's ACOUST gone) */
         if(k==1u) TSEL->p[P_DKEYMODE]=(int16_t)clamp(TSEL->p[P_DKEYMODE]+s,0,1);
         return;
     }
@@ -113,10 +112,10 @@ static void dx_kit3_knob(uint32_t k, int32_t s)
 static void dx_kit3_cards(void)
 {
     if(cur_page()->title[4]=='4') {
-        char v[12];uint32_t c;fmt_int(v,dx_acoustic*100/127);
-        hot_unit_column(0,"ACOUST",dx_acoustic?v:"OFF",dx_acoustic?"%":"");
+        empty_column(0);
         hot_unit_column(1,"KEY MAP",drum_ext(TSEL)?"EXTENDED":"CLASSIC","");
-        for(c=2;c<4;c++) empty_column(c);
+        empty_column(2);
+        empty_column(3);
         return;
     }
     uint32_t bp = DX_TONE_BP(dx_tone), fb = DX_TONE_FB(dx_tone);
@@ -208,7 +207,7 @@ static uint32_t dx_sig(void)
     const dx_lane_t *L = &dx_kit[dx_ui_lane & 7u];
     uint32_t h = (uint32_t)dx_ui_lane * 31u + dx_ui_side * 977u + L->mode * 131u, i;
     h ^= (uint32_t)dx_mot[0] << 24 ^ (uint32_t)dx_mot[1] << 16 ^ (uint32_t)dx_mot[2] << 8 ^ dx_mot[3];   /* (X-MOD) */
-    h = (h ^ (uint32_t)TSEL->p[P_DKEYMODE] << 24 ^ (uint32_t)dx_acoustic << 16 ^ dx_tone ^ (uint32_t)dx_hands << 8 ^ (uint32_t)dx_glue << 12) * 2654435761u;   /* (TONE, HANDS, GLUE) */
+    h = (h ^ (uint32_t)TSEL->p[P_DKEYMODE] << 24 ^ dx_tone ^ (uint32_t)dx_hands << 8 ^ (uint32_t)dx_glue << 12) * 2654435761u;   /* (TONE, HANDS, GLUE) */
     for (i = 0; i < DV_NLANE; i++)                      /* (0.6.48) the SENDs, (0.6.49) the LAYERs */
         h = (h ^ dx_snd[i] ^ (uint32_t)dx_lay[i] << 8) * 16777619u;
     for (i = 0; i < DXP_N; i++)

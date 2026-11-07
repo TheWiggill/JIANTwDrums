@@ -126,27 +126,18 @@ static __attribute__((noinline)) void dx_layer(dx_voice_t *v, int32_t *y, uint32
 {
     uint32_t i, ph = *php, ph2 = *ph2p, ph4 = v->ph4;
     int32_t o = *op, o1 = *o1p, lx = lay * lay * 600, lm = lay * 3, fh = fbk >> 1;   /* (snd1: FEEDBK's mean of two) */
-    if (ix || dix)
-        for (i = 0; i < n; i++, inc += dinc, ga += dga, ix += dix) {
-            int32_t o2, f = o + o1;
-            o1 = o;
-            o = sine_i(ph + (uint32_t)(sine_i(ph2) * ix) * 512u + (uint32_t)(f * fh));
-            o2 = dx_tri(ph4 + (uint32_t)(o * lx));
-            y[i] = mulq15(o + (((o2 - o) * lm) >> 6), ga >> 8);
-            ph += (uint32_t)inc << 4;
-            ph2 += ((uint32_t)inc >> 8) * ratio;
-            ph4 += ((uint32_t)inc >> 6) * 1448u;         /* (x 22.6: x 16 the step, sqrt 2) */
-        }
-    else                                                 /* (no FM on it: the modulator not run) */
-        for (i = 0; i < n; i++, inc += dinc, ga += dga) {
-            int32_t o2, f = o + o1;
-            o1 = o;
-            o = sine_i(ph + (uint32_t)(f * fh));
-            o2 = dx_tri(ph4 + (uint32_t)(o * lx));
-            y[i] = mulq15(o + (((o2 - o) * lm) >> 6), ga >> 8);
-            ph += (uint32_t)inc << 4;
-            ph4 += ((uint32_t)inc >> 6) * 1448u;
-        }
+    if (!ix && !dix)                                     /* (no FM on it: the modulator stands still, its phase kept) */
+        ratio = 0;
+    for (i = 0; i < n; i++, inc += dinc, ga += dga, ix += dix) {
+        int32_t o2, f = o + o1;
+        o1 = o;
+        o = sine_i(ph + (uint32_t)(sine_i(ph2) * ix) * 512u + (uint32_t)(f * fh));
+        o2 = dx_tri(ph4 + (uint32_t)(o * lx));
+        y[i] = mulq15(o + (((o2 - o) * lm) >> 6), ga >> 8);
+        ph += (uint32_t)inc << 4;
+        ph2 += ((uint32_t)inc >> 8) * ratio;
+        ph4 += ((uint32_t)inc >> 6) * 1448u;             /* (x 22.6: x 16 the step, sqrt 2) */
+    }
     *php = ph;
     *ph2p = ph2;
     *op = o;
@@ -171,13 +162,14 @@ static uint8_t dx_tone;
  * at a moment of its own (~3 .. 45 ms after it, the dice thrown again each hit: no tempo in it) and at a level of its
  * own, then dying as the hit does: a few people clapping, then a crowd. 0: the clap as it was */
 static uint8_t dx_hands;
-static dx_lane_t dx_kit[8];                              /* (defined below with the factory kit: the BP knows its lanes) */
+static dx_lane_t dx_kit[8] __attribute__((section(".data.dx_kit")));                              /* (the music's kit: DX_KITS below; V10.6o: no initializer, the
+                                                          * power-on and a project set it) */
 /* (JIANT 0.6.49) EDIT > LAYER, each sound's (the kit's: project.c keeps it, FUNC's 'D' 'L' block; 0 before it): low
  * nibble LAYER, a second oscillator (a triangle) at sqrt 2 of the pitch (the most out of tune with it there is) frequency-modulated
  * by the first, more as it goes up (1..15: a metal edge .. a clang with no note: the sound melts into the rhythm and
  * stays out of the harmony); high nibble FEEDBK, the sound's own oscillator fed back (on top of TONE's, the kit's) */
-#define DX_LAY_INIT {0, 6, 0, 9, 9, 0, 0, 11}            /* (the factory kit's: DX_LAY_DEF) */
-static uint8_t dx_lay[8] = DX_LAY_INIT;
+static uint8_t dx_lay[8] __attribute__((section(".data.dx_lay")));                                /* (V10.6o: no initializer; the power-on and a project set it: the
+                                                          * factory kit's, DX_LAY_DEF) */
 #define DX_LAY_L(x) ((uint32_t)(x) & 15u)
 #define DX_LAY_FB(x) ((uint32_t)(x) >> 4)
 #define DX_TONE_BP(t) ((uint32_t)(t) & 15u)
@@ -301,22 +293,15 @@ static __attribute__((noinline)) void dx_run_fx(const dx_lane_t *L, dx_voice_t *
                 y[i] = mulq15(sine_i(ph), ga >> 8);
                 ph += (uint32_t)inc << 4;
             }
-        } else if (!warp) {                              /* FM: up to ~1.5 cycles of phase */
-            uint32_t ph2 = v->ph2, ratio = DX_RATIO[wave];
-            int32_t idx = q[DXP_COLOR] * 3;
-            for (i = 0; i < n; i++, inc += dinc, ga += dga) {
-                y[i] = mulq15(sine_i(ph + (uint32_t)(sine_i(ph2) * idx) * 512u), ga >> 8);
-                ph += (uint32_t)inc << 4;
-                ph2 += ((uint32_t)inc >> 8) * ratio;
-            }
-            v->ph2 = ph2;
-        } else {                                         /* (0.6.36) FM ENV: the FM struck with the hit and gone with
-                                                          * the pitch envelope (1..40 ms): a beater, a click, a metal
-                                                          * edge on the attack, the tail clean; a SINE gets its octave
-                                                          * as the modulator, the other waves their own ratio and
-                                                          * COLOR's index under it */
+        } else {                                         /* FM (up to ~1.5 cycles of phase: COLOR's index), and (0.6.36)
+                                                          * FM ENV: the FM struck with the hit and gone with the pitch
+                                                          * envelope (1..40 ms): a beater, a click, a metal edge on the
+                                                          * attack, the tail clean; a SINE gets its octave as the
+                                                          * modulator, the other waves their own ratio and COLOR's index
+                                                          * under it. (V10.6o: one loop; without FM ENV, FEEDBK and LAYER
+                                                          * its index steady, nothing fed back, as the plain FM loop was) */
             uint32_t ph2 = v->ph2, ratio = wave == DXW_SINE ? 8192u : DX_RATIO[wave];
-            int32_t base = wave == DXW_SINE ? 0 : q[DXP_COLOR] * 3, fe = dx_fm_lim(dx_fm_env(fm), inc1, ratio);   /* (snd1) */
+            int32_t base = wave == DXW_SINE ? 0 : q[DXP_COLOR] * 3, fe = fm ? dx_fm_lim(dx_fm_env(fm), inc1, ratio) : 0;   /* (snd1) */
             int32_t ix = base + ((fe * v->ep) >> 15), dix = ((base + ((fe * ep1) >> 15)) - ix) / (int32_t)n;
             int32_t o = v->mo, o1 = v->mo1, fbk = DX_FB_CURVE[lfb > 15 ? 15 : lfb];   /* (FEEDBK: on its curve, snd1) */
             if (lay) {                                   /* (0.6.49) LAYER: a second one at sqrt 2, FM'd by the first */
@@ -331,8 +316,10 @@ static __attribute__((noinline)) void dx_run_fx(const dx_lane_t *L, dx_voice_t *
                     ph2 += ((uint32_t)inc >> 8) * ratio;
                 }
             v->ph2 = ph2;
-            v->mo = o;
-            v->mo1 = (int16_t)o1;
+            if (warp) {                                  /* (the feedback's memory: only its own loop's) */
+                v->mo = o;
+                v->mo1 = (int16_t)o1;
+            }
         }
         v->ph = ph;
         if (L->mode & DX_DRIVE)                         /* (JIANT 0.4) DRIVE: x3 into the soft clip, the level near */
@@ -353,27 +340,22 @@ static __attribute__((noinline)) void dx_run_fx(const dx_lane_t *L, dx_voice_t *
     }
     if (ng) {                                            /* the noise through its filter */
         int32_t ic1 = v->ic1, ic2 = v->ic2, rng = v->rng;
+        int32_t mr, ck, cv;                              /* (V10.6o: one loop) the output r & mr - k v1 - cv v2: LP v2,
+                                                          * BP v1, HP r - k v1 - v2 (each exactly as its own loop was) */
         kd = flt == DXF_BP ? 2400 : 6000;                /* (BP a little resonant) */
         tsvf_coef_k(&c, (q[DXP_COLOR] + 14) << 8, kd);   /* (+ an octave of the table: the same Hz at half rate) */
-/* (one loop per filter: the choice is not made per sample) */
-#define DX_NOISE(OUT)                                                                                              \
-        for (i = 0; i < n; i++, gn += dgn) {                                                                       \
-            int32_t r = (((int32_t)noise32(&rng) >> 17) * 23170) >> 15, v3 = r - ic2, v1, v2;   /* +-11585: 1/sqrt2,  \
-                                                          * half rate (the same power in half the band: +3 dB) */      \
-            v1 = (c.a1 * ic1 + c.a2 * v3) >> 13;                                                                   \
-            v2 = ic2 + ((c.a2 * ic1 + c.a3 * v3) >> 13);                                                           \
-            ic1 = clamp(2 * v1 - ic1, -150000, 150000);                                                            \
-            ic2 = clamp(2 * v2 - ic2, -150000, 150000);                                                            \
-            y[i] += mulq15(clamp((OUT) << 1, -32767, 32767), gn >> 8);                                            \
+        mr = flt == DXF_LP || flt == DXF_BP ? 0 : -1;
+        ck = flt == DXF_LP ? 0 : flt == DXF_BP ? -4096 : kd;
+        cv = flt == DXF_LP ? -1 : flt == DXF_BP ? 0 : 1;
+        for (i = 0; i < n; i++, gn += dgn) {
+            int32_t r = (((int32_t)noise32(&rng) >> 17) * 23170) >> 15, v3 = r - ic2, v1, v2;   /* +-11585: 1/sqrt2,
+                                                          * half rate (the same power in half the band: +3 dB) */
+            v1 = (c.a1 * ic1 + c.a2 * v3) >> 13;
+            v2 = ic2 + ((c.a2 * ic1 + c.a3 * v3) >> 13);
+            ic1 = clamp(2 * v1 - ic1, -150000, 150000);
+            ic2 = clamp(2 * v2 - ic2, -150000, 150000);
+            y[i] += mulq15(clamp(((r & mr) - ((ck * v1) >> 12) - cv * v2) << 1, -32767, 32767), gn >> 8);
         }
-
-        if (flt == DXF_LP)
-            DX_NOISE(v2)
-        else if (flt == DXF_BP)
-            DX_NOISE(v1)
-        else
-            DX_NOISE(r - ((kd * v1) >> 12) - v2)
-#undef DX_NOISE
         v->ic1 = ic1;
         v->ic2 = ic2;
         v->rng = rng;
@@ -421,25 +403,10 @@ static __attribute__((noinline)) void dx_run_fx(const dx_lane_t *L, dx_voice_t *
     }
 }
 
-/* the factory kit (DRUM's): {mode, A, B}, A and B {PITCH PMOD DECAY NOISE COLOR}. dx_kit is the music's
- * kit: a section's (project.c keeps it in the project, the song stages it with the section), edited on EDIT >
- * SOUND (ui_input.c); DX_KIT_DEF what a project without one gets */
-#define DX_KIT_INIT {                                                                                                     \
-    {DX_MODE(DXW_SINE, DXF_LP, 1), {9, 70, 72, 4, 20}, {14, 100, 88, 10, 60}},        /* KICK */                    \
-    {DX_MODE(DXW_FM, DXF_BP, 0), {40, 30, 52, 80, 90}, {46, 18, 64, 104, 70}},       /* SNARE */                    \
-    {DX_MODE(DXW_SINE, DXF_BP, 0), {60, 0, 46, 127, 84}, {54, 0, 58, 127, 76}},      /* CLAP */                     \
-    {DX_MODE(DXW_METAL, DXF_HP, 0), {100, 0, 22, 96, 116}, {108, 0, 14, 112, 122}},  /* HAT CL */                   \
-    {DX_MODE(DXW_METAL, DXF_HP, 0), {100, 0, 62, 96, 112}, {108, 0, 74, 112, 118}},  /* HAT OP */                   \
-    {DX_MODE(DXW_SINE, DXF_LP, 1), {30, 40, 66, 10, 30}, {36, 60, 76, 20, 50}},      /* TOM */                      \
-    {DX_MODE(DXW_BELL, DXF_HP, 1), {63, 10, 14, 16, 46}, {70, 24, 20, 30, 60}},     /* RIM */                       \
-    {DX_MODE(DXW_METAL, DXF_BP, 1), {64, 0, 44, 34, 50}, {68, 0, 54, 46, 62}},       /* BELL (0.6.49: shorter, noisier) */\
-}
-static const dx_lane_t DX_KIT_DEF[8] = DX_KIT_INIT;
-/* (0.6.49) the factory kit's LAYERs (FEEDBK 0): the snare, the hats and the bell (no note to them); the rest clean (CPU) */
-static const uint8_t DX_LAY_DEF[8] = DX_LAY_INIT;
-static dx_lane_t dx_kit[8] = DX_KIT_INIT;
-/* (0.7.2) the factory kits: DRUM's presets (eng_drum.c DRUM_PRESETS, one a kit, in this order), each the eight sounds,
- * their LAYERs and their SENDs (bus << 6 | amount). The first is the kit above. Loaded whole by a preset (ui.c
+/* (0.7.2) the factory kits: DRUM's presets (eng_drum.c DRUM_PRESETS, one a kit, in this order), each the eight sounds
+ * ({mode, A, B}, A and B {PITCH PMOD DECAY NOISE COLOR}), their LAYERs and their SENDs (bus << 6 | amount). The first
+ * is the factory kit (DX_KIT_DEF, below). dx_kit is the music's kit: a section's (project.c keeps it in the project,
+ * the song stages it with the section), edited on EDIT > SOUND (ui_input.c). Loaded whole by a preset (ui.c
  * apply_preset_to: dx_kit_load) into the section's kit; INIT SOUND and a new project take the first */
 typedef struct { dx_lane_t lane[8]; uint8_t lay[8]; uint8_t snd[8]; } dx_kit_t;
 static const dx_kit_t DX_KITS[] = {
@@ -576,6 +543,10 @@ static const dx_kit_t DX_KITS[] = {
     },
 };
 #define DX_NKIT ((uint32_t)(sizeof DX_KITS / sizeof DX_KITS[0]))
+/* (V10.6o) the factory kit (DX_KIT_DEF: what a project without one gets) and (0.6.49) its LAYERs (FEEDBK 0: the snare,
+ * the hats and the bell, no note to them; the rest clean, CPU): the first kit's, DRUM-X (were copies of it) */
+#define DX_KIT_DEF (DX_KITS[0].lane)
+#define DX_LAY_DEF (DX_KITS[0].lay)
 /* a stored kit as the voice takes it: values 0..127, the mode's fields in range (wave 0..3, filter 0..2, snap) */
 static int dx_kit_ok(const dx_lane_t *k)
 {

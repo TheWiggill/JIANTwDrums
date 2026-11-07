@@ -47,7 +47,6 @@ typedef struct {
  * MORPH, +-64), SHPE (SINE TRI SAW RAMP S&H), RAND (each hit its own MORPH, up to +-64, and tune, up to +-1
  * semitone: no two hits alike). dx_mot_v: the LFO's MORPH offset this block (fx.c dx_mot_block) */
 enum { XM_RATE, XM_DPTH, XM_SHPE, XM_RAND };
-static uint8_t dx_acoustic; /* ADD15: 0 keeps the original DSP path; stored with the kit. */
 static uint8_t dx_mot[4];
 static int32_t dx_mot_v;
 static uint32_t dx_mot_rng = 0x9E3779B9u;
@@ -275,7 +274,7 @@ static voice_t *drum_reuse(track_t *t, uint32_t note)
     return v->active && (uint32_t)v->s[0] == lane ? v : 0;
 }
 
-static void drum_note_on(track_t *t, voice_t *v)
+static __attribute__((noinline)) void drum_note_on(track_t *t, voice_t *v)
 {
     drum_lane_t *K = drum_kit_of(t), *L;
     uint32_t i = (uint32_t)(v - t->v), lane;
@@ -319,34 +318,11 @@ static void drum_note_on(track_t *t, voice_t *v)
     } else {
         L->rm = L->rt = 0;
     }
-    if (dx_acoustic) {
-        dx_mot_rng=dx_mot_rng*1664525u+1013904223u;
-        L->rt=(int8_t)clamp((int32_t)L->rt+((int32_t)(dx_mot_rng>>28)%3-1)*(int32_t)dx_acoustic/127,-127,127);
-    }
     if (lane == DV_KICK)
         duck_hit = 1;
     dx_trigger(&L->x);
     if (lane == DV_HATC)                                 /* a closed hat chokes the open one */
         dx_choke(&K[DV_HATO].x);
-}
-
-/* First acoustic voicing: reuse the existing oscillators/filters, no extra voices or delays.
- * Pitch stays the kit's. Velocity changes brightness; each lane has its own damping/noise target. */
-static __attribute__((noinline)) void dx_acoustic_patch(dx_lane_t *out, const dx_lane_t *in, uint32_t lane, uint32_t velocity)
-{
-    static const uint8_t target[8][4] = {
-        {18,62,8,30},{8,48,88,72},{0,42,120,76},{0,24,88,108},
-        {0,64,88,104},{12,70,10,35},{3,18,20,48},{0,46,38,60}};
-    uint32_t side,k; int32_t amount=dx_acoustic;
-    *out=*in;
-    for(side=0;side<2;side++) {
-        uint8_t *v=side?out->b:out->a;
-        for(k=0;k<4;k++) {
-            int32_t goal=target[lane&7u][k];
-            if(k==3u) goal=clamp(goal+((int32_t)velocity-96)/6,0,127);
-            v[k+1u]=(uint8_t)((int32_t)v[k+1u]+(goal-v[k+1u])*amount/127);
-        }
-    }
 }
 
 /* the voice's amplitude: the hit, not the ADSR (which still runs, held at full so a release never ends
@@ -576,11 +552,6 @@ static void drum_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const 
         ml.amp1 = (m->amp1 >> 4) * gl >> 11;
         m = &ml;
     }
-    if(dx_acoustic) { /* Keep the harder acoustic hits below full scale without a per-sample stage. */
-        int32_t gain=32768-(int32_t)dx_acoustic*16;
-        int32_t a0=(m->amp0>>4)*gain>>11;
-        ml.amp1=(m->amp1>>4)*gain>>11;ml.amp0=a0;m=&ml;
-    }
     if (n > CTL)
         n = CTL;
     {   /* (0.6.81) the part's LFO on the kit (its hits never had a vmod's pitch or shape): PITCH tunes it, SHAPE moves
@@ -593,9 +564,7 @@ static void drum_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const 
         int32_t d = L->bd - L->bc;
         L->bc = (int16_t)(L->bc + (d > 0 ? (d < L->bs ? d : L->bs) : (-d < L->bs ? d : -L->bs)));
     }
-    dx_lane_t acoustic_patch;
     const dx_lane_t *patch=&dx_kit[(uint32_t)v->s[0] & (DV_NLANE-1u)];
-    if(dx_acoustic) { dx_acoustic_patch(&acoustic_patch,patch,(uint32_t)v->s[0],v->vel);patch=&acoustic_patch; }
     uint32_t hitfx=drum_hit_fx(L);
     dx_run_fx(patch, &L->x, p[P_E0] + dx_mot_v + L->rm + lfo_shp,
            L->st * 16 + L->rt + L->bc + (p[P_E1] - 64) * 3 + t->pfx_pit + lfo_pit,
