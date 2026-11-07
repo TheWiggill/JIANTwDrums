@@ -177,6 +177,17 @@ enum {                          /* per-track parameters */
 #define P_VLANG P_LRTRG
 #define P_DKEYMODE P_LRTRG        /* DRUM-X only: 0 classic, 1 extended performance octaves. */
 #define P_VLYR P_DXIMG
+/* (V10.6y, alex.knip) VOICE's CONS (EDIT > WORDS KNOB 3): its consonants' length, 50 .. 400 %, in DRUM-X's lane 2 level
+ * slot. 127 there (what every synth part holds) is 100 %, so a project or preset of before sings as it did: the knob's
+ * place (vcons_rank, params.c param_turn) is the value + 33, mod 128 (127 at 32: 50 .. 98 % left of it, 103 .. 400 %
+ * right). vcons_q6: the length, 1/64 (sing.c sy_enter) */
+#define P_VCONS P_LN1
+static inline uint32_t vcons_rank(int32_t v) { return ((uint32_t)v + 33u) & 127u; }
+static inline uint32_t vcons_q6(int32_t v)
+{
+    uint32_t r = vcons_rank(v);
+    return r < 32u ? 32u + r : 64u + (r - 32u) * 192u / 95u;
+}
 /* (JIANT 0.6.9) AUTO PAN (fx.c mix_part), in the slots of the old per-track SLICER (one on a bus since 0.6.3, its
  * slots stored, never read but by proj_sl_migrate). Laid so what old stores hold means OFF: DPTH where SLCR was (0, or
  * 1..2 from a project of before 0.6.3: inaudible), RATE where PAT was (1..16: slow), WAVE where RATE was (1: TRI), SYNC

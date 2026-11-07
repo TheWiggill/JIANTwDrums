@@ -252,14 +252,15 @@ static void __attribute__((noinline)) formant_word_render(track_t *t, voice_t *v
         a = (int32_t)((mac2_64(r4.a, a + (fz << 6), r4.b, y7) + mul64(r4.c, y8) + (1 << 29)) >> 30);
         y8 = y7;
         y7 = clamp(a, -(1 << 28), 1 << 28);
-        s = soft_knee(clamp((int32_t)(mac2_64(y7, og, y7 - y8, ogk) >> 21), -200000, 200000), 24000);
+        s = soft_knee(clamp((int32_t)(mac2_64(y7, og, y7 - y8, ogk) >> 23), -200000, 200000), 24000);   /* (V10.6y: as
+                                                         * formant_render's, a quarter: under the knee) */
         ph += incj;
         if (ph < incj) {                                /* a glottal period begins (the glottis shut: no step) */
             jr = (nz * jd) >> 15;
             incj = inc + (uint32_t)(incq * jr);
             shim = 32768 + (jr << 7);
         }
-        out[i] += voice_amp(s, m, i) << 1;
+        out[i] += voice_amp(s, m, i) * 23 >> 3;   /* (V10.6y: x 2.875, formant_render's) */
     }
     v->ph[0] = ph;
     v->ph[1] = (uint32_t)y7;
@@ -413,9 +414,12 @@ static void formant_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
         a = (int32_t)((mac2_64(r4.a, a, r4.b, y7) + mul64(r4.c, y8) + (1 << 29)) >> 30);
         y8 = y7;
         y7 = clamp(a, -(1 << 28), 1 << 28);             /* int32 state stays far from overflow */
-        s = soft_knee(clamp((int32_t)(mac2_64(y7, og, y7 - y8, ogk) >> 21), -200000, 200000), 24000);
+        /* (V10.6y, alex.knip: "AH" clipped) a quarter before the knee (>> 23, was >> 21: an open A at C4 reached 2.3x
+         * the knee, a third of its samples saturated) and x 2.875 after it (was x 2): a sung vowel peaks as ANALOG's
+         * first preset, -8.7 dB (was ~+9 dB over the other engines), no sample in the knee but CHANT's high notes */
+        s = soft_knee(clamp((int32_t)(mac2_64(y7, og, y7 - y8, ogk) >> 23), -200000, 200000), 24000);
         ph += inc;
-        out[i] += voice_amp(s, m, i) << 1;
+        out[i] += voice_amp(s, m, i) * 23 >> 3;
     }
     v->ph[0] = ph;
     v->ph[1] = (uint32_t)y7;

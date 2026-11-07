@@ -1600,6 +1600,7 @@ static void apply_preset_to(track_t *t, uint32_t pi)
     if (e == &ENG_FORMANT) {                          /* (0.8.5) VOICE's words: LANG, LYRIC (0: its vowels) */
         t->p[P_VLANG] = (int16_t)(e->presets[pi].xp & 3u);
         t->p[P_VLYR] = (int16_t)(e->presets[pi].xp >> 2);
+        t->p[P_VCONS] = 127;                            /* (V10.6y) CONS 100 % (a DRUM part's lane level before) */
     } else if (e->presets[pi].xp) {                   /* (V10.36) BREATHE: the LFO DRIFT, slow, on the filter */
         uint32_t x = e->presets[pi].xp;
         t->p[P_LWAVE] = 5;

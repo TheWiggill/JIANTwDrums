@@ -288,6 +288,7 @@ static const char *const N_DKEYMODE[] = {"CLASSIC", "EXTENDED"};
 static const param_desc_t DKEYMODE_DESC = {"KEY MAP",F_ENUM,0,1,1,N_DKEYMODE,0};   /* (2..9: EXTENDED, eng_drum.c drum_chrom) */
 static const param_desc_t SIMG_DESC = {"IMAGE", F_PCTINV, 0, 127, 127, 0, 0};   /* (V10.49) P_SIMG: 127 = 0 % */
 static const param_desc_t VLYR_DESC = {"LYRIC", F_ENUM, 0, LYR_N - 1, 0, N_LYRIC, 0};  /* P_VLANG, P_VLYR (sing.c) */
+static const param_desc_t VCONS_DESC = {"CONS", F_INT, 0, 127, 127, 0, 0};   /* (V10.6y) P_VCONS: 127 = 100 % (core.h) */
 static const param_desc_t *track_desc(const track_t *t, uint32_t id)
 {
     if (id == MOT_DJF)                                /* (0.9.1) a DJ FILTER record (motion.c): the global's */
@@ -295,8 +296,8 @@ static const param_desc_t *track_desc(const track_t *t, uint32_t id)
     if (id == P_SIMG && ENGINES[eng_idx(t->eng_req)] != &ENG_DRUM)   /* (V10.49) a synth's STEREO IMAGE */
         return &SIMG_DESC;
     if (id == P_DKEYMODE && ENGINES[eng_idx(t->eng_req)] == &ENG_DRUM) return &DKEYMODE_DESC;
-    if ((id == P_VLANG || id == P_VLYR) && ENGINES[eng_idx(t->eng_req)] == &ENG_FORMANT)
-        return id == P_VLANG ? &VLANG_DESC : &VLYR_DESC;
+    if ((id == P_VLANG || id == P_VLYR || id == P_VCONS) && ENGINES[eng_idx(t->eng_req)] == &ENG_FORMANT)
+        return id == P_VLANG ? &VLANG_DESC : id == P_VLYR ? &VLYR_DESC : &VCONS_DESC;
     if (id >= P_E0 && id <= P_E7) {                   /* the engine asked for (t->engine follows after a fade) */
         const engine_t *e = ENGINES[eng_idx(t->eng_req)];
         const param_desc_t *d = e->desc ? e->desc(t, id - P_E0) : 0;   /* a mode-dependent label / names */
@@ -395,6 +396,7 @@ static int32_t enum_rank(const param_desc_t *d, int32_t v)   /* v's place in the
     const uint8_t *o = enum_order(d);
     int32_t r;
     if (d->fmt == F_PCTINV) return d->max + d->min - v;   /* (the gauge full at 0) */
+    if (d == &VCONS_DESC) return (int32_t)vcons_rank(v);   /* (V10.6y: its place, core.h) */
     for (r = 0; o && r < d->max - d->min; r++)
         if (o[r] == v - d->min)
             break;
@@ -421,6 +423,8 @@ static int32_t param_turn(const param_desc_t *d, int32_t v, int32_t steps)
     const uint8_t *o = enum_order(d);
     uint32_t k, i, w = (uint32_t)(d->max - d->min + 1);
     if (d->fmt == F_PCTINV) steps = -steps;         /* (right: more chance, less skipped) */
+    if (d == &VCONS_DESC)                           /* (V10.6y) CONS: over its places, 127 (100 %) at 32 */
+        return (clamp((int32_t)vcons_rank(v) + steps, 0, 127) + 95) & 127;
     if (o)
         return o[clamp(enum_rank(d, v) - d->min + steps, 0, d->max - d->min)] + d->min;
     if (d->fmt == F_INT && d->names && (i = name_of(d, v, &k), k < w)) {   /* (p1, main 0.9.16) a name a detent (VOICE's
@@ -476,6 +480,11 @@ static void param_format(const param_desc_t *d, int32_t v, char *val, const char
         static const param_desc_t SEMI = {0, F_SEMI, 0, 0, 0, 0, 0};
         d = &SEMI;
         v = 64 - v;
+    }
+    if (d == &VCONS_DESC) {                             /* (V10.6y) VOICE's CONS: 50 .. 400 % */
+        fmt_int(val, (int32_t)vcons_q6(v) * 100 / 64);
+        *unit = "%";
+        return;
     }
     switch (d->fmt) {
     case F_PCT:                                     /* a 0..100 range (SWG) is its value, others a share of 127 */
@@ -682,7 +691,8 @@ static const page_t PAGES[] = {
                                                          * mode: SCENE, TRACK, ROLE, CHORD (ui_scene.c) */
     {"EDIT 1", FAM_EDIT, SC_ENGINE, GR_NONE, {P_E0, P_E1, P_E2, P_E3}},
     {"EDIT 2", FAM_EDIT, SC_ENGINE, GR_NONE, {P_E4, P_E5, P_E6, P_E7}},
-    {"WORDS", FAM_EDIT, SC_TRACK, GR_LYRIC, {P_VLANG, P_VLYR, P_E0, 0xFF}},   /* (0.8.5) VOICE: LANG LYRIC POS, OCT+ TYPE
+    {"WORDS", FAM_EDIT, SC_TRACK, GR_LYRIC, {P_VLANG, P_VLYR, P_VCONS, 0xFF}},   /* (0.8.5) VOICE: LANG LYRIC, (V10.6y) CONS
+                                                         * where POS was (POS: EDIT 1's KNOB 1, LANG on), OCT+ TYPE
                                                          * (the lyric on the NAME screen, ui_name.c) */
     {"RETRIG", FAM_EDIT, SC_TRACK, GR_NONE, {P_LRTRG, 0xFF, 0xFF, 0xFF}},
     {"MORPH", FAM_EDIT, SC_TRACK, GR_MORPH, {P_MORPH, P_DRIFT, 0xFF, 0xFF}},   /* (0.6.45) ANALOG PHASE LOFI: the wave morphs;

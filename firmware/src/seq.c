@@ -1525,7 +1525,7 @@ static void seq_start(void)
         t->rh_n = 0;
         t->rat_left = 0;
         t->arp_from = 0; t->loops = 0;             /* (0.6.39) the components: the first loop, no arpeggio */
-        t->jump_to = t->rev = 0;                   /* (0.6.42) no JUMP, REV (LIVE's) */
+        t->jump_to = 0;                            /* (0.6.42) no JUMP (LIVE's) */
         t->csp_n = t->c_pre = t->c_acc = 0;        /* (seq2d) no component span, PRE false, TRANSPOSE from its place */
         t->cpos = t->cv_on = 0;                    /* (0.6.47) C.LEN's lane from its first step */
     }
@@ -2166,7 +2166,7 @@ static uint32_t seq_early(const track_t *t, uint32_t period, uint32_t len)
     uint32_t ni = (t->seq_idx + 1u) % (len ? len : 1u);
     const step_t *s;
     int32_t m;
-    if (t->jump_to || t->rev || (t->pfx & PFX_RND) || (!ni && (chain.running || chain.armed)))
+    if (t->jump_to || (t->pfx & PFX_RND) || (!ni && (chain.running || chain.armed)))
         return 0;
     s = shift_ahead(t, 1u, len);
     if (s->time != ST_NOTE || (!s->n && !s->hit))       /* (nothing to play there: never early) */
@@ -2332,7 +2332,7 @@ static void seq_stop(void)
         trk[i].rh_n = 0;                           /* a recorded note held over the stop: as far as it got */
         trk[i].rat_left = 0;
         trk[i].arp_from = 0;
-        trk[i].csp_n = trk[i].jump_to = trk[i].rev = 0;   /* (seq2d: no component span) */
+        trk[i].csp_n = trk[i].jump_to = 0;   /* (seq2d: no component span) */
         trk[i].cpos = trk[i].cv_on = 0;
     }
     fg_reset();                                    /* (0.6.52) FUGUE's heads silent */
@@ -2894,19 +2894,12 @@ static void seq_tick(track_t *t, uint32_t n)
         ev_at(start || t->seq_pos >= n ? 0u : n - t->seq_pos);   /* (ctl64) the step's first sample (seq_pos: the samples
                                                          * past it at the block's end; 0 past it: the next block's first) */
         t->ext = (uint16_t)(start ? 0u : e);            /* (the next one longer by as much: the grid kept) */
-        if (t->jump_to && !start) {              /* (0.6.42) JUMP: the step it names */
+        if (t->jump_to && !start)                /* (0.6.42) JUMP: the step it names (LIVE's; V10.6y: REV, never set
+                                                 * since LIVE's went, gone) */
             t->seq_idx = (uint16_t)((t->jump_to - 1u) % (len ? len : 1u));
-            t->rev = 0;
-        } else if (t->rev && !start && t->seq_idx > 1u) {   /* REV: back towards step 1 */
-            t->seq_idx--;
-        } else if (t->rev && !start) {
-            t->seq_idx = 0;
-            t->rev = 0;
-        } else {
+        else
             t->seq_idx = (uint16_t)((t->seq_idx + 1u) % (len ? len : 1u));
-        }
         t->jump_to = 0;
-        if (start) t->rev = 0;
         if (!t->seq_idx && !start && t->loops < 0xFFFFu)
             t->loops++;                                 /* (0.6.39) one more loop of the pattern (TRIG) */
         if (!lon)

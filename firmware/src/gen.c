@@ -2134,7 +2134,7 @@ static void gx_genre(ggenre_t *m)
 /* the progression: (V10.6n) one to three chords, each sharing a tone with the one before (a third or a fourth away;
  * a step now and then: the bass moving by step), each a major or minor triad of the mode, now and then coloured (the
  * raised, a secondary dominant, the parallel mode's, the flat side's), any quality but the rootless */
-static void gx_prog(void)
+BTAPP_FN static void gx_prog(void)            /* (V10.6y: gen_pick's, in the segment with it) */
 {
     static const uint8_t QW[Q_N] = {20, 14, 8, 8, 8, 8, 6, 6, 6, 4, 6, 0}, FL[5] = {0, F_MAJ, F_DOM, F_PAR, F_FLAT}, FW[5] = {76, 6, 6, 6, 6};
     static const uint8_t MV[6] = {2, 5, 3, 4, 1, 6}, MW[6] = {30, 30, 15, 15, 5, 5};   /* (the root's move: thirds, fourths, a step) */
@@ -2408,8 +2408,9 @@ static void gen_clean(void)
 static int8_t dice_force_style = -1, dice_force_energy = -1;   /* (a film's script, the renders: this genre, this energy) */
 /* (p2, main 0.9.18) the piece's choices after its genre (gen_make's, from the GS_PICK stream: the same calls in the same
  * order): the key, the energy and the amounts, the progression, the loop, the plan, the bass's archetype. SEQ + SELECT's
- * too (dice_seq: a part where no piece of the generator plays) */
-static void gen_pick(void)
+ * too (dice_seq: a part where no piece of the generator plays). (V10.6y) In the Bluetooth segment (BTAPP_FN: the app
+ * slot full), called only once bt_hw_seg() said it is this build's: gen_go, dice_seq and trackgen_make ask first */
+BTAPP_FN static void gen_pick(void)
 {
     const ggenre_t *g = gs.g;
     uint32_t k, pr, steps;
@@ -2746,6 +2747,7 @@ static void gen_go(void)
     uint32_t k;
     char b[8];
     uint32_t play = song.playing || chain_busy() || seq_counting();
+    if (!bt_hw_seg()) { ui_message("UPDATE PACKAGE"); return; }   /* (V10.6y: gen_pick in the segment) */
     if (play) {
         fm1_irq_off(); seq_stop(); transport_req = 0; fm1_irq_on();
         song_poll();
@@ -2858,6 +2860,7 @@ static const char *dice_seq(track_t *t)
     uint16_t s0 = gp.seed;
     int16_t was[NSTEP], now[NSTEP];
     uint8_t lead0, arp0, arp1, pads0, drum0;
+    if (!bt_hw_seg()) return "UPDATE PACKAGE";         /* (V10.6y: gen_pick in the segment) */
     rng_state ^= fm1_ticks() * 2654435761u;
     if (!rng_state) rng_state = 0x1234567u;
     for (i = 0; i < NSTEP; i++)                         /* (what it plays now: its register, its chords) */
