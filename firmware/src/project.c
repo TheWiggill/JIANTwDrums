@@ -1821,7 +1821,14 @@ static void persist_boot(void)                    /* before settings_init / pane
 #if FELUCCA_FLASH
     persist_t p;
     uint32_t f = irq_save();
-    flash_ok = FL_FAR(fl_jedec_ram)() == 0x856014u;       /* the expected 1 MiB part, else stay RAM-only */
+    {                                                   /* a 1 MiB part, else stay RAM-only: Puya's 0x856014, or
+                                                         * 0xB36014 (another maker's, the same type and capacity) in
+                                                         * the units sold from late 2026 (the logo on the front). The
+                                                         * driver uses only generic SPI NOR commands (9F 05 35 06 20
+                                                         * 02 0B), as the stock firmware on those units does */
+        uint32_t id = FL_FAR(fl_jedec_ram)();
+        flash_ok = id == 0x856014u || id == 0xB36014u;
+    }
     irq_restore(f);
     if (!flash_ok)
         return;
