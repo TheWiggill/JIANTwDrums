@@ -326,6 +326,9 @@ if [ -f build/gen/felucca_tables.h ]; then
     $CC -w -Ibuild/gen -Ifirmware/src -o "$OUT/editor_test" tests/editor_test.c -lm
     run "editor: real C protocol, malformed transfers, queue recovery, MENU settings (writes build/host/menu.json)" \
         env MENU_JSON="$OUT/menu.json" "$OUT/editor_test"
+    $CC -w -Ibuild/gen -Ifirmware/src -o "$OUT/app_contract_test" tests/app_contract_test.c -lm
+    run "app contract: the Stems app's requests vs golden replies, 1.0 pushes, engine ids, NRPN (docs/NRPN.md)" \
+        "$OUT/app_contract_test"
     $CC -w -Ibuild/gen -Ifirmware/src -o "$OUT/robust_test" tests/robust_test.c -lm
     run "robustness: engine numbers, retained old projects, preset patterns, malformed requests" \
         "$OUT/robust_test"

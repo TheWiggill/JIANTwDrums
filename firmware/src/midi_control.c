@@ -11,6 +11,7 @@ typedef struct {
     uint8_t owned[NTRK];                    /* held/pedal notes per track, at most 128 per channel */
     uint8_t ready, semis, cents;
     uint8_t rpn_msb, rpn_lsb;
+    uint8_t nrpn_msb, nrpn_lsb, nrpn_v;     /* (V10.6z3) the NRPN selected (127: none) and its data entry MSB */
 } midi_channel_t;
 static midi_channel_t midi_ch[16];
 /* A nibble per note (JIANT: two to a byte, 1 KB): low bits track + 1, bit 3 key released, held by its channel's pedal */
@@ -55,7 +56,7 @@ static midi_channel_t *midi_channel(uint32_t ch)
     midi_channel_t *c = &midi_ch[ch];
     if (!c->ready) {
         c->semis = 2;
-        c->rpn_msb = c->rpn_lsb = 127;
+        c->rpn_msb = c->rpn_lsb = c->nrpn_msb = 127;
         c->ready = 1;
     }
     return c;
@@ -256,15 +257,42 @@ static const uint8_t MIDI_CC_ENG[NENGINES] = {
     0x26,                                             /* (snd5) ADD BRIGHT FORMNT */
     0x23, 0x00,  /* (V10.54: then INPUT, none) */  /* ANIMAL PRESS (TOUCH CLICK BUZZ MOUTH), CHAOS (COUPLE Q DRIFT ROUGH) */
 };
-/* a CC's value 0..127 over parameter id's range of track t, as a knob sets it; AUTOMATION records it */
-static void __attribute__((noinline)) midi_cc_set(track_t *t, uint32_t id, uint32_t value)
+/* a CC's value 0..top (127, or an NRPN's 16383) over parameter id's range of track t (d), as a knob sets it;
+ * AUTOMATION records it */
+static void __attribute__((noinline)) midi_val_set(track_t *t, const param_desc_t *d, uint32_t id, uint32_t value, int32_t top)
 {
-    const param_desc_t *d = param_desc_of(eng_idx(t->eng_req), id);
-    int32_t v = d->min + ((int32_t)value * (d->max - d->min) + 63) / 127;
+    int32_t v = d->min + ((int32_t)value * (d->max - d->min) + top / 2) / top;
     if (d->max <= d->min || t->p[id] == v)
         return;
     t->p[id] = (int16_t)v;
     (void)motion_capture(t, id, (int16_t)v);
+}
+static void midi_cc_set(track_t *t, uint32_t id, uint32_t value)
+{
+    midi_val_set(t, param_desc_of(eng_idx(t->eng_req), id), id, value, 127);
+}
+/* (V10.6z3, editor protocol 1.0: docs/NRPN.md) NRPN on the channel a track plays (ROUT as notes; channel 16 also with
+ * ROUT CH1-6, the selected track): CC99 0, CC98 a P_* id that automation records (motion_param), CC6 the value's top 7
+ * bits (alone: a 7-bit value, as a CC's), CC38 its low 7 (a 14-bit value, after CC6), over the range DESC / TRACK_PARAM
+ * give. CC99 1, CC98 a global id: the global (no transport, routing, load / save, engine switch: NRPN_G_NO). AUTOMATION
+ * records a track's as a knob move (the DJ FILTER's too); a held CC99 / CC98 takes any number of values */
+static __attribute__((noinline)) void midi_nrpn(uint32_t ch, midi_channel_t *c, uint32_t lo, uint32_t value)
+{
+    uint32_t id = c->nrpn_lsb, x;
+    track_t *t = midi_track(ch);
+    if (!lo)
+        c->nrpn_v = (uint8_t)value;
+    x = (uint32_t)c->nrpn_v << 7 | (lo ? value : c->nrpn_v);   /* (7 bits alone: 0 .. 127 -> 0 .. 16383, as a CC) */
+    if (!c->nrpn_msb) {
+        if (id < P_COUNT && motion_param(id))
+            midi_val_set(t, track_desc(t, id), id, x, 16383);
+    } else if (nrpn_g_ok(id)) {
+        int32_t v = GP[id].min + ((int32_t)x * (GP[id].max - GP[id].min) + 8191) / 16383;
+        if (id == G_DJF)
+            motion_djf_set(t, (int16_t)v);
+        else
+            song.g[id] = (int16_t)v;
+    }
 }
 static void __attribute__((noinline)) midi_cc_map(track_t *t, uint32_t cc, uint32_t value)
 {
@@ -380,13 +408,19 @@ static void midi_control(uint32_t ch, uint32_t cc, uint32_t value)
         else
             midi_pedal_up(ch);
         break;
-    case 101: c->rpn_msb = (uint8_t)value; break;
-    case 100: c->rpn_lsb = (uint8_t)value; break;
+    case 101: c->rpn_msb = (uint8_t)value; c->nrpn_msb = 127; break;
+    case 100: c->rpn_lsb = (uint8_t)value; c->nrpn_msb = 127; break;
     case 99: case 98:                              /* NRPN selection cancels RPN data entry */
         c->rpn_msb = c->rpn_lsb = 127;
+        if (cc == 99u)
+            c->nrpn_msb = (uint8_t)value;
+        else
+            c->nrpn_lsb = (uint8_t)value;
         break;
     case 6: case 38:
-        if (!c->rpn_msb && !c->rpn_lsb) {           /* RPN 0: +/-0..24 semitones, 0..99 cents */
+        if (c->nrpn_msb <= 1u)                     /* (V10.6z3) NRPN 0 / 1: a track's or a global parameter */
+            midi_nrpn(ch, c, cc == 38u, value);
+        else if (!c->rpn_msb && !c->rpn_lsb) {      /* RPN 0: +/-0..24 semitones, 0..99 cents */
             if (cc == 6u)
                 c->semis = (uint8_t)(value > 24u ? 24u : value);
             else
@@ -441,8 +475,11 @@ static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint3
         midi_song_req = (uint8_t)(d1 + 1u);
         return;
     }
-    if (ch >= NPART && !song.g[G_ROUTE] && !(split_cfg[0] && ch == split_cfg[6]) && (!midi_channel(ch)->targets || (st == 0x90u && d2)))
+    if (ch >= NPART && !song.g[G_ROUTE] && !(split_cfg[0] && ch == split_cfg[6]) && (!midi_channel(ch)->targets || (st == 0x90u && d2))) {
+        if (ch == 15u && st == 0xB0u && (d1 == 99u || d1 == 98u || d1 == 6u || d1 == 38u))
+            midi_control(ch, d1, d2);              /* (V10.6z3) channel 16's NRPN (the globals: MIDI OUT sends them there) */
         return;
+    }
     if (st == 0x90u || st == 0x80u)
         midi_note_event(ch, d1, st == 0x90u ? d2 : 0);
     else if (st == 0xE0u) {

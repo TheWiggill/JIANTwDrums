@@ -126,8 +126,63 @@ static void mo_key(const track_t *t, uint32_t pkt)   /* a key's note: not with O
         midi_out_event(pkt);
 }
 static int mo_clock_on(void) { return (mo_lvl == MO_CLOCK || mo_lvl == MO_ALL) && !song.g[G_CLOCK]; }
+/* (V10.6z3, protocol 1.0) MIDI OUT ALL: a knob turned on the panel goes out as an NRPN (docs/NRPN.md): the UI queues
+ * which (mo_knob: track k << 7 | P_* id; k 7: global id), the ISR sends the value it holds then, scaled to 14 bits over
+ * the range DESC gives: CC99 0 (track, its channel) or 1 (global, channel 16), CC98 the id, CC6 / CC38 the value */
+#define NRPN_G_NO (1u << G_CLOCK | 1u << G_MIDI | 1u << G_ROUTE | 1u << G_INFO | 1u << G_SLOT | 1u << G_LOAD | \
+                   1u << G_SAVE | 1u << G_ENGSEL | 1u << G_CLRSEQ | 1u << G_INITSND)
+static int motion_param(uint32_t id);   /* (motion.c) */
+/* a global NRPN 1 reaches (in and out): not the transport, routing, load / save or engine switch, nor a fixed one */
+static int nrpn_g_ok(uint32_t id)
+{
+    return id < G_COUNT && !(id < 32u && (NRPN_G_NO >> id) & 1u) && GP[id].max > GP[id].min;
+}
+static const uint8_t NRPN_CC[4] = {99, 98, 6, 38};
+static uint16_t mo_kq[8];
+static volatile uint8_t mo_kw, mo_kr;
+static void mo_knob(uint32_t k, uint32_t id)
+{
+    uint32_t e = k << 7 | id;
+    if (mo_lvl != MO_ALL || (k >= NTRK && !nrpn_g_ok(id)) || (k < NTRK && !motion_param(id)) || (uint8_t)(mo_kw - mo_kr) >= 8u ||
+        ((uint8_t)(mo_kw - mo_kr) >= 2u && mo_kq[(mo_kw - 1u) & 7u] == e))   /* (queued, not taken yet: its latest value goes) */
+        return;
+    mo_kq[mo_kw & 7u] = (uint16_t)e;
+    RING_PUBLISH();
+    mo_kw++;
+}
+/* value v of a parameter of range d as 14 bits (docs/NRPN.md: the inverse of midi_nrpn's scaling) */
+static uint32_t nrpn_of(const param_desc_t *d, int32_t v)
+{
+    int32_t r = d->max - d->min;
+    return r > 0 ? (uint32_t)(((clamp(v, d->min, d->max) - d->min) * 16383 + r / 2) / r) : 0u;
+}
+static __attribute__((noinline)) void mo_knobs(void)
+{
+    while (mo_kr != mo_kw) {
+        uint32_t e = mo_kq[mo_kr & 7u], k = e >> 7, id = e & 127u, ch = 15u, x;
+        const param_desc_t *d;
+        int32_t v;
+        mo_kr++;
+        if (k < NTRK) {
+            d = track_desc(&trk[k], id);
+            v = trk[k].p[id];
+            ch = trk_midi_ch(k);
+        } else {
+            d = &GP[id];
+            v = song.g[id];
+        }
+        if (d->max <= d->min)
+            continue;
+        x = nrpn_of(d, v);
+        x = (uint32_t)(k >= NTRK) | id << 7 | (x >> 7) << 14 | (x & 127u) << 21;   /* CC99, CC98, CC6, CC38 */
+        for (k = 0; k < 4u; k++, x >>= 7)
+            mo_send(0xB0u | ch, NRPN_CC[k], x & 127u);
+    }
+}
 static __attribute__((noinline)) void mo_block(uint32_t n)   /* events_block: the setting changed; the clock */
 {
+    if (mo_kr != mo_kw)
+        mo_knobs();
     if (mo_lvl != mo_last) {
         if (mo_last == MO_ALL)
             mo_flush();
@@ -531,6 +586,8 @@ static volatile uint8_t fx_lock_on;              /* (0.6.44) ui_layer.c: the FX 
                                                  * the keys are its effects without FX held */
 static volatile uint32_t beat_pos, beat_n;      /* samples into the beat, the beat of the bar (0..3) */
 static volatile uint32_t bar_n;                 /* (0.6.43) the bars since PLAY (MUTATE: project.c mutate_poll) */
+static uint8_t mut_n[NTRK];                     /* (V10.6z3) each track's EUCLID MUTATEs, counted (ui_euclid.c eu_mutate; the
+                                                 * editor's MUTATE push, editor.c) */
 
 /* the metronome (click.c) and the count-in (1.1, Discussion #131). The click follows the song tempo's quarter notes
  * (BPM, or the external clock's 24 pulses), 4 to the bar, the first accented, whatever a track's DIV or SWING: a beat is

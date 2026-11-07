@@ -469,6 +469,7 @@ static void knob_cap(track_t *t, uint32_t id)
 {
     motion_capture(t, id, t->p[id]);
     ml_knob(t, id);
+    mo_knob(trk_index(t), id);                         /* (V10.6z3) MIDI OUT ALL: the move as an NRPN (seq.c) */
 }
 /* (V10.23, a tester: "the STRING modes don't take until a knob goes up") STRING's EXCITE into or out of FDBK: EDIT 2's
  * four knobs change meaning (STRETCH BODY SIZE BOW / GAIN DIST SPEAKR BLOOM), so each side keeps its own four: the
@@ -1672,6 +1673,8 @@ sect:
     if (!mom_on && pg->scope != SC_GLOBAL && vp >= TSEL->p && vp < TSEL->p + P_COUNT)   /* (0.7.6: SCL's ALL TR is a
                                                          * global; 0.9.9-seq2e: MOMENTARY records nothing) */
         knob_cap(TSEL, (uint32_t)(vp - TSEL->p));
+    else if (vp >= song.g && vp < song.g + G_COUNT)
+        mo_knob(7, (uint32_t)(vp - song.g));            /* (V10.6z3) a global: NRPN 1 on channel 16 (MIDI OUT ALL) */
 }
 
 

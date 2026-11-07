@@ -115,6 +115,80 @@ Projects are FUNB (`46 55 4E 42`, 3840 bytes: FUNA's layout, 96 bytes longer, so
 since 0.3, a 2 for all nine). FUNA (3744, 99
 parameters) and every older format load mapped by count, the new values at their defaults.
 
+## Stability contract (1.0)
+
+From V10.6z3 on (the first firmware after V10.6z2) the editor protocol is a **versioned contract** for the programs
+built on it (the web editor and installer, the JIANT Stems app, anyone's). `INFO` says the version with the tag
+`43 02 major minor` (1.0: `43 02 01 00`), placed right before the last tag (`59`, LYRIC, which the web editor reads
+as the last three bytes). No tag: firmware before the contract (V10.6z2 and older), which speaks everything below
+except what is marked 1.0.
+
+**The rule: only additive changes.** Each addition raises the minor version (1.1, 1.2, ..) and is listed in the
+history below; the major stays 1 (a 2 would be a break, and none is planned). An old client keeps working against a
+newer firmware, byte for byte; a new client tells the additions apart by the version tag (or by the capability
+tag of the addition, as before).
+
+**Frozen** (never renumbered, re-laid out, re-meant or removed):
+
+- **Framing**: `F0 7D 46 4C cmd args F7`, one reply per request with the same `cmd` (no reply: an unknown command or
+  a wrong fixed length), pushes never replies; the encodings v14, u32, pack7, strings.
+- **Command numbers** 1..10, 16..42, 64..77 and 80 as listed in this file; 11..15 stay reserved (no reply).
+- **Reply layouts**: every byte stays where it is. New bytes only at the end of a reply, behind a request byte that
+  asks for them (as `STEP_GET`'s flag 1, `WATCH`'s bits), or as a new `INFO` tag before `59`.
+- **INFO's prefix**: version string, NENGINES, P_COUNT, G_COUNT, NSTEP, P_E0, NENGINES engine names, NTRK,
+  CHAIN_ROWS, then the tags (each tag's number and meaning). The JIANT Stems app reads the string, NENGINES, the fifth
+  byte after it (P_E0) and the names, and ignores the rest.
+- **The engine byte**: 0 ANALOG, 1 reserved, 2 PHASE, 3 LOFI (named `MATH` by INFO since V10.6d), 4 reserved,
+  5 VOICE, 6 reserved, 7 WHEEL, 8 STRING, 9 reserved, 10 DRUM, 11 NOISE, 12 FM6, 13 ADD, 14 ANIMAL, 15 INPUT (named
+  `EXT`). New engines take the next numbers. The *names* are display text and may change: a client shows the names
+  `INFO` sends, not a table of its own.
+- **Parameter ids**: the track parameters 0..P_E0−1 keep their id and the slot keeps its meaning for every engine
+  that reads it (a range may widen, a label change: read `DESC`); E1..E8 are always the last eight, P_E0..P_COUNT−1
+  (read P_E0 and P_COUNT from `INFO`: new common parameters go just before P_E0, which then grows). Globals keep
+  their ids; new ones are appended (G_COUNT grows). Enum values keep their numbers (new ones appended).
+- **Pushes**: `CHANGED` 23, `RELOAD` 24, `STEP_CHANGED` 26, `TRACK_CHANGED` 32 and the 1.0 pushes 40..42, each sent
+  only for the `WATCH` bit that asks for it: a client that sends `WATCH 3` gets exactly what it got before 1.0.
+- **MENU ids** (`MENU_SET` takes the id: append-only), the backup protocol (65..67: object ids, u32 / pack7,
+  rc codes; the *count* of objects is the `BACKUP_LIST`'s: 35 since V10.6p), the `PUNCH` bit numbers, the NRPN map
+  (`docs/NRPN.md`: CC99 0 / 1, CC98 the id, the 14-bit scaling) and the fixed CCs (MANUAL, "MIDI and USB").
+
+**May change** (read it from the device): the values of P_COUNT, P_E0, G_COUNT, the menu count, the backup object
+count; labels, units, ranges (`DESC`), the engines' display names and order; new commands, tags, pushes, engines,
+parameters, enum values, menu items, at the end of what there is.
+
+**Enforced** by `tests/app_contract_test.c` (CI, `.github/workflows/voice-user-check.yml`): the requests the JIANT
+Stems app sends (its `Fm1Link` and `Fm1Archive` bytes, cut into USB-MIDI packets as it cuts them) against golden
+descriptions of the replies, byte for byte; the engine table; the pushes' opt-in; NRPN both ways; `docs/NRPN.md`
+regenerated from `params.c` and compared.
+
+| version | firmware | changes |
+| --- | --- | --- |
+| 0.x (no tag) | Felucca 1.0 .. JIANT V10.6z2 | v1 .. v7 and the tagged additions described in this file |
+| 1.0 | V10.6z3 | the contract; `INFO` tag `43 02 01 00`; `WATCH` bits 2..4 and the pushes `TRANSPORT` (40), `PUNCH` (41), `MUTATE` (42); NRPN for every automatable parameter and the globals (`docs/NRPN.md`), sent for knob moves with MIDI OUT ALL |
+
+## 1.0: performance pushes (40-42)
+
+Asked for with `WATCH` bits 2..4 (`WATCH 31`: everything; 1.0 firmware answers 31, older 3). Each bit asked for anew
+sends the state as it is first (`TRANSPORT`, `PUNCH`; `MUTATE` counts from then on). They need no MIDI OUT setting.
+
+- **TRANSPORT** (40): `playing, beat, bar lo, bar hi`. Sent on PLAY and STOP and at each beat while playing (the
+  beat of the bar 0..3; the bar counts from PLAY, 14 bits). With MIDI OUT CLOCK the realtime messages say the same;
+  this needs neither the setting nor a clock reader.
+- **PUNCH** (41): `m0 m1 m2 m3 tracks`: the punch-in / FX-layer effects running (held, latched, a scene's, the
+  punch-in lane's step) as `m0 | m1 << 7 | m2 << 14 | m3 << 21`; 0 while a menu or dialog turns them off. Bits
+  (frozen): 0 REPEAT 1/8, 1 REPEAT 1/16, 2 REPEAT 1/32, 3 LPF, 4 HPF, 5 OCT−, 6 OCT+, 7 1/2 TEMPO, 8 DEC−, 9 DEC+,
+  10 STUTTER 1/8, 11 STUTTER 1/16, 12 ATK+, 13 ARP, 14 RANDOM, 15..20 the mutes of tracks 1..6 (black keys), 21
+  GLITCH, 22 LOOP 3, 23 LOOP 5, 24 LOOP 7. `tracks`: the MIDI effects' tracks, 0 ALL, 1 SYN, 2 DRM.
+- **MUTATE** (42): `track, count`: a EUCLID MUTATE of that track (EVERY's, or OCT+ on the MUTATE page); count is
+  the track's MUTATEs since power-on, 7 bits, so a missed frame shows as a jump.
+
+## NRPN (1.0)
+
+Every parameter automation records, and the globals but the transport, routing, loads and engine switch, are set by
+NRPN: CC99 0 (a track's, on its channel) or 1 (a global), CC98 the id, CC6 / CC38 the value (14 bits over the
+range `DESC` gives; CC6 alone 7 bits). With MIDI OUT ALL the panel's knob moves go out the same way. The table,
+generated from `firmware/src/params.c`: `docs/NRPN.md` (and `web/NRPN.md`).
+
 ## Framing
 
 A request is `F0 7D 46 4C <cmd> <args...> F7`:
@@ -221,7 +295,7 @@ at 1..3 and hides 6 5 8: what it sets still plays the right kit, and the device 
 
 | cmd | Request args | Reply args |
 | --- | --- | --- |
-| 1 INFO | — | version string, NENGINES, P_COUNT, G_COUNT, NSTEP, P_E0, then NENGINES engine-name strings, then (v3) NTRK (6 since JIANT 0.6, 4 before), then (v6) CHAIN_ROWS (16), then the tagged blocks `55 01 uiCaps`, `4D 01 64 01`, `42 01 3`, `46 01 nfactory nbank`, `53 01 3`, (1.0.3) `50 01 3` and (1.0.4) `4E 01 count` (MENU settings; 12, 1.1: 15, 1.2: 17, 1.1.5: 18) and (1.0.5) `52 01 4` (ratchet) and (1.1) `4C 01 1` (parameter locks) and (JIANT 0.6.11) `56 01 32` (FM6's voice bank) and (JIANT 0.6.62) `4A 01 1` (JIANT) and (JIANT 0.8.5) `4F 01 7` (DRUM lane modes) (below); older firmware ends earlier |
+| 1 INFO | — | version string, NENGINES, P_COUNT, G_COUNT, NSTEP, P_E0, then NENGINES engine-name strings, then (v3) NTRK (6 since JIANT 0.6, 4 before), then (v6) CHAIN_ROWS (16), then the tagged blocks `55 01 uiCaps`, `4D 01 64 01`, `42 01 3`, `46 01 nfactory nbank`, `53 01 3`, (1.0.3) `50 01 3` and (1.0.4) `4E 01 count` (MENU settings; 12, 1.1: 15, 1.2: 17, 1.1.5: 18) and (1.0.5) `52 01 4` (ratchet) and (1.1) `4C 01 1` (parameter locks) and (JIANT 0.6.11) `56 01 32` (FM6's voice bank) and (JIANT 0.6.62) `4A 01 1` (JIANT) and (JIANT 0.8.5) `4F 01 7` (DRUM lane modes) (below), (JIANT 0.8.5) `59 01 63` (LYRIC, always the last tag) and, just before it, (1.0) `43 02 major minor`: the protocol's version (see "Stability contract (1.0)"); older firmware ends earlier |
 | 2 GET | scope, id | scope, id, v14 |
 | 3 SET | scope, id, v14 | scope, id, v14 (the value after clamping). Setting global `G_ENGSEL` (id from DESC label "ENG") changes the engine: its defaults, then its first preset (as on the device) |
 | 4 DUMP | — | engine, preset, then P_COUNT × v14 (the selected track), then G_COUNT × v14 (globals) |
@@ -238,7 +312,7 @@ at 1..3 and hides 6 5 8: what it sets still plays the right kit, and the device 
 | 19 UP_STORE | slot, name | slot, rc. Stores the current sound: engine, parameters, the first 16 sequencer steps as the pattern (TIE steps → flag 4) |
 | 20 UP_LOAD | slot | slot, rc (0 ok, 1 empty/invalid). Applies its sound (not its pattern; the steps stay) |
 | 21 UP_ERASE | slot | slot, rc |
-| 22 WATCH | on (0/1; v4: 3 = also `TRACK_CHANGED`) | on (0/1; v4 firmware: 3 when 3 was asked for). While on, the device pushes cmds 23, 24, 26 (and 32 with bit 1) |
+| 22 WATCH | on (0/1; v4: 3 = also `TRACK_CHANGED`; 1.0: bit 2 `TRANSPORT`, bit 3 `PUNCH`, bit 4 `MUTATE`) | the bits it took: on (bit 0), bit 1 (v4 firmware), bits 2..4 (1.0 firmware; older answers 3 or 1). While on, the device pushes cmds 23, 24, 26 (and 32 with bit 1, 40 / 41 / 42 with bits 2 / 3 / 4) |
 | 23 CHANGED (push) | — | scope, id, v14 |
 | 24 RELOAD (push) | — | engine, preset, then (v3) the selected track |
 | 25 PING | — | 0 |
@@ -255,6 +329,12 @@ at 1..3 and hides 6 5 8: what it sets still plays the right kit, and the device 
 | --- | --- | --- |
 | 31 TRACK_PARAM | track, id (get), or track, id, v14 (set); id = `P_*` (0..P_COUNT−1) | track, id, v14 (the value after clamping, as `SET`). The selection does not change; no push about the editor's own write |
 | 32 TRACK_CHANGED (push) | — | track, id, v14: `P_LEVEL`, `P_PAN` or `P_MUTE` of a track that is not selected changed on the device (only while `WATCH` was sent with bit 1) |
+
+| cmd (1.0) | Request args | Reply args |
+| --- | --- | --- |
+| 40 TRANSPORT (push) | — | playing (0/1), beat of the bar (0..3), bar lo, bar hi (the bars since PLAY, 14 bits): on PLAY / STOP and each beat while playing (only while `WATCH` was sent with bit 2) |
+| 41 PUNCH (push) | — | the effects running, 4 × 7 bits LSB first (the bit numbers in "1.0: performance pushes"), then their tracks (0 ALL, 1 SYN, 2 DRM): on every change (only with `WATCH` bit 3) |
+| 42 MUTATE (push) | — | track, its MUTATE count (7 bits, wrapping): a EUCLID MUTATE of that track (only with `WATCH` bit 4) |
 
 | cmd (v7) | Request args | Reply args |
 | --- | --- | --- |

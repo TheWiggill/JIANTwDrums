@@ -119,6 +119,11 @@ jobs:
           cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/matrix_editor_test.c -lm -o build/song-check/context-editor
           build/song-check/context-editor | tee build/song-check/context-editor.log
           python3 tests/matrix_web_test.py
+      - name: App protocol contract (editor protocol 1.0, pushes, engine ids, NRPN map)
+        run: |
+          set -euo pipefail
+          cc -O1 -g -w -Wno-implicit-function-declaration -fsanitize=address,bounds -Ibuild/gen -Ifirmware/src tests/app_contract_test.c -lm -o build/song-check/app-contract
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 build/song-check/app-contract | tee build/song-check/app-contract.log
       - name: Verified pre-split baseline for UI regression comparison
         uses: actions/checkout@v4
         with:

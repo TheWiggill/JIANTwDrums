@@ -18,7 +18,12 @@ enum { ED_INFO = 1, ED_GET, ED_SET, ED_DUMP, ED_DESC, ED_STEP_GET, ED_STEP_SET, 
        ED_TRACK_PARAM, ED_TRACK_CHANGED, ED_SONG,
        ED_UI_STATE, ED_UI_SET, ED_UI_PALETTES, ED_FAV_GET, ED_FAV_SET,
        ED_LYRIC,                                                                /* (JIANT 0.8.5) VOICE's lyric */
+       ED_TRANSPORT, ED_PUNCH, ED_MUTATE,                                       /* (1.0) pushes: WATCH bits 2..4 */
        ED_MOTION = 64, ED_BACKUP_LIST, ED_BACKUP_GET, ED_BACKUP_PUT };                              /* v6: song chain */
+/* (V10.6z3) the protocol's version, INFO's tag 43 02 major minor: 1.0 the stability contract (web/EDITOR_PROTOCOL.md
+ * "Stability contract"): from it on only additive changes; a minor for each addition, a major never (a break) */
+#define ED_PROTO_MAJOR 1u
+#define ED_PROTO_MINOR 0u
 enum { ED_VM_READ = 80 };   /* (V10.10) read-only: 256 B of the stock VM (0xE7000 + 256 x a[0], a[0] < 48: the radio's
                               * RF trims and BT address, web/btcheck.html); reply: a[0], then 256 x (hi nibble, lo nibble) */
 
@@ -91,6 +96,10 @@ static const uint8_t ED_TIDS[3] = {P_LEVEL, P_PAN, P_MUTE};
 static struct {
     uint8_t on, eng, preset, sel;
     uint8_t v4;                                          /* WATCH bit 1: TRACK_CHANGED pushes too */
+    uint8_t ext;                                         /* (1.0) WATCH bits 2..4: TRANSPORT, PUNCH, MUTATE pushes */
+    uint8_t tp_play, tp_beat, ptgt;                      /* .. what they last said */
+    uint32_t punch;
+    uint8_t mut[NTRK];
     uint32_t pos, last_ms, run_ms, resets;
     int16_t v[ED_NV];                                    /* TSEL->p[], then song.g[] */
     uint16_t t[ED_NV];                                   /* ms (low 16 bits) of the last push */
@@ -157,6 +166,50 @@ static void ed_known(uint32_t k, uint32_t id)            /* the editor's own cha
             ed_w.tv[k * 3u + j] = trk[k].p[id];
 }
 
+/* (1.0) WATCH bits 2..4: the transport (on PLAY / STOP and each beat while playing), the punch-in effects running (held,
+ * latched, a scene's, the lane's) and each EUCLID MUTATE. 0: no room in the SysEx ring (the rest waits) */
+static __attribute__((noinline)) int ed_perf(uint32_t *n)
+{
+    uint32_t i, play = song.playing != 0, m = perf_kill ? 0u : (perf_held | perf_latched | scene_pfx | pfx_lnow) & (PF_BIT(PF_N) - 1u);
+    if ((ed_w.ext & 1u) && (play != ed_w.tp_play || (play && beat_n != ed_w.tp_beat))) {
+        if (!ed_room())
+            return 0;
+        ed_w.tp_play = (uint8_t)play;
+        ed_w.tp_beat = (uint8_t)beat_n;
+        ed_begin(ED_TRANSPORT);
+        ed_b(play);
+        ed_b(beat_n);
+        ed_b(bar_n);
+        ed_b(bar_n >> 7);
+        ed_send();
+        (*n)++;
+    }
+    if ((ed_w.ext & 2u) && (m != ed_w.punch || pfx_tgt != ed_w.ptgt)) {
+        if (!ed_room())
+            return 0;
+        ed_w.punch = m;
+        ed_w.ptgt = pfx_tgt;
+        ed_begin(ED_PUNCH);
+        for (i = 0; i < 4u; i++)
+            ed_b(m >> (7u * i));
+        ed_b(pfx_tgt);
+        ed_send();
+        (*n)++;
+    }
+    for (i = 0; (ed_w.ext & 4u) && i < NTRK; i++)
+        if (mut_n[i] != ed_w.mut[i]) {
+            if (!ed_room())
+                return 0;
+            ed_w.mut[i] = mut_n[i];
+            ed_begin(ED_MUTATE);
+            ed_b(i);
+            ed_b(mut_n[i]);
+            ed_send();
+            (*n)++;
+        }
+    return 1;
+}
+
 static void ed_sync(void)                                /* main loop */
 {
     uint32_t i, n = 0, now = fm1_ms;
@@ -178,6 +231,8 @@ static void ed_sync(void)                                /* main loop */
         ed_send();
         return;
     }
+    if (ed_w.ext && !ed_perf(&n))
+        return;
     for (i = 0; i < NSTEP && n < ED_PUSH_MAX; i++) {
         uint32_t h = ed_step_sig(&seq_steps(TSEL)[i]);
         if (h == ed_w.st[i])
@@ -434,6 +489,8 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
         ed_b(0x56); ed_b(1); ed_b(FM6_NBANK);   /* (JIANT 0.6.11, Felucca 1.4.1) FM6's voice bank: cmds 74..77, SLOT 9..40 */
         ed_b(0x4A); ed_b(1); ed_b(1);   /* (JIANT 0.6.62) 'J': this is JIANT (the web installer writes over it, web/index_pkg.html) */
         ed_b(0x4F); ed_b(1); ed_b(LM_N);   /* (0.8.5) 'O': the DRUM-X octaves, a step's lane modes 0..6 after its ratchet */
+        ed_b(0x43); ed_b(2); ed_b(ED_PROTO_MAJOR); ed_b(ED_PROTO_MINOR);   /* (V10.6z3) 'C': the protocol's version (the
+                                                         * stability contract); before 'Y', which the web editor reads last */
         ed_b(0x59); ed_b(1); ed_b(LYR_LEN - 1u);   /* (JIANT 0.8.5) 'Y': LYRIC (cmd 39), a track's lyric, at most 63 bytes */
         break;
     case ED_GET:
@@ -660,13 +717,21 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
         keep = ed_w.on && ed_w.resets == usb.resets && (a[0] & 1u);   /* already watching: the changes not yet */
         ed_w.on = a[0] & 1u;                                          /* pushed stay pending (INFO 53 01 bit 0) */
         ed_w.v4 = (uint8_t)(ed_w.on && (a[0] & 2u));     /* v4: also TRACK_CHANGED; the reply says it is known */
+        i = ed_w.on ? (a[0] >> 2) & 7u : 0u;             /* (1.0) bits 2..4: TRANSPORT, PUNCH, MUTATE */
+        if (i & ~(keep ? ed_w.ext : 0u)) {               /* newly asked for: the state as it is goes out first; MUTATEs
+                                                          * from now on */
+            ed_w.tp_play = ed_w.ptgt = 0xFF;
+            ed_w.punch = ~0u;
+            memcpy(ed_w.mut, mut_n, sizeof ed_w.mut);
+        }
+        ed_w.ext = (uint8_t)i;
         ed_w.resets = usb.resets;
         if (ed_w.on && !keep)
             ed_shadow();
         else if (keep && ed_w.v4 && !v4was)
             for (i = 0; i < ED_NT; i++)                    /* TRACK_CHANGED newly asked for: from the mix as it is */
                 ed_w.tv[i] = trk[i / 3u].p[ED_TIDS[i % 3u]];
-        ed_b(ed_w.on | ed_w.v4 << 1);
+        ed_b(ed_w.on | ed_w.v4 << 1 | ed_w.ext << 2);
         break;
     }
     case ED_PING:
