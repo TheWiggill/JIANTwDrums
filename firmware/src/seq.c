@@ -2577,8 +2577,11 @@ static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint
     sk0 = sk;                                       /* (the notes the step sounds, strummed or not: seq_notes) */
     if (!kit && !arp && m > 1u && t->p[P_CSTR] > 0 && t->p[P_VOICE] == V_POLY) {   /* (0.6.84) STRUM: the chord in
                                                          * one note after another, low to high, as the keys strum it
-                                                         * (the first now, the others by seq_tick); within half the gate */
-        uint32_t g = chord_gap(t), cap = gate / (2u * (m - 1u)), q, w = 0;
+                                                         * (the first now, the others by seq_tick) at the keys' gaps
+                                                         * (V10.6o: it was squeezed into half the gate: a long STRUM
+                                                         * recorded came back a fast one); the gate held on past the
+                                                         * last note's entry by half itself */
+        uint32_t g = chord_gap(t), q, w = 0;
         uint8_t ord[4 + NLANE];
         for (q = 0; q < m; q++)
             if (!((sk >> q) & 1u)) {
@@ -2590,7 +2593,9 @@ static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint
             t->ss_vv[t->ss_n++] = vv[ord[q]];
             sk |= 1u << ord[q];
         }
-        t->ss_gap = (uint32_t)clamp((int32_t)(g < cap ? g : cap), 1, 65535);
+        t->ss_gap = (uint32_t)clamp((int32_t)g, 1, 65535);
+        if (w > 1u && g * (w - 1u) > gate / 2u)
+            gate = g * (w - 1u) + gate / 2u;
         t->ss_due = t->ss_gap + ev_off;             /* (ctl64: from the step's sample) */
     }
     if (hdel) {                                     /* (0.6.87) HUMAN TIME: every note of the step queued, hdel late

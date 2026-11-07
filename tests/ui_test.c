@@ -5612,6 +5612,15 @@ static int test_step_rec(void)
         for (b2 = 0; b2 < NVOICE; b2++) later += t->v[b2].active && t->v[b2].gate;
         ok = first == 1u && later == 3u;
         bad += check("STRUM, playing back: the step's chord comes in one note after another (1, then all 3)", ok);
+        {   /* (V10.6o, the owner: a long STRUM recorded came back fast) played back at the keys' gaps, not squeezed */
+            t->p[P_CSTR] = 110;                          /* (~0.4 s apart: far past half a step's gate) */
+            while (t->seq_idx == i) events_block(CTL);
+            while (t->seq_idx != i) events_block(CTL);
+            events_block(CTL);
+            ok = t->ss_n >= 1u && t->ss_gap == chord_gap(t);
+            bad += check("V10.6o STRUM to ~1 s played back at the keys' own gaps (it was squeezed into half the gate)", ok);
+            t->p[P_CSTR] = 64;
+        }
         {   /* (V10.22, a tester: strums recorded an octave low played back an octave higher) OCT -1, STRUM, VOICINGs:
              * the notes played back are the notes heard when recorded */
             uint32_t vo, okv = 1;
