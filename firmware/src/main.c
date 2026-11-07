@@ -358,7 +358,11 @@ static void fm1_main(void)
      * would enter UBOOT), or it was given up / beside a crash since power-on (hal/fm1_multicore.h fm1_mc_bar). Its entry
      * word is in the protected top of RAM: opened for it, interrupts off (up to 20 ms: under the splash) */
     mc_off = (uint8_t)((fm1_in.buttons >> panel.btn[B_REC]) & 1u);
-    if (!mc_off && !bootguard.failed && !fm1_mc_barred() && !(cpu_cfg & CPU_1CORE)) {   /* (p1: MENU > CPU CORES) */
+    if (!mc_off && !bootguard.failed && !fm1_mc_barred() && !(cpu_cfg & CPU_1CORE) && fm1_power_ready) {
+                                                /* (p1: MENU > CPU CORES) (V10.6z) and only on the stock supplies
+                                                 * (fm1_power_init read back; not after a SAFE START): with the radio
+                                                 * on and only the two core levels raised, some units' second core
+                                                 * jumps to addresses with bits 23/24 set (fm1-dock src/cpu1.c) */
         fm1_irq_off();
         fm1_guard_unlock_top();
         fm1_mc_start();
