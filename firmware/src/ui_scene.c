@@ -54,6 +54,17 @@ static void sc_setup(uint32_t i)                        /* track i set up for it
 static void sc_gen(uint32_t i);                         /* (V10.6m) gen_track.c */
 /* (V10.26) the roles diced: one track for each of CHORD ARP BASS LEAD at most (never two doing the same, never two
  * playing chords: the polyphony), the melodic tracks awake only, the rest KEEP; at least two roles */
+/* (V10.6n) the scene's key: every melodic track in one mode (its ROOT kept); a track with no scale (CHR) made a
+ * chord of the major scale: the scene sounded major whatever was played. sc < 0: CHR tracks only, minor */
+static void sc_key(int32_t sc)
+{
+    static const uint8_t MD[6] = {2, 3, 8, 7, 4, 1}, MW[6] = {40, 20, 10, 5, 10, 15};   /* MIN DOR PHRY HARM MIX MAJ */
+    uint32_t i, k = 0, x = rng() % 100u;
+    while (k < 5u && x >= MW[k]) x -= MW[k++];
+    for (i = 0; i < trk_live && i < NTRK; i++)
+        if (!drum_track(&trk[i]) && (sc >= 0 || !trk[i].p[P_SCALE]))
+            trk[i].p[P_SCALE] = (int16_t)(sc >= 0 ? MD[k] : 2);
+}
 static void sc_dice(void)
 {
     uint32_t i, j, m[NTRK], nm = 0, r[4] = {SC_CHORD, SC_ARP, SC_BASS, SC_LEAD};
@@ -65,6 +76,7 @@ static void sc_dice(void)
     for (i = 4u; i > 1u; i--) { j = rng() % i; uint32_t x = r[i - 1u]; r[i - 1u] = r[j]; r[j] = x; }   /* (the roles too) */
     j = nm < 4u ? nm : 2u + rng() % 3u;                  /* (2 .. 4 roles, as many tracks as there are) */
     for (i = 0; i < j && i < nm; i++) { scn_role[m[i]] = (uint8_t)r[i]; sc_setup(m[i]); }
+    sc_key(1);                                           /* (V10.6n) and a mode, mostly dark */
 }
 static void sc_put(uint32_t k, int32_t v)
 {
@@ -73,6 +85,7 @@ static void sc_put(uint32_t k, int32_t v)
         scn_on = (uint8_t)(v != 0);
         for (i = 0, need = 0; i < NTRK; i++) need |= scn_role[i];
         if (scn_on && !need) sc_dice();                  /* (all KEEP: a scene diced, so ON plays something) */
+        if (scn_on) sc_key(-1);                          /* (V10.6n) no scale: minor, not the major of CHR */
         need = 0;
         for (i = 0; scn_on && i < NTRK; i++) {
             sc_setup(i);

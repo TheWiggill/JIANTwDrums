@@ -1447,12 +1447,10 @@ apretá OCT+ y tenés **la misma pieza con esa sola cosa cambiada**: cada parte 
 flujo, así que mover BASS deja la batería y el lead como estaban. La pantalla muestra **LAST: HOUSE 0421** (el género
 y la semilla).
 
-Los géneros, en el orden en que los gira KNOB 1 después de EXPLORE y RANDOM (0.9.9-gen2: ACID HOUSE primero, el más
-pedido; cada género conserva su número, así que un ajuste de GEN guardado conserva su género): ACID HOUSE, HOUSE, DEEP
-HOUSE, MICRO HOUSE, TECH HOUSE, TECHNO, DETROIT, DUB TECHNO, HARD TECHNO,
-HYPNOTIC, TRANCE, ELECTRO, EBM, ITALO, SYNTH POP, DARKWAVE, POST PUNK, TRIBAL PUNK, MINIMAL SYNTH, MAN MACHINE,
-MOTORIK, INDIE, SHOEGAZE, POST ROCK, FUNK, DISCO, BOOM BAP, TRAP, UK GARAGE, DUBSTEP, BREAKS, DRUM & BASS, DUB,
-STEPPERS, JAZZ, BOSSA, AFROBEAT, AMBIENT, NEO CLASSIC, IMPRESSION, SOUNDTRACK, IDM, BROKEN. Cada uno sabe su rango de
+Los géneros, en el orden en que los gira KNOB 1 después de EXPLORE y RANDOM (V10.6n: la lista del dueño, en su orden):
+MINIMAL TECHNO, HARD TECHNO, HARD BASS, HOUSE, DEEP HOUSE, TECH HOUSE, TRIBAL, CUMBIA, REGGAETON, DEMBOW, ELECTRO,
+BREAKBEAT, DRUM & BASS, IDM GLITCH, IDM AMBIENT, IDM WEIRD, KRAUT, EBM, NEO CLASSIC, FUGA, ELECTRO METAL, TECHNO ROCK,
+DREAM POP, PHONK, BAILE FUNK. Cada uno sabe su rango de
 tempo, sus escalas y progresiones, su mapa de batería y su kit, sus arquetipos de bajo y su registro, cómo hablan sus
 acordes, su arpegio y su lead, qué receta de sonido toma cada rol, qué tan humano toca y su espacio (tipo de reverb,
 tipo y tiempo del delay, cuánta humedad).

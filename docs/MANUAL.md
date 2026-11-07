@@ -1374,12 +1374,10 @@ back. **OCT+ with the settings unchanged throws a new seed** (another piece); tu
 the **same piece with that one thing changed** — every part draws its random numbers from its own stream, so BASS
 turned leaves the drums and the lead as they were. The screen shows **LAST: HOUSE 0421** (the genre and the seed).
 
-The genres, as KNOB 1 turns them after EXPLORE and RANDOM (0.9.9-gen2: ACID HOUSE first, the one asked for most; a
-genre keeps its own number, so a stored GEN setting keeps its genre): ACID HOUSE, HOUSE, DEEP HOUSE, MICRO HOUSE,
-TECH HOUSE, TECHNO, DETROIT, DUB TECHNO, HARD TECHNO,
-HYPNOTIC, TRANCE, ELECTRO, EBM, ITALO, SYNTH POP, DARKWAVE, POST PUNK, TRIBAL PUNK, MINIMAL SYNTH, MAN MACHINE,
-MOTORIK, INDIE, SHOEGAZE, POST ROCK, FUNK, DISCO, BOOM BAP, TRAP, UK GARAGE, DUBSTEP, BREAKS, DRUM & BASS, DUB,
-STEPPERS, JAZZ, BOSSA, AFROBEAT, AMBIENT, NEO CLASSIC, IMPRESSION, SOUNDTRACK, IDM, BROKEN. Each one knows its tempo
+The genres, as KNOB 1 turns them after EXPLORE and RANDOM (V10.6n: the owner's list, in its order):
+MINIMAL TECHNO, HARD TECHNO, HARD BASS, HOUSE, DEEP HOUSE, TECH HOUSE, TRIBAL, CUMBIA, REGGAETON, DEMBOW, ELECTRO,
+BREAKBEAT, DRUM & BASS, IDM GLITCH, IDM AMBIENT, IDM WEIRD, KRAUT, EBM, NEO CLASSIC, FUGA, ELECTRO METAL, TECHNO ROCK,
+DREAM POP, PHONK, BAILE FUNK. Each one knows its tempo
 range, its scales and chord progressions, its drum map and kit, its bass archetypes and register, how its chords, arp
 and lead speak, which sound recipe each role takes, how human it plays and its space (reverb type, delay type and
 time, how wet).

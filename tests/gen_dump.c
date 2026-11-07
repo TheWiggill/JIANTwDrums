@@ -4,7 +4,7 @@
  * part a line a bar (the notes by name, '=' held, '.' rest, a chord's notes joined by '/'), each section of a FORM
  * (its key). Optionally the piece heard: a WAV of it playing (its song, with PARTS or SONG), SECONDS long.
  *   cc -O1 -w -Ibuild/gen -Ifirmware/src -Itests -o build/host/gen_dump tests/gen_dump.c -lm
- *   build/host/gen_dump GENRE SEED [ENERGY [FORM [OUT.wav SECONDS]]]      (GENRE 1..43, 0 every genre; FORM 0 1 2) */
+ *   build/host/gen_dump GENRE SEED [ENERGY [FORM [OUT.wav SECONDS]]]      (GENRE 1..NGENRE, NGENRE + 1 EXPLORE, 0 every genre; FORM 0 1 2) */
 #define UI_TEST_NO_MAIN 1
 #include "ui_test.c"
 static const char *NS[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
