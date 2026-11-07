@@ -102,8 +102,9 @@ def main(src, dice, out, dout, bout):
         L.append(f"#define DRUM_BAR_KICK_I {kk[0]}u")
     Path(dout).write_text("\n".join(L) + "\n")
     size2 = 4 * len(bl) + 8 * len(btab)
-    m = re.search(r"static const barch_t BASS_ARCH\[BA_N\] = \{(.*?)\n\};", s, re.S)
-    arch = re.findall(r"\[(BA_\w+)\]\s*=\s*\{(\"[^\"]*\"|0),\s*(\"[^\"]*\"|0),\s*(\d+)\}", m.group(1))
+    m = re.search(r"static const barch_t BASS_ARCH\[(\w+)\] = \{(.*?)\n\};", s, re.S)   # (V10.6p: BA_NALL, the riffs too)
+    asz = m.group(1)
+    arch = re.findall(r"\[(BA_\w+)\]\s*=\s*\{(\"[^\"]*\"|0),\s*(\"[^\"]*\"|0),\s*(\d+)\}", m.group(2))
     steps, rows3 = [], []
     for name, n, f, bars in arch:
         bars = int(bars)
@@ -120,7 +121,7 @@ def main(src, dice, out, dout, bout):
          "#pragma once", "#include <stdint.h>", f"static const uint8_t BA_STEP[{len(steps)}] = {{"]
     for i in range(0, len(steps), 24):
         L.append("    " + ", ".join(f"0x{v:02X}" for v in steps[i:i + 24]) + ",")
-    L += ["};", "static const barch_t BASS_ARCH[BA_N] = {"]
+    L += ["};", f"static const barch_t BASS_ARCH[{asz}] = {{"]
     for name, at, bars in rows3:
         L.append(f"    [{name}] = {{{at}, {bars}}},")
     L.append("};")

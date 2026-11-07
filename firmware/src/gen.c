@@ -91,6 +91,7 @@ static struct {
     uint8_t mutant;                                     /* (0.6.95) RANDOM: a hybrid of two or three genres */
     uint8_t vary;                                       /* (p2) SEQ + SELECT: the bass's archetype moved (gba_vary) */
     uint8_t song;                                       /* (V10.6m) a FORM's piece being made: 1 PARTS / ARC, 2 the plan */
+    uint8_t riff;                                       /* (V10.6p) LD_RIFF's riff (BASS_ARCH's BA_RF1 ..; gen_pick) */
 } gs;
 #define GKICK(i) ((uint32_t)(gs.kick >> ((i) & 63u)) & 1u)
 static uint32_t gseed_mix(uint32_t part) { return part == GS_PICK ? 0u : (gs.gi + 1u) * 0x85EBCA6Bu; }
@@ -604,9 +605,9 @@ static void gen_drums(track_t *t, uint32_t len)
             }
         }
     }
-    if (g->drum - DM_REGG < 3u) {                       /* (0.6.93) the hats' rolls: a step before the snare and the bar's
+    if (g->drum - DM_REGG < 4u) {                       /* (0.6.93) the hats' rolls: a step before the snare and the bar's
                                                          * end, sixteenth or triplet rolls (V10.6n: reggaeton's, dembow's,
-                                                         * phonk's) */
+                                                         * phonk's; V10.6p: both phonk maps) */
         for (i = 0; i < len; i++) {
             step_t *s = &t->step[i];
             uint32_t p = i % 16u;
@@ -1157,12 +1158,30 @@ static void gl_write(track_t *t, gline_t *L, uint32_t len, uint32_t legato)
     }
 }
 /* the motif's rhythm cells: figures that hold together (a long note and two short, a tresillo, a pickup into three, a
- * dotted push ..) */
-static const char *const GL_CELL[12] = {"x..x..x...x.....", "x.x.x...x.x.....", "x...x.x.x.......", "..x...x...x...x.",
-                                        "x..x.x..x..x.x..", "x.......x.x.x...", "x...x...x...x...", "x.x...x.x...x...",
-                                        "..x.x...x.x.....", "x..x..x..x..x...", "x.....x...x.x...", "x...x.x.......x."};
+ * dotted push ..); (V10.6p) bit p the step p (were text: 228 B less): x..x..x...x..... x.x.x...x.x..... x...x.x.x.......
+ * ..x...x...x...x. x..x.x..x..x.x.. x.......x.x.x... x...x...x...x... x.x...x.x...x... ..x.x...x.x..... x..x..x..x..x...
+ * x.....x...x.x... x...x.x.......x. */
+static const uint16_t GL_CELL[12] = {0x0449u, 0x0515u, 0x0151u, 0x4444u, 0x2929u, 0x1501u, 0x1111u, 0x1145u, 0x0514u,
+                                     0x1249u, 0x1441u, 0x4051u};
 enum { LB_M, LB_V, LB_R, LB_C, LB_REST };               /* a bar of the phrase: the motif, varied, the answer, the
                                                          * continuation, a rest */
+/* (V10.6p) a riff as written (gen_tables.c BASS_ARCH's BA_RF1 ..): its codes the key's degrees from the tonic (R .. 9:
+ * 0 .. 8, A -1, L -3, N 9, S -2), the tonic C4 .. B4 (the 808 cowbell's place), looped whatever the chords (the hook
+ * over them, as the records: the 808 moves under it); an accent louder, a slide */
+static void gen_riff(track_t *t, uint32_t len)
+{
+    const barch_t *a = &BASS_ARCH[gs.riff];
+    uint32_t i, alen = 16u * a->bars;
+    int32_t tn = 60 + ((gs.root - 60) % 12 + 12) % 12;
+    for (i = 0; i < len; i++) {
+        uint32_t c = BA_STEP[a->at + i % alen], f = c >> 4;
+        int32_t n[1];
+        c &= 15u;
+        if (c < 2u) { if (c) dstep_tie(&t->step[i]); continue; }
+        n[0] = gnd(tn, c <= 10u ? (int32_t)c - 2 : (int8_t)"\xff\xfd\x09\xfe\x00"[c - 11u]);
+        gnote(&t->step[i], n, 1, f == 1u ? 114 : 94, f == 2u ? SF_SLIDE : 0u);
+    }
+}
 static void gen_lead(track_t *t, uint32_t len)
 {
     const ggenre_t *g = gs.g;
@@ -1170,6 +1189,7 @@ static void gen_lead(track_t *t, uint32_t len)
     gline_t L;
     gseed(GS_LEAD);
     if (style == LD_NONE) return;
+    if (style == LD_RIFF) { gen_riff(t, len); return; }
     L.k = 0;
     L.tn = 55 + ((gs.root - 55) % 12 + 12) % 12;        /* the lead's tonic (degree 0): G3 .. F#4 */
     {   /* its window, the same in every key: Bb3 .. E5 (a motif, a hook), lower for an ostinato and long notes, higher
@@ -1312,14 +1332,14 @@ static void gen_lead(track_t *t, uint32_t len)
         uint32_t k = 3u + gs.complex / 40u + (a > 60u), nc = 0, tpl, op = gr() % 5u, ct = gr() % 4u;   /* (op: the varied
                                                          * bar's: 0 TRUNC, 1 RETRO, 2 END moved, 3 ORN, 4 AUG) */
         int32_t anchor, d = 0, pv = 0, base0;
-        const char *cell = GL_CELL[gr() % 12u];
+        uint32_t cell = GL_CELL[gr() % 12u];
         if (a < 35u && k > 3u) k--;
         if (k > 6u) k = 6u;
         tpl = style == LD_HOOK ? (gch(65) ? 4u : 2u) :
               fam == HF_LOOP ? (gch(60) ? 3u : 5u) :
               fam == HF_POP ? (gr() % 3u == 0u ? 1u : gch(50) ? 0u : 4u) :
               fam == HF_JAZZ || fam == HF_JAZZY ? (gch(40) ? 1u : gch(50) ? 2u : 0u) : (gch(50) ? 0u : 1u);
-        for (i = 0; i < 16u; i++) if (cell[i] == 'x') { used[i] = 1; nc++; }
+        for (i = 0; i < 16u; i++) if ((cell >> i) & 1u) { used[i] = 1; nc++; }
         while (nc > k) {                                /* (thinned: a weak onset dropped, never the first) */
             uint32_t p = 1u + gr() % 15u;
             if (used[p] && (p % 4u || gch(30))) { used[p] = 0; nc--; }
@@ -1495,6 +1515,7 @@ static void gen_sound(track_t *t, uint32_t role, uint32_t ri)
     if (e == EG_A && !(r->wv & GNOWV)) {                /* ANALOG: the archetype's wave, one oscillator */
         t->p[P_E0] = (int16_t)(gch(33) ? (r->wv >> 3) & 7u : r->wv & 7u);
         if (r->wv & 0x40u) t->p[P_E2] = 0;
+        if (ri == SR_COWBELL) { t->p[P_E1] = 79; t->p[P_E7] = 6; }   /* (V10.6p) the 808's two squares, x 1.48 */
     }
     t->p[P_ATK] = grg(r->atk, 8); t->p[P_DEC] = grg(r->dec, 8); t->p[P_SUS] = grg(r->sus, 8); t->p[P_REL] = grg(r->rel, 8);
     {   /* (gen3) the envelope by the role, whatever the archetype (gen_tables.c ENV_RULE): a lead never at full sustain, a
@@ -1531,7 +1552,8 @@ static void gen_sound(track_t *t, uint32_t role, uint32_t ri)
         t->p[P_LD_PIT] = 1; t->p[P_LD_FLT] = 0;
     } else if (role == RL_LEAD) {                       /* (gen3) else the filter moving: slow (0.1 .. 0.5 Hz), shallow */
         t->p[P_LWAVE] = 0; t->p[P_LD_PIT] = 0;
-        if (t->p[P_LD_FLT] < 3) { t->p[P_LRATE] = (int16_t)grr(12, 44); t->p[P_LD_FLT] = (int16_t)grr(3, 8); }
+        if (t->p[P_LD_FLT] < 3 || t->p[P_LD_FLT] > 16 || t->p[P_LRATE] >= 52) { t->p[P_LRATE] = (int16_t)grr(12, 44); t->p[P_LD_FLT] = (int16_t)grr(3, 8); }   /* (V10.6p:
+                                                         * a preset's own fast or deep one too: VOICE's CHANT, the flutes) */
     } else if (role == RL_PAD && GSTAB(gs.g->pads) && gch(GG_MUT(GGR) ? 70 : 40)) {   /* (gen3) a stab's filter swept over
                                                          * 2 or 4 bars (Basic Channel, the hypnotic stabs) */
         t->p[P_LWAVE] = 0; t->p[P_LRATE] = (int16_t)(gch(50) ? -1 : -2); t->p[P_LD_FLT] = (int16_t)grr(8, 16);
@@ -1617,7 +1639,8 @@ static void gen_kit(track_t *t)
     t->p[P_E2] = (int16_t)clamp(70 + k->tone, 0, 127);
     t->p[P_E3] = (int16_t)clamp(64 + k->decy, 0, 127);
     t->p[P_E4] = (int16_t)clamp(64 + k->nois, 0, 127);
-    t->p[P_E7] = (int16_t)clamp(k->drv * 2 / 3, 0, 127);   /* (gen2: the kit's DRIVE two thirds) */
+    t->p[P_E7] = (int16_t)clamp(k->drv * 2 / 3 + (gs.g->spec & GSP_HEAVY ? grr(24, 40) : 0), 0, 127);   /* (gen2: the kit's
+                                                         * DRIVE two thirds; V10.6p: a heavy genre's driven harder) */
     t->p[P_FTYPE] = 0;
     t->p[P_FCUT] = (int16_t)(gs.g->human >= 40u ? grr(118, 127) : grr(104, 120));
     t->p[P_FRES] = (int16_t)grr(0, 14);
@@ -1648,7 +1671,7 @@ static void gen_mix(track_t *t, uint32_t r)
     /* (p3, the owner: "the leads eat the drums and everything else; the drums always in front, the rest accompanies")
      * the drums up, the bass under them, the chords and the arp back, the lead ~6 dB under gen3's; the genre's lift at
      * half and on the bass and the chords only */
-    t->p[P_LEVEL] = (int16_t)clamp((r == RL_DRUM ? 110 : r == RL_BASS ? 114 : r == RL_LEAD ? 92 : r == RL_ARP ? 96 :
+    t->p[P_LEVEL] = (int16_t)clamp((r == RL_DRUM ? 110 : r == RL_BASS ? 114 : r == RL_LEAD ? (g->lead == LD_RIFF ? 108 : 92) : r == RL_ARP ? 96 :
                                     r == RL_TEX ? (g->tex == SR_NOISE ? 56 : 66) : 100) +
                                    (r == RL_BASS || r == RL_PAD ? GG_LIFT(GGR) / 2 : 0), 1, 127);   /* (the genre's own: GGRAM) */
     t->p[P_PAN] = (int16_t)(r == RL_ARP ? grr(-30, -10) : r == RL_TEX ? grr(10, 30) : r == RL_PAD ? grr(-8, 8) : r == RL_LEAD ? grr(-6, 12) : 0);
@@ -1664,8 +1687,9 @@ static void gen_mix(track_t *t, uint32_t r)
         if ((r == RL_BASS || r == RL_PAD) && t->p[P_LD_FLT] < 3 && !t->p[P_LD_AMP]) {
             t->p[P_LWAVE] = 0; t->p[P_LRATE] = -2; t->p[P_LD_FLT] = (int16_t)grr(10, 18);
         }
-        if (r == RL_BASS && t->p[P_DIST] < 20) t->p[P_DIST] = (int16_t)grr(20, 35);
     }
+    if (r == RL_BASS && (g->spec & GSP_HEAVY) && t->p[P_DIST] < 30) t->p[P_DIST] = (int16_t)grr(30, 48);   /* (V10.6p: a
+                                                         * heavy genre's bass driven; the level above: a riff up front) */
     if ((g->spec & GSP_WOW) && (r == RL_PAD || r == RL_TEX)) {   /* (V10.6n) the tape's wobble: the pitch moved ~19 cents
                                                          * at 0.3 .. 1 Hz, the filter still; detuned */
         t->p[P_LWAVE] = 0; t->p[P_LRATE] = (int16_t)grr(30, 60); t->p[P_LD_PIT] = 1; t->p[P_LD_FLT] = 0; t->p[P_LFADE] = 0;
@@ -1674,8 +1698,9 @@ static void gen_mix(track_t *t, uint32_t r)
     if (r == RL_PAD || r == RL_ARP || r == RL_LEAD)     /* (p6b: the owner's references all dark, their centroid 350 ..
                                                          * 660 Hz: the melodic parts' cutoff 15 % down) */
         t->p[P_FCUT] = (int16_t)(t->p[P_FCUT] * 85 / 100);
-    if (r == RL_DRUM && g->lead == LD_EBM)              /* (p4b, the owner: EBM's drums industrial, distorted, simple) */
-        t->p[P_DIST] = (int16_t)grr(36, 56);
+    if (r == RL_DRUM && (g->spec & GSP_HEAVY))          /* (p4b, the owner: EBM's drums industrial, distorted, simple;
+                                                         * V10.6p: phonk's and baile funk's too) */
+        t->p[P_DIST] = (int16_t)grr(40, 60);
 }
 
 /* ---------------------------------------------------------------------------------------- the form: parts --- */
@@ -2439,18 +2464,28 @@ static void gen_pick(void)
     gs.ba = g->bass[gr() % 3u];
     if (gs.amt[GP_BASS] > 70u && gch(30)) gs.ba = g->bass[0];
     if (g->lead == LD_EBM) {                            /* (p7c, the owner: EBM always the same sequence on the same
-                                                         * synth) six riffs in 8ths with body, four basses */
-        static const uint8_t EBA[12] __attribute__((section(".rodata.ebm"))) =
-            {BA_NITZER3, BA_DARK8, BA_SUICIDE, BA_NITZER1, BA_MOTORIK, BA_PUMP8, BA_PSY, BA_DAF, BA_NITZER2, BA_GALLOP, BA_EBMOFF,
-             BA_EBM2B};                                 /* (V10.6m: twelve: DAF's sixteenths, Front 242's gallop, the
-                                                         * offbeat octaves, a two-bar turn) */
-        static const uint8_t ESN[4] __attribute__((section(".rodata.ebm"))) = {SR_EBMBASS, SR_TECHBASS, SR_REESE, SR_FMBASS};
-        static const uint8_t EKT[4] __attribute__((section(".rodata.ebm"))) = {KIT_INDUS, KIT_INDUS, KIT_909, KIT_CLICK};
-        gs.ba = EBA[gr() % 12u];
-        gmut.snd[GP_BASS] = ESN[gr() % 4u];
+                                                         * synth; V10.6p: "heavier and faster") eight riffs in sixteenths */
+        static const uint8_t EBA[8] __attribute__((section(".rodata.ebm"))) =
+            {BA_NITZER3, BA_NITZER1, BA_PSY, BA_DAF, BA_NITZER2, BA_GALLOP, BA_EBMOFF, BA_EBM2B};   /* (Nitzer Ebb's, the
+                                                         * techno-body's rumble, DAF's, Front 242's gallop, the offbeat
+                                                         * octaves, a two-bar turn) */
+        gs.ba = EBA[gr() % 8u];                         /* (its bass the row's: V10.6p, always the MS20's two oscillators) */
         gmut.drum = (uint8_t)(DM_EBM + gr() % 4u);      /* (V10.6m) its drums one of four, a throw's own */
-        gmut.kit = gmut.snd[GP_DRUMS] = EKT[gr() % 4u];   /* (V10.6n) and its kit: the industrial one, DAF's dry 909, a
-                                                         * click kit */
+        gmut.kit = gmut.snd[GP_DRUMS] = (uint8_t)(gch(75) ? KIT_INDUS : KIT_909);   /* (V10.6n) and its kit: the
+                                                         * industrial one, DAF's dry 909 */
+    }
+    if (g->lead == LD_RIFF) {                           /* (V10.6p) PHONK, BAILE FUNK: a throw's map with its bass (the
+                                                         * 808 on its kick) and its tempo; its riff, the cowbell's (baile
+                                                         * funk's: Bach's flute two times in five) */
+        uint32_t m = gr() & 1u, ph = g->drum == DM_PHONK, fl = !ph && gch(40);
+        if (!gs.mutant) {
+            gmut.drum = (uint8_t)(g->drum + m);
+            gs.ba = g->bass[gch(20) ? 2u : m];
+            if (ph ? m : gch(25)) { gmut.bpm_lo = ph ? 115 : 145; gmut.bpm_hi = ph ? 130 : 152; }   /* (the drift's, the
+                                                         * clap on 2 and 4; funk 150) */
+        }
+        gs.riff = (uint8_t)(fl ? BA_FL1 : BA_RF1 + gr() % 4u);
+        if (fl) gmut.snd[GP_LEAD] = SR_FLUTE;
     }
 }
 static void gen_make(void)
@@ -2647,7 +2682,8 @@ static void gen_make(void)
     song.g[G_DUCK] = (int16_t)(gs.act[RL_DRUM] ? (g->spec & GSP_PUMP ? grr(60, 80) : g->kick_mode == KM_SUSTAIN ? grr(30, 50) : grr(14, 30)) : 0);   /* (V10.6n:
                                                          * hard bass pumped) */
     song.g[G_DREL] = (int16_t)(g->drum == DM_TECHNO || g->drum == DM_HARD || g->drum == DM_HBASS ? grr(15, 30) : grr(25, 45));
-    song.g[G_CLIP] = (int16_t)(gs.act[RL_DRUM] ? grr(35, 65) : grr(10, 30));   /* (gen3: a little more: the peaks rounded) */
+    song.g[G_CLIP] = (int16_t)(gs.act[RL_DRUM] ? (g->spec & GSP_HEAVY ? grr(60, 85) : grr(35, 65)) : grr(10, 30));   /* (gen3: a
+                                                         * little more: the peaks rounded; V10.6p: a heavy genre's driven) */
     song.g[G_PUNCH] = (int16_t)(gs.act[RL_DRUM] ? grr(45, 85) : 0);
     if (gx.on) {                                        /* (0.8.6) EXPLORE: the grain delay's pitch and spray, a ping-pong,
                                                          * the feedback short of self-oscillation */

@@ -332,10 +332,14 @@ static const preset_t ANALOG_PRESETS[] = {
      MODS(MMOD(1, PS_VEL, PD_E(2), 24), P_LRATE, 40, MMOD(2, PS_LFO, PD_PAN, 14))},   /* harder: more of the 12th */
     {"ORGAN SQR", {1, 4, 64, 0, 100, 0, 5, 12}, {0, 64, 127, 30}, 0, TAG(KEYS), FX(0, 35, 10, 35), PAT(6),
      MODS(P_LRATE, 92, MMOD(1, PS_MODW, PD_VIB, 1))},
+    /* (V10.6p) the TR-808's cowbell, pitched (phonk's melody): two squares at x 1.48 (its 540 / 800 Hz: INT 6 + 79 ct),
+     * band-passed (FILTER BP), a short decay, driven */
+    {"808 COWBELL", {1, 79, 64, 0, 74, 50, 30, 6}, {0, 40, 0, 30}, 20, TAG(BELL), FX(10, 0, 20, 25), PAT(7),
+     MODS(P_FTYPE, 2, MMOD(1, PS_VEL, PD_CUT, 12))},       /* (TYPE 2: BP) */
 };
 /* (V10.6i) the browsing order (ui.c preset_order): to play, then the experiments, then the INITs. 4 5 6 in a row:
  * ui_test steps from ACID (TRK_OLD) to SINE KEY to RAVE */
-static const uint8_t ANALOG_ORDER[] = {14, 2, 7, 0, 21, 15, 11, 3, 19, 8, 20, 23, 24, 4, 5,  /* to play */
+static const uint8_t ANALOG_ORDER[] = {14, 2, 7, 0, 21, 15, 11, 3, 19, 8, 20, 23, 24, 25, 4, 5,  /* to play */
                                        6, 17, 12, 16, 18, 13, 1, 22,                            /* experiments */
                                        9, 10};                                                  /* INIT */
 _Static_assert(sizeof ANALOG_ORDER == NELEM(ANALOG_PRESETS), "ANALOG's browsing order: every preset once");

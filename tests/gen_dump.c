@@ -73,7 +73,7 @@ static void dump_track(const track_t *t, uint32_t r, uint32_t bars)
         if (s->time == ST_NOTE && s->n) {
             for (j = 0; j < s->n; j++) { nname(b, s->note[j]); printf("%s%s", j ? "/" : "", b); }
             if (!gin_mode(s->note[0] - dump_lift)) printf("!");
-            printf(" ");
+            printf(s->flags & SF_SLIDE ? "~ " : s->flags & SF_ACCENT ? "^ " : " ");   /* (V10.6p: a slide, an accent) */
         } else printf(s->time == ST_TIE ? "= " : ". ");
     }
     printf("\n");
