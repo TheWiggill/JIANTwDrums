@@ -448,7 +448,7 @@ since 0.6.51: every project opens as it was.
 | --- | --- | --- | --- | --- |
 | PRESETS | No. (the sound) | ENG (the engine) | FAV (mark a favourite) | LIST (ALL / FAV) |
 | USER | SLOT (U01–U32) | LOAD (action) | ERASE (action) | SAVE (action) |
-| PROJECTS / SECTIONS (the PROJECT page) | PROJECT (1–8; on SECTIONS: SECT A–D) | SECT (A–D; on SECTIONS: the section's NAME) | LOAD (action) | SAVE (action) |
+| PROJECTS / SECTIONS (the PROJECT page) | PROJECT (1–6; on SECTIONS: SECT A–D) | SECT (A–D; on SECTIONS: the section's NAME) | LOAD (action) | SAVE (action) |
 | ARRANGE | ROW ("2/6") | SECT (on END: STOP / x2–x8 / LOOP) | BARS | SCENE |
 | TOOLS | any knob picks from the list: CLEAR SEQ, INIT SOUND, DELETE ROW, CLEAR SONG, NEW PROJECT, CPU TEST | | | |
 
@@ -573,7 +573,7 @@ ALL. Knobs: LEN, DIV, SWING, GATE. These tools have no undo.
 | G5 | go to the ARRANGE page |
 | C5 | **NAME** (0.9.2; was the EDIT tap): rename the slot on USER, the section on SECTIONS, the project on PROJECTS (elsewhere dim) |
 | OCT+ / OCT− | store into / recall the section playing |
-| **KNOB 1** | the project (1–8); applied when you let go of SAVE, stopped only |
+| **KNOB 1** | the project (1–6); applied when you let go of SAVE, stopped only |
 
 **LFO — macros**: KNOB 1–4 are M1–M4. Let go and they stay **latched** (the header says [LFO] LATCH, and KNOB 1–4
 keep controlling the macros on every page) until you press LFO again. F3 rolls new routes, G3 clears them.
@@ -1295,7 +1295,8 @@ A track clear says **T3 CLEARED** with **SEQ+REC: ALL TRACKS** under it as a rem
 
 ### The pieces
 
-- A **project** is a song. There are **8 projects**.
+- A **project** is a song. There are **6 projects** (V10.6p: 8 before; songs 7 and 8 are gone, their flash
+  is kept for a drum sample bank: move them into 1–6 or keep them in a backup before updating).
 - Each project has **4 sections, A–D**. A section is a full snapshot of the music: every track's sound, steps and
   automation, the DRUM-X kit and its mutes, the punch-in lane, the SLICER, the macros, plus the tempo and global effects.
 - Each project has one **arrangement**: up to **16 rows**, each a section played for **1–64 bars**, optionally with a
@@ -1885,7 +1886,7 @@ This is the chapter to read carefully. JIANT keeps several kinds of data in diff
 ### The big picture
 
 - **The music** is what's playing now, in RAM: all six tracks' sounds and steps, automation, effects, tempo.
-- **Sections** (A–D of each of the 8 projects) are where you **save** music permanently, in flash.
+- **Sections** (A–D of each of the 6 projects) are where you **save** music permanently, in flash.
 - **The arrangement** (rows, END, scenes) belongs to the project and saves itself.
 - **User presets** (32 slots) save single sounds.
 - **Settings** (the MENU, TRACKS, LOAD) save themselves.
@@ -1929,7 +1930,7 @@ switched each level's two sets).
 | --- | --- | --- | --- |
 | **SOUND** | USER · PRESETS | The track's being (its engine's creature, alive with its sound), the track and its sound under it; at the right the 32 user slots (a stored one: its engine's creature small and its name) or the factory sounds. | SLOT, LOAD, ERASE, SAVE / No., ENG, FAV, LIST |
 | **PROJECT** | SECTIONS · ARRANGE | The project's four sections large, ARRANGE's rows as chips, the song as a strip (see [7](#7-arrange-songs-sections-and-scenes)). | SECT, NAME (shown; SAVE + C5 renames), LOAD, SAVE / ROW, SECT, BARS, SCENE (OCT+ adds a row) |
-| **LIBRARY** | PROJECTS · TOOLS | The eight projects as tiles: the number, the name (its section A's), the four sections A–D as chips (stored: in the section's colour; empty: dark). The project open tinted and framed violet, its section picked framed white. / The six tools as a list. | PROJECT, SECT, LOAD, SAVE / the tool |
+| **LIBRARY** | PROJECTS · TOOLS | The six projects as tiles: the number, the name (its section A's), the four sections A–D as chips (stored: in the section's colour; empty: dark). The project open tinted and framed violet, its section picked framed white. / The six tools as a list. | PROJECT, SECT, LOAD, SAVE / the tool |
 
 - **SAVE from another page** comes back to the SAVE page you left; **USER** and **SECTIONS** come with their SAVE
   already picked: SAVE, OCT+, OCT+ stores the sound (or the section), as before. Left on another SAVE page, go back
@@ -1945,7 +1946,7 @@ switched each level's two sets).
 1. **Stop** the transport (saving needs it stopped: otherwise **STOP TO SAVE**).
 2. Press **SAVE**, then **SAVE** again to the next group (or turn **SELECT**): **SECTIONS** (the PROJECT group) or
    **PROJECTS** (the LIBRARY group).
-3. On **PROJECTS**, **KNOB 1**: the project (1–8), its tile framed; **KNOB 2** its section. Turning KNOB 1
+3. On **PROJECTS**, **KNOB 1**: the project (1–6), its tile framed; **KNOB 2** its section. Turning KNOB 1
    does **not** change the music you're playing — it only chooses where to save. (It switches projects, so do this
    stopped.)
 4. On **SECTIONS**, **KNOB 1**: the section A–D, drawn large with its name (or USED / EMPTY) and **NOW** on
@@ -2040,7 +2041,7 @@ switching off.
 
 **Where's my drum kit in a user preset?** User presets don't store the DRUM-X kit; save the project section instead.
 
-**Can I back everything up?** Yes: the web editor's complete backup includes all 8 projects with their sections,
+**Can I back everything up?** Yes: the web editor's complete backup includes all 6 projects with their sections,
 arrangements and scenes, the user presets and the settings. See [15](#15-web-tools-emulator-installer-editor-backup).
 
 ---
@@ -2143,7 +2144,7 @@ faded): a photo of that screen helps when you report a problem.
   user presets after it are picked on the device or from the editor.
 - **Sections and projects** (0.6.80): **channel 16** is the song's: its PROGRAM CHANGE never loads a sound (whatever
   ROUTE). Programs **0–3** jump to section **A–D** of the project (playing: on the next bar, as the song layer's keys;
-  stopped: at once; an empty one is said so); programs **16–23** load project **1–8** with its section A (stopped only,
+  stopped: at once; an empty one is said so); programs **16–21** load project **1–6** with its section A (stopped only,
   as SAVE > SECTIONS). A foot controller or a DAW can run a set.
 - **Not possible**: MIDI OUT on the **TRS** jack (the FM-1's jack is an input only: no output line goes to it) and
   **Bluetooth MIDI** (the chip has a radio, but its Bluetooth software is JieLi's closed SDK, which JIANT does not use).
@@ -2255,7 +2256,7 @@ Every parameter from the computer, over USB. Tabs: Sound, 6-OP FM, Sequencer, Tr
 
 ### The complete backup
 
-**Save backup** downloads one file with: the current music, **all 8 projects with their 4 sections each**, the
+**Save backup** downloads one file with: the current music, **all 6 projects with their 4 sections each**, the
 arrangements and scenes, the 32 user presets (with their FM6 patches) and the settings. **Restore backup** replaces
 all of that on the device (keep USB connected). The **FM6 voice bank (B1–B32) is not included**: keep your .syx files.
 

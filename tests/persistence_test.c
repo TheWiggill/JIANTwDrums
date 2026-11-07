@@ -783,6 +783,36 @@ int main(void)
         bad += check("ARRANGE 2: a version 2 song index loads as 3, its scenes kept, every track its row's",
                      song_idx.version == SONG_IDX_V && song_idx.scene[1][3].mac[0] == 77 && !song_idx.tsrc[1][3]);
     }
+    {   /* (V10.6p) 6 songs: an older JIANT's index on song 8, songs 7 and 8 stored (their commit records in the sample
+         * bank's reserve): it loads, the current song song 6, the rows of 1..6 kept; said once, the reserve never written */
+        static song_index_t v8;
+        static uint8_t keep[FL_SAMPLES_SIZE];
+        st_hdr_t h = {ST_MAGIC, OBJ_COUNT + 5u, 1u, 1u, 0u, 0u, {0, 0}, 0u};
+        v8 = song_idx;
+        v8.magic = SONG_MAGIC; v8.version = SONG_IDX_V; v8.cur = 7; v8.rsv[1] = 0;
+        v8.rows[4].count = 1; v8.rows[4].row[0] = (chain_row_t){2, 5};
+        v8.rows[7].count = 1; v8.rows[7].row[0] = (chain_row_t){3, 9};
+        ok = st_save(OBJ_SONGIDX, &v8, sizeof v8) == 0;
+        song_index_load();
+        ok &= song_cur == NSONG - 1u && song_idx.cur == NSONG - 1u && song_idx.rows[4].count == 1u &&
+              song_idx.rows[4].row[0].bars == 5u && !song_idx.rsv[1];
+        memset(nor + FL_SAMPLES, 0xFF, FL_SAMPLES_SIZE);
+        ui.msg[0] = 0;
+        song_retired();                                 /* (none stored there: nothing said, checked) */
+        ok &= !ui.msg[0] && song_idx.rsv[1] == 1u;
+        song_idx.rsv[1] = 0;
+        memcpy(nor + FL_SAMPLES + 9u * ST_SECTOR, &h, sizeof h);   /* (song 8's section C, copy B) */
+        memcpy(keep, nor + FL_SAMPLES, sizeof keep);
+        song_retired();
+        ok &= str_eq(ui.msg, "SONGS 7-8 RETIRED") && ui.msg2[0] && song_idx.rsv[1] == 1u && song_idx_dirty;
+        ok &= song_index_save() == 0;                   /* (as song_poll writes it: the flag with it) */
+        ui.msg[0] = 0;
+        song_index_load();
+        song_retired();
+        ok &= !ui.msg[0] && song_idx.rsv[1] == 1u && !memcmp(keep, nor + FL_SAMPLES, sizeof keep);
+        bad += check("6 songs: an index on song 8 loads on song 6, songs 7-8 still stored said once, their flash kept", ok);
+        song_cur = 0; song_idx.cur = 0;
+    }
     transport_req = 0;
     memset(&r, 0, sizeof r);
     r.used = UP_USED;

@@ -1884,7 +1884,7 @@ static void preset_engine_jump(int32_t dir)
 static void midi_pc_poll(void)
 {
     uint32_t i, sel = song.sel;
-    if (midi_song_req) {                               /* (0.6.80) channel 16: 0..3 a section, 16..23 a project */
+    if (midi_song_req) {                               /* (0.6.80) channel 16: 0..3 a section, 16..21 a project */
         uint32_t n = midi_song_req - 1u;
         midi_song_req = 0;
         if (n < 4u)

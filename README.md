@@ -355,7 +355,7 @@ With FX held the keys become effects that act while held; on release everything 
 - **SEQ + REC** clears every sequence; **REC + FX / EDIT / ENV / LFO…** clears only that part's automation.
 
 ### Songs inside the device
-**8 projects**, each with **4 sections (A–D)** and a song of up to 16 rows by bars (SAVE > **ARRANGE**), SLOOP style:
+**6 projects** (V10.6p: 8 before), each with **4 sections (A–D)** and a song of up to 16 rows by bars (SAVE > **ARRANGE**), SLOOP style:
 live sections that come in on the next bar, quick chain, SONG REC and STORE / RECALL. Each row can hold a **scene**
 (mutes, DRUM-X group mutes, macros and MIDI punch-ins), saved with KNOB 4 on ARRANGE or on its own when recording with
 SONG REC. The song's END plays it once (STOP), x2..x8 or forever (LOOP).
@@ -582,7 +582,7 @@ makes the kick pull the rest down. The leveler is always on: no need to babysit 
   section into A–D, D5 toggles LOOP / SONG, E5 records the song live (SONG REC).
 - SAVE > **ARRANGE** builds the song: a column of rows (up to 16), each a section and its bars; + ADD adds one; the END
   row plays the song once, x2..x8 or in a LOOP. KNOB 4 stores a **scene** (mutes, macros, punch-ins) in the row.
-- 8 projects: KNOB 1 with SAVE held picks which (on release, with the transport stopped: it loads that project's
+- 6 projects (V10.6p: 8 before): KNOB 1 with SAVE held picks which (on release, with the transport stopped: it loads that project's
   section A, replacing the music; no UNDO).
 
 ### 9. Saving

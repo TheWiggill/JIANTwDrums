@@ -427,8 +427,8 @@ static void __attribute__((noinline)) midi_route_ch14(void)
  * sound load is the main loop's: ui.c midi_pc_poll). 0 none, else n + 1 */
 static volatile uint8_t midi_pc_req[NTRK];
 /* (JIANT 0.6.80) PROGRAM CHANGE on channel 16, the song's own (never a track's, whatever ROUTE): 0..3 the section A..D
- * (in on the next bar, as the song layer's keys), 16..23 the project 1..8 (stopped only, as SAVE > PROJECT). The UI
- * takes it between frames (ui.c midi_pc_poll). 0 none, else n + 1 */
+ * (in on the next bar, as the song layer's keys), 16..21 the project 1..6 (V10.6p: 6 songs; stopped only, as SAVE >
+ * PROJECT). The UI takes it between frames (ui.c midi_pc_poll). 0 none, else n + 1 */
 static volatile uint8_t midi_song_req;
 
 /* Keep the occasional controller/panic dispatch outside the hot rendering loop. Channel voice messages only

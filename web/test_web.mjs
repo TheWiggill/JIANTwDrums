@@ -50,6 +50,15 @@ function installerCheck() {
   for (const k of ["n085Title", "n085What", "n085Risk", "n085Keep", "n085Confirm"])
     ok((html.match(new RegExp(`\\b${k}: "`, "g")) || []).length === 2, `installer: ${k} in English and Japanese`);
   ok(/<div lang="es"[^>]*>[\s\S]*Aviso antes de instalar 0\.8\.5[\s\S]*backup completo/.test(html), "installer: the notice in Spanish");
+  /* (V10.6p) 6 songs: the warning before Install, in every language it has, a backup button there; Install asks for a
+   * backup saved (or a go without one) */
+  for (const k of ["sixTitle", "sixText", "sixBackup", "sixConfirm", "sixSaved"])
+    ok((html.match(new RegExp(`\\b${k}: "`, "g")) || []).length === 2, `installer: ${k} in English and Japanese`);
+  ok(/<div lang="es"[^>]*>[\s\S]*Esta versión guarda 6 canciones \(antes 8\)\. Hacé un backup de tus proyectos antes de actualizar/.test(html),
+     "installer: the 6-song warning in Spanish");
+  ok(html.indexOf('id="backup-go"') > 0 && html.indexOf('id="backup-go"') < html.indexOf('id="go"') &&
+     /if \(!backedUp && !confirm\(t\("sixConfirm"\)\)\)/.test(html) && /saveArchive\(archive\); backedUp = true;/.test(html),
+     "installer: BACKUP before Install; Install without one asks first");
 }
 
 /* ------------------------------------------------------------ editor protocol --- */

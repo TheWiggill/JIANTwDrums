@@ -1642,8 +1642,8 @@ static void setup(int s)
     }
     case S_SAVE_LIB: case S_SAVE_TOOLS: case S_SAVE_PROJ: case S_SAVE_ARR: case S_SAVE_SOUND: case S_SAVE_PRESETS: case S_SAVE_TL:
     case S_SAVE_PARTS: case S_SAVE_PARTS_LOOP: case S_SAVE_TL_LOOP: {
-        static const char *const PN[NSONG] = {"", "ACID 03", "DUB KIT", "", "BOSQUE", "", "TRANCE A", ""};
-        static const uint8_t PM[NSONG] = {0, 3, 1, 0, 15, 0, 5, 0};
+        static const char *const PN[NSONG] = {"", "ACID 03", "DUB KIT", "", "BOSQUE", "TRANCE A"};   /* (V10.6p: 6) */
+        static const uint8_t PM[NSONG] = {0, 3, 1, 0, 15, 5};
         static const chain_row_t AR[6] = {{1, 16}, {2, 16}, {0, 32}, {3, 8}, {2, 16}, {0, 32}};
         static const char *const UN[7] = {"DEEP SUB", "GLASS", "PAD NUBE", "WOBBLE", "BIRDCALL", "KEYS 2", "GRIT"};
         static const uint8_t UK[7] = {0, 1, 2, 4, 6, 9, 13}, UE[7] = {ENGI_ANALOG, ENGI_FM6, 2, ENGI_ANALOG, ENGI_ANIMAL, ENGI_FM6, 3};

@@ -20,7 +20,7 @@ static void song_index_load(void)
     uint32_t k;
 #if FELUCCA_FLASH
     int n = st_load(OBJ_SONGIDX, &song_idx, sizeof song_idx);
-    if (song_idx.magic == SONG_MAGIC && song_idx.cur < NSONG &&
+    if (song_idx.magic == SONG_MAGIC && song_idx.cur < NSONG_IDX &&
         ((song_idx.version == SONG_IDX_V && n == (int)sizeof song_idx) ||
          (song_idx.version == 3u && n == (int)__builtin_offsetof(song_index_t, tvar)) ||
          (song_idx.version == 2u && n == (int)__builtin_offsetof(song_index_t, tsrc)) ||
@@ -32,8 +32,10 @@ static void song_index_load(void)
         if (song_idx.version < 4u)                  /* (add15-beta4: before VAR, no variations) */
             memset(song_idx.tvar, 0, sizeof song_idx.tvar);
         song_idx.version = SONG_IDX_V;
-        for (k = 0; k < NSONG; k++)
+        for (k = 0; k < NSONG_IDX; k++)
             song_rows_fix(&song_idx.rows[k]);
+        if (song_idx.cur >= NSONG)                  /* (V10.6p) an older index on song 7 or 8 (retired): song 6 */
+            song_idx.cur = NSONG - 1u;
         song_cur = song_idx.cur;
         return;
     }
@@ -41,11 +43,30 @@ static void song_index_load(void)
     memset(&song_idx, 0, sizeof song_idx);
     song_idx.magic = SONG_MAGIC;
     song_idx.version = SONG_IDX_V;
-    for (k = 0; k < NSONG; k++)
+    for (k = 0; k < NSONG_IDX; k++)
         chain_defaults(&song_idx.rows[k]);
     song_cur = 0;
     song_idx.rsv[0] = 1;                          /* (no index yet: song_index_boot takes section A's rows) */
 }
+#if FELUCCA_FLASH
+/* (V10.6p) power-on (autosave_boot), once: songs 7 and 8 retired (6 songs), their sections an older JIANT stored still
+ * in their flash (FL_SAMPLES, a commit record of one of their objects: OBJ_COUNT..+7): said; checked once (the index's
+ * rsv[1], written with it) */
+static __attribute__((noinline)) void song_retired(void)   /* (out of line: fm1_main's room is pinned) */
+{
+    uint32_t i, h[2];
+    if (song_idx.rsv[1])
+        return;
+    song_idx.rsv[1] = 1;
+    for (i = 0; i < FL_SAMPLES_SIZE / ST_SECTOR; i++)
+        if (!st_read(FL_SAMPLES + i * ST_SECTOR, h, sizeof h) && h[0] == ST_MAGIC && (uint16_t)(h[1] - OBJ_COUNT) < 8u) {
+            ui_message("SONGS 7-8 RETIRED");
+            str_cpy(ui.msg2, "6 SONGS NOW: SEE MANUAL", sizeof ui.msg2);
+            song_idx_touch();
+            return;
+        }
+}
+#endif
 /* persist_boot, after the slots: the current song's rows */
 static void song_index_boot(void)
 {

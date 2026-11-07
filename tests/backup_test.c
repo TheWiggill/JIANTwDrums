@@ -177,7 +177,7 @@ int main(void)
     reset();
     trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 96, 0, 0};
     bad += check("LIST captures the runtime: 13 objects (id 8 empty, id 9 the FM6 patches), runtime 3840 B (FUNB)",
-                 list(0, &len, &crc) == 0 && rep[2] == 43u && len == sizeof(project_store_t) && len == 3840u &&
+                 list(0, &len, &crc) == 0 && rep[2] == 35u && len == sizeof(project_store_t) && len == 3840u &&
                  crc == st_crc32(ED_BK_RAW, len));
     bad += check("an empty project slot lists as length 0", list(2, &len, &crc) == 0 && len == 0);
     bad += check("GET of the runtime copy", get(0, 0, 64) == 0);
@@ -302,6 +302,19 @@ int main(void)
                      song_idx.scene[2][0].mac[3] == 98 && !song_idx.tsrc[2][0] && song_idx.version == SONG_IDX_V);
         si.version = 7;
         bad += check("  an index of another version is refused", put_all(10u, &si, sizeof si, st_crc32(&si, sizeof si)) == 2);
+        {   /* (V10.6p) 6 songs: LIST names 0..10 and 40..63 (35); songs 7, 8's ids (64..71, an older archive's) are refused
+             * at begin (rc 1: nothing written, fm1backup.js skips them), the sample bank's reserve untouched */
+            static uint8_t keep[FL_SAMPLES_SIZE];
+            uint32_t i, ids = 1;
+            call(ED_BACKUP_LIST, 0, 0);
+            for (i = 0; i < rep[2]; i++)
+                ids &= rep[3 + i * 11u] == (i < 11u ? i : 29u + i);
+            ids &= rep[2] == 35u && rep[3 + 34u * 11u] == 63u;
+            memcpy(keep, nor + FL_SAMPLES, sizeof keep);
+            ids &= put_begin(64u, sizeof st, st_crc32(&st, sizeof st)) == 1 && put_begin(71u, 0, 0) == 1 &&
+                   put_all(63u, &st, sizeof st, st_crc32(&st, sizeof st)) == 0 && !memcmp(keep, nor + FL_SAMPLES, sizeof keep);
+            bad += check("  6 songs: LIST 0..10, 40..63; songs 7-8's ids refused, nothing written in the sample bank's flash", ids);
+        }
     }
     {   /* FUN8 of 1.0.x (3584 bytes, 91 parameters, the patches at 3056): restores as FUN9, E0 at P_E0, lanes 100 % */
         static uint8_t v8[3584];

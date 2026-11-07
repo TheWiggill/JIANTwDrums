@@ -2449,6 +2449,8 @@ static int autosave_boot(int allowed)
             }
         }
     }
+    if (flash_ok)
+        song_retired();                            /* (V10.6p) songs 7, 8 retired: said once, over RESTORED */
 #else
     (void)allowed;
 #endif
