@@ -645,7 +645,7 @@ int main(void)
                 gen_with(genre_of("JAZZ"), seeds, 50, 0);
                 if (gs.trk_of[RL_DRUM] >= NTRK || gs.trk_of[RL_BASS] >= NTRK || gs.trk_of[RL_PAD] >= NTRK) { jz = 0; continue; }
                 d = &trk[gs.trk_of[RL_DRUM]]; b = &trk[gs.trk_of[RL_BASS]]; c = &trk[gs.trk_of[RL_PAD]];
-                jz &= song.g[G_SWING] >= 60 && song.g[G_BPM] >= 55 && song.g[G_BPM] <= 90;
+                jz &= song.g[G_SWING] >= 60 && song.g[G_BPM] >= 40 && song.g[G_BPM] <= 150;
                 for (i2 = 0; i2 < 16u; i2++) {
                     const step_t *s2 = &d->step[i2];
                     uint32_t h2 = s2->time == ST_NOTE ? s2->hit : 0u;
@@ -658,7 +658,7 @@ int main(void)
                 for (i2 = 0; i2 < 16u; i2++) comp -= c->step[i2].time == ST_NOTE && !(i2 % 8u == 0u || i2 % 8u == 3u || i2 % 8u == 7u || i2 == 14u);
                 for (i2 = 0; i2 < gs.nch; i2++) { nch++; sev += gs.ch[i2].q == Q_7 || gs.ch[i2].q == Q_9 || gs.ch[i2].q == Q_6 || gs.ch[i2].q == Q_R9; }
             }
-            bad += gcheck("JAZZ x 6: swung eighths (SWING 60+, 55..90 BPM), the ride, the hat on 2 and 4, no clap", jz);
+            bad += gcheck("JAZZ x 6: swung eighths (SWING 60+, 40..150 BPM), the ride, the hat on 2 and 4, no clap", jz);
             bad += gcheck("JAZZ x 6: a walking bass in quarters, the chords on Charleston's figure, sevenths", walk == 96u && comp >= 12u && sev * 10u >= nch * 9u);
         }
         for (seeds = 1; seeds <= 40u; seeds++) {

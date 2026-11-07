@@ -2692,7 +2692,9 @@ static void gen_make(void)
         int32_t lo = g->bpm_lo, hi = g->bpm_hi, v = lo + (hi - lo) * (int32_t)gs.energy / 100 + grr(-3, 3);
         song.g[G_BPM] = (int16_t)clamp(v, lo, hi);
     }
-    song.g[G_SWING] = (int16_t)clamp((int32_t)gs.swing, 0, 100);
+    song.g[G_SWING] = (int16_t)clamp((int32_t)gs.swing - (g->drum == DM_JAZZ ? (song.g[G_BPM] - 40) / 12 : 0), 0, 100);
+                                                        /* (V10.6x) JAZZ's swing straighter as it speeds up: a ballad's
+                                                         * triplets, bebop's near-even eighths */
     song.g[G_DTIME] = g->dtime;
     song.g[G_DFDBK] = (int16_t)clamp(wet >= 70u ? grr(58, 80) : grr(30, 55) + (int32_t)wet / 3, 0, 95);   /* (0.6.97: the wet
                                                          * genres' long tails: dub, dub techno, shoegaze, ambient ..) */

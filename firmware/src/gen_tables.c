@@ -664,12 +664,12 @@ static const ggenre_t GENRE[] = {
      {AP_CHOP, AP_CHOP}, LD_RIFF, AMT(100, 100, 25, 55, 85), {KIT_909, SR_808, SR_STAB, SR_CHANT, SR_COWBELL}, SR_TEXTURE,
      1, 2, 20, 2, FM_PARTS, 5, HF_LOOP, GSP_HEAVY},
     /* (V10.6w, the owner: "jazz has to sound like jazz") a swing quartet in swung eighths (DM_JAZZ: a step an eighth,
-     * the tempo shown the half of the felt 116 .. 176): the ride's "ding, ding-da ding", the hi-hat's foot on 2 and 4,
+     * the tempo shown the half of the felt: 80 a ballad .. 300 bebop, by the throw's energy; V10.6x, the owner: "jazz has every BPM"): the ride's "ding, ding-da ding", the hi-hat's foot on 2 and 4,
      * the kick feathered, the snare's soft comping; the walking bass in quarters on the chord's tones and its approach
      * notes; ii-V-I and the I vi ii V turnaround in sevenths (secondary dominants, the turnaround's ii V in the last
      * chord: gen.c gplan), the EP's rootless voicings comped on Charleston's 1 and 2's "and" (gen_pads CS_CHARL), a
      * vibraphone's line with its chromatic approaches */
-    {"JAZZ", 58, 88, 70, {SC_MAJ, SC_MAJ, SC_DOR, SC_MIN}, DM_JAZZ, 100, KIT_SOFT, 2, HC_FLAT, FL_NONE, 1,
+    {"JAZZ", 40, 150, 70, {SC_MAJ, SC_MAJ, SC_DOR, SC_MIN}, DM_JAZZ, 100, KIT_SOFT, 2, HC_FLAT, FL_NONE, 1,
      {BA_WALK, BA_WALK2, BA_WALK}, 28, KM_DOUBLE, 100, {PR_JAZZ, PR_TURN, PR_JAZZ}, 1, CS_CHARL, VM_RICH,
      {AP_WALK, AP_UPDOWN}, LD_MOTIF, AMT(100, 95, 80, 0, 55), {KIT_SOFT, SR_UPRIGHT, SR_EP, SR_PIANO, SR_SINEKEY}, SR_TEXTURE,
      0, 1, 30, 0, FM_PARTS, 70, HF_JAZZ | HX_RAISE | HX_SEC | HX_APPR, 0},
