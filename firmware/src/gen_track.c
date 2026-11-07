@@ -65,7 +65,9 @@ static __attribute__((noinline)) void trackgen_make(void)
     for(i=0;i<NTRK;i++) if(i!=k&&drum_track(&trk[i]))
         for(j=0;j<(uint32_t)clamp(trk[i].p[P_SLEN],1,NSTEP);j++)
             if(trk[i].step[j].time==ST_NOTE) gs.kick|=(uint64_t)(trk[i].step[j].hit&1u)<<j;
-    gplan(0);gen_role(&temp,k,len);
+    gplan(0);
+    if(r==RL_DRUM&&c->role==4u) {gs.drum_fill=gmut.fills?gmut.fills:FL_ROLL;gs.song=1;}   /* (V10.6r) SCENE GEN's FILL */
+    gen_role(&temp,k,len);
     if(r!=RL_DRUM) for(i=0;i<len;i++) {
         step_t *s=&temp.step[i];n=0;
         for(j=0;j<s->n&&j<4u;j++) {
@@ -87,16 +89,24 @@ static __attribute__((noinline)) void trackgen_make(void)
 }
 /* (V10.6m) GEN chosen (or its role): the generator writes the track a line, a bass or a lead of the last GENE's genre
  * (any, after EXPLORE or none), in the track's key, 2 bars at least (gen_track.c, undoable); played by the sequence */
+/* (V10.6r) DRUM's GEN: the kit's track GENE's drums (gen_drums, the genre's maps), a key a variation: by its place mod 4
+ * BASE, DENSE, BREAK (sparse, edited), FILL (the genre's fill in the second bar); a set of four every 4 keys up (the
+ * seed: GENE's + the key's set). The track's own TRACK GEN settings are kept */
 static __attribute__((noinline)) void sc_gen(uint32_t i)
 {
-    uint32_t r = scn_role[i % NTRK], sel = song.sel;
+    static const uint8_t EN[4] = {50, 85, 25, 70}, CX[4] = {20, 45, 70, 50};
+    uint32_t r = scn_role[i % NTRK], sel = song.sel, v = sc_dk % 4u;
     track_t *t = &trk[i % NTRK];
-    if ((r != SC_BASS && r != SC_LEAD) || scn_pat[i % NTRK] % SC_NPAT != SC_GEN || drum_track(t)) return;
-    tg_config[i % NTRK].genre = gp.genre == GEN_EXPLORE ? 0u : gp.genre;
-    tg_config[i % NTRK].seed = (uint16_t)(rng() % 10000u);
-    tg_config[i % NTRK].role = r == SC_LEAD ? 2u : 0u;
+    tg_config_t *c = &tg_config[i % NTRK], keep = *c;
+    if (r == SC_DRUM ? scn_pat[i % NTRK] % (SC_DGEN + 1u) != SC_DGEN || !drum_track(t)
+                     : (r != SC_BASS && r != SC_LEAD) || scn_pat[i % NTRK] % SC_NPAT != SC_GEN || drum_track(t)) return;
+    c->genre = gp.genre == GEN_EXPLORE ? 0u : gp.genre;
+    c->seed = (uint16_t)(r == SC_DRUM ? (gp.seed + sc_dk / 4u * 997u) % 10000u : rng() % 10000u);
+    c->role = (uint8_t)(r == SC_LEAD ? 2u : r == SC_DRUM && v == 3u ? 4u : 0u);   /* (a kit's: 4 the fill forced, trackgen_make) */
+    if (r == SC_DRUM) { c->energy = EN[v]; c->complex = CX[v]; }
     if (t->p[P_SLEN] < 32) t->p[P_SLEN] = 32;
     song.sel = (uint8_t)(i % NTRK);
     trackgen_make();
     song.sel = (uint8_t)sel;
+    if (r == SC_DRUM) *c = keep;
 }

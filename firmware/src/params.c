@@ -285,7 +285,7 @@ static const param_desc_t WROT_DESC[2] = {               /* (0.7.8) WHEEL's ROTO
     {"DEPTH", F_PCT, 0, 127, 127, 0, 0}, {"DUST", F_PCTINV, 0, 127, 127, 0, 0}};
 static const param_desc_t VLANG_DESC = {"LANG", F_ENUM, 0, LG_N - 1, 0, N_LANG, 0};   /* (0.8.5) VOICE's words: */
 static const char *const N_DKEYMODE[] = {"CLASSIC", "EXTENDED"};
-static const param_desc_t DKEYMODE_DESC = {"KEY MAP",F_ENUM,0,1,0,N_DKEYMODE,0};
+static const param_desc_t DKEYMODE_DESC = {"KEY MAP",F_ENUM,0,1,1,N_DKEYMODE,0};   /* (2..9: EXTENDED, eng_drum.c drum_chrom) */
 static const param_desc_t SIMG_DESC = {"IMAGE", F_PCTINV, 0, 127, 127, 0, 0};   /* (V10.49) P_SIMG: 127 = 0 % */
 static const param_desc_t VLYR_DESC = {"LYRIC", F_ENUM, 0, LYR_N - 1, 0, N_LYRIC, 0};  /* P_VLANG, P_VLYR (sing.c) */
 static const param_desc_t *track_desc(const track_t *t, uint32_t id)

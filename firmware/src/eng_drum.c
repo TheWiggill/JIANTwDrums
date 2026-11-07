@@ -168,11 +168,22 @@ static const uint16_t DX_EXT_FX[12] = {
     DV_RIM|DXF_DLY|DXF_FB, DV_BELL|DXF_REV|DXF_LONG, DV_KICK|DXF_FB|DXF_LONG,
     DV_SNARE|DXF_REV|DXF_NOISE, DV_TOM|DXF_LONG|DXF_FB|DXF_FOLD, DV_BELL|DXF_DLY|DXF_FB|DXF_LONG
 };
-static uint32_t drum_ext(const track_t *t) { return t->p[P_DKEYMODE] == 1; }
+/* P_DKEYMODE: 0 CLASSIC, 1 EXTENDED (the default: ui.c set_engine_of), its -1 octave KICK 0..12 / TOM 13..26; 2..9
+ * EXTENDED, the -1 octave's 27 keys one lane's chromatic run (lane v - 2: 9 the BELL, the cowbell's melodies), 13 its
+ * own pitch. The track's value: a recorded 0..26 note plays back on the same lane at the same pitch */
+static uint32_t drum_ext(const track_t *t) { return t->p[P_DKEYMODE] >= 1; }
+static int32_t drum_chrom(const track_t *t) { return t->p[P_DKEYMODE] - 2; }   /* (< 0: the KICK / TOM split) */
+static const char *drum_lane_name(const track_t *t, uint32_t l);
 static const char *drum_oct_label(const track_t *t, int32_t o)
 {
     if(drum_ext(t)) {
         static const char *const names[7]={"FLAM","FX KIT","KICK / TOM","DRUM-X KIT","FILLS","RATCH SETS","RATCH SETS"};
+        static char b[12];
+        if (o == -1 && drum_chrom(t) >= 0) {
+            str_cpy(b, drum_lane_name(t, (uint32_t)drum_chrom(t)), 6);
+            str_cpy(b + str_len(b), " CHROM", 7);
+            return b;
+        }
         return names[clamp(o,-3,3)+3];
     }
     return drum_oct_name(o);
@@ -182,7 +193,7 @@ static uint32_t drum_fx_id(uint32_t note) { return note>=27u&&note<=34u ? note-2
 static uint32_t drum_note_lane(const track_t *t, uint32_t note)
 {
     uint32_t fx = drum_ext(t) ? drum_fx_id(note) : 0u;
-    if (drum_ext(t) && note < 27u) return note < 13u ? DV_KICK : DV_TOM;
+    if (drum_ext(t) && note < 27u) return drum_chrom(t) >= 0 ? (uint32_t)drum_chrom(t) & 7u : note < 13u ? DV_KICK : DV_TOM;
     return fx ? DX_EXT_FX[fx-1u]&7u : drum_lane(note);
 }
 
@@ -289,7 +300,7 @@ static __attribute__((noinline)) void drum_note_on(track_t *t, voice_t *v)
     L->st = (int8_t)clamp(DRUM_GM[drum_gm_ix(v->note)][1] + t->pfx_rpit / 16 + t->dpit, -60, 60);   /* (pfx.c RANDOM;
                                                           * 0.6.82: the step's components, seq.c) */
     if (drum_ext(t) && v->note < 27u)
-        L->st = (int8_t)clamp((int32_t)v->note-(v->note<13u?6:19)+t->pfx_rpit/16+t->dpit,-60,60);
+        L->st = (int8_t)clamp((int32_t)v->note-(drum_chrom(t)>=0?13:v->note<13u?6:19)+t->pfx_rpit/16+t->dpit,-60,60);
     else if (drum_ext(t) && drum_fx_id(v->note)) L->st = (int8_t)clamp(t->pfx_rpit/16+t->dpit,-60,60);
     L->bc = 0;                                           /* (0.6.82) its BEND, from the step */
     L->bd = t->dbend;

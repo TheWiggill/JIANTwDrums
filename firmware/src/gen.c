@@ -3034,16 +3034,23 @@ static void gen_helix(void)
 {
     uint32_t n = chain_config.count, x, s = gp.seed * 2654435761u + gp.genre * 40503u, t = 0, i;
     int32_t cy = n ? 116 : 94, a = n ? 5 : 16, x0 = n ? 24 : 6;   /* (V10.6i) arranged: a band of its own under the lanes */
-    uint16_t f = settings.palette == UI_JIANT_INDEX ? heat_col(110) : T_THEME, b = settings.palette == UI_JIANT_INDEX ? heat_col(210) : T_ACCENT;
+    int heat = !ux.mono && settings.palette != UI_BW_INDEX;   /* (V10.6q, the owner) the DNA in the thermal palette */
+    uint16_t f = T_THEME, b = T_ACCENT;
     if (n > 16u)
         return;
     for (i = 0; i < n; i++) t += chain_config.row[i].bars;
     for (x = (uint32_t)x0; x < 234u; x += 2u) {
         uint32_t ang = (x * 6u + anim_fr * 4u) << 23;
         int32_t d = osc_sine(ang) * a >> 15, z = osc_sine(ang + 0x40000000u);
+        if (heat) {                                      /* along the strand violet > red > orange > yellow and back,
+                                                          * drifting; the strand behind dimmer */
+            uint32_t p = (x * 2u + anim_fr * 3u) % 440u;
+            f = heat_col(24 + (int32_t)(p < 220u ? p : 440u - p));
+            b = heat_col(24 + (int32_t)(p < 220u ? 219u - p : p - 220u));
+        }
         if (x % 10u == 0u) {                             /* a rung: a base pair, the seed's; arranged, the section's above it */
             int32_t h = d < 0 ? -d : d;
-            uint16_t c = ux_mix(T_SURF, heat_col(40 + 64 * (int32_t)(s >> (x / 10u % 16u * 2u) & 3u)), 70);
+            uint16_t c = ux_mix(T_SURF, heat_col(40 + 64 * (int32_t)(s >> (x / 10u % 16u * 2u) & 3u)), 88);
             if (n && t) {
                 uint32_t acc = 0, k;
                 for (k = 0; k < n && 24u + (acc + chain_config.row[k].bars) * 212u / t <= x; k++)
@@ -3052,8 +3059,8 @@ static void gen_helix(void)
             }
             cv_rect((int32_t)x, cy - h, 1, 2 * h + 1, c);
         }
-        cv_rect((int32_t)x, cy + d, 2, 2, z > 0 ? f : T_DIM);
-        cv_rect((int32_t)x, cy - d, 2, 2, z > 0 ? T_DIM : b);
+        cv_rect((int32_t)x, cy + d, 2, 2, z > 0 ? f : heat ? ux_mix(T_SURF, f, 45) : T_DIM);
+        cv_rect((int32_t)x, cy - d, 2, 2, z > 0 ? (heat ? ux_mix(T_SURF, b, 45) : T_DIM) : b);
     }
 }
 static void gen_panel(void)

@@ -1576,6 +1576,7 @@ static void apply_preset_to(track_t *t, uint32_t pi)
     }
     pi = preset_orig(e, pi % e->npresets);
     t->preset = (uint8_t)pi;
+    int16_t km = t->p[P_DKEYMODE];                    /* (a kit keeps DRUM-X's KEY MAP: set_engine_of sets it) */
     for (i = 0; i < P_E0; i++)                        /* the rest of the sound to its defaults: a preset */
         if (!param_kept(i))                           /* sounds the same after any edit */
             t->p[i] = TP[i].def;
@@ -1587,8 +1588,8 @@ static void apply_preset_to(track_t *t, uint32_t pi)
     t->p[P_REL] = e->presets[pi].env[3];
     t->p[P_ED_FLT] = e->presets[pi].fenv;
     t->p[P_VOICE] = PR_MONO(&e->presets[pi]) ? V_LEGATO : V_POLY;   /* mono presets keep the legato feel */
-    if (e == &ENG_LOFI)                               /* (V10.6d) MATH: RTRG on, each note the formula from its start */
-        t->p[P_LRTRG] = 1;
+    if (e == &ENG_LOFI || e == &ENG_DRUM)             /* (V10.6d) MATH: RTRG on, each note the formula from its start */
+        t->p[P_LRTRG] = e == &ENG_DRUM ? km : 1;
     if (e == &ENG_FORMANT) {                          /* (0.8.5) VOICE's words: LANG, LYRIC (0: its vowels) */
         t->p[P_VLANG] = (int16_t)(e->presets[pi].xp & 3u);
         t->p[P_VLYR] = (int16_t)(e->presets[pi].xp >> 2);
@@ -1627,6 +1628,8 @@ static void set_engine_of(track_t *t, uint32_t ei)
 #endif
     load_begin(t, LOAD_SOUND);
     fm1_irq_off();
+    if (e == &ENG_DRUM)                               /* (V10.6r) DRUM-X: the EXTENDED key map (a kit's load keeps it) */
+        t->p[P_DKEYMODE] = 1;
     t->eng_req = (uint8_t)(ei % NENGINES);
     for (i = 0; i < 8u; i++)
         t->p[P_E0 + i] = e->edit[i].def;

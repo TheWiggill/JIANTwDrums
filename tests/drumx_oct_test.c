@@ -35,6 +35,7 @@ static track_t *drum_setup(void)
     dt = &trk[3];
     set_engine_of(dt, ENGI_DRUM);
     dt->engine = dt->eng_req;
+    dt->p[P_DKEYMODE] = 0;                              /* (V10.6r: EXTENDED by default; these are CLASSIC's octaves) */
     song.sel = 3;
     song.octave = 0;
     song.rec = 0;

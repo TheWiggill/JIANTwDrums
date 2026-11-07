@@ -398,7 +398,7 @@ static uint8_t scn_on, scn_role[NTRK];   /* (V10.26: all KEEP until set or diced
 /* (V10.6j) BASS and LEAD play a pattern over the key's chord (the track's arp: notes, MODE, RATE (N_DIV), GATE, PROB);
  * the kit's DRUM writes a beat of its own a key (ui_scene.c sc_beat: the main loop, scn_dreq the key + 1) */
 static uint8_t scn_pat[NTRK];
-enum { SC_GEN = 8, SC_NPAT };                       /* (V10.6m) BASS LEAD's 9th: GEN, the generator's line (ui_scene.c sc_gen) */
+enum { SC_GEN = 8, SC_NPAT, SC_DGEN = 4 };            /* (V10.6r) DRUM's 5th: GEN, GENE's drums (gen_track.c sc_gen) */                       /* (V10.6m) BASS LEAD's 9th: GEN, the generator's line (ui_scene.c sc_gen) */
 static volatile uint8_t scn_dreq;
 enum { SN_ROOT, SN_R5, SN_ROCT, SN_TRI, SN_R5O, SN_SEV };
 static const uint8_t SC_PAT[2][8][5] = {
@@ -954,18 +954,38 @@ static uint32_t dxo_part(const track_t *t, uint32_t r)  /* the part of the playi
 /* Extended held performances use the existing four held-key slots. Each cell
  * describes actual GM hits and a recordable per-lane 1/2/4 rate, never a jump
  * of the playhead. No additional voice pool or per-track buffer. */
+/* (V10.6r) FILLS (OCT +1): 27 drum fills, nine kinds (the key's place mod 9) in three lengths (the key / 9: half a bar,
+ * a bar, a bar over four kicks), on the step grid from the press: 0 the snare's roll building (8ths, 16ths, 32nds:
+ * the lane's x2), 1 the toms high to low (GM 50 .. 41: the tom's pitches), 2 the snare then the toms, 3 snare + kick
+ * FLAMs (TOUCH FLAM; 16ths at the third length), 4 kick + snare in unison (4ths, 8ths, 16ths; 32nds at the third), 5 the clap's roll, 6 32nds over the toms on the
+ * beats, 7 3-3-2 accents, 8 hats and rims; held past its end, an open hat (a crash at the third length) and the kick
+ * on the downbeat after it (e->rec 255: it went round once), then again. A hit's TOUCH: dx_in_tch (dxp_fire) */
+static const uint8_t DXP_TOM[6] = {50, 48, 47, 45, 43, 41};
 static uint32_t dxp_note(const dxo_t *e, uint32_t phase, uint32_t slot, uint32_t *rate)
 {
-    static const uint16_t fills[12] = {0x8888,0xAAAA,0xF080,0xE8A0,0xC8C8,0xFF00,
-                                      0x9249,0xA4A4,0x8421,0xE000,0xCCAA,0xFFFF};
-    uint32_t key=e->note%27u, mask;
+    uint32_t key=e->note%27u;
     *rate=1;
     if (e->half==2u) {
-        mask=slot==0u?fills[key%12u]:slot==1u?(uint16_t)(fills[(key+5u)%12u]>>1):0x1111u;
-        if (!((mask>>((phase+3u*(key/12u))&15u))&1u)) return 0;
-        *rate=slot<2u && phase>=12u ? 1u<<((key+phase)%3u) : 1u;
-        return slot==0u?38u:slot==1u?(key%3u==0u?39u:DRUM_LANE_NOTE[DV_TOM]):
-               key&1u?42u:36u;
+        uint32_t ty=key%9u, v=key/9u, L=v?16u:8u, p=phase&(L-1u), q=p*4u/L, tom=DXP_TOM[p*6u/L], n=0;
+        if (!p && (phase>=L || e->rec==255u)) return slot==0u?(v==2u?49u:46u):slot==2u?36u:0u;
+        switch (ty) {
+        case 0: case 5:
+            if (!slot && (q>=2u || !(p&1u))) { n=ty?39u:38u; *rate=q==3u?2u:1u; }
+            break;
+        case 1: if (!slot) n=tom; break;
+        case 2: if (!slot) n=q<2u?38u:DXP_TOM[(p*2u-L)*6u/L]; break;
+        case 3:
+            if (slot!=1u && (q==3u || v==2u || !(p&1u))) { n=slot?36u:38u; dx_in_tch=3; }
+            break;
+        case 4: if (slot!=1u && !(p&(q<2u?3u:q==2u?1u:0u))) { n=slot?36u:38u; *rate=v==2u&&q==3u?2u:1u; } break;
+        case 6: if (!slot) { n=38u; *rate=2u; } else if (slot==1u && !(p&3u)) n=tom; break;
+        case 7: if (slot!=1u ? (p&7u)%3u==0u : (p&1u)) n=slot==1u?tom:slot?36u:38u; break;
+        default:
+            if (!slot) { n=42u; *rate=q==3u?2u:1u; } else if (slot==1u && (p&3u)==2u) n=37u;
+            break;
+        }
+        if (slot==2u && !n && (!p || (v==2u && !(p&3u)))) n=36u;
+        return n;
     }
     /* Sets vary rhythm, lane and density independently. */
     if (slot==2u && (phase&3u)) return 0;
@@ -974,15 +994,18 @@ static uint32_t dxp_note(const dxo_t *e, uint32_t phase, uint32_t slot, uint32_t
 }
 static void dxp_fire(track_t *t, const dxo_t *e, uint32_t phase, uint32_t sub, uint32_t how)
 {
-    uint32_t j, rate, note;
+    uint32_t j, rate, note, sh=e->note%27u>=9u?4u:3u, p=phase&((1u<<sh)-1u);
     if(phase>=16u) return; /* queued: no off-grid first hit */
     uint32_t vel=(uint32_t)clamp((int32_t)e->vel+(int32_t)(e->r>>4)-4,1,127);
+    if(e->half==2u&&p) vel=(vel*((3u<<sh)+p)+(2u<<sh))>>(sh+2u);   /* (a fill builds: 3/4 of the level to all of it) */
     for(j=0;j<3u;j++) {
         note=dxp_note(e,phase,j,&rate);
-        if(!note || (sub%(4u/rate))) continue;
-        dx_in_rat=(uint8_t)rate;
-        if(how==2u) rec_drum(t,&t->step[seq_src(t,t->seq_idx)],note,vel,0);
-        else trk_note_on(t,note,vel);
+        if(note && !(sub%(4u/rate))) {
+            dx_in_rat=(uint8_t)rate;
+            if(how==2u) rec_drum(t,&t->step[seq_src(t,t->seq_idx)],note,vel,0);
+            else trk_note_on(t,note,vel);
+        }
+        dx_in_tch=0;
     }
     dx_in_rat=0;
 }
@@ -997,6 +1020,7 @@ static void dxp_choke(uint32_t ti)
 }
 static void dxp_step(dxo_t *e,uint32_t idx)
 {
+    if(e->ph==15u) e->rec=255u;                          /* (a fill went round: its downbeat next) */
     e->idx=(uint16_t)idx;e->part=255u;e->ph=(uint8_t)((e->ph+1u)&15u);
     /* A small, shared per-step velocity change is representable in step_t.
      * Keep all hit times on the tempo grid; don't jitter ratchets separately. */

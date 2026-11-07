@@ -99,7 +99,7 @@ static void dx_knob(const page_t *pg, uint32_t k, int32_t s)
 static void dx_kit3_knob(uint32_t k, int32_t s)
 {
     if(cur_page()->title[4]=='4') {                    /* KIT 4: KNOB 2 the KEY MAP (V10.6o: KNOB 1's ACOUST gone) */
-        if(k==1u) TSEL->p[P_DKEYMODE]=(int16_t)clamp(TSEL->p[P_DKEYMODE]+s,0,1);
+        if(k==1u) TSEL->p[P_DKEYMODE]=(int16_t)clamp(TSEL->p[P_DKEYMODE]+(s>0?1:-1),0,9);   /* (V10.6r) 2..9: OCT -1 a lane's chromatic run */
         return;
     }
     uint32_t bp = DX_TONE_BP(dx_tone), fb = DX_TONE_FB(dx_tone);
@@ -113,7 +113,7 @@ static void dx_kit3_cards(void)
 {
     if(cur_page()->title[4]=='4') {
         empty_column(0);
-        hot_unit_column(1,"KEY MAP",drum_ext(TSEL)?"EXTENDED":"CLASSIC","");
+        hot_unit_column(1,"KEY MAP",drum_ext(TSEL)?"EXTENDED":"CLASSIC",!drum_ext(TSEL)?"":drum_chrom(TSEL)<0?"KIK/TOM":drum_lane_name(TSEL,(uint32_t)drum_chrom(TSEL)&7u));
         empty_column(2);
         empty_column(3);
         return;
