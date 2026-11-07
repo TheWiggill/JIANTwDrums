@@ -99,6 +99,7 @@ static struct {
     int16_t slg[G_SL_N];              /* .. (0.6.3) its SLICER (the globals G_SLMODE ..) */
     volatile uint8_t ready;           /* main: staged; ISR: taken (0) */
     uint8_t row, section;             /* the song row it is for (SEC_LIVE: a live jump), the section (0..3) */
+    uint32_t src;                     /* (V10.6s) CLIPS: each track's part as a row's tsrc has it (SONG REC's rows) */
 } sec_stage __attribute__((section(".lowbuf")));
 static uint8_t sec_stage_fit[NTRK] __attribute__((section(".pool")));   /* (0.6.78: app.ld LOWBUF) */
 static struct {
@@ -129,6 +130,15 @@ static struct {
     uint8_t dirty;                    /* sections stored in RAM, not in flash yet (bit s) */
     uint8_t mode;                     /* 1 SONG: PLAY plays the song; 0 LOOP */
 } live = {.req = -1, .cur = -1};
+
+/* (V10.6s) SAVE > CLIPS (song_main.c clip_launch): each track's part that sounds, 1..4 A..D, CLIP_STOP stopped, 0 not
+ * known (the music is no part as stored), and the one asked for, in on the next bar (0 none). Main loop; derived, not
+ * saved: what goes in sets them (song_poll clip_seen) */
+#define CLIP_STOP 5u
+static uint8_t clip_now[NTRK] __attribute__((section(".lowbuf"))), clip_go[NTRK] __attribute__((section(".lowbuf")));
+static uint8_t clip_mix __attribute__((section(".lowbuf")));   /* song_stage stages CLIPS' launch */
+static uint32_t rec_src[CHAIN_ROWS] __attribute__((section(".lowbuf")));   /* SONG REC's rows: where their tracks
+                                              * played from (sec_stage.src, tsrc's form: CLIPS' launches) */
 
 static void song_mode_restore(void)
 {

@@ -141,21 +141,27 @@ static void row_vary(step_t *st, uint32_t len, int kit, uint32_t v, uint32_t see
 
 /* section s (a project slot) into sec_stage for row `row` (SEC_LIVE: a live jump); 0 = staged. (add15) A song's row may
  * take tracks from other sections (ARRANGE 2: row_src): each of those is decoded in turn, its tracks (sound, steps, FM6
- * patch, automation; DRUM's kit with the DRUM track) taken from it; the row's own section last, with the rest */
+ * patch, automation; DRUM's kit with the DRUM track) taken from it; the row's own section last, with the rest.
+ * (V10.6s) clip_mix (CLIPS): the row's own is the music as it is (song_keep, 4), the tracks asked for (clip_go) from
+ * their parts, a track asked to stop muted; s the section the stage is said to be (SONG REC's row: its tracks' tsrc) */
 static int song_stage(uint32_t s, uint32_t row)
 {
     project_t *p = &proj_scratch;
-    uint32_t k, i, u, n = 0, on = 0, dx_from = s & 3u, use = 0, srcs[NTRK];
+    uint32_t own = clip_mix ? 4u : s & 3u, k, i, u, n = 0, on = 0, dx_from = own, use = 0, srcs[NTRK], src = 0;
     sec_stage.ready = 0;
     for (k = 0; k < NTRK; k++) {
-        srcs[k] = row < CHAIN_ROWS && !chain.loop ? row_src(row, k, s) : s & 3u;
+        uint32_t c = (uint32_t)(clip_go[k] ? clip_go[k] : clip_now[k]) - 1u;
+        srcs[k] = clip_mix ? ((uint32_t)clip_go[k] - 1u < 4u ? clip_go[k] - 1u : 4u) :
+                  row < CHAIN_ROWS && !chain.loop ? row_src(row, k, s) : s & 3u;
         use |= 1u << srcs[k];
+        if (clip_mix && c < 4u && c != (s & 3u))
+            src |= (c + 1u) << (3u * k);
     }
     for (u = 0; u < 5u; u++) {
-        uint32_t sec = u < 4u ? u : s & 3u;
-        if (u < 4u && (sec == (s & 3u) || !((use >> sec) & 1u)))
+        uint32_t sec = u < 4u ? u : own;
+        if (u < 4u && (sec == own || !((use >> sec) & 1u)))
             continue;                                 /* (the row's own goes last: its globals) */
-        if (!proj_import(p, &proj_slot[sec], sizeof(project_store_t)))
+        if (!proj_import(p, sec < 4u ? &proj_slot[sec] : &song_keep, sizeof(project_store_t)))
             return 1;
         for (k = 0; k < NTRK; k++) {
             sec_trk_t *d = &sec_stage.t[k];
@@ -177,10 +183,12 @@ static int song_stage(uint32_t s, uint32_t row)
                          (song_cur + 1u) * 40503u ^ (row + 1u) * 104729u ^ (k + 1u) * 1299709u ^ v * 15485863u);
                 if (v == RV_MUTE) d->p[P_MUTE] = 1;
             }
+            if (clip_mix && clip_go[k] == CLIP_STOP)    /* (V10.6s) CLIPS' OCT-: the track stops */
+                d->p[P_MUTE] = 1;
             fm6_unpack(p->fm6[k], d->fm6);
             fm6_sanitize(d->fm6);
             on |= p->motion.on & (1u << k);
-            if (e == ENGI_DRUM && sec != (s & 3u))
+            if (e == ENGI_DRUM && sec != own)
                 dx_from = sec;
         }
         for (i = 0; i < p->motion.count && i < MOTION_MAX && n < MOTION_MAX; i++)
@@ -200,6 +208,7 @@ static int song_stage(uint32_t s, uint32_t row)
     sec_stage.pfx_ltgt = p->pfx_ltgt > 2u ? 0u : p->pfx_ltgt;
     sec_stage.row = (uint8_t)row;
     sec_stage.section = (uint8_t)(s & 3u);
+    sec_stage.src = src;
     RING_PUBLISH();
     sec_stage.ready = 1;
     return 0;
@@ -275,6 +284,9 @@ static int section_load(uint32_t s)
     ui.song_row = row;
     proj_cur = (uint8_t)(s & 3u);
     live.cur = (int8_t)(s & 3u);
+    memset(clip_now, (int)(s & 3u) + 1, sizeof clip_now);   /* (V10.6s) CLIPS: every track that part's */
+    memset(clip_go, 0, sizeof clip_go);
+    sec_stage.src = 0;                                  /* (SONG REC's first row: the whole section) */
     return 0;
 }
 
@@ -346,6 +358,64 @@ static int section_jump(uint32_t s)
     ui_say(b, " NEXT BAR");
     return 0;
 }
+/* (V10.6s) SAVE > CLIPS: track k's cell of part s in on the next bar (stopped: now, and PLAY): the other tracks play on
+ * as they are (the music now, song_keep, the stage's own: their sounds, steps, motion; the kit unless the DRUM track's
+ * cell goes in), what plays stops being a song. s 4: the track stops (muted on the bar); k NTRK: every track, the part
+ * (a live jump: section_jump). Cells asked for in one bar go in together. 0 done */
+static int clip_launch(uint32_t k, uint32_t s)
+{
+    uint32_t sec = live.cur >= 0 ? (uint32_t)live.cur : s & 3u, i;
+    if (s < 4u && !project_used(s)) {
+        ui_message("PART EMPTY");
+        return 1;
+    }
+    chain_cut();
+    live.mode = 0;
+    if (k >= NTRK) {
+        if (section_jump(s))
+            return 1;
+        if (song.playing)
+            memset(clip_go, (int)s + 1, sizeof clip_go);
+    } else {
+        project_capture(&proj_scratch);
+        if (!proj_pack(&song_keep, &proj_scratch)) {
+            ui_message("SECTION FULL");
+            return 1;
+        }
+        clip_go[k] = (uint8_t)(s + 1u);
+        clip_mix = 1;
+        i = (uint32_t)song_stage(sec, SEC_LIVE);
+        clip_mix = 0;
+        if (i) {
+            clip_go[k] = 0;
+            return 1;
+        }
+        if (song.playing) {
+            live.req = (int8_t)sec;
+            ui_message("NEXT BAR");
+        } else {
+            fm1_irq_off();                              /* (stopped: in now, as the ISR would) */
+            sec_apply();
+            fm1_irq_on();
+        }
+    }
+    if (!song.playing && !transport_busy())
+        transport_req = 1;
+    return 0;
+}
+/* (song_poll) what went in: each track's part (CLIPS' cells asked for, else the section) */
+static void clip_seen(void)
+{
+    uint32_t k, any = 0;
+    for (k = 0; k < NTRK; k++)
+        any |= clip_go[k];
+    for (k = 0; k < NTRK; k++) {
+        if (clip_go[k] || !any)
+            clip_now[k] = clip_go[k] ? clip_go[k] : (uint8_t)(((uint32_t)live.cur & 3u) + 1u);
+        clip_go[k] = 0;
+    }
+}
+
 /* the music now into section s: RAM at once (playing too), flash once stopped (song_poll) */
 static void section_store(uint32_t s)
 {
@@ -552,6 +622,7 @@ static void song_poll(void)
     uint32_t k;
     if (chain.applied) {
         chain.applied = 0;
+        clip_seen();                                  /* (V10.6s) CLIPS: what sounds now */
         for (k = 0; k < NTRK; k++)
             fm6_adopt(k);                             /* (an FM6 track's SLOT: F n or OWN) */
         sync_reload = 1;
@@ -575,10 +646,11 @@ static void song_poll(void)
             chain_defaults(&chain_config);
             chain_config.count = (uint8_t)n;
             memset(song_idx.scene[song_cur], 0, sizeof song_idx.scene[song_cur]);
-            memset(song_idx.tsrc[song_cur], 0, sizeof song_idx.tsrc[song_cur]);   /* (SONG REC: whole sections) */
-            memset(song_idx.tvar[song_cur], 0, sizeof song_idx.tvar[song_cur]);
+            memset(song_idx.tsrc[song_cur], 0, sizeof song_idx.tsrc[song_cur]);   /* (SONG REC: whole sections; */
+            memset(song_idx.tvar[song_cur], 0, sizeof song_idx.tvar[song_cur]);   /* V10.6s: CLIPS' tracks FROM) */
             for (k = 0; k < n; k++) {
                 chain_config.row[k] = live.rec[k];
+                song_idx.tsrc[song_cur][k] = rec_src[k];
                 song_idx.scene[song_cur][k] = live.rec_scene[k];   /* (each row's scene, as it began) */
             }
             song_idx_touch();

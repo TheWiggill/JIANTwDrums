@@ -16,14 +16,11 @@
  * That holds as long as common parameters are only ever added just before
  * P_E0 (else bump UP_VER and translate). Version 1 (before 1.0) has the
  * same layout; only its PHYS MODEL 2 meant DUST, which up_values loads as
- * MODAL bowed (PHYS itself is retired in TONIC: a PHYS record loads as ANALOG, ui.c set_engine_of). A record of PHYS MODEL 4 (DRUM, version 2
- * until the kit became the DRUM engine) is that engine: up_migrate rewrites it
- * in the RAM mirror when a bank is read and when UP_PUT sends one (core.h
- * drum_from_phys); flash keeps the old record until its bank is written again,
- * which stores the new one. No version bump: today's PHYS has no MODEL 4, so
- * such a record cannot be anything else, and older firmware keeps reading the bank.
- * A record of SAMPLE SET 4 (PERC, the GM kit, retired after 1.0.2) is migrated the same way to the DRUM engine
- * with its default kit (core.h drum_from_perc: its E values the kit's, the rest of the sound and its pattern as
+ * MODAL bowed (PHYS itself is retired in TONIC: a PHYS record loads as ANALOG, ui.c set_engine_of; V10.6s: its
+ * MODEL 4, DRUM before 1.0, too).
+ * A record of SAMPLE SET 4 (PERC, the GM kit, retired after 1.0.2) is the DRUM engine: up_migrate rewrites it in the
+ * RAM mirror when a bank is read and when UP_PUT sends one (flash keeps the old record until its bank is written
+ * again), with its default kit (core.h drum_from_perc: its E values the kit's, the rest of the sound and its pattern as
  * stored; the GM notes play the same drums).
  * Version 3 (UP_VER_GRID, since the DRUM grid) is the same record with a drum grid as its pattern: note[i] is
  * step i's lane hits (bit l = lane l), flags[i] their accents. A DRUM track whose first 16 steps strike a
@@ -90,7 +87,7 @@ static void up_migrate(up_rec_t *r)
     int16_t e[8]; uint32_t k;
     if (!up_valid(r)) return;
     for (k = 0; k < 8u; k++) e[k] = up_value(r, r->np - 8u + k);
-    if (drum_from_phys(r->engine, e) || drum_from_perc(r->engine, e)) {   /* (SAMPLE PERC: see the top) */
+    if (drum_from_perc(r->engine, e)) {                 /* (SAMPLE PERC: see the top) */
         r->engine = ENGI_DRUM;
         for (k = 0; k < 8u; k++) up_set_value(r, r->np - 8u + k, e[k]);
     }

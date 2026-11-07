@@ -760,6 +760,8 @@ static int chain_busy(void) { return chain.running || chain.armed; }
 static uint32_t part_scan(uint32_t s);                 /* (V10.6o) song_main.c: PARTS / TIMELINE's picture, the song's way */
 static int chain_goto(uint32_t r, uint32_t hold);
 static void chain_cut(void);
+static int clip_launch(uint32_t k, uint32_t s);        /* (V10.6s) song_main.c: CLIPS' launches */
+static void song_rec_toggle(void);
 static int section_jump(uint32_t s);
 /* (0.6.22) ARRANGE: the rows 0..count-1, + ADD (while there is room), then the song's END row */
 static uint32_t song_end_row(void) { return chain_config.count < CHAIN_ROWS ? chain_config.count + 1u : CHAIN_ROWS; }
@@ -2001,6 +2003,7 @@ static void dx_cards(const page_t *pg);
 static void dx_kit3_knob(uint32_t k, int32_t s);      /* (0.6.54) KIT 3: TONE's BP, FEEDBK */
 #define SONG_TRK(pg) ((pg)->graph == GR_SONG && (pg)->title[0] == 'T')   /* (add15-beta5) TIMELINE (was ARRANGE 2) */
 #define SONG_PARTS(pg) ((pg)->graph == GR_SONG && (pg)->title[0] == 'P')   /* (V10.6o) PARTS */
+#define SONG_CLIPS(pg) ((pg)->graph == GR_SONG && (pg)->title[0] == 'C')   /* (V10.6s) CLIPS */
 #define DX_KIT3(pg) ((pg)->graph == GR_DXIMG && (pg)->title[0] == 'K')   /* (0.6.58) GR_DXIMG: KIT 3, or STEREO (IMAGE) */
 static void dx_kit3_cards(void);
 static uint32_t dx_sig(void);
@@ -2068,7 +2071,7 @@ static const char *act_name(uint32_t c)          /* column c's action (the foote
         return actions[c < 5u ? c : 4u];
     }
     if (cur_page()->graph == GR_SONG)                   /* (0.8.5) SAVE's lens: OCT+ adds a row (PLAY plays); PARTS: */
-        return SONG_PARTS(cur_page()) ? "LOOP" : "ADD";   /* the part loops */
+        return SONG_PARTS(cur_page()) ? "LOOP" : SONG_CLIPS(cur_page()) ? "GO" : "ADD";   /* the part loops; CLIPS: the cell */
     if (cur_page()->graph == GR_PATS)
         return "LOAD";
     if (cur_page()->graph == GR_USER)
@@ -2094,7 +2097,7 @@ static int act_ready(void)
     if (cur_page()->graph == GR_TOOLS)                  /* one case per column: CLEAR PAT, INIT, DELETE ROW, CLEAR SONG */
         return !chain_busy() && (c == 0u ? !seq_is_empty(TSEL) || motion_count(TSEL) : c == 1u || c >= 4u ? 1 :
                                  c == 2u ? ui.song_row < chain_config.count : chain_config.count != 0u);
-    if (SONG_PARTS(cur_page()))
+    if (SONG_PARTS(cur_page()) || SONG_CLIPS(cur_page()))
         return project_used(ui.part);
     if (cur_page()->graph == GR_SONG)
         return !chain_busy() && chain_config.count < CHAIN_ROWS;

@@ -100,8 +100,8 @@ static const ng_t CG_SCL[] = {{"KEY", 0}, {"CHORD", 0}, {"SCENE", 0}};
 static const nv_t CE_ARP[] = {NV("ARP", 0, 0, 2), NV("ARP 2", 0, 0, 2)};
 static const ng_t CG_ARP[] = {{"ARP", 0}};
 enum { SV_LIB, SV_PROJ, SV_SOUND };
-static const nv_t CE_SAVE[] = {NV("TIMELINE", 0, 0, SV_PROJ), NV("PARTS", 0, 0, SV_PROJ), NV("PROJECT", "SECTIONS", 0, SV_PROJ),   /* (V10.1)
-                                                         * composing first; V10.6o PARTS */
+static const nv_t CE_SAVE[] = {NV("TIMELINE", 0, 0, SV_PROJ), NV("PARTS", 0, 0, SV_PROJ), NV("CLIPS", 0, 0, SV_PROJ),
+                               NV("PROJECT", "SECTIONS", 0, SV_PROJ),   /* (V10.1) composing first; V10.6o PARTS; V10.6s CLIPS */
                                NV("PROJECT", "PROJECTS", 1, SV_LIB), NV("ARRANGE", 0, 1, SV_PROJ), NV("TOOLS", 0, 1, SV_LIB), NV("SAVE SONG AS", 0, 1, SV_PROJ),
                                NV("USER", 0, 2, SV_SOUND), NV("PRESETS", 0, 2, SV_SOUND)};
 static const ng_t CG_SAVE[] = {{"SONG", 0}, {"PROJECT", 0}, {"SOUND", 0}};

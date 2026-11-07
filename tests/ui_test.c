@@ -162,6 +162,7 @@ static int32_t ut_cv_w(void) { return (int32_t)cv_w; }
 #include "../firmware/src/ui_layer.c"
 #include "../firmware/src/upreset.c"
 #include "../firmware/src/project.c"
+#include "legacy_proj.h"                        /* (V10.6s) FUN6, retired: refused */
 
 static int check(const char *what, int ok)
 {
@@ -492,7 +493,8 @@ static int test_sound_loads(void)
     project_load(1);
     bad += check("a project load leaves no load open", load_depth == 0);
     ui_power_on();
-    host_legacy_sample_perc(t);                /* SAMPLE PERC (SET 4, retired after 1.0.2): every load gives DRUM */
+    host_legacy_sample_perc(t);                /* SAMPLE PERC (SET 4, retired after 1.0.2): (V10.6s) in a project no
+                                                * longer DRUM: ANALOG's first, as every SAMPLE track */
     t->preset = 4;                             /* a project written before the factory removal */
     my_steps(t);
     t->p[P_LEVEL] = 71;
@@ -502,10 +504,9 @@ static int test_sound_loads(void)
     apply_preset_to(t, 0);
     track_defaults_steps(t);
     project_load(0);
-    bad += check("saved SAMPLE PERC project: a DRUM track (its kit), the rest of the sound and every step kept",
-                 t->eng_req == ENGI_DRUM && t->preset == 0u && perc_kit(t) &&
-                 !memcmp(t->p, before.p, P_E0 * sizeof t->p[0]) && !memcmp(t->step, before.step, sizeof t->step));
-    bad += check("  its GM hits play as drums (kick, snare, closed hat on their lanes)", gm_hits_play(t));
+    bad += check("saved SAMPLE PERC project (V10.6s): ANALOG's first (SAMPLE retired), its mix and every step kept",
+                 t->eng_req == ENGI_PHYS_TO && t->preset == 0u && t->p[P_LEVEL] == 71 && t->p[P_REV] == 33 &&
+                 t->p[P_E0] == ENGINES[ENGI_PHYS_TO]->presets[0].e[0] && !memcmp(t->step, before.step, sizeof t->step));
     {   /* a user preset of SAMPLE PERC (UP_PUT from an older editor, or a bank read): DRUM, its kit */
         up_rec_t r;
         int16_t keep[P_COUNT];
@@ -540,30 +541,30 @@ static int test_sound_loads(void)
     trk[3].p[P_SDIV] = 3;
     before = trk[3];
     project_save(1);
-    project_v6_t legacy = {0};
-    project_t decoded;
-    proj_import(&decoded, &proj_slot[1], sizeof proj_slot[1]);
-    legacy.magic = PROJ_MAGIC_V6; legacy.size = sizeof legacy;
-    legacy.parts = 0; legacy.phys = PROJ_PHYS;
-    memcpy(legacy.g, decoded.g, sizeof legacy.g);
-    for (uint32_t ti = 0; ti < PROJ_LT; ti++) {
-        memcpy(legacy.t[ti].p, decoded.t[ti].p, 61u * sizeof(int16_t));
-        memcpy(legacy.t[ti].p + 61, decoded.t[ti].p + P_E0, 8u * sizeof(int16_t));
-        legacy.t[ti].engine = decoded.t[ti].engine; legacy.t[ti].preset = decoded.t[ti].preset;
-        for (uint32_t st = 0; st < NSTEP; st++) memcpy(&legacy.t[ti].step[st], &decoded.t[ti].step[st], sizeof(step10_t));
+    {   /* (V10.6s) an old GM project (FUN6: the drum part as track 4) is retired: the RAM slot holding one is refused,
+         * the slot's flash copy (the save above) loads instead; nothing of the old record reaches the tracks */
+        static project_v6_t legacy;
+        static project_t decoded;
+        memset(&legacy, 0, sizeof legacy);
+        proj_import(&decoded, &proj_slot[1], sizeof proj_slot[1]);
+        legacy.magic = PROJ_MAGIC_V6; legacy.size = sizeof legacy;
+        legacy.parts = 0; legacy.phys = PROJ_PHYS;
+        memcpy(legacy.g, decoded.g, sizeof legacy.g);
+        for (uint32_t ti = 0; ti < PROJ_LT; ti++) {
+            memcpy(legacy.t[ti].p, decoded.t[ti].p, 61u * sizeof(int16_t));
+            memcpy(legacy.t[ti].p + 61, decoded.t[ti].p + P_E0, 8u * sizeof(int16_t));
+            legacy.t[ti].engine = decoded.t[ti].engine; legacy.t[ti].preset = decoded.t[ti].preset;
+        }
+        legacy.t[3].engine = 0;
+        legacy.g[G_DRLVL] = 71; legacy.g[G_DRREV] = 43;
+        legacy.sum = proj_hash(&legacy, offsetof(project_v6_t, sum));
+        bad += check("old GM project (FUN6, retired): refused by import", !proj_import(&decoded, &legacy, sizeof legacy));
+        memcpy(&proj_slot[1], &legacy, sizeof legacy);
+        project_load(1);
+        bad += check("  in the RAM slot: the flash copy loads (the track as saved, not the old drum part)",
+                     trk[3].p[P_SDIV] == 3 && trk[3].p[P_LEVEL] == before.p[P_LEVEL] && trk[3].p[P_LEVEL] != 71 &&
+                     !memcmp(trk[3].step, before.step, sizeof trk[3].step));
     }
-    legacy.t[3].engine = 0;
-    legacy.g[G_DRLVL] = 71; legacy.g[G_DRREV] = 43;
-    legacy.g[G_RTYPE] = 10;                               /* (id 24 was the GM drum part's MIDI channel: 10) */
-    legacy.sum = proj_hash(&legacy, offsetof(project_v6_t, sum));
-    memcpy(&proj_slot[1], &legacy, sizeof legacy);
-    project_load(1);
-    bad += check("old GM projects (the drum part) load as DRUM's kit, their mix and steps kept",
-                 trk[3].eng_req == ENGI_DRUM && trk[3].preset == 0u && perc_kit(&trk[3]) &&
-                 trk[3].p[P_LEVEL] == 71 && trk[3].p[P_REV] == 43 && trk[3].p[P_SDIV] == 3 &&
-                 !memcmp(trk[3].step, before.step, sizeof trk[3].step));
-    bad += check("  their GM hits play as drums", gm_hits_play(&trk[3]));
-    bad += check("  its old drum channel (10, in id 24) loads as REVERB TYPE ROOM", song.g[G_RTYPE] == 0);
     return bad;
 }
 
@@ -3814,13 +3815,16 @@ static int test_product_ux(void)
         if (!page_visible(i))
             continue;
         press(B_REC);
-        if (PAGES[i].graph == GR_SONG)
+        if (SONG_CLIPS(&PAGES[i])) {                   /* (V10.6s) CLIPS: REC is SONG REC (the launches as rows) */
+            ok &= song.rec == 0 && !transport_req && live.srec == 1u && msg_is("SONG REC: PLAY");
+            live.srec = 0;
+        } else if (PAGES[i].graph == GR_SONG)
             ok &= song.rec == 0 && !transport_req && msg_is("[SEQ] TO RECORD");
         else if (PAGES[i].graph == GR_ROLL)            /* #133: STEP's roll arms step recording, stopped */
             ok &= song.rec == 1 && !transport_req && ui.page == i && !ui.home;
         else ok &= song.rec == 1 && transport_req == 0 && ui.page == i && !ui.home;
     }
-    bad += check("REC stays on every page, SONG stopped asks for pattern recording (STEP: step recording, stopped)", ok);
+    bad += check("REC stays on every page, SONG stopped asks for pattern recording (STEP: step recording, stopped; CLIPS: SONG REC)", ok);
     ui_power_on(); hold(B_HOME); press(B_REC);
     bad += check("REC in the MENU does nothing (the menu stays, no arm, no transport start)",
                  ui.menu == 1 && song.rec == 0 && !transport_req);
@@ -6060,7 +6064,7 @@ static int test_fm6_charts(void)
 
 #if !FELUCCA_FM4
 /* DIGITAL retired (src/fm4_convert.c): engine 1 is on no track and in no list; its sounds arrive as FM6 with a patch
- * of their own: a user preset of it, its preset numbers (set_engine_of / apply_preset_to), a track that got engine 1
+ * of their own (V10.6s: the init patch, no conversion): a user preset of it, its preset numbers (set_engine_of / apply_preset_to), a track that got engine 1
  * any other way (the main loop's net); the favourites of its presets move to FM6's; the power-on pad is FM6 PAD */
 static int test_fm4_retired(void)
 {
@@ -6111,10 +6115,10 @@ static int test_fm4_retired(void)
         bad += check("engines shown DRUM ANALOG PHASE FM6 VOICE ANIMAL MATH WHEEL NOISE STRING ADD EXT (ENGINE_ORDER); PRESETS lists them so",
                      ok && r == NENG_SHOWN);
     }
-    /* a user preset stored with engine 1: kept as it is, it loads as FM6 with the converted patch */
+    /* a user preset stored with engine 1: kept as it is, it loads as FM6 with the init patch (V10.6s) */
     for (i = 0; i < P_COUNT; i++)
         p[i] = param_desc_of(ENGI_DIGITAL, i)->def;
-    fm4_preset_values(p, 5);                           /* DIGITAL PAD */
+    fm4_preset_values(p, 5);                           /* (V10.6s: retired, the values stay the defaults) */
     {
         up_rec_t r;
         memset(&r, 0, sizeof r);
@@ -6129,8 +6133,9 @@ static int test_fm4_retired(void)
     }
     fm4_convert(p, v);
     up_load(7);
-    bad += check("a DIGITAL user preset loads as FM6: the converted patch its own (SLOT OWN), preset = FM6 PAD",
-                 TSEL->eng_req == ENGI_FM6 && TSEL->preset == 4u && TSEL->p[P_E7] == FM6_OWN && !TSEL->p[P_E0] &&
+    bad += check("a DIGITAL user preset loads as FM6: the init patch its own (SLOT OWN), preset 0",
+                 TSEL->eng_req == ENGI_FM6 && TSEL->preset == 0u && TSEL->p[P_E7] == FM6_OWN &&
+                 !memcmp(v + FP_NAME, "INIT VOICE", 10) &&
                  !memcmp(fm6_patch[song.sel], v, FP_SIZE) && fm6_slot[song.sel] == FM6_OWN && TSEL->user == 8u);
     frame();
     bad += check("  .. and the main loop keeps that patch (not a factory one)", !memcmp(fm6_patch[song.sel], v, FP_SIZE));
@@ -6141,7 +6146,7 @@ static int test_fm4_retired(void)
     up_store(8, "AGAIN");
     {
         uint8_t pk[FM6_PACKED], w[FP_SIZE + 1u];
-        bad += check("  saved again: an FM6 user preset with SLOT OWN and the converted patch beside it",
+        bad += check("  saved again: an FM6 user preset with SLOT OWN and its patch beside it",
                      up_rec(8)->engine == ENGI_FM6 && up_value(up_rec(8), P_E7) == FM6_OWN && !upf_get(8, pk) &&
                      (fm6_unpack(pk, w), !memcmp(w, v, FP_SIZE)));
         fm6_load_slot(song.sel, 2);                    /* another patch on the track, then the preset again */
@@ -6152,19 +6157,19 @@ static int test_fm4_retired(void)
     }
     /* preset numbers of engine 1 */
     set_engine_of(TSEL, ENGI_DIGITAL);
-    bad += check("engine 1 asked for: DIGITAL E.PIANO converted (FM6, PTCH TINE EP, the patch named E.PIANO)",
-                 TSEL->eng_req == ENGI_FM6 && TSEL->preset == 0u && !memcmp(fm6_patch[song.sel] + FP_NAME, "E.PIANO", 7));
+    bad += check("engine 1 asked for: FM6, the init patch (V10.6s: no DIGITAL preset first)",
+                 TSEL->eng_req == ENGI_FM6 && TSEL->preset == 0u && !memcmp(fm6_patch[song.sel] + FP_NAME, "INIT VOICE", 10));
     TSEL->eng_req = ENGI_DIGITAL;                      /* (the ISR's view: no other path does this) */
     apply_preset_to(TSEL, 1);
-    bad += check("a DIGITAL preset number (apply_preset_to): its sound converted (BELL)",
-                 TSEL->eng_req == ENGI_FM6 && TSEL->preset == 1u && !memcmp(fm6_patch[song.sel] + FP_NAME, "BELL", 4));
+    bad += check("a DIGITAL preset number (apply_preset_to): FM6, the init patch",
+                 TSEL->eng_req == ENGI_FM6 && TSEL->preset == 0u && !memcmp(fm6_patch[song.sel] + FP_NAME, "INIT VOICE", 10));
     for (i = 0; i < P_COUNT; i++)
         trk[2].p[i] = param_desc_of(ENGI_DIGITAL, i)->def;
     fm4_preset_values(trk[2].p, 2);
     trk[2].eng_req = ENGI_DIGITAL;
     frame();
-    bad += check("a track left on engine 1 any other way: the main loop converts it (BASS -> FM BASS)",
-                 trk[2].eng_req == ENGI_FM6 && trk[2].preset == 2u);
+    bad += check("a track left on engine 1 any other way: the main loop makes it FM6 (the init patch)",
+                 trk[2].eng_req == ENGI_FM6 && trk[2].preset == 0u && !memcmp(fm6_patch[2] + FP_NAME, "INIT VOICE", 10));
     {   /* favourites of DIGITAL presets (settings PER4) -> the FM6 presets that cover them */
         persist_t pe;
         memset(&pe, 0, sizeof pe);
@@ -7550,7 +7555,8 @@ static void tl_drum(void)
  * the level's other set, SAVE from elsewhere always USER, PRESETS the slot / project) */
 static int test_save_lens(void)
 {
-    static const char *const CH[9] = {"TIMELINE", "PARTS", "SECTIONS", "PROJECTS", "ARRANGE", "TOOLS", "SAVE SONG AS", "USER", "PRESETS"};
+    static const char *const CH[10] = {"TIMELINE", "PARTS", "CLIPS", "SECTIONS", "PROJECTS", "ARRANGE", "TOOLS", "SAVE SONG AS", "USER",
+                                       "PRESETS"};   /* (V10.6s: CLIPS) */
     static const char *const TP[2] = {"PROJECTS", "USER"};
     int bad = 0, ok;
     uint32_t pr;
@@ -7559,12 +7565,12 @@ static int test_save_lens(void)
     press(B_SAVE); frame();
     ok = save_on() && save_level() == SV_PROJ && SONG_TRK(cur_page()) && ui.act == 0u && lz_on() &&
          card_y() == LZ_CARD_Y && graph_y() == LZ_GRAPH_Y && foot_y() == LZ_FOOT_Y && lz_tab_lit(0) &&
-         lz_crumb_is("SAVE \xB7 SONG \xB7 TIMELINE") && lz_count_is("1/9");
-    bad += check("V10.1 SAVE from HOME at power-on: SONG's TIMELINE; the tabs (SONG lit), the crumb, 1/9", ok);
-    bad += check("V10.1 SAVE: one chain TIMELINE PARTS SECTIONS PROJECTS ARRANGE TOOLS SAVE SONG AS USER PRESETS; a SAVE tap the next group, round",
-                 chain_walk(B_SAVE, CH, 9, TP, 2));
+         lz_crumb_is("SAVE \xB7 SONG \xB7 TIMELINE") && lz_count_is("1/10");
+    bad += check("V10.1 SAVE from HOME at power-on: SONG's TIMELINE; the tabs (SONG lit), the crumb, 1/10", ok);
+    bad += check("V10.1 SAVE: one chain TIMELINE PARTS CLIPS SECTIONS PROJECTS ARRANGE TOOLS SAVE SONG AS USER PRESETS; a SAVE tap the next group, round",
+                 chain_walk(B_SAVE, CH, 10, TP, 2));
     ui_power_on(); go_home(); frame(); press(B_SAVE); frame();
-    turn(EN_SELECT, 4); frame();                                             /* ARRANGE, left there */
+    turn(EN_SELECT, 5); frame();                                             /* ARRANGE, left there */
     go_home(); frame(); press(B_SAVE); frame();
     ok = cur_page()->graph == GR_SONG && !SONG_TRK(cur_page()) && save_level() == SV_PROJ;   /* (the page left) */
     turn(EN_SELECT, -2); frame();
@@ -8512,6 +8518,88 @@ static int test_song_layer(void)
     btn_down(B_SAVE); frame(); turn(EN_K1, -1); frame(); btn_up(B_SAVE); frame();
     ok &= song_cur == 0;
     bad += check("  KNOB 1: the song, in when SAVE lets go (stopped)", ok);
+    return bad;
+}
+
+/* (V10.6s) SAVE > CLIPS (the owner's song proposal C): the six tracks x the four parts. F3..B3 a whole part (stopped: at
+ * once, and PLAY); KNOB 1 the track, KNOB 2 the part, OCT+ that cell in on the next bar (queued until then: clip_go, then
+ * sounding: clip_now), that track only; OCT- the track stops on the bar; REC: SONG REC, the launches become the song's
+ * rows, a row's tracks FROM the parts they played (and the stop in its scene); the rows play the launches back */
+static int test_clips(void)
+{
+    int bad = 0, ok;
+    uint32_t bar, i, left;
+    ui_power_on();
+    if (song_cur) (void)song_select(0);
+    sl_steps(60); project_save(0);                      /* A: notes 60.. */
+    sl_steps(70); project_save(1);                      /* B: 70.. */
+    sl_steps(80); project_save(2);                      /* C: 80.. */
+    chain_defaults(&chain_config);
+    memset(song_idx.tsrc[song_cur], 0, sizeof song_idx.tsrc[song_cur]);
+    memset(song_idx.scene[song_cur], 0, sizeof song_idx.scene[song_cur]);
+    go_home(); frame(); press(B_SAVE); frame();
+    nav_put(SEC_SAVE, "CLIPS"); frames(600);
+    ok = SONG_CLIPS(cur_page()) && keys_mode() == 2u && lz_crumb_is("SAVE \xB7 SONG \xB7 CLIPS") &&
+         (part_play.b[1] & 0x3Fu) == 0x3Fu;
+    tl_key(0);                                          /* F3: part A, stopped: at once, and PLAY */
+    ok &= live.cur == 0 && trk[1].step[0].note[0] == 61 && transport_req == 1u;
+    for (i = 0; i < NTRK; i++) ok &= clip_now[i] == 1u && !clip_go[i];
+    bad += check("V10.6s CLIPS: F3 (stopped) every track part A at once, and PLAY", ok);
+    sl_play(256);
+    bar = chain_bar();
+    turn(EN_K1, 1); frame();                            /* T2 */
+    turn(EN_K2, 1); frame();                            /* B */
+    press(B_OCTUP);
+    ok = song.playing && song.sel == 1u && ui.part == 1u && clip_go[1] == 2u && clip_now[1] == 1u && live.req >= 0 &&
+         trk[1].step[0].note[0] == 61;
+    left = bar - chain.bar_pos;
+    sl_play(left > 512u ? left - 512u : 0u);            /* (just before the bar line) */
+    ok &= clip_go[1] == 2u && clip_now[1] == 1u && trk[1].step[0].note[0] == 61;
+    bad += check("V10.6s CLIPS: KNOB 1 T2, KNOB 2 B, OCT+: the cell queued (dashed), nothing changes before the bar", ok);
+    sl_play(1024);
+    ok = trk[1].step[0].note[0] == 71 && clip_now[1] == 2u && !clip_go[1] && live.req < 0;
+    for (i = 0; i < NTRK; i++)
+        ok &= i == 1u || (trk[i].step[0].note[0] == 60u + i && clip_now[i] == 1u);
+    bad += check("  .. on the next bar T2 plays B's pattern (framed: sounding), every other track A's as before", ok);
+    frame();
+    tl_key(2);                                          /* A3: part C, every track */
+    ok = clip_go[0] == 3u && clip_go[5] == 3u && trk[0].step[0].note[0] == 60;
+    sl_play(bar);
+    for (i = 0; i < NTRK; i++)
+        ok &= trk[i].step[0].note[0] == 80u + i && clip_now[i] == 3u && !clip_go[i];
+    bad += check("V10.6s CLIPS: a part key (A3: C) launches every track on the next bar", ok && live.cur == 2);
+    turn(EN_K1, 1); frame();                            /* T3 */
+    press(B_OCTDN);
+    ok = clip_go[2] == CLIP_STOP && !trk[2].p[P_MUTE];
+    sl_play(bar);
+    ok &= trk[2].p[P_MUTE] == 1 && clip_now[2] == CLIP_STOP && !trk[1].p[P_MUTE] && !trk[3].p[P_MUTE] &&
+          trk[2].step[0].note[0] == 82u && trk[0].step[0].note[0] == 80u;
+    bad += check("V10.6s CLIPS: OCT- stops the track on the next bar (the others play on)", ok);
+    press(B_REC);                                       /* SONG REC, from the next bar */
+    ok = live.srec == 1u;
+    sl_play(bar);                                       /* row 1: C (T3 stopped) */
+    ok &= live.srec == 2u;
+    turn(EN_K1, -2); frame(); turn(EN_K2, -2); frame(); /* T1, A */
+    press(B_OCTUP);
+    sl_play(bar);                                       /* row 2: T1 from A */
+    sl_play(bar);
+    press(B_REC);                                       /* off: the rows */
+    sl_play(256);
+    ok &= !live.srec && chain_config.count == 2u && chain_config.row[0].slot == 2u && chain_config.row[0].bars == 1u &&
+          chain_config.row[1].slot == 2u && chain_config.row[1].bars == 2u && msg_is("SONG ROWS 2");
+    ok &= row_src(0, 0, 2) == 2u && row_src(1, 0, 2) == 0u && row_src(1, 1, 2) == 2u && row_src(1, 2, 2) == 2u;
+    ok &= (song_idx.scene[song_cur][0].mute >> 2) & 1u && (song_idx.scene[song_cur][1].mute >> 2) & 1u &&
+          !(song_idx.scene[song_cur][1].mute & 1u);
+    bad += check("V10.6s CLIPS: REC records the launches as the song's rows (C 1 bar; C with T1 FROM A 2 bars; T3's stop)", ok);
+    transport_req = 2; sl_play(256);
+    ok = !song_stage(2, 1) && sec_stage.t[0].step[0].note[0] == 60u && sec_stage.t[1].step[0].note[0] == 81u &&
+         sec_stage.t[5].step[0].note[0] == 85u;
+    sec_stage.ready = 0;
+    bad += check("  .. the second row stages T1 from A, the rest from C (as it played)", ok);
+    chain_defaults(&chain_config);
+    memset(song_idx.tsrc[song_cur], 0, sizeof song_idx.tsrc[song_cur]);
+    memset(song_idx.scene[song_cur], 0, sizeof song_idx.scene[song_cur]);
+    ui_power_on();
     return bad;
 }
 
@@ -13115,7 +13203,7 @@ static int test_nav_rules(void)
     held_turn(B_SCL, 1); frame();
     ok &= str_eq(cur_page()->title, "CHORD") && !ui.layer;   /* SCL + SELECT: its chain (from its page left, KEY) */
     fm1_ms += 1200u;
-    held_turn(B_SAVE, 2); frame();
+    held_turn(B_SAVE, 3); frame();                       /* (V10.6s: CLIPS after PARTS) */
     ok &= str_eq(cur_page()->title, "SECTIONS") || cur_page()->graph == GR_SLOTS;   /* SAVE + SELECT: its chain */
     fm1_ms += 1200u;
     held_turn(B_LFO, 1); frame();
@@ -13674,6 +13762,7 @@ int main(void)
     bad += test_fx_latch();
     bad += test_rec_layer();
     bad += test_song_layer();
+    bad += test_clips();
     bad += test_project_page();
     bad += test_lofi_rtrg();
     bad += test_key_latch();

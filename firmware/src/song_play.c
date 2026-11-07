@@ -87,6 +87,7 @@ static void srec_finish(void)
     for (i = 0; i < live.nrec; i++)
         if (live.rec[i].bars) {
             live.rec_scene[n] = live.rec_scene[i];
+            rec_src[n] = rec_src[i];
             live.rec[n++] = live.rec[i];
         }
     live.rec_done = (uint8_t)(n ? n : 0xFFu);
@@ -101,6 +102,7 @@ static void srec_add(uint32_t s)
     }
     live.rec[live.nrec].slot = (uint8_t)(s & 3u);
     live.rec[live.nrec].bars = 0;
+    rec_src[live.nrec] = sec_stage.src;          /* (V10.6s: CLIPS' tracks from other parts) */
     scene_capture(&live.rec_scene[live.nrec]);       /* (JIANT: the row's scene, as it begins) */
     live.nrec++;
 }

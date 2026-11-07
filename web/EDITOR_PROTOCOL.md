@@ -714,6 +714,8 @@ An archive without id 8 (written before FM6) still restores; the web editor read
 an older archive that also holds the sample slots, 11, 12 or 13 objects, reads with those skipped).
 Since 1.0.3 an id 8 with data (an archive of 1.0..1.0.2) is not stored: like the first boot after the update, every FM6
 user preset whose stored SLOT is a B slot (8..34) and has no patch yet gets that bank slot's patch, and id 9 is written.
+(V10.6s) That move is retired: an id 8 of 3472 bytes is taken (rc 0) and ignored, whatever it holds; a FUN6
+project (3388 bytes, retired with FUN1..FUN5) is refused at commit (rc 2), the slot as it was.
 So restore ids 6 and 7 before 8 (the web editor does); an empty id 8 is taken and ignored (rc 0). Old archives
 therefore restore on both old and new firmware; a 1.0.3 archive on older firmware loses only id 9 (the web editor
 skips it when the device answers rc 1). Data: `1, id, offset u32, pack7` with the next offset (they must follow each other)

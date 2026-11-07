@@ -24,8 +24,8 @@
  * SLICE (13): retired in JIANT (core.h eng_gone). The numbers stay reserved, as DIGITAL's: the stores name engines by
  * index and the table is append-only. ENG_GONE below has no presets and is never offered (eng_ok); a sound of theirs
  * that arrives anyway -- a project, a user preset, the editor's PRESET / SET G_ENGSEL, a backup -- plays as ANALOG's
- * first preset (eng_live; project.c proj_phys_gone, ui.c set_engine_of, ui_input.c). A PHYS DRUM of before 1.0 and a
- * SAMPLE PERC still load as DRUM first (core.h drum_from_phys, drum_from_perc) */
+ * first preset (eng_live; project.c proj_phys_gone, ui.c set_engine_of, ui_input.c). A SAMPLE PERC user preset still
+ * loads as DRUM first (core.h drum_from_perc) */
 static void phys_gone_note_on(struct track *t, voice_t *v) { (void)t; (void)v; }
 static void phys_gone_render(struct track *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
 {

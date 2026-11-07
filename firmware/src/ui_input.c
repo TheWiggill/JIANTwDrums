@@ -544,6 +544,10 @@ static int rec_tap(void)                                /* 1: the arming changed
     uint8_t bit = (uint8_t)(1u << song.sel);
     if (cp_paste_rec())                                 /* (seq2h) a step key held, the clipboard full: PASTE */
         return 0;
+    if (!ui.home && SONG_CLIPS(cur_page())) {          /* (V10.6s) CLIPS: REC records the launches as the song's rows */
+        song_rec_toggle();
+        return 1;
+    }
     if (chain_busy()) {
         ui_message("STOP TO RECORD");
         return 0;
@@ -1308,8 +1312,11 @@ static void tl_keys(uint32_t pressed)
         if (!((pressed >> k) & 1u) || key_black(k))
             continue;
         p = key_place(k);
-        if (SONG_PARTS(cur_page())) {
-            if (p < 4u) parts_audition(p);
+        if (SONG_PARTS(cur_page()) || SONG_CLIPS(cur_page())) {
+            if (p < 4u && SONG_CLIPS(cur_page())) {      /* (V10.6s) CLIPS: the whole part, every track */
+                ui.part = (uint8_t)p;
+                clip_launch(NTRK, p);
+            } else if (p < 4u) parts_audition(p);
             continue;
         }
         if (r >= chain_config.count)
@@ -1435,6 +1442,13 @@ static void edit_param(uint32_t slot, int32_t steps)
             ui.song_row = (uint8_t)part_row(ui.part, steps);
         else if (slot == 3u)
             live.mode = steps > 0;
+        return;
+    }
+    if (SONG_CLIPS(pg)) {                               /* (V10.6s) CLIPS: KNOB 1 the track, 2 the part (the cell) */
+        if (slot == 0u)
+            track_select((uint32_t)clamp((int32_t)song.sel + steps, 0, NTRK - 1));
+        else if (slot == 1u)
+            ui.part = (uint8_t)clamp((int32_t)ui.part + steps, 0, 3);
         return;
     }
     if (SONG_TRK(pg)) {                                 /* (V10.6o) TIMELINE: ROW, its SECT, its BARS, the VAR of the track
@@ -1708,6 +1722,10 @@ static void act_do(void)
         return;
     if (SONG_PARTS(cur_page())) {                       /* (V10.6o) PARTS: the part picked loops */
         parts_audition(ui.part);
+        return;
+    }
+    if (SONG_CLIPS(cur_page())) {                       /* (V10.6s) CLIPS: the cell in on the next bar */
+        clip_launch(song.sel, ui.part);
         return;
     }
     if (cur_page()->graph == GR_SONG) {                 /* (0.8.5) SAVE > PROJECT's ARRANGE: OCT+ adds a row; (V10.6o) after
@@ -2843,7 +2861,7 @@ static void ui_input_frame(void)
                 break;
             if (song.playing || chain_busy() || seq_counting())   /* (a count-in: PLAY stops it) */
                 transport_req = 2;
-            else if ((!ui.home && cur_page()->graph == GR_SONG && !SONG_PARTS(cur_page())) || live.mode)   /* (the song
+            else if ((!ui.home && cur_page()->graph == GR_SONG && !SONG_PARTS(cur_page()) && !SONG_CLIPS(cur_page())) || live.mode)   /* (the song
                                                          * layer's SONG mode; PARTS: as KNOB 4 says) */
                 chain_play_ui();
             else
@@ -2943,6 +2961,8 @@ static void ui_input_frame(void)
             nav_go(SEC_SEQ, nav_cur(), 0);
         else if (SONG_PARTS(cur_page()))                 /* (V10.6o) PARTS: back to the song */
             parts_song();
+        else if (SONG_CLIPS(cur_page()))                 /* (V10.6s) CLIPS: the track stops on the next bar */
+            clip_launch(song.sel, 4u);
         else if (cur_page()->graph == GR_SONG) {         /* (V10.4) ARRANGE, TIMELINE: OCT+ adds a row, OCT- deletes
                                                          * the one picked (DELETE ROW?, as TOOLS) */
             if (chain_busy()) ui_message("SONG PLAYS: STOP IT TO EDIT");

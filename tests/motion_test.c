@@ -101,10 +101,10 @@ static int compact_project(void)
         for (uint32_t j = 0; j < NSTEP; j++) memcpy(&old.t[k].step[j], &before.t[k].step[j], sizeof(step10_t));
     }
     old.chain = before.chain; old.sum = proj_hash(&old, sizeof old - 4u);
-    bad += check("real FUN6 disk image migrates with FM defaults/100% chance/no motion", proj_import(&after, &old, sizeof old) &&
-        after.t[0].p[P_E0] == before.t[0].p[P_E0] && after.t[0].p[P_ED_FLT] == -50 &&
-        after.t[0].p[P_FM1_LEVEL] == 127 && !after.motion.count && step_chance(&after.t[0].step[3]) == 100u);
-    bad += check("migrated FUN6 can be written as fixed-size FUN7", proj_pack(&packed, &after));
+    memset(&after, 0x5A, sizeof after);
+    bad += check("real FUN6 disk image (retired, V10.6s) is refused, the slot untouched", !proj_import(&after, &old, sizeof old) &&
+        ((const uint8_t *)&after)[0] == 0x5Au && ((const uint8_t *)&after)[sizeof after - 1u] == 0x5Au);
+    bad += check("the project itself is written as fixed-size FUNC", proj_pack(&packed, &before));
     project_save(1); motion_clear(t); t->p[P_FM1_LEVEL] = 127; step_set_chance(&t->step[3], 100);
     project_load(1);
     bad += check("actual project save/load restores motion, chance and operator settings", motion_count(t) == 1u &&

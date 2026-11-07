@@ -1423,6 +1423,15 @@ static void draw_columns(void)
         text_column(3, "PLAY", live.mode ? "SONG" : "LOOP", VAL(3u));
         return;
     }
+    if (SONG_CLIPS(cur_page())) {                      /* (V10.6s) CLIPS: TRACK, PART (the cell), SONG REC */
+        val[0] = 'T'; val[1] = (char)('1' + song.sel % NTRK); val[2] = 0;
+        hot_text_column(0, "TRACK", val);
+        val[0] = (char)('A' + (ui.part & 3u)); val[1] = 0;
+        text_column(1, "PART", val, VAL(1u));
+        empty_column(2);
+        text_column(3, "REC", live.srec ? "ON" : "OFF", live.srec ? T_ACCENT : T_DIM);
+        return;
+    }
     if (SONG_TRK(cur_page())) {                        /* (V10.6o) TIMELINE: ROW, SECT, BARS, the ALGORITHM track's VAR */
         uint32_t row = ui.song_row < chain_config.count ? ui.song_row : chain_config.count - 1u, v;
         if (!chain_config.count) {

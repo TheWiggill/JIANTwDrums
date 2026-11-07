@@ -1437,6 +1437,8 @@ static uint32_t graph_signature(void)
         h ^= chain.running ? (chain.row + 1u) * 104729u + chain.remaining * 1299709u + chain.pass * 15485863u : 0u;
         h ^= SONG_END(&chain_config) * 2246822519u;      /* (0.6.22: the END) */
         for (i = 0; i < 4u; i++) h ^= (uint32_t)graph_project_used(i) << (24u + i);
+        for (i = 0; i < NTRK; i++) h = (h ^ (clip_now[i] | clip_go[i] << 4)) * 16777619u;   /* (V10.6s) CLIPS */
+        h ^= live.srec * 3266489917u + ui.part * 668265263u;
         h += graph_pname_sig;
     }
     if (pg->graph == GR_MOD)
@@ -1845,7 +1847,7 @@ static void track_col6(uint32_t c, uint32_t sel, uint32_t st, uint32_t mute, uin
         cv_rect(4, sy, 12, 3, sc);
     }
     if (lvl) {
-        int32_t d = LEVEL_DB_X10[lvl];
+        int32_t d = LEVEL_DB_X10_AT(lvl);
         fmt_int(v, (d + (d < 0 ? -5 : 5)) / 10);
     } else {
         str_cpy(v, "OFF", sizeof v);
@@ -1932,7 +1934,7 @@ static void draw_tracks(void)
             char v[8];
             knob(KB_X, KB_Y, KNOB_BIG_R, KNOB_BIG_COV, KNOB_BIG_ANG, (int32_t)lvl, 0, 127, hot == 1u ? T_ACCENT : vc);
             if (lvl) {
-                int32_t d = LEVEL_DB_X10[lvl];
+                int32_t d = LEVEL_DB_X10_AT(lvl);
                 fmt_int(v, (d + (d < 0 ? -5 : 5)) / 10);
                 GFX_HOOK_ALIGN(KB_X, 0, KB_X + 2 * KNOB_BIG_R, 0, AL_H, "mixer level text centred across");
                 cv_text_in(KB_X, KB_Y + KNOB_BIG_R + 5, 2 * KNOB_BIG_R, &AF_S, "dB", T_DIM, T_SURF);
