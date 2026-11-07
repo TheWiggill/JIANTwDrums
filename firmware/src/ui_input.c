@@ -1051,8 +1051,8 @@ static void step_edit(uint32_t slot, int32_t steps)
 }
 
 /* (0.9.9-seq2d) SEQ > COMP / COMP 2: the cursor step's C1 / C2 (the step picked on the roll, SELECT here): KNOB 1
- * ACTION (OFF and the twelve, then BEND; a new one its VALUE's default, LENGTH 1), KNOB 2 LENGTH 1..32 (a JUMP none),
- * KNOB 3 CONDITION (ALWAYS 25 50 75 % FIRST !FIRST FILL !FILL PRE !PRE NEI !NEI, ELSE on COMP 2 alone: MONO; then
+ * ACTION (OFF and the twelve, then BEND; a new one its VALUE's default, LENGTH 1), KNOB 2 LENGTH 1..32 (a RAMP's: 1..32
+ * steps, then 1..16 bars), KNOB 3 CONDITION (ALWAYS 25 50 75 % FIRST !FIRST FILL !FILL PRE !PRE NEI !NEI, ELSE on COMP 2 alone: MONO; then
  * 1:2 .. 16:16, !1:2 .. !16:16), KNOB 4 VALUE (core.h). OFF clears the component. The step's CHANCE and RATCH: CHANCE */
 static void comp_knob(uint32_t slot, int32_t steps)
 {
@@ -1070,11 +1070,19 @@ static void comp_knob(uint32_t slot, int32_t steps)
         *ap = CA_VDEF[na];
         if (!a) { *lp = 0; *np = CNM_MAKE(1u, 2u); }
         if (na == CA_ARP || na == CA_STUT) *lp = 3;     /* (an ARP, a STUTTER: four steps to start with) */
+        if (na == CA_RAMP) {                            /* (V10.6v: a RAMP 16 steps; the step's LOCK is what it moves) */
+            *lp = 15;
+            if (!motion_lock_at(TSEL, ui.cursor % NSTEP)) ui_message("LOCK A PARAM");
+        }
         return;
     }
     if (!a) { ui_message("ACTION FIRST"); return; }
     if (slot == 1u) {
-        if (a != CA_JUMP)
+        if (a == CA_RAMP) {                             /* (V10.6v) 1..32 steps, then 1..16 bars */
+            int32_t i = clamp((int32_t)(*ap & CV_RAMP_BARS ? CL_MAX + *lp : *lp) + d, 0, CL_MAX + 15);
+            *ap = (uint8_t)((*ap & ~CV_RAMP_BARS) | (i >= (int32_t)CL_MAX ? CV_RAMP_BARS : 0u));
+            *lp = (uint8_t)(i >= (int32_t)CL_MAX ? i - (int32_t)CL_MAX : i);
+        } else
             *lp = (uint8_t)clamp((int32_t)*lp + d, 0, CL_MAX - 1);
     } else if (slot == 2u) {
         uint32_t c, nm;
@@ -1087,8 +1095,9 @@ static void comp_knob(uint32_t slot, int32_t steps)
         *cp = CO_MAKE(a, c);
         if (c >= CC_NM) *np = (uint8_t)nm;
     } else {
-        int32_t i = clamp((int32_t)comp_vidx(a, *ap) + steps, 0, CA_VMAX[a]);
-        *ap = (uint8_t)comp_vat(a, (uint32_t)i);
+        uint32_t b = a == CA_RAMP ? *ap & CV_RAMP_BARS : 0u;   /* (V10.6v: a RAMP's BARS, KNOB 2's) */
+        int32_t i = clamp((int32_t)comp_vidx(a, *ap ^ b) + steps, 0, CA_VMAX[a]);
+        *ap = (uint8_t)(comp_vat(a, (uint32_t)i) | b);
     }
 }
 /* (0.6.85) SEQ > STRETCH: KNOB 1 STRETCH /8 .. /2, x1, x2 .. x8; KNOB 2 REPEAT OFF, x2 .. x8, TO 64; (0.6.92) done as the

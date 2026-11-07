@@ -530,11 +530,11 @@ static uint16_t lz_note(const step_t *st, int acc, uint16_t c)
     return acc ? T_TEXT : T_ACCENT;
 }
 /* (seq2d) a component's colour by its family, as the mock-up's: the pitch (ARP SEQ OCT TRANSPOSE RANDOM BEND) ACCENT,
- * the time (RATCHET STUTTER) THEME, the flow (MUTE JUMP) MID, the sound (LOCK SOUND) TEXT */
+ * the time (RATCHET STUTTER) THEME, the flow (MUTE) MID, the sound (LOCK SOUND RAMP) TEXT */
 static uint16_t comp_col(uint32_t a)
 {
-    return a == CA_RATCH || a == CA_STUT ? T_THEME : a == CA_MUTE || a == CA_JUMP ? T_MID :
-           a == CA_LOCK || a == CA_SOUND ? T_TEXT : T_ACCENT;
+    return a == CA_RATCH || a == CA_STUT ? T_THEME : a == CA_MUTE ? T_MID :
+           a == CA_LOCK || a == CA_SOUND || a == CA_RAMP ? T_TEXT : T_ACCENT;
 }
 /* a step's component marks (3 x 3 at y, centred on x): C1's, C2's beside it; none: nothing */
 static void lz_comp_mark(const step_t *st, int32_t x, int32_t y)
@@ -555,7 +555,7 @@ static uint32_t comp_span_at(const track_t *t, uint32_t si, uint32_t len)
         const step_t *st = &seq_steps(t)[(si + len - j) % len];
         for (k = 0; k < 2u; k++) {
             uint32_t a = CO_ACT(k ? st->comp2 : st->comp), l = st->clen[k];
-            if (a && a != CA_JUMP && l < CL_MAX && l >= j)
+            if (a && a != CA_RAMP && l < CL_MAX && l >= j)   /* (V10.6v: a RAMP's its curve, seq_overlay) */
                 return k + 1u + (a << 2);
         }
     }
@@ -1198,6 +1198,20 @@ static void seq_col(uint32_t dr, uint32_t i, int32_t *x, int32_t *w)
     *x = dr ? 40 + (int32_t)i * 12 : PR_CX(i);
     *w = dr ? 10 : PR_CWI(i);
 }
+/* (V10.6v) SEQ > COMP, a RAMP on the cursor step (column k of the bar shown): its CURVE over the steps it lasts (cold UI:
+ * in the Bluetooth segment, as gen.c's cards) */
+BTAPP_FN static void ramp_draw_bt(const track_t *t, uint32_t dr, int32_t top, uint32_t k)
+{
+    const step_t *cs = &seq_steps(t)[ui.cursor % NSTEP];
+    uint32_t v = comp_arg(cs), nc = v & CV_RAMP_BARS ? 16u : cs->clen[comp_slot()] + 1u;
+    int32_t x, w, x1, w1, px;
+    nc = nc < 16u - k ? nc : 16u - k;
+    seq_col(dr, k, &x, &w);
+    seq_col(dr, k + nc - 1u, &x1, &w1);
+    w = x1 + w1 - x;
+    for (px = 0; px < w; px++)
+        cv_rect(x + px, top + 12 - (ramp_curve(CV_RAMP_CURVE(v), px * 32768 / w) * 12 >> 15), 1, 2, T_TEXT);
+}
 /* the page's marks over the roll / the grid (0.9.17's): PLAYHEADS FUGUE's heads on the grid too (the roll draws them on
  * every page); COMP the steps with the cursor's component a bar on top ACCENT, another component a thin MID one;
  * AUTOMATION / AUTO LIST the records at the foot (a lock ACCENT, automation TEXT; AUTO LIST the row picked framed THEME);
@@ -1221,6 +1235,9 @@ static void seq_overlay(const track_t *t, const page_t *pg)
             else
                 cv_rect(x + 2, top - 2, w - 4, 1, T_MID);
         }
+        k = ui.cursor % NSTEP;
+        if (mine == CA_RAMP && k >= base && k < base + 16u && bt_hw_seg())
+            ramp_draw_bt(t, dr, top, k - base);
     } else if (pg->graph == GR_MOTION || pg->graph == GR_EVENTS) {
         uint8_t idx[MOTION_MAX];
         uint32_t n = ev_rows(idx), cur = ev_row(n);
@@ -2061,7 +2078,7 @@ static void graph_gcomp(void)
         if (!a)
             continue;
         cv_rect(x + cw / 2 - 2, y0, 4, 4, comp_col(a));
-        for (j = 1; a != CA_JUMP && j <= c->len && j < GL_N; j++)   /* (its LENGTH, round the bar) */
+        for (j = 1; j <= c->len && j < GL_N; j++)   /* (its LENGTH, round the bar) */
             cv_rect(x0 + (int32_t)((i + j) % GL_N) * cw, y0 + 6, cw, 1, comp_col(a));
         for (k = 0; k < NTRK; k++)
             cv_rect(x + cw / 2 - 1, y0 + 12 + (int32_t)k * 9, 3, 3, (c->mask >> k) & 1u ? T_TEXT : T_DIM);

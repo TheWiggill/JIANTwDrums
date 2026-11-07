@@ -325,8 +325,8 @@ static void swarm_input(void)
     song.master_q12 = 4096;
     for (t = 0; t < NTRK; t++) trk[t].p[P_DIST] = trk[t].p[P_CHOR] = trk[t].p[P_DLY] = trk[t].p[P_REV] = 0;
     host_preset(&trk[1], ENGI_INPUT, getenv("SWARM_PRESET") ? (uint32_t)atoi(getenv("SWARM_PRESET")) : 9u);   /* (SWARM) */
-    check("INPUT: SWARM is a SOURCE, its own knobs (PLUCK FM PLAY IMAGE DRIFT OCTAVE SELF)", trk[1].p[P_E0] == AIN_SW &&
-          str_eq(ENG_INPUT.desc(&trk[1], 1)->label, "PLUCK") && str_eq(ENG_INPUT.desc(&trk[1], 7)->label, "SELF") &&
+    check("INPUT: SWARM is a SOURCE, its own knobs (PLUCK FM PLAY IMAGE DRIFT OCTAVE CHAOS)", trk[1].p[P_E0] == AIN_SW &&
+          str_eq(ENG_INPUT.desc(&trk[1], 1)->label, "PLUCK") && str_eq(ENG_INPUT.desc(&trk[1], 7)->label, "CHAOS") &&
           !ENG_INPUT.desc(&trk[0], 1));
     trk[1].p[P_LEVEL] = 100;
     trk[1].p[P_CHOR] = trk[1].p[P_DLY] = trk[1].p[P_REV] = 0;
@@ -344,7 +344,7 @@ static void swarm_input(void)
     {   /* OCTAVE: each hit of a device an octave up, round */
         struct sw_dev *d = &sw[0];
         uint32_t o[4], k;
-        trk[1].p[P_E6] = 127;
+        trk[1].p[P_E6] = 63;                            /* (V10.6v: OCTAVE's first half, 4 octaves) */
         for (k = 0; k < 4u; k++) { uint8_t p8[30] = {0, 28, 9, 9, 9, 9, 9, 9}; bt_air_tap(p8, 30, 40, 38); for (v = 0; v < SW_N && sw[v].id != (((9u | 9u << 8 | 9u << 16 | 9u << 24) ^ (9u << 5 | 9u << 13)) | 1u); v++) {} d = &sw[v % SW_N]; uin_on = 0; { int32_t out[2 * CTL]; audio_block(out, CTL); } o[k] = d->oct; }
         check("INPUT: SWARM OCTAVE: each hit of a device an octave up, round", o[1] == (o[0] + 1u) % 4u && o[2] == (o[1] + 1u) % 4u);
         trk[1].p[P_E6] = 0;

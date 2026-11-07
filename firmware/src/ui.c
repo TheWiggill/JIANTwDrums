@@ -870,7 +870,7 @@ static void rate_name(const track_t *t, uint32_t n, char *b)
 /* (gen3) the names short, each read whole on its card: the value's M where it fits with its unit (COMP's 49 px), else S
  * (ui_test test_comp_cards: every value of every knob, every page) */
 static const char *const CA_NAMES[CA_N] = {"OFF", "ARP", "SEQ", "OCT+", "OCT-", "RATCH", "STUT", "MUTE", "TRANS",
-                                           "RAND", "LOCK", "JUMP", "SOUND", "BEND", "SHIFT", "CHORD"};
+                                           "RAND", "LOCK", "RAMP", "SOUND", "BEND", "SHIFT", "CHORD"};
 static const char *const CC_NAMES[CC_NM] = {"ALWAYS", "25%", "50%", "75%", "1ST", "!1ST", "FILL", "!FILL", "PRE",
                                             "!PRE", "NEI", "!NEI", "ELSE"};
 #define CCL_NM 135u                                     /* N:M, M 2..16, N 1..M */
@@ -986,7 +986,13 @@ static void comp_vname(const track_t *t, const step_t *s, uint32_t a, uint32_t v
         str_cpy(lb, "LOCKS", 8); fmt_int(val, (int32_t)n);
         break;
     }
-    case CA_JUMP: str_cpy(lb, "TO STEP", 8); if (v >= CV_JUMP_REV) str_cpy(val, "REV", 8); else fmt_int(val, (int32_t)v + 1); break;
+    case CA_RAMP: {                                    /* (V10.6v) FROM over its CURVE ("KNOB" "EXP"); no LOCK on the step:
+                                                         * NO LOCK (it does nothing) */
+        static const char *const CRV[CV_RAMP_NC] = {"LIN", "EXP", "LOG", "S", "STEPS", "ZIGZAG"};
+        str_cpy(lb, !motion_lock_at(t, (uint32_t)(s - t->step) % NSTEP) ? "NO LOCK" : CV_RAMP_OPP(v) ? "OPP" : "KNOB", 8);
+        str_cpy(val, CRV[CV_RAMP_CURVE(v)], 8);
+        break;
+    }
     case CA_SOUND: str_cpy(lb, "HIT", 8); str_cpy(val, HIT[v % 3u], 8); break;
     case CA_CHORD: str_cpy(lb, "CHORD", 8); str_cpy(val, N_CHRD[1u + v % CD_POW], 8); break;
     case CA_SHIFT: str_cpy(lb, "MOVE", 8); m = (int32_t)(v % 127u) - 63; val[0] = m < 0 ? '-' : '+'; fmt_int(val + 1, m < 0 ? -m : m); str_cpy(un, "STEPS", 8); break;
@@ -998,7 +1004,7 @@ static void comp_vname(const track_t *t, const step_t *s, uint32_t a, uint32_t v
  * keys 1..6 turn the tracks it applies to on and off; COMPS' KNOB 1..4 ACTION LENGTH CONDITION VALUE as COMP's (the
  * actions that mean something for all: GA_LIST; no ELSE, no NEI), COMPS 2's STEP, TRACK, its ON / OFF, MONO / POLY */
 static uint8_t gl_cur, gl_trk;
-static const uint8_t GA_LIST[] = {CA_NONE, CA_MUTE, CA_STUT, CA_OCTU, CA_OCTD, CA_RATCH, CA_TRANS, CA_ARP, CA_JUMP, CA_RAND, CA_CHORD};
+static const uint8_t GA_LIST[] = {CA_NONE, CA_MUTE, CA_STUT, CA_OCTU, CA_OCTD, CA_RATCH, CA_TRANS, CA_ARP, CA_RAND, CA_CHORD};
 static uint32_t gco_slot(void) { return ui.page > 0u && PAGES[ui.page - 1u].graph == GR_GCOMP; }
 static int keys_pg(uint32_t g) { return !ui.home && !ui.menu && !ui.confirm && !ui.layer && cur_page()->graph == g; }   /* (V10.6o) */
 static int gco_on(void) { return keys_pg(GR_GCOMP); }
@@ -1041,8 +1047,7 @@ static void gco_knob(uint32_t slot, int32_t steps)
         ui_message("ACTION FIRST");
         return;
     } else if (slot == 1u) {
-        if (a != CA_JUMP)
-            c->len = (uint8_t)clamp((int32_t)c->len + d, 0, CL_MAX - 1);
+        c->len = (uint8_t)clamp((int32_t)c->len + d, 0, CL_MAX - 1);
     } else if (slot == 2u) {
         uint32_t k, nm;
         int32_t i = clamp((int32_t)cond_idx(CO_COND(c->comp), c->nm) + steps, 0, (int32_t)CCL_N - 1);

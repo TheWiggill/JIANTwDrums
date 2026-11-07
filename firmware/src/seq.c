@@ -1495,9 +1495,13 @@ static void keyboard_block(void)
     kb_prev = cur;
 }
 
-/* (0.6.62) JUMP / REV: the steps that turned the track this pass (seq2d: once a pass each, fl_once); the passes */
-static uint8_t fl_cnt[NTRK][NSTEP], fl_pass[NTRK];
-static void fl_reset(uint32_t ti) { memset(fl_cnt[ti % NTRK], 0, NSTEP); }
+/* (V10.6v) RAMP (core.h CV_RAMP_*): a track's one gliding parameter (the RAMP launched last): its id + 1 (0 none), the
+ * step that launched it, VALUE, LENGTH - 1; how far, Q24 of the way (past RAMP_ONE: the knob's value coming back, in
+ * samples); the lock's value it goes to */
+typedef struct { uint8_t id, st, val, len; uint32_t pos; int16_t to; } ramp_t;
+static ramp_t rmp[NTRK] __attribute__((section(".bss.swarm")));   /* (out of the merged statics, as fx.c's djf) */
+#define RAMP_ONE (1u << 24)
+#define RAMP_BACK 1024u                             /* (~23 ms: the knob's value back without a click) */
 /* -------------------------------------------------------- sequencer --- */
 static void fg_reset(void);                         /* (fugue.c) */
 static void gl_reset(void);                         /* (seq2f: the global lane) */
@@ -1521,12 +1525,12 @@ static void seq_start(void)
         t->rh_n = 0;
         t->rat_left = 0;
         t->arp_from = 0; t->loops = 0;             /* (0.6.39) the components: the first loop, no arpeggio */
-        t->jump_to = t->rev = 0;                   /* (0.6.42) no JUMP, REV */
+        t->jump_to = t->rev = 0;                   /* (0.6.42) no JUMP, REV (LIVE's) */
         t->csp_n = t->c_pre = t->c_acc = 0;        /* (seq2d) no component span, PRE false, TRANSPOSE from its place */
         t->cpos = t->cv_on = 0;                    /* (0.6.47) C.LEN's lane from its first step */
-        fl_reset(i), fl_pass[i] = 0;               /* (0.6.62) TIMES from the first pass */
     }
     fg_reset();                                    /* (0.6.52) FUGUE's heads from their first step */
+    memset(rmp, 0, sizeof rmp);                    /* (V10.6v) no RAMP (a stop: motion_end the knob's values back) */
     lv.act = 0;                                    /* (p2) LIVE: the ghosts from step 0 too (live_q) */
     gl_reset();                                    /* (seq2f) the global lane from its first step, its first pass */
     song.tick = 0;
@@ -1672,7 +1676,6 @@ static const step_t *seq_unit(const track_t *t, uint32_t len, uint32_t k, uint32
     *cnt = n;
     return r;
 }
-static uint8_t cx_jump[NTRK];                       /* the step's JUMP: to step v (1..64), 65 REV; 0 none */
 /* (0.9.9-seq2f) GLOBAL STEP COMPONENTS (GLO > COMPS, the approved mock-up's G1): a lane of GL_N steps on the transport's
  * 1/16 grid (clk_n: one bar, looping), one component a step (ACTION | CONDITION << 4, VALUE, LENGTH - 1, N:M as the
  * tracks', core.h CA_* CC_*) and the TRACKS it applies to (mask, bit k track k). Each global step's CONDITION is
@@ -1696,7 +1699,8 @@ static void gl_touch(void)                              /* (after an edit or a l
 {
     uint32_t i, on = 0;
     for (i = 0; i < GL_N; i++) {
-        if (CO_ACT(glane[i].comp) >= CA_N || CO_COND(glane[i].comp) >= CC_N) glane[i].comp = 0;
+        if (CO_ACT(glane[i].comp) >= CA_N || CO_COND(glane[i].comp) >= CC_N || CO_ACT(glane[i].comp) == CA_RAMP)
+            glane[i].comp = 0;                          /* (V10.6v: a JUMP of before, RAMP's code: a track's alone) */
         if (glane[i].len >= CL_MAX) glane[i].len = CL_MAX - 1u;
         glane[i].mask &= (1u << NTRK) - 1u;
         on |= CO_ACT(glane[i].comp) != 0u;
@@ -1791,7 +1795,7 @@ static void gl_eval(uint32_t g)                         /* every global step up 
             gsp_n--;
         }
         gsp[gsp_n].g0 = gl_next; gsp[gsp_n].act = (uint8_t)a; gsp[gsp_n].val = (uint8_t)v;
-        gsp[gsp_n].len = (uint8_t)(a == CA_JUMP ? 1u : c->len + 1u); gsp[gsp_n].mask = c->mask;
+        gsp[gsp_n].len = (uint8_t)(c->len + 1u); gsp[gsp_n].mask = c->mask;
         gsp[gsp_n].ser = ++gl_ser; gsp[gsp_n].mv = (int8_t)clamp(mv, -100, 100);
         gsp_n++;
     }
@@ -1806,10 +1810,6 @@ static void gl_take(track_t *t, const step_t *s, uint32_t ti, uint32_t g)
         if (!((G->mask >> ti) & 1u) || g < G->g0 || g >= G->g0 + G->len || (int8_t)(G->ser - gl_took[ti]) <= 0)
             continue;
         gl_took[ti] = G->ser;
-        if (G->act == CA_JUMP) {
-            cx_jump[ti] = (uint8_t)(G->val % (CV_JUMP_REV + 1u) + 1u);
-            continue;
-        }
         if (G->act == CA_MUTE && G->val)
             trk_fade_out(t);
         if (G->act == CA_STUT)
@@ -1838,7 +1838,6 @@ static __attribute__((noinline)) const step_t *comp_run(track_t *t, const step_t
     uint8_t probability = s->probability;   /* save before cvs can replace an aliased C.LEN input */
     t->cx_deg = t->cx_oct = 0;
     t->cx_rnd = t->cx_rat = t->cx_dec = t->cx_tch = t->cx_bend = t->cx_arp = t->cx_lock = 0;
-    cx_jump[ti] = 0;
     if (gl_on || gsp_n) {                               /* (seq2f) the global lane: evaluated up to here */
         g = gl_step_at(ev_off);
         gl_eval(g);
@@ -1872,6 +1871,8 @@ static __attribute__((noinline)) const step_t *comp_run(track_t *t, const step_t
         if (!a || a >= CA_N)
             continue;
         if (a == CA_SHIFT) { acted |= shift_cond(t, s, k, t->loops); continue; }
+        if (a == CA_RAMP)                           /* (V10.6v: no condition, no span: seq_tick's ramp_run) */
+            continue;
         ok = (uint32_t)comp_cond(t, s, k, acted);
         if (a == CA_TRANS) {
             mv = CV_TR_MOVE(v);
@@ -1888,10 +1889,6 @@ static __attribute__((noinline)) const step_t *comp_run(track_t *t, const step_t
         if (!ok)
             continue;
         acted = 1;
-        if (a == CA_JUMP) {
-            cx_jump[ti] = (uint8_t)(v % (CV_JUMP_REV + 1u) + 1u);
-            continue;
-        }
         if (a == CA_MUTE && v)
             trk_fade_out(t);                        /* CUT: what sounds goes (~3 ms) */
         if (a == CA_STUT)
@@ -1978,15 +1975,80 @@ static __attribute__((noinline)) const step_t *comp_run(track_t *t, const step_t
     t->cv_on = 1;
     return &t->cvs;
 }
-/* JUMP / REV at most once a pass from the same step (a jump back: the second time it plays on); fl_pass the passes */
-static int fl_once(const track_t *t)
+/* (V10.6v) RAMP's shape: x of the way (Q15, 0..32768) -> how far the value is (Q15): LIN, EXP (slow, then fast), LOG
+ * (fast, then slow), S, STEPS (8 stairs), ZIGZAG (rising, small bounces back) */
+static int32_t ramp_curve(uint32_t c, int32_t x)
 {
-    uint32_t ti = (uint32_t)(t - trk) % NTRK, k = t->seq_idx % NSTEP;
-    if (fl_cnt[ti][k])
-        return 0;
-    fl_cnt[ti][k] = 1;
-    return 1;
+    int32_t y = 32768 - x, f;
+    switch (c) {
+    case 1: return ((x * x >> 15) * x) >> 15;
+    case 2: return 32768 - (((y * y >> 15) * y) >> 15);
+    case 3: return (x * x >> 15) * ((98304 - 2 * x) >> 1) >> 14;
+    case 4: f = x >> 12; return f >= 7 ? 32768 : f * 4681;
+    case 5: f = (x * 6) & 32767; return clamp(x + (f < 16384 ? f : 32768 - f) / 4, 0, 32768);
+    default: return x;
+    }
 }
+/* (V10.6v) RAMP on track t: s the step starting now (play: it plays; its RAMP launches the glide of the step's LOCK, the
+ * first one, unless that glide still runs from this step: it goes on), 0 none; then n samples on: the value into its
+ * parameter (motion.c's records and locks move it, this after them: the ramp's value wins), at its end the knob's back */
+static __attribute__((noinline)) void ramp_run(track_t *t, const step_t *s, uint32_t play, uint32_t n)
+{
+    uint32_t ti = trk_index(t) % NTRK, k, id, u, b, st = t->seq_idx % NSTEP, bars;
+    ramp_t *r = &rmp[ti];
+    const motion_event_t *e;
+    int32_t from, to, v, base;
+    if (!motion_enabled(t)) {                       /* (its records off: so are its locks; motion_restore the values) */
+        r->id = 0;
+        return;
+    }
+    for (k = 0; s && play && k < 2u; k++) {
+        uint32_t val = k ? s->carg2 : s->carg, l = s->clen[k];
+        if (CO_ACT(k ? s->comp2 : s->comp) != CA_RAMP)
+            continue;
+        if (!(e = motion_lock_at(t, st)))           /* (no lock: nothing) */
+            break;
+        id = MOTION_ID(e) + 1u;
+        if (r->id == id && r->st == st &&           /* (running from here, more than half a step to go: on) */
+            r->pos + RAMP_ONE / (2u * (val & CV_RAMP_BARS ? (l % 16u + 1u) << 4 : l + 1u)) < RAMP_ONE)
+            break;
+        if (r->id && r->id != id)
+            t->p[r->id - 1u] = motion_base[ti][r->id - 1u];   /* (another one: its knob's value back) */
+        r->id = (uint8_t)id; r->st = (uint8_t)st; r->val = (uint8_t)val; r->len = (uint8_t)l;
+        r->pos = 0; r->to = MOTION_VAL(e);
+        break;
+    }
+    if (!r->id)
+        return;
+    id = r->id - 1u;
+    motion_active[ti][id / 32u] |= 1u << (id % 32u);   /* (a stop puts the knob's value back; seq_tick runs this after
+                                                     * each step's motion_step: its value over the lock's unlock) */
+    base = motion_base[ti][id];
+    to = r->to;
+    b = r->pos - RAMP_ONE;
+    if (r->pos < RAMP_ONE) {                        /* (on its way; the values between its ends: no fit) */
+        const param_desc_t *d = param_desc_of(eng_idx(t->eng_req), id);
+        bars = (r->val & CV_RAMP_BARS) != 0u;
+        u = div_samples(bars ? 2u : (uint32_t)t->p[P_SDIV]) * (bars ? (r->len % 16u + 1u) << 4 : r->len + 1u);
+        r->pos += (n << 16) / ((u >> 8) | 1u);
+        if (r->pos > RAMP_ONE)
+            r->pos = RAMP_ONE;
+        from = CV_RAMP_OPP(r->val) ? (to >= (d->min + d->max) >> 1 ? d->min : d->max) : base;
+        b = (uint32_t)ramp_curve(CV_RAMP_CURVE(r->val), (int32_t)(r->pos >> 9)) >> 5;
+    } else if (b >= RAMP_BACK) {                    /* (its end: the knob's) */
+        t->p[id] = (int16_t)base;
+        r->id = 0;
+        return;
+    } else {                                        /* (then the knob's value back, RAMP_BACK samples) */
+        r->pos += n;
+        from = to;
+        to = base;
+    }
+    v = from + ((to - from) * (int32_t)b >> 10);
+    t->p[id] = (int16_t)v;
+}
+/* (called through a pointer: seq_tick is inlined in RAM code, out of a direct call's reach of the image's end) */
+static void (*const volatile RAMP_RUN)(track_t *, const step_t *, uint32_t, uint32_t) = ramp_run;
 /* (seq2d) a legacy component (CP_* c, its argument a; projects before seq2d, GEN, DICE) into slot k of step i of st as
  * ACTION LENGTH CONDITION VALUE: ev the step's EVERY (both components'), len the pattern's; other: the other slot is
  * free (OCT's ALT takes it). LENGTH: an ARP's over the TIEs after it, TONAL's to the loop's end, PULSE's over the
@@ -2034,10 +2096,6 @@ static void cm_one(step_t *st, uint32_t i, uint32_t k, uint32_t c, uint32_t a, u
             if (o->time == ST_NOTE && (o->n || o->hit)) break;
         }
         break;
-    case CP_JUMP: case CP_REV:
-        act = CA_JUMP; v = c == CP_JUMP ? CP_JTO(a) : CV_JUMP_REV;
-        if (CP_TIMES(c, a) == 3u) { own = 1; cond = CC_NM; nm = CNM_MAKE(1u, 2u); }
-        break;
     case CP_FILL: act = CA_MUTE; own = 1; cond = CC_NFILL; break;
     case CP_KILL: act = CA_MUTE; v = 1; break;
     case CP_WALK: case CP_CLIMB: {
@@ -2070,6 +2128,10 @@ static void comp_migrate(step_t *st, uint32_t len)
         step_t *s = &st[i];
         uint32_t c1 = s->comp, a1 = s->carg, c2 = s->comp2, a2 = s->carg2, ev = s->cwhen & 15u;
         int l1 = s->clen[0] == CL_LEGACY, l2 = s->clen[1] == CL_LEGACY;
+        if (!l1 && CO_ACT(c1) == CA_RAMP && !CV_RAMP_OK(a1))   /* (V10.6v) a JUMP of before whose VALUE is no RAMP: */
+            s->comp = 0;                            /* none */
+        if (!l2 && CO_ACT(c2) == CA_RAMP && !CV_RAMP_OK(a2))
+            s->comp2 = 0;
         if (!l1 && !l2)
             continue;
         if (l1) { s->comp = s->carg = 0; s->clen[0] = s->cnm[0] = 0; }
@@ -2842,10 +2904,6 @@ static void seq_tick(track_t *t, uint32_t n)
             t->rev = 0;
         } else {
             t->seq_idx = (uint16_t)((t->seq_idx + 1u) % (len ? len : 1u));
-            if (!t->seq_idx && !start) {                /* (0.6.62) the pattern wrapped by itself: a new pass */
-                fl_reset((uint32_t)(t - trk));
-                fl_pass[(t - trk) % NTRK]++;
-            }
         }
         t->jump_to = 0;
         if (start) t->rev = 0;
@@ -2860,8 +2918,10 @@ static void seq_tick(track_t *t, uint32_t n)
             const step_t *s = (t->pfx & PFX_RND) && !(rng() & 1u)   /* (JIANT) RANDOM held: half the */
                                             ? &seq_steps(t)[rng() % (len ? len : 1u)] : shift_step(t, t->seq_idx);   /* steps, any */
             uint32_t skip = SEQ_ROLLED, i, k;
+            const step_t *s0;
             t->mic = (int8_t)ST_MICRO(s);               /* (0.6.88) its own TIMING (late: seq_step) */
             s = comp_lane(t, s);                        /* (0.6.47) C.LEN: the lane's component on it */
+            s0 = s;
             s = comp_run(t, s, len ? len : 1u);         /* (seq2d) the components: the step as they play it */
             /* the chance first (the one roll, as seq_step made it): a step that does not play applies no lock; the
              * automation and the locks before the notes, so a note-on reads them (eng_drum's KIT, ..) */
@@ -2871,6 +2931,8 @@ static void seq_tick(track_t *t, uint32_t n)
             motion_step(t, t->seq_idx, &motion, skip == SEQ_ROLLED && t->cx_lock != 2u);   /* (a song: its section's
                                                          * motion is the motion) */
             cx_lkhold = 0;
+            if (comp_any(s0) || rmp[trk_index(t) % NTRK].id)   /* (V10.6v) RAMP: launched, its value */
+                RAMP_RUN(t, s0, skip == SEQ_ROLLED && t->cx_lock != 2u, 0);
             if (t->rskip_n && t->rskip_idx == t->seq_idx) {
                 for (k = 0; k < t->rskip_n; k++) {
                     for (i = 0; i < s->n; i++)
@@ -2883,16 +2945,11 @@ static void seq_tick(track_t *t, uint32_t n)
                 t->rskip_n = 0;
             }
             seq_step(t, s, period, skip);
-            if (skip != SEQ_MISS && cx_jump[trk_index(t) % NTRK]) {   /* (seq2d) JUMP: then that step, or backwards */
-                uint32_t jv = cx_jump[trk_index(t) % NTRK] - 1u;
-                if (jv != CV_JUMP_REV && fl_once(t))
-                    t->jump_to = (uint8_t)(jv % NSTEP + 1u);
-                else if (jv == CV_JUMP_REV && t->seq_idx > 0u && fl_once(t))
-                    t->rev = 1;
-            }
         }
         ev_off = 0;
     }
+    if (rmp[trk_index(t) % NTRK].id)
+        RAMP_RUN(t, 0, 0, n);                           /* (V10.6v) a RAMP on its way */
     if (t->rat_left)
         seq_ratchet(t, period);
     if (t->lr_on)

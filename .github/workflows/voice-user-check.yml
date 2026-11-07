@@ -86,6 +86,10 @@ jobs:
           build/song-check/fit | tee build/song-check/fit.log
           cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/probability_component_test.c -lm -o build/song-check/probability
           build/song-check/probability | tee build/song-check/probability.log
+          cc -O1 -g -w -Wno-implicit-function-declaration -fsanitize=address,bounds -Ibuild/gen -Ifirmware/src tests/ramp_test.c -lm -o build/song-check/ramp
+          build/song-check/ramp | tee build/song-check/ramp.log
+          cc -O1 -g -w -Wno-implicit-function-declaration -fsanitize=address,bounds -Ibuild/gen -Ifirmware/src tests/swarm_test.c -lm -o build/song-check/swarm
+          build/song-check/swarm | tee build/song-check/swarm.log
           cc -O1 -w -Wno-implicit-function-declaration -DTIMING_FIT -Ibuild/gen -Ifirmware/src tests/ctl64_timing_test.c -lm -o build/song-check/fit-timing
           build/song-check/fit-timing | tee build/song-check/fit-timing.log
           cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/ctl64_timing_test.c -lm -o build/song-check/timing

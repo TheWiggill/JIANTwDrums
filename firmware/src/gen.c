@@ -2222,7 +2222,7 @@ static void gx_comps(void)
             step_t *s = &trk[k].step[gr() % len];
             uint32_t c = GX_COMP[gpickw(GX_COMP_W, NELEM(GX_COMP))], a;
             if (s->time != ST_NOTE || !s->n || s->comp) continue;
-            if (r == RL_BASS && (cp_isarp(c) || c == CP_CLIMB || c == CP_JUMP || c == CP_REV)) c = CP_OCT;
+            if (r == RL_BASS && (cp_isarp(c) || c == CP_CLIMB)) c = CP_OCT;
             if (c == CP_ARPN && s->n < 2u) c = CP_ARPQ;
             switch (c) {
             case CP_RAND: a = (uint32_t)grr(1, 4); break;
@@ -2234,8 +2234,7 @@ static void gx_comps(void)
             case CP_CLIMB: a = CP_WARG(gr() % CP_NWRATE, gr() % 4u, gr() % 2u); break;
             case CP_ARPQ: case CP_ARPN: a = CP_ARG(gr() % 4u, gr() % 5u, gr() % 2u); break;
             case CP_TONAL: a = (uint32_t)(7 + grr(-4, 4)); break;
-            case CP_JUMP: a = gr() % len | (gr() % 4u) << 6; break;
-            default: a = gr() % 4u; break;              /* REV: its TIMES */
+            default: a = gr() % 4u; break;
             }
             comp_legacy(s, 0, c, a);                    /* (seq2d: migrated in gen_post) */
             if (gch(35)) ST_EVERY_SET(s, EV[gr() % 7u]);

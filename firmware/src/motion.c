@@ -109,6 +109,15 @@ static uint64_t motion_lock_steps(uint32_t k)
             m |= (uint64_t)1 << MOTION_STEP(&motion.event[i]);
     return m;
 }
+/* (V10.6v) the first lock of track t's step (a RAMP's parameter): its record, 0 none */
+static const motion_event_t *motion_lock_at(const track_t *t, uint32_t step)
+{
+    uint32_t i, place = trk_index(t) << 6 | step;
+    for (i = 0; i < motion.count; i++)
+        if (MOTION_PLACE(&motion.event[i]) == place && (motion.event[i].param & MOTION_LOCK))
+            return &motion.event[i];
+    return 0;
+}
 /* the lock of track t on step / id: 1 and its value in *v, 0 = none */
 static int motion_lock_get(const track_t *t, uint32_t step, uint32_t id, int16_t *v)
 {

@@ -1296,7 +1296,7 @@ static __attribute__((noinline)) void comp_columns(void)
             return;
         }
         text_column(0, "ACTION", CA_NAMES[a], a ? VAL(0u) : T_DIM);
-        if (a && a != CA_JUMP) {
+        if (a) {
             fmt_int(val, (int32_t)gc->len + 1);
             hot_unit_column(1, "LENGTH", val, "ST");   /* (gen3: "32 ST" in M) */
         } else
@@ -1318,9 +1318,9 @@ static __attribute__((noinline)) void comp_columns(void)
         uint32_t a = comp_view(), k = comp_slot(), c = CO_COND(k ? cs->comp2 : cs->comp), l = cs->clen[k & 1u];
         char lb[10], un[8];
         text_column(0, k ? "ACTION 2" : "ACTION", CA_NAMES[a], a ? VAL(0u) : T_DIM);
-        if (a && a != CA_JUMP) {
+        if (a) {
             fmt_int(val, (int32_t)(l < CL_MAX ? l + 1u : 1u));
-            hot_unit_column(1, "LENGTH", val, "ST");
+            hot_unit_column(1, "LENGTH", val, a == CA_RAMP && (comp_arg(cs) & CV_RAMP_BARS) ? "BAR" : "ST");
         } else
             text_column(1, "LENGTH", "-", T_DIM);
         if (a) {

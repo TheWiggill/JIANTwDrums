@@ -1952,7 +1952,7 @@ static void vx_swarm(const int32_t *A)
         n++;
         ph = (uint32_t)(((uint64_t)((now - d->last) % per) << 32) / per);   /* (its own clock's phase) */
         px[v] = x0 + w / 8 + d->pan * (w * 3 / 4) / 32767 + (osc_sine(ph) * 6 >> 15);   /* (its place: IMAGE's) */
-        py[v] = y0 + h - 4 - clamp((int32_t)d->note + 12 * d->oct - 24, 0, 108) * (h - 8) / 108 + (osc_sine(ph + 0x40000000u) * 4 >> 15);
+        py[v] = y0 + h - 4 - clamp((int32_t)d->nt - 24, 0, 108) * (h - 8) / 108 + (osc_sine(ph + 0x40000000u) * 4 >> 15);
         hl[v] = clamp(((int32_t)d->lv - sw_lmin) * 255 / (int32_t)(((uint32_t)(sw_lmax - sw_lmin) & 127u) | 1u), 0, 255);
         if (d->lv >= rlv)
             rlv = d->lv, ref = v;

@@ -95,27 +95,93 @@ static __attribute__((noinline)) void ain_fill(const track_t *t, int32_t *out, u
  * clocks' relation), its jitter a vibrato. The knobs (input_desc): PLUCK (0 a sustained drone .. a pluck on each hit),
  * FM (the device's own bytes as the modulator, an envelope on each hit), PLAY (KEYS: the keys transpose it and gate it
  * at the note's envelope), IMAGE (0 each at its channel's side .. each hit thrown across the field), DRIFT (each hit
- * bends the pitch, gliding back), OCTAVE (each hit of a device an octave up, over 1..4 octaves, round), SELF (the
- * voices modulate each other: a voice coming in moves the others). Into its own block (sw_l / sw_r) once a block
- * (mod.c), the first SWARM track's knobs: SWARM and a USB input (IN 1 IN 2 1+2 STEREO on another track) play together */
+ * bends the pitch, gliding back), OCTAVE (V10.6v: its first half each hit of a device an octave up, over 1..4 octaves,
+ * round; its second half a walk of the scale: each hit the next degree of ROOT / SCALE, over 2..8 degrees, round),
+ * CHAOS (V10.6v, SELF's place: SELF's cross-modulation of before, twice as fast (CHAOS c = SELF 2c); past 24 each voice
+ * phase-modulated by the one before (a chain, never a loop: no noise), past 48 the FM ratio jumping on hits, past 64 the
+ * FM deeper and up to 100 a wavefold; past 100 each voice ring-modulated by the one before: another timbre). (V10.6v)
+ * Each device its own timbre from its bytes (its family by its advertisement's manufacturer or appearance: SW_FAM): the
+ * sine driven towards a square, an FM ratio of
+ * SW_RT, an FM depth, a tone (its RSSI moving opens it); a new device glides the knobs PLUCK FM IMAGE DRIFT away from
+ * the knob's values (sw_ko: ~1.5 s) to another place; it swells in, a device gone fades out long, a ninth takes the voice
+ * heard longest ago without a click. The FM-1's own voice: today's timbre (CHAOS 0: bit for bit V10.6u's). Into its own
+ * block (sw_l / sw_r) once a block (mod.c), the first SWARM track's knobs: SWARM and a USB input (IN 1 IN 2 1+2 STEREO on
+ * another track) play together */
 #define SW_N 8u
 #define SW_TPS 24000000u                                 /* TIMER4 ticks a second */
+#define SW_SELF 0x4E4763CBu                              /* (SELF_ID's id as sw_heard makes it) */
 static struct sw_dev {
     uint32_t id, last, per, ph, pm, inc;                 /* address hash (0 free); last packet; period; phases; step */
-    int32_t acc, amp, jit, fme, pan, dr;                 /* hit; level; jitter (Q8); FM envelope; pan (Q15, L 0); drift */
+    int32_t acc, amp, jit, fme, pan, dr, lp;             /* hit; level; jitter (Q8); FM envelope; pan (Q15, L 0); drift;
+                                                          * (V10.6v) its tone's state */
     uint16_t lv;                                         /* last RSSI level (0..126) */
     uint8_t hit, ch, note, oct;
+    uint8_t nt, sh, rt, fi, tn, mv, in, rj;              /* (V10.6v) the note sounding; shape; FM ratio (SW_RT); FM depth
+                                                          * (Q7); tone (255 open); RSSI's movement; its swell; CHAOS's
+                                                          * ratio (0xFF its own) */
     int8_t w[8];                                         /* its bytes: the FM modulator */
-} sw[SW_N];
+} sw[SW_N] __attribute__((section(".bss.swarm")));      /* (V10.6v: its own section, out of the merged statics the
+                                                          * USB's interrupt code reads, as fx.c's djf) */
 static int32_t sw_lmin = 127, sw_lmax, sw_prev;
 static uint32_t sw_tick, sw_rnd = 0x9E3779B9u;
 static int8_t sw_key;                                    /* KEYS: the transpose */
 static uint8_t ain_tr, ain_sw;                           /* the first SWARM (else INPUT) track; a track is SWARM */
+static int16_t sw_ko[4] __attribute__((section(".bss.swarm"))), sw_kt[4] __attribute__((section(".bss.swarm")));   /* .. PLUCK
+                                                          * FM IMAGE DRIFT's offsets (Q8), where they go */
+static const uint8_t SW_RT[6][2] = {{1, 0}, {2, 0}, {3, 0}, {4, 0}, {0, 1}, {1, 1}};   /* x1 x2 x3 x4 x0.5 x1.5 */
+static BTAPP_RO const uint8_t SW_FAM[4][4] = {                  /* a family's shape, FM ratios (two of SW_RT), depth, tone */
+    {0, 0, 0, 0},                                        /* (any: its bytes alone) */
+    {0, 0x21, 120, 170},                                 /* Apple: a sine, x2 / x3, deep: glass, bells */
+    {190, 0x30, 30, 90},                                 /* Microsoft: a square, x1 / x4, shallow: reeds */
+    {100, 0x54, 80, 50},                                 /* Google, Samsung, a watch: a triangle, x0.5 / x1.5: wood */
+};
 static int32_t scale_snap(const track_t *t, int32_t n);  /* seq.c */
+static int32_t scale_steps(const track_t *t, int32_t n, int32_t d);
 #ifndef fm1_ticks
 static uint32_t fm1_ticks(void);                         /* (hal/fm1_time.h; the host tests' own) */
 #endif
 static uint32_t sw_rand(void) { sw_rnd ^= sw_rnd << 13; sw_rnd ^= sw_rnd >> 17; sw_rnd ^= sw_rnd << 5; return sw_rnd; }
+/* (V10.6v) a device's family from its advertisement (p: the header, the address, then its AD structures, n bytes in all):
+ * the manufacturer's id (AD 0xFF), else its appearance (AD 0x19); 0 none known. (Only ever from the radio's interrupt,
+ * bt_air_tap, the segment's own code: in the Bluetooth segment) */
+static BTAPP_FN uint32_t sw_family(const uint8_t *p, uint32_t n)
+{
+    uint32_t i = 8, l, ty, v;
+    while (i + 3u < n && (l = p[i]) != 0u && i + 1u + l <= n) {
+        ty = p[i + 1u];
+        v = (uint32_t)p[i + 2u] | (l > 2u ? (uint32_t)p[i + 3u] << 8 : 0u);
+        if (ty == 0xFFu && l > 2u)
+            return v == 0x004Cu ? 1u : v == 0x0006u ? 2u : v == 0x00E0u || v == 0x0075u ? 3u : 0u;
+        if (ty == 0x19u && l > 2u)                       /* (a phone, a computer; a watch, a tag) */
+            return (v >> 6) == 1u ? 1u : (v >> 6) == 2u ? 2u : (v >> 6) == 3u || (v >> 6) == 31u ? 3u : 0u;
+        i += 1u + l;
+    }
+    return 0;
+}
+/* (V10.6v) a new device's timbre from its bytes (d->w) and its family (sw_family): shape, FM ratio, depth, tone; the knobs
+ * PLUCK FM IMAGE DRIFT to glide somewhere else (sw_kt: ain_swarm). (The radio's interrupt alone: in the Bluetooth segment,
+ * as sw_family) */
+static BTAPP_FN void sw_timbre(struct sw_dev *d, const uint8_t *p, uint32_t n)
+{
+    static BTAPP_RO const uint8_t KR[4] = {48, 40, 48, 32};   /* (how far: PLUCK FM IMAGE DRIFT) */
+    uint32_t i, h = d->id * 2654435761u, f = sw_family(p, n), r = sw_rnd ^ h;
+    const uint8_t *fa = SW_FAM[f];
+    for (i = 0; i < 4u; i++, r = r * 1664525u + 1013904223u)
+        sw_kt[i] = (int16_t)(((int32_t)((r >> 16) % (2u * KR[i] + 1u)) - KR[i]) << 8);
+    for (i = 0; i < 8u; i++)
+        h = (h ^ (uint8_t)d->w[i]) * 16777619u;
+    h ^= h >> 15;
+    d->sh = (uint8_t)(f ? clamp(fa[0] + (int32_t)(h & 63u) - 32, 0, 255) : (int32_t)(h & 255u));
+    d->rt = (uint8_t)(f ? (h >> 8 & 1u ? fa[1] >> 4 : fa[1] & 15u) : (h >> 8) % 6u);
+    d->fi = (uint8_t)(f ? fa[2] + (h >> 10 & 63u) : 40u + (h >> 10) % 160u);
+    d->tn = (uint8_t)(f ? fa[3] + (h >> 16 & 63u) : 40u + (h >> 16) % 200u);
+    d->in = 0;
+}
+static BTAPP_FN void sw_moved(struct sw_dev *d, uint32_t lv)
+{
+    uint32_t dl = (lv > d->lv ? lv - d->lv : d->lv - lv) * 24u + d->mv;
+    d->mv = (uint8_t)(dl > 255u ? 255u : dl);
+}
 static void sw_heard(const uint8_t *p, uint32_t n, uint32_t lv, uint32_t ch, uint32_t now)
 {
     uint32_t i, k = SW_N, o = 0, j = 0, id;
@@ -127,18 +193,24 @@ static void sw_heard(const uint8_t *p, uint32_t n, uint32_t lv, uint32_t ch, uin
         if (!sw[i].id ? o != 0xFFFFFFFFu : now - sw[i].last > o) { o = sw[i].id ? now - sw[i].last : 0xFFFFFFFFu; j = i; }   /* (a free
                                                          * one first, else the longest unheard) */
     }
-    if (k == SW_N) {                                     /* a new device: the oldest's voice (or a free one) */
+    if (k == SW_N) {                                     /* a new device: the oldest's voice (or a free one; its level kept:
+                                                          * no click, V10.6v) */
         const uint8_t *q = n > 8u ? p + 8 : p + 2;      /* (no divide: the data bytes, or the address with none) */
         uint32_t m = n > 8u ? n - 8u : 6u, c = 0;
         d = &sw[j];
         d->id = id;
         d->per = 0;
-        d->jit = d->amp = d->oct = d->note = 0;
+        d->jit = d->oct = d->note = d->nt = d->mv = d->sh = 0;
         for (i = 0; i < 8u; i++) {
             d->w[i] = (int8_t)q[c];
             if (++c >= m)
                 c = 0;
         }
+        d->rj = d->tn = d->in = 0xFFu;                   /* (the FM-1's own: the timbre of before) */
+        d->rt = (uint8_t)((id >> 5) % 3u);
+        d->fi = 128;
+        if (id != SW_SELF)
+            sw_timbre(d, p, n);
     } else {
         uint32_t dt = now - (d = &sw[k])->last;
         if (dt < 4u * SW_TPS) {
@@ -147,6 +219,8 @@ static void sw_heard(const uint8_t *p, uint32_t n, uint32_t lv, uint32_t ch, uin
             e = e < 0 ? -e : e;
             d->jit += (((int32_t)((uint64_t)(uint32_t)e * 256u / (d->per | 1u))) - d->jit) / 4;
         }
+        if (d->tn != 255u)                               /* (V10.6v) its RSSI moving: brighter (a device's: the segment) */
+            sw_moved(d, lv);
     }
     d->last = now;
     d->lv = (uint16_t)lv;
@@ -164,14 +238,22 @@ static __attribute__((noinline)) void ain_swarm(uint32_t n)
     const track_t *t = &trk[ain_tr % NTRK];
     const int16_t *p = t->p;
     uint32_t i, v, now = fm1_ticks(), ref = 0, rlv = 0, any = 0, ext = 0;
-    int32_t pl = clamp(p[P_E1], 0, 127), fm = clamp(p[P_E2], 0, 127) * 6, img = clamp(p[P_E4], 0, 127);
-    int32_t dft = clamp(p[P_E5], 0, 127), ocs = clamp(p[P_E6], 0, 127) * 4 / 128, slf = clamp(p[P_E7], 0, 127) * 3;
-    int32_t gl[SW_N], gr[SW_N], a0[SW_N], da[SW_N];
+    int32_t pl, fm, img, dft, ocv = clamp(p[P_E6], 0, 127), ocs, ch = clamp(p[P_E7], 0, 127), slf = ch * 6;
+    int32_t gl[SW_N], gr[SW_N], a0[SW_N], da[SW_N], fe[SW_N], kq[SW_N];
+    uint32_t pmi[SW_N];
+    int32_t xm = ch > 24 ? (ch - 24) * 12 : 0, fg = ch > 64 && ch <= 100 ? 4096 + (ch - 64) * 64 : 0;   /* (CHAOS: */
+    int32_t rm = ch > 100 ? (ch - 100) * 8 / 9 : 0;     /* the chain's depth, the fold's 1..1.6, the ring's 0..3/4) */
     sw_rnd += now;                                       /* (the interrupt's own jitter: entropy) */
+    for (i = 0; i < 4u; i++)                             /* (V10.6v) the knobs where a new device sent them, ~1.5 s */
+        sw_ko[i] = (int16_t)(sw_ko[i] + ((sw_kt[i] - sw_ko[i]) >> 9));
+    pl = clamp(p[P_E1] + (sw_ko[0] >> 8), 0, 127);
+    fm = clamp(p[P_E2] + (sw_ko[1] >> 8), 0, 127) * 6;
+    img = clamp(p[P_E4] + (sw_ko[2] >> 8), 0, 127);
+    dft = clamp(p[P_E5] + (sw_ko[3] >> 8), 0, 127);
+    ocs = ocv < 64 ? ocv / 16 : 2 + (ocv - 64) * 6 / 63;   /* (V10.6v: octaves 0..3 more; degrees 2..8) */
     for (v = 0; v < SW_N; v++) {                         /* the reference clock: the loudest device heard */
-        if (sw[v].id && now - sw[v].last < 2u * SW_TPS && sw[v].id != 0x4E4763CBu) {   /* (V10.6h: SELF_ID's id as sw_heard
-                                                         * makes it: the FM-1's own voice is not a device; the old test never
-                                                         * matched, its clock beat every ~2 s) */
+        if (sw[v].id && now - sw[v].last < 2u * SW_TPS && sw[v].id != SW_SELF) {   /* (V10.6h: the FM-1's own voice is not a
+                                                         * device; the old test never matched, its clock beat every ~2 s) */
             ext = 1;
             if (sw[v].per && sw[v].lv >= rlv)
                 rlv = sw[v].lv, ref = sw[v].per;
@@ -181,7 +263,7 @@ static __attribute__((noinline)) void ain_swarm(uint32_t n)
         sw_heard(SELF_ID, 8, 40u + (sw_rnd >> 27), 38u, now);
     for (v = 0; v < SW_N; v++) {
         struct sw_dev *d = &sw[v];
-        uint32_t age = now - d->last;
+        uint32_t age = now - d->last, sh;
         int32_t lv, tgt, det = 0, nt;
         a0[v] = da[v] = 0;
         if (!d->id)
@@ -200,21 +282,31 @@ static __attribute__((noinline)) void ain_swarm(uint32_t n)
             d->fme = 32767;
             d->pan = img ? 16384 + ((int32_t)(r & 0xFFFFu) - 32768) * img / 254 : d->ch == 37u ? 6000 : d->ch == 39u ? 26767 : 16384;
             d->dr = dft ? (int32_t)((r >> 16) % 65u - 32u) * dft / 64 : 0;
-            d->oct = ocs ? (uint8_t)((d->oct + 1u) % (uint32_t)(ocs + 1)) : 0;
+            d->oct = ocs ? (uint8_t)((d->oct + 1u) % (uint32_t)(ocs + (ocv < 64))) : 0;   /* (V10.6v: a walk of ocs places) */
+            d->rj = ch > 48 && (int32_t)((r >> 9) & 127u) < (ch - 48) * 2 ? (uint8_t)((r >> 3) % 6u) : 0xFFu;   /* (CHAOS) */
         }
         if (ref && d->per)                               /* its clock against the reference's: a detune */
             det = (int32_t)((((uint64_t)d->per << 8) / (ref | 1u)) & 255u) - 128;
         det = det / 32 + (int32_t)((d->jit * (int32_t)((now >> 18) & 7u)) >> 9) + d->dr;   /* (+ jitter, drift) */
         d->dr -= d->dr / 16 + (d->dr > 0) - (d->dr < 0);   /* (the drift glides back) */
-        nt = (int32_t)d->note + 12 * d->oct + sw_key;
+        nt = ocv < 64 ? (int32_t)d->note + 12 * d->oct : scale_steps(t, d->note, d->oct % ocs);   /* (V10.6v: the scale's) */
+        d->nt = (uint8_t)clamp(nt, 0, 127);
+        nt += sw_key;
         d->inc = pitch_inc((uint32_t)clamp(nt * 16 + det, 0, 2047));
         d->acc -= (d->acc >> (pl > 64 ? 3 : 5)) + (d->acc > 0);   /* (down to 0: a pluck fast, the drone slow) */
         d->fme -= d->fme >> 5;
+        if (d->mv) d->mv--;
         a0[v] = d->amp;
-        d->amp += (tgt * (127 - pl) / 127 + d->acc - d->amp) >> 3;
+        sh = d->in < 255u ? 7u : age > 6u * SW_TPS && d->id != SW_SELF ? 10u : 3u;   /* (V10.6v: a swell in, a long fade out) */
+        d->in = (uint8_t)(d->in + (d->in < 255u && (sw_tick & 1u)));
+        d->amp += (tgt * (127 - pl) / 127 + d->acc - d->amp) >> sh;
         da[v] = (d->amp - a0[v]) >> CTL_LOG2;           /* (n is CTL) */
         gl[v] = 32767 - d->pan / 2;
         gr[v] = 16384 + d->pan / 2;
+        fe[v] = (((fm * d->fi) >> 7) * d->fme >> 15) + (ch > 64 ? (ch - 64) * 12 : 0);   /* (its FM depth now) */
+        i = d->rj < 6u ? d->rj : d->rt % 6u;            /* (its modulator's ratio, CHAOS's) */
+        pmi[v] = d->inc * SW_RT[i][0] + (SW_RT[i][1] ? d->inc >> 1 : 0u);
+        kq[v] = d->tn == 255u ? 0 : (int32_t)((d->tn + d->mv > 255u ? 256u : d->tn + d->mv + 1u) << 6);   /* (its tone) */
         any |= (uint32_t)(d->amp > 8);
     }
     if (!(++sw_tick & 1023u) && sw_lmax - sw_lmin > 2)   /* (the range relaxes, ~1.5 s a step) */
@@ -224,20 +316,36 @@ static __attribute__((noinline)) void ain_swarm(uint32_t n)
         return;
     }
     for (i = 0; i < n; i++) {
-        int32_t l = 0, r = 0, so = (sw_prev * slf) >> 6;
+        int32_t l = 0, r = 0, so = (sw_prev * slf) >> 6, yp = 0;   /* (CHAOS: a chain, each voice by the one before; the
+                                                         * first by none: no loop, never noise) */
         for (v = 0; v < SW_N; v++) {
             struct sw_dev *d = &sw[v];
-            uint32_t k = d->pm >> 29, f = (d->pm >> 13) & 0xFFFFu;
+            uint32_t k = d->pm >> 29, f = (d->pm >> 13) & 0xFFFFu, ph;
             int32_t x, mo;
             if (!a0[v] && !da[v])
                 continue;
             mo = (d->w[k] * (int32_t)(65536u - f) + d->w[(k + 1u) & 7u] * (int32_t)f) >> 8;   /* (Q15: its bytes) */
-            x = osc_sine(d->ph + (uint32_t)((mo * ((fm * d->fme) >> 15)) << 4) + (uint32_t)(so << 6));
+            ph = d->ph + (uint32_t)((mo * fe[v]) << 4) + (uint32_t)(so << 6) + ((uint32_t)(yp * xm) << 4);
+            x = osc_sine(ph);
+            if (d->sh)                                   /* (V10.6v) its shape: the sine driven, .. a square */
+                x = clamp((x * (32 + d->sh / 2)) >> 5, -32767, 32767);
+            if (fg) {                                    /* (CHAOS) a wavefold */
+                uint32_t z = ((uint32_t)((x * fg) >> 12) + 32768u) & 0x1FFFFu;
+                x = z < 65536u ? (int32_t)z - 32768 : 98303 - (int32_t)z;
+            }
+            mo = yp;
+            yp = x;                                      /* (CHAOS's ring: the voice before's, as its oscillator gives it) */
+            if (rm)                                      /* (CHAOS past 100) a ring by its neighbour, up to 3/4 */
+                x += ((((x * mo) >> 15) - x) * rm) >> 5;
+            if (kq[v]) {                                 /* (its tone; its RSSI moving opens it) */
+                d->lp += ((x - d->lp) * kq[v]) >> 14;
+                x = d->lp;
+            }
             x = (x * (a0[v] + da[v] * (int32_t)i)) >> 15;
             l += (x * gl[v]) >> 15;
             r += (x * gr[v]) >> 15;
             d->ph += d->inc;
-            d->pm += d->inc * (1u + (d->id >> 5) % 3u);  /* (its modulator at 1, 2 or 3 times) */
+            d->pm += pmi[v];
         }
         sw_l[i] = l;
         sw_r[i] = r;
@@ -250,7 +358,7 @@ static void (*const volatile AIN_SWARM)(uint32_t) = ain_swarm;   /* (mod.c macro
 static const param_desc_t SW_DESC[8] = {
     {"SOURCE", F_ENUM, 0, AIN_N - 1, AIN_IN1, N_AIN_SRC, 0}, {"PLUCK", F_PCT, 0, 127, 0, 0, 0}, {"FM", F_PCT, 0, 127, 0, 0, 0},
     {"PLAY", F_ENUM, 0, 1, 0, N_AIN_PLAY, 0}, {"IMAGE", F_PCT, 0, 127, 0, 0, 0}, {"DRIFT", F_PCT, 0, 127, 0, 0, 0},
-    {"OCTAVE", F_PCT, 0, 127, 0, 0, 0}, {"SELF", F_PCT, 0, 127, 0, 0, 0}};
+    {"OCTAVE", F_PCT, 0, 127, 0, 0, 0}, {"CHAOS", F_PCT, 0, 127, 0, 0, 0}};   /* (V10.6v: CHAOS in SELF's place) */
 static const param_desc_t *input_desc(const track_t *t, uint32_t k) { return t->p[P_E0] == AIN_SW && k < 8u ? &SW_DESC[k] : 0; }
 
 static void ain_block(struct track *t) { ain_upd[(uint32_t)(t - trk) % NTRK] = 1; }
@@ -302,10 +410,10 @@ static const preset_t INPUT_PRESETS[] = {
     {"TRANCE GATE", {AIN_ST, 64, 0, 1, 127, 0, 0, 0}, {0, 40, 0, 10}, 0, TAG(FX) | 1, FX(0, 0, 20, 20)},
     {"RING IN", {AIN_IN1, 64, 0, 1, 127, 90, 0, 0}, {0, 64, 127, 30}, 0, TAG(FX) | 1, FX(0, 0, 20, 30)},
     {"CRUSH IN", {AIN_SUM, 72, 0, 0, 127, 0, 90, 60}, {0, 64, 127, 20}, 0, TAG(FX) | 1, FX(10, 0, 0, 15)},
-    /* (SWARM) SOURCE PLUCK FM PLAY IMAGE DRIFT OCTAVE SELF */
-    {"SWARM", {AIN_SW, 0, 20, 0, 40, 20, 0, 20}, {0, 64, 127, 20}, 0, TAG(PAD) | 1, FX(0, 30, 35, 60)},
-    {"SWARM PLUCK", {AIN_SW, 110, 50, 0, 90, 40, 40, 10}, {0, 64, 127, 20}, 0, TAG(PLUCK) | 1, FX(0, 20, 40, 50)},
-    {"SWARM CHOIR", {AIN_SW, 20, 0, 0, 60, 60, 30, 60}, {0, 64, 127, 20}, 0, TAG(PAD) | 1, FX(0, 50, 25, 80)},
+    /* (SWARM) SOURCE PLUCK FM PLAY IMAGE DRIFT OCTAVE CHAOS (V10.6v: OCTAVE's octaves in its first half, CHAOS SELF's x2) */
+    {"SWARM", {AIN_SW, 0, 20, 0, 40, 20, 0, 10}, {0, 64, 127, 20}, 0, TAG(PAD) | 1, FX(0, 30, 35, 60)},
+    {"SWARM PLUCK", {AIN_SW, 110, 50, 0, 90, 40, 20, 5}, {0, 64, 127, 20}, 0, TAG(PLUCK) | 1, FX(0, 20, 40, 50)},
+    {"SWARM CHOIR", {AIN_SW, 20, 0, 0, 60, 60, 15, 30}, {0, 64, 127, 20}, 0, TAG(PAD) | 1, FX(0, 50, 25, 80)},
 };
 
 static const engine_t ENG_INPUT = {

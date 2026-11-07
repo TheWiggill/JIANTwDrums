@@ -625,10 +625,7 @@ static const uint8_t CP_ADEF[CP_N] = {0, 0, 0, 0, 0, 2, 0, 9, 7, 1, 0, 0, 0, 0, 
 static const uint8_t CP_AMIN[CP_N] = {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 static int cp_iswalk(uint32_t c) { return c == CP_WALK || c == CP_CLIMB; }
 #define CP_ORD(a) ((uint32_t)(a) & 3u)            /* UP DOWN UP-DN RND */
-/* (0.6.62) JUMP: its step (bits 0-5) and TIMES (bits 6-7); REV: TIMES (bits 0-1). TIMES: ALWAYS, x1 (once a pass of
- * the pattern, then it plays on), x2, 1:2 (once, every other pass). 0, ALWAYS: as a JUMP / REV of before (seq.c fl_ok) */
-#define CP_JTO(a) ((uint32_t)(a) & 63u)
-#define CP_TIMES(c, a) ((c) == CP_JUMP ? ((uint32_t)(a) >> 6) & 3u : (uint32_t)(a) & 3u)
+/* (0.6.62) JUMP / REV: (V10.6v) gone, a legacy one migrates to none */
 #define CP_RATE(a) (((uint32_t)(a) >> 2) & 7u)    /* 0..4: x2 x3 x4 x6 x8 */
 #define CP_RNG(a) (((uint32_t)(a) >> 5) & 3u)     /* 0..3: 1..4 octaves (SCALE: 3 5 8 15 degrees) */
 #define CP_ARG(o, r, g) ((uint8_t)(((o) & 3u) | ((r) & 7u) << 2 | ((g) & 3u) << 5))
@@ -646,8 +643,8 @@ static int cp_isarp(uint32_t c) { return c >= CP_ARPN && c <= CP_ARPS; }
  * CONDITION (4-7), carg / carg2 the VALUE, clen[] LENGTH - 1 (the steps it stays on, from its own on, as the track
  * plays them), cnm[] N:M. Two a step: C1 first, then C2; C2's condition ELSE is MONO (it acts only when C1 did not),
  * any other POLY (both stack: C1 on the step, C2 over the result). seq.c comp_run */
-enum { CA_NONE, CA_ARP, CA_SEQ, CA_OCTU, CA_OCTD, CA_RATCH, CA_STUT, CA_MUTE, CA_TRANS, CA_RAND, CA_LOCK, CA_JUMP,
-       CA_SOUND, CA_BEND, CA_SHIFT, CA_CHORD, CA_N };
+enum { CA_NONE, CA_ARP, CA_SEQ, CA_OCTU, CA_OCTD, CA_RATCH, CA_STUT, CA_MUTE, CA_TRANS, CA_RAND, CA_LOCK, CA_RAMP,
+       CA_SOUND, CA_BEND, CA_SHIFT, CA_CHORD, CA_N };   /* (V10.6v: RAMP took JUMP's code, 11) */
 enum { CC_ALWAYS, CC_P25, CC_P50, CC_P75, CC_FIRST, CC_NFIRST, CC_FILL, CC_NFILL, CC_PRE, CC_NPRE, CC_NEI, CC_NNEI,
        CC_ELSE, CC_NM, CC_NNM, CC_N };
 #define CO_ACT(c) ((uint32_t)(c) & 15u)
@@ -662,7 +659,7 @@ enum { CC_ALWAYS, CC_P25, CC_P50, CC_P75, CC_FIRST, CC_NFIRST, CC_FILL, CC_NFILL
  * BOUNCE; OCT+ / OCT- 0..2: 1..3 octaves; RATCHET bits 0-2 x2..x8, bits 3-4 DECAY (0 flat, 1 down, 2 up); STUTTER 0..3: again
  * every 1..4 steps; MUTE 0 MUTE, 1 CUT; TRANSPOSE bits 0-3 the move -7..+7 (7: 0), bits 4-7 RANGE - 1 (RANGE 1: FIX, the
  * move whenever the condition holds; 2..16: it adds up each pass the condition holds, round RANGE places, acting every
- * pass); RANDOM 0..6: 1..7 degrees; JUMP 0..63 the step, 64 REV; SOUND 0..2 SHORT GHOST FLAM (a kit); BEND 0..24 -12..+12 */
+ * pass); RANDOM 0..6: 1..7 degrees; RAMP CV_RAMP_*; SOUND 0..2 SHORT GHOST FLAM (a kit); BEND 0..24 -12..+12 */
 #define CV_ARP_SCALE 0x80u
 #define CV_SEQ_BOUNCE 0x40u
 #define CV_RAT_HITS(v) (2u + ((uint32_t)(v) & 7u) % 7u)
@@ -670,8 +667,18 @@ enum { CC_ALWAYS, CC_P25, CC_P50, CC_P75, CC_FIRST, CC_NFIRST, CC_FILL, CC_NFILL
 #define CV_TR_MOVE(v) ((int32_t)((uint32_t)(v) & 15u) % 15 - 7)
 #define CV_TR_RANGE(v) (((uint32_t)(v) >> 4) + 1u)
 #define CV_TR_MAKE(mv, rng) ((uint8_t)(((uint32_t)((mv) + 7) & 15u) | (((rng) - 1u) & 15u) << 4))
-#define CV_JUMP_REV 64u
-static const uint8_t CA_VMAX[CA_N] = {0, 191, 127, 2, 2, 20, 3, 1, 239, 6, 0, 64, 2, 24, 126, 10};   /* KNOB 4's list, 0.. */
+/* (V10.6v) RAMP (seq.c ramp_run): the step's parameter LOCK glides there from FROM (KNOB: the knob's value; OPP: the
+ * other end of the parameter's range) along CURVE over its LENGTH (clen + 1 of the track's steps, or bars with BARS: 1..32
+ * steps, 1..16 bars), once a launch: the step again while it runs does not restart it (shorter than the pattern: it
+ * ends first, each pass); then (and at a stop) the knob's value back. No lock on the step: nothing. VALUE bits 0-3 KNOB 4's
+ * place: CURVE (LIN EXP LOG S STEPS ZIGZAG) from KNOB, then the six from OPP; bit 4 BARS; anything else (a JUMP of
+ * before) is no RAMP (comp_migrate) */
+#define CV_RAMP_NC 6u
+#define CV_RAMP_BARS 16u
+#define CV_RAMP_OPP(v) (((uint32_t)(v) & 15u) >= CV_RAMP_NC)
+#define CV_RAMP_CURVE(v) (((uint32_t)(v) & 15u) % CV_RAMP_NC)
+#define CV_RAMP_OK(v) ((uint32_t)(v) < 32u && ((uint32_t)(v) & 15u) < 2u * CV_RAMP_NC)   /* (BARS: 1..16, clen % 16) */
+static const uint8_t CA_VMAX[CA_N] = {0, 191, 127, 2, 2, 20, 3, 1, 239, 6, 0, 11, 2, 24, 126, 10};   /* KNOB 4's list, 0.. */
 static const uint8_t CA_VDEF[CA_N] = {0, 0x08, 0, 0, 0, 0, 0, 0, 0x38, 1, 0, 0, 0, 14, 63, 0};    /* (stored VALUE) */
 static int comp_any(const step_t *s) { return CO_ACT(s->comp) || CO_ACT(s->comp2); }
 typedef struct {                 /* a step as formats 1..4 (projects to FUN4) stored it: no hits */
