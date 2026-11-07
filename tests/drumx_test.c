@@ -53,6 +53,9 @@ static track_t *kitx(int16_t morph, int16_t tune)
     host_tracks_init();
     lev_env = 0; lev_g = lev_cur = 32768; lev_dg = 0; lim_env = LIM_T;   /* (0.5.1: the slow leveler from rest each time) */
     memset(mp_seen, 0, sizeof mp_seen); memset(dist_w, 0, sizeof dist_w);   /* (0.6.8: the parts' LEVEL / PAN / DST blend from rest too) */
+    for (k = 0; k < DV_NLANE; k++)                       /* (V10.6q: each strike a hit from rest; a hit struck while it
+                                                          * rings goes on from where it was, its noise drawn on) */
+        drum_kit[0][k].x.live = drum_kit[0][k].x.trig = 0, drum_kit[0][k].x.rng = 0;
     host_preset(t, ENGI_DRUM, 0);
     t->p[P_E0] = morph;
     t->p[P_E1] = tune;
@@ -263,7 +266,8 @@ int main(int argc, char **argv)
                 d += fabs((double)buf[i] - a0[i]);
                 pk = abs(buf[i]) > pk ? abs(buf[i]) : pk;
             }
-            ok2 &= d / (FS / 8u) > 300 && pk < 32700;
+            ok2 &= (lw == DV_CLAP || d / (FS / 8u) > 100) && pk < 32700;   /* (V10.6q: the noise the same each hit now:
+                                                          * the clap, no oscillator, no fold; the hats' folded metal filtered) */
         }
         check("FOLD 127: every lane a different sound, under full scale", ok2, 0);
     }
@@ -301,7 +305,7 @@ int main(int argc, char **argv)
                 }
                 d0 = ta / (ra + 1.0); d1 = fabs(sqrt(tt / (rt + 1.0)) - 1.0);
                 if (getenv("DX_FMENV")) printf("lane %u attack %.3f tail %.3f pk %d\n", lf, d0, d1, pk);
-                ok3 &= (ra < 1000.0 || d0 > 0.05) && (rt < 1000.0 * (FS / 8u - FS / 12u) || d1 < 0.25) && pk < 32700;
+                ok3 &= (ra < 1000.0 || d0 > 0.05 || lf == DV_CLAP) &&   /* (the clap: no oscillator) */ (rt < 1000.0 * (FS / 8u - FS / 12u) || d1 < 0.25) && pk < 32700;
                                                          /* (a hit already gone by then: no tail to compare) */
             }
         }
@@ -322,7 +326,7 @@ int main(int argc, char **argv)
                 if (getenv("DX_TONE")) printf("lane %u bp %.3f fb %.3f pk %d\n", l2, dbp / (e0 + 1), dfb / (e0 + 1), pk2);
                 if (metal) okb &= dbp / (e0 + 1) > 0.1;
                 else if (l2 == DV_KICK || l2 == DV_TOM) okb &= dbp / (e0 + 1) < 0.05;   /* (the noisy ones: another each hit) */
-                okf &= dfb / (e0 + 1) > 0.05 && pk2 < 32700;
+                okf &= (dfb / (e0 + 1) > 0.05 || l2 == DV_CLAP) && pk2 < 32700;   /* (the clap: no oscillator) */
             }
             dx_tone = 0;
             check("TONE (0.6.36): BP on the hats, rim and cowbell only; FEEDBK moves every sound, under full scale", okb && okf, 0);
@@ -339,7 +343,8 @@ int main(int argc, char **argv)
                 okc &= DX_FB_CURVE[k2] > DX_FB_CURVE[k2 - 1u];
             for (k2 = 1; k2 < 128u; k2++)
                 okc &= dx_fm_env((int32_t)k2) >= dx_fm_env((int32_t)k2 - 1);
-            okc &= DX_FB_CURVE[12] * 2 < DX_FB_CURVE[15] && dx_fm_env(114) * 2 < dx_fm_env(127) && dx_fm_env(64) * 8 < 64 * 3;
+            okc &= DX_FB_CURVE[15] < 45000 && dx_fm_env(114) * 2 < dx_fm_env(127) && dx_fm_env(64) * 4 < 64 * 3;   /* (V10.6q:
+                                                          * FEEDBK's noise zone gone, FM ENV's middle heard) */
             for (kk = 0; kk < 2u; kk++)
                 for (k2 = 0; k2 < 5u; k2++) {
                     track_t *t = kitx(64, 64);
@@ -359,7 +364,7 @@ int main(int argc, char **argv)
                         mono = 0;
                     dx_tone = 0;
                 }
-            check("FEEDBK, FM ENV on curves (0.9.9-snd1): monotonic, the extreme only in the last steps", okc,
+            check("FEEDBK, FM ENV on curves (0.9.9-snd1, V10.6q): monotonic, FEEDBK under 2 rad, FM ENV's extreme in the last steps", okc,
                   "FEEDBK beta %.2f at 8, %.2f at 12, %.2f at 15; FM ENV index %.2f rad at 64, %.2f at 114, %.2f at 127",
                   DX_FB_CURVE[8] * M_PI / 65536, DX_FB_CURVE[12] * M_PI / 65536, DX_FB_CURVE[15] * M_PI / 65536,
                   dx_fm_env(64) * 0.02454, dx_fm_env(114) * 0.02454, dx_fm_env(127) * 0.02454);
