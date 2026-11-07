@@ -574,7 +574,7 @@ int main(void)
             if (gs.act[RL_LEAD]) { leads++; sus_lt += trk[gs.trk_of[RL_LEAD]].p[P_SUS] <= 95; }
         }
         if (lo < 26u || hi > 70u) printf("  cumbia bass %u..%u\n", lo, hi);
-        bad += gcheck("CUMBIA x 4: the bass between D1 (an approach under A1) and A#4, its tempo 90..105", lo >= 26u && hi <= 70u && song.g[G_BPM] >= 90 && song.g[G_BPM] <= 105);
+        bad += gcheck("CUMBIA x 4: the bass between D1 (an approach under A1) and A#4, its tempo 76..92 (the owner's demos: 77)", lo >= 26u && hi <= 70u && song.g[G_BPM] >= 76 && song.g[G_BPM] <= 92);
         bad += gcheck("  the leads not all at full sustain", !leads || sus_lt > 0u);
     }
     /* ---- (0.6.96) a new piece: MUTATE off on every track (a reroll kept the lanes), the anchor the piece */

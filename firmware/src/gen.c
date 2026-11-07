@@ -2488,6 +2488,8 @@ static void gen_pick(void)
                                                          * octaves, a two-bar turn) */
         gs.ba = EBA[gr() % 8u];                         /* (its bass the row's: V10.6p, always the MS20's two oscillators) */
         gmut.drum = (uint8_t)(DM_EBM + gr() % 4u);      /* (V10.6m) its drums one of four, a throw's own */
+        if (gmut.drum == DM_EBM3) { gmut.bpm_lo = 148; gmut.bpm_hi = 156; }   /* (the owner's slow EBM: 77 felt, the
+                                                         * half-time map at 154, the sequence in sixteenths over it) */
         gmut.kit = gmut.snd[GP_DRUMS] = (uint8_t)(gch(75) ? KIT_INDUS : KIT_909);   /* (V10.6n) and its kit: the
                                                          * industrial one, DAF's dry 909 */
     }
@@ -2498,8 +2500,8 @@ static void gen_pick(void)
         if (!gs.mutant) {
             gmut.drum = (uint8_t)(g->drum + m);
             gs.ba = g->bass[gch(20) ? 2u : m];
-            if (ph ? m : gch(25)) { gmut.bpm_lo = ph ? 115 : 145; gmut.bpm_hi = ph ? 130 : 152; }   /* (the drift's, the
-                                                         * clap on 2 and 4; funk 150) */
+            if (ph ? m : gch(25)) { gmut.bpm_lo = ph ? 125 : 145; gmut.bpm_hi = ph ? 135 : 152; }   /* (V10.6u: Brazilian
+                                                         * phonk's, the funk's claps; funk 150) */
         }
         gs.riff = (uint8_t)(fl ? BA_FL1 : BA_RF1 + gr() % 4u);
         if (fl) gmut.snd[GP_LEAD] = SR_FLUTE;

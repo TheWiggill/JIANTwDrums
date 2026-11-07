@@ -32,9 +32,9 @@ static const char *const DRUM_MAP[][8] = {
     /* (V10.6n) Russian hard bass (XS Project, Hard Bass School): a hard four on the floor, the clap on 2 and 4, the open
      * hat on every offbeat (the bass bounces there too), hard eighths */
     [DM_HBASS]     = {"X...X...X...X...", "", "....X.......X...", "8.6.8.6.8.6.8.6.", "..9...9...9...9.", "", "", ""},
-    /* (V10.6n) cumbia (Damas Gratis, Chancha Via Circuito): the kick on 1 and 3, the llamador's clap on every "and", the
-     * guiro's cha-ka-cha-ka, a conga's answer */
-    [DM_CUMBIA]    = {"X.......X.......", "", "..7...7...7...7.", "7.557.557.557.55", "", "...5.......5....", "", ""},
+    /* (V10.6n) cumbia (Damas Gratis, Chancha Via Circuito; V10.6u the owner's two demos, 77 BPM): the kick on every
+     * beat, the guiro's ch-chk-chk from the "e" (accented there), the llamador on every "and", a conga's answer */
+    [DM_CUMBIA]    = {"X...8...X...8...", "", "..6...6...6...6.", ".855.855.855.855", "", "...5.......5....", "", ""},
     /* (V10.6n) the dembow riddim: the kick on every beat, the snare 3 + 3 + 2 (the "a" of 1, the "and" of 2 ..);
      * Dominican dembow harder, the clap doubling it, sixteenths of guira, a tom's answer */
     [DM_REGG]      = {"X...X...X...X...", "...X..X....X..X.", "", "7.7.7.7.7.7.7.7.", "", "", "..........4.....", ""},
@@ -42,16 +42,17 @@ static const char *const DRUM_MAP[][8] = {
     /* (V10.6n) tribal house / techno (Danny Tenaglia, Ben Sims, Joel Mull): the four on the floor under toms and congas,
      * a shaker, a rim, a cowbell */
     [DM_TRIBAL]    = {"X...X...X...X...", "", "....6.......6...", "5.75.75.5.75.75.", "", "..8..7.8..8.7..6", "...5..5....5..5.", "......4.......4."},
-    /* (V10.6p, the owner: "completely off") phonk after Memphis: half time (130 .. 150: the kick on 1 and 3's "and", a
-     * ghost before, the snare and the clap together on 3), eighths of hat (rolled in triplets: gen.c); drift phonk
-     * (Kordhell, DVRST: 115 .. 130) the clap on 2 and 4 over a broken kick. No drum cowbell: the cowbell is the lead's
-     * (gen.c gen_riff). Baile funk: the tamborzao (the 808 kick x..x..x.x..x...., the claps on 2 and 4, the atabaque's
-     * slaps between the kicks, offbeat hats); Sao Paulo's beat / mandelao (the same kick, hard claps with a pickup, the
-     * beatbox's rim, chopped toms, no hats) */
+    /* (V10.6p, the owner: "completely off") phonk after Memphis: half time (130 .. 156: the kick on 1 and 3's "and", a
+     * ghost before, the snare and the clap together on 3), eighths of hat (rolled in triplets: gen.c); its second map
+     * (V10.6u, the owner's references: Brazilian phonk, 125 .. 135, in place of the drift's) the kick on the beat, the
+     * funk's claps on 3 6 12 (the "tcha"s, a hat on them, rolled now and then). No drum cowbell: the cowbell is the
+     * lead's (gen.c gen_riff). Baile funk (V10.6u, the owner's demos and ten funk loops measured): the tamborzao spread
+     * over the kit, the 808 kick on 1 3 6 12, the claps (a bright hat on them) on 3 6 12, the atabaque's slaps on 8 and
+     * 10; the mandelao's "tum tcha": the 808 on the one alone (a pickup), the same claps, the toms, a rim */
     [DM_PHONK]     = {"X......6..X.....", "........X.......", "........9.......", "7.7.7.7.7.7.7.7.", "", "", "", ""},
-    [DM_PHONK2]    = {"X.....X.X.....5.", "", "....X.......X...", "..7...7...7...7.", "", "", "", ""},
-    [DM_BAILE]     = {"X..X..X.X..X....", "", "....X.......X...", "..6...6...6...6.", "", "..7..7....7..7..", "", ""},
-    [DM_BAILE2]    = {"X..X..X.X..X....", "", "....X.......X..8", "", "", "..........7.7.7.", "..5...5...5...5.", ""},
+    [DM_PHONK2]    = {"X...X...X...X.8.", "", "...X..X.....X...", "...X..X.....X...", "", "", "", ""},
+    [DM_BAILE]     = {"X..7..7.....6...", "", "...X..X.....X...", "...X..X.....X...", "", "........8.7.....", "", ""},
+    [DM_BAILE2]    = {"X.............5.", "", "...X..X.....X...", "...X..X.....X...", "", "........7.7.....", "..............5.", ""},
     [DM_ELECTRO]   = {"X.....8...8..7..", "....X.......X...", "....5.......5...", "7474747474747474", "", "", "", "6..6..6...6.6..."},
     [DM_BREAKS]    = {"X.6.......8.....", "....X..3.3..X..3", "", "7.6.7.6.7.6.7.6.", "......5.......5.", "", "", ""},
     /* (V10.6n) the Amen: the kick on 1 and its "and", 3's "and" twice, the snare on 2 and 4 with its ghosts (IDM's
@@ -59,11 +60,12 @@ static const char *const DRUM_MAP[][8] = {
     [DM_AMEN]      = {"X.9.......9X....", "....X..5.6..X..6", "", "7.7.7.7.7.7.7.7.", "", "", "", ""},
     [DM_DNB]       = {"X.........8.....", "....X.......X..3", "", "6.5.6.5.6.5.6.5.", "", "", ".......3........", ""},
     [DM_EBM]       = {"X...X...X...X...", "....X.......X...", "", "9373937393739373", "", "", "", "..........6....."},
-    /* (V10.6m, the owner: "EBM always makes the same patterns") EBM's four on the floor three more ways, a throw's own:
-     * Nitzer Ebb's (the clap on the snare, the hats off the beat, a metal hit), Front 242's (a kick pushed into the
-     * third beat, a tom's answer at the bar's end), DAF's (the clap alone on 2 and 4, driven sixteenths, a rim) */
+    /* (V10.6m, the owner: "EBM always makes the same patterns") EBM's four on the floor two more ways, a throw's own:
+     * Nitzer Ebb's (the clap on the snare, the hats off the beat, a metal hit), DAF's (the clap alone on 2 and 4, driven
+     * sixteenths, a rim); (V10.6u, Front 242's place) the owner's slow EBM: half time at 148 .. 156 (gen.c gen_pick; 77
+     * felt), the kick on 1 and pushed, the snare on 3 alone, no hats, a metal hit, the sixteenths the bass's */
     [DM_EBM2]      = {"X...X...X...X...", "....X.......X...", "....7.......7...", "..9...9...9...9.", "", "", "", "..............5."},
-    [DM_EBM3]      = {"X...X...X.6.X...", "....X.......X...", "", "8.6.8.6.8.6.8.6.", "", "...........5..4.", "", "......5........."},
+    [DM_EBM3]      = {"X.....5...7.....", "........X.......", "", "", "", "", "", "............5..."},
     [DM_EBM4]      = {"X...X...X...X...", "", "....X.......X...", "..9...9...9...9.", "", "", "..5.......5.....", "...5.......5..5."},   /* (V10.6p:
                                                          * the techno-body's: Phase Fatale, Schwefelgelb, offbeat hats, metal) */
     /* (V10.6n) industrial metal (Rammstein, Ministry): the kick on 1, 1's "and", 3, the double kick's sixteenths at the
@@ -119,7 +121,7 @@ enum { BA_OFFBEAT, BA_OFFOCT, BA_BOUNCE, BA_DEEPWALK, BA_ROLL16, BA_OCTBNC, BA_S
        BA_TUMBAO, BA_BOSSA, BA_ROCK8, BA_PUNK16, BA_DUST, BA_MOTORIK, BA_ANGULAR, BA_JUNGLE, BA_DNB, BA_WOBBLE, BA_PEDAL,
        BA_FIFTHS, BA_NEOARP, BA_SEQ16, BA_ACID, BA_NITZER1, BA_NITZER2, BA_NITZER3, BA_DAF,
        BA_ROTHER, BA_VILLA, BA_GALLOP, BA_EBMOFF, BA_EBM2B, BA_CUMBIA, BA_HBASS, BA_REGG, BA_TAMBOR, BA_PH808, BA_N,
-       BA_RF1 = BA_N, BA_RF2, BA_RF3, BA_RF4, BA_FL1, BA_NALL };   /* (V10.6p: the riffs past the basses: EXPLORE's
+       BA_RF1 = BA_N, BA_RF2, BA_RF3, BA_RF4, BA_FL1, BA_MANDEL, BA_NALL };   /* (V10.6p: the riffs past the basses: EXPLORE's
                                                          * basses never one; gen.c gen_riff) */
 /* (0.9.7, flash) the archetypes below are the text tools/gen_drum_maps.py reads (not compiled): build/gen/gen_bass.h holds
  * them a byte a step (BA_STEP: the note's code | the flag's << 4; gen.c ba_note, ba_flag), each its first step and bars */
@@ -164,16 +166,17 @@ static const barch_t BASS_ARCH[BA_NALL] = {
     [BA_GALLOP]   = {"R.RRR.RRR.RRR.RR", "a...a...a...a...", 1},
     [BA_EBMOFF]   = {".R.8.R.8.R.8.R.8", ".a...a...a...a..", 1},
     [BA_EBM2B]    = {"R.R.R.R.R.R.R.R.R.R.R.R.3.3.5.5.", "a.......a.......a.......a.......", 2},
-    /* (V10.6n) cumbia's bass: the root on 1 and before 2, the fifth on 3 and before 1 (the tumbao's pull); hard bass's
+    /* (V10.6n) cumbia's bass (V10.6u, the owner's demos): the kick's note on every beat, held, the fifth on 3; hard bass's
      * offbeat eighths bouncing under the kick, the riff's turn up the third and the fifth; reggaeton's 808 on the kick
      * and the dembow's 3 + 3 + 2 */
-    [BA_CUMBIA]   = {"R.....R.5.....5.", "a.......a.......", 1},
+    [BA_CUMBIA]   = {"R==.R==.5==.R==.", "a...............", 1},
     [BA_HBASS]    = {"..R...R...R...R...R...R...3...5.", "..a...a...a...a...a...a...a...a.", 2},
     [BA_REGG]     = {"R..R..R.R..R..R.", "a.......a.....s.", 1},
-    /* (V10.6p) baile funk's 808 on the tamborzao's kick, held (the mandelao's boom); phonk's 808 (the drift map's
-     * kick), sliding up the octave and back */
-    [BA_TAMBOR]   = {"R==R==R=R==R====", "a.....a.a.......", 1},
-    [BA_PH808]    = {"R=====R=R=====8=", "........s.....s.", 1},
+    /* (V10.6p) baile funk's 808 on the tamborzao's kick, held; phonk's 808 (V10.6u: the Brazilian map's, its 3 3 2
+     * accents), sliding up the octave and back; (V10.6u, past the riffs: EXPLORE's never) the mandelao's boom on the one */
+    [BA_TAMBOR]   = {"R==R==R=....R===", "a..a..a.....a...", 1},
+    [BA_PH808]    = {"R==R==R=R===R=8=", "a..a..a.a...s.s.", 1},
+    [BA_MANDEL]   = {"R===..........R.", "a.............g.", 1},
     /* (V10.6p) the leads' riffs (gen.c gen_riff), in the key's degrees from its tonic: R 2 .. 9 the mode's 1st .. 9th, A
      * the 7th under, S the 6th under, L the 5th under, N the 10th; 'a' an accent, 's' a slide. Phonk's 808 cowbell
      * (Kordhell's Murder in My Mind, DVRST's Close Eyes): the tonic as a pedal under a line in sixteenths, 3 + 3 + 2
@@ -481,20 +484,20 @@ static const ggenre_t GENRE[] = {
     /* ---- the club: house */
     /* Chicago / New York house (Frankie Knuckles, Marshall Jefferson, Kerri Chandler): a 909 four on the floor, the
      * open hat off the beat, M1 piano / organ stabs on the chords, a synth bass answering the kick, swing ~56 % */
-    {"HOUSE", 120, 126, 30, {SC_MIN, SC_DOR, SC_MAJ, SC_MIN}, DM_HOUSE, 100, KIT_909, 0, HC_HOUSE, FL_ROLL, 0,
+    {"HOUSE", 122, 128, 30, {SC_MIN, SC_DOR, SC_MAJ, SC_MIN}, DM_HOUSE, 100, KIT_909, 0, HC_HOUSE, FL_ROLL, 0,
      {BA_OFFBEAT, BA_BOUNCE, BA_OFFOCT}, 36, KM_ANSWER, 45, {PR_I_IV, PR_I_VI, PR_DEEP4}, 1, CS_STAB, VM_PLANE,
      {AP_BROKEN, AP_UP}, LD_HOOK, AMT(90, 75, 70, 0, 0), {KIT_909, SR_FMBASS, SR_KEYS, SR_PLUCK, SR_ORGAN}, SR_NOISE,
      0, 1, 40, 0, FM_CLUB, 10, HF_JAZZY, 0},
     /* Larry Heard (Can You Feel It), Chez Damier, Kerri Chandler: an 808, a Rhodes on 7ths and 9ths through the
      * delay, a walking sub, swing ~57 % */
-    {"DEEP HOUSE", 118, 124, 35, {SC_MIN, SC_DOR, SC_DOR, SC_MPEN}, DM_DEEP, 100, KIT_808, 0, HC_HOUSE, FL_DROP, 1,
+    {"DEEP HOUSE", 120, 126, 35, {SC_MIN, SC_DOR, SC_DOR, SC_MPEN}, DM_DEEP, 100, KIT_808, 0, HC_HOUSE, FL_DROP, 1,
      {BA_DEEPWALK, BA_OFFBEAT, BA_UKG}, 36, KM_ANSWER, 50, {PR_I_IV, PR_JAZZ, PR_IV_I}, 2, CS_STAB, VM_PLANE,
      {AP_BROKEN, AP_UPDOWN}, LD_SPARSE, AMT(85, 75, 75, 0, 0), {KIT_808, SR_SUB, SR_EP, SR_KEYS, SR_SINEKEY}, SR_TEXTURE,
      0, 1, 55, 0, FM_CLUB, 20, HF_JAZZY, 0},
     /* (gen6b, the owner: "nothing like the real thing") Green Velvet, Hot Since 82, Solardo, Terry Francis: a 909
      * four on the floor that never lets go, the clap on 2 and 4, shuffled 16th hats, the open hat off the beat, a
      * syncopated rim; a rolling bass off the kick, one stab with its filter moving; no lead, swing ~55 % */
-    {"TECH HOUSE", 124, 128, 22, {SC_MIN, SC_DOR, SC_MIN, SC_PHRY}, DM_TECHHOUSE, 100, KIT_909, 0, HC_HOUSE, FL_ROLL, 0,
+    {"TECH HOUSE", 124, 130, 22, {SC_MIN, SC_DOR, SC_MIN, SC_PHRY}, DM_TECHHOUSE, 100, KIT_909, 0, HC_HOUSE, FL_ROLL, 0,
      {BA_VILLA, BA_OFFOCT, BA_VILLA}, 36, KM_ANSWER, 40, {PR_ONE, PR_I_VII, PR_ONE}, 4, CS_STAB, VM_SUS,
      {AP_BROKEN, AP_SEQ}, LD_NONE, AMT(95, 90, 40, 0, 0), {KIT_909, SR_TECHBASS, SR_DUBCHORD, SR_PLUCK, SR_LEAD}, SR_NOISE,
      0, 1, 30, 0, FM_CLUB, 5, HF_LOOP, 0},
@@ -505,12 +508,12 @@ static const ggenre_t GENRE[] = {
      {AP_PULSE, AP_CYCLE3}, LD_NONE, AMT(100, 80, 25, 15, 0), {KIT_909, SR_TECHBASS, SR_STAB, SR_PLUCK, SR_LEAD}, SR_CHOIR,
      1, 2, 35, 0, FM_CLUB, 15, HF_LOOP, 0},
     /* ---- latin */
-    /* (V10.6n) digital and villera cumbia (Damas Gratis, Pibes Chorros; Chancha Via Circuito, Dengue Dengue Dengue): the
-     * guiro's eighths, the kick and the bass on 1 and 3 (root and fifth, the tumbao's pull), the llamador on the "and",
-     * the keys' offbeat chords, an organ-accordion's melody in thirds, i iv V / I IV V */
-    {"CUMBIA", 90, 105, 10, {SC_MIN, SC_MAJ, SC_MIN, SC_DOR}, DM_CUMBIA, 100, KIT_808, 0, HC_FUNK, FL_TOM, 0,
+    /* (V10.6n) digital and villera cumbia (Damas Gratis, Pibes Chorros; Chancha Via Circuito, Dengue Dengue Dengue;
+     * V10.6u the owner's demos: 77 BPM, a brighter kit): the guiro's sixteenths, the kick and the bass on every beat,
+     * the llamador on the "and", the keys' offbeat chords, an organ-accordion's melody in thirds, i iv V / I IV V */
+    {"CUMBIA", 76, 92, 10, {SC_MIN, SC_MAJ, SC_MIN, SC_DOR}, DM_CUMBIA, 100, KIT_909, 0, HC_FLAT, FL_TOM, 0,
      {BA_CUMBIA, BA_BOSSA, BA_TUMBAO}, 33, KM_DOUBLE, 60, {PR_CYCLE, PR_I_V, PR_I_IV}, 1, CS_SKANK, VM_PLAIN,
-     {AP_ALBERTI, AP_UPDOWN}, LD_HOOK, AMT(90, 95, 55, 0, 60), {KIT_808, SR_FMBASS, SR_ORGAN, SR_PLUCK, SR_ORGAN}, SR_TEXTURE,
+     {AP_ALBERTI, AP_UPDOWN}, LD_HOOK, AMT(90, 95, 55, 0, 60), {KIT_909, SR_FMBASS, SR_ORGAN, SR_PLUCK, SR_ORGAN}, SR_TEXTURE,
      1, 1, 35, 0, FM_PARTS, 30, HF_POP | HX_RAISE, GSP_THIRDS},
     /* (V10.6n) reggaeton (Daddy Yankee, Tainy, the Bad Bunny era): the dembow riddim, an 808 sub on the kick, i VI III VII,
      * a plucked lead */
@@ -613,21 +616,23 @@ static const ggenre_t GENRE[] = {
      2, 3, 85, 2, FM_ARC, 30, HF_COLOR, GSP_WOW},
     /* (V10.6p, the owner: "a very archetypal genre": the pitched 808 cowbell's riff and heavy distorted drums) drift
      * phonk (Kordhell, DVRST, PlayaPhonk, MoonDeity, Interworld) after Memphis (DJ Screw, Three 6 Mafia): half time
-     * 130 .. 150 (the snare on 3, eighths of hat rolled in triplets) or the drift's 115 .. 130 (the clap on 2 and 4:
-     * gen.c gen_pick), the 808 cowbell's minor or phrygian riff of a bar or two in sixteenths up front (gen_riff), the
-     * 808 distorted, long, sliding up the octave, Memphis's vocal chops off the beat, one dark chord or two */
-    {"PHONK", 130, 150, 0, {SC_PHRY, SC_MIN, SC_PHRY, SC_HARM}, DM_PHONK, 100, KIT_808, 0, HC_FLAT, FL_HAT, 0,
+     * 130 .. 156 (the snare on 3, eighths of hat rolled in triplets) or (V10.6u) Brazilian phonk's 125 .. 135 (the funk's
+     * claps on 3 6 12 over the beat: gen.c gen_pick), the 808 cowbell's minor or phrygian riff of a bar or two in
+     * sixteenths up front (gen_riff), the 808 distorted, long, sliding up the octave, Memphis's vocal chops off the
+     * beat, one dark chord or two */
+    {"PHONK", 130, 156, 0, {SC_PHRY, SC_MIN, SC_PHRY, SC_HARM}, DM_PHONK, 100, KIT_808, 0, HC_FLAT, FL_HAT, 0,
      {BA_WOBBLE, BA_PH808, BA_DNB}, 29, KM_DOUBLE, 110, {PR_ONE, PR_I_VI, PR_PHRY}, 2, CS_SPARSE, VM_PAD,
      {AP_CHOP, AP_CHOP}, LD_RIFF, AMT(100, 100, 20, 40, 100), {KIT_808, SR_808, SR_PAD, SR_CHANT, SR_COWBELL}, SR_TEXTURE,
      1, 1, 30, 0, FM_PARTS, 0, HF_LOOP, GSP_HEAVY},
     /* (V10.6p, the owner: MC Bin Laden, MC Fioti's Bum Bum Tam Tam, Brazil's funk) funk carioca's tamborzao (DJ Luciano
-     * Oliveira's, after the Volt Mix's 808) and Sao Paulo's beat, mandelao and automotivo: 127 .. 133 (a quarter of the
-     * throws funk 150's 145 .. 152: gen.c gen_pick), the 808 kick x..x..x.x..x...., the claps on 2 and 4, the atabaque or
-     * chopped toms, the 808's sub held on the kick, distorted; one minor chord or two stabbed; the MC's chant chopped off
-     * the beat; a hook: Bach's flute (Bum Bum Tam Tam) or a bell's riff (automotivo's) */
-    {"BAILE FUNK", 127, 133, 0, {SC_MIN, SC_MIN, SC_PHRY, SC_HARM}, DM_BAILE, 100, KIT_808, 0, HC_FLAT, FL_TOM, 0,
-     {BA_TAMBOR, BA_TAMBOR, BA_TAMBOR}, 29, KM_DOUBLE, 90, {PR_ONE, PR_I_VII, PR_I_IV}, 2, CS_STAB, VM_PLAIN,
-     {AP_CHOP, AP_CHOP}, LD_RIFF, AMT(100, 100, 25, 55, 85), {KIT_808, SR_808, SR_STAB, SR_CHANT, SR_COWBELL}, SR_TEXTURE,
+     * Oliveira's, after the Volt Mix's 808) and Sao Paulo's beat, mandelao and automotivo: 128 .. 136 (V10.6u: the
+     * owner's demos 135, the loops 130; a quarter of the throws funk 150's 145 .. 152: gen.c gen_pick), the 808 kick on
+     * 1 3 6 12 or the one alone, the claps on 3 6 12 (a 909's, bright), the atabaque or chopped toms, the 808's sub
+     * held on the kick, distorted; one minor chord or two stabbed; the MC's chant chopped off the beat; a hook: Bach's
+     * flute (Bum Bum Tam Tam) or a bell's riff (automotivo's) */
+    {"BAILE FUNK", 128, 136, 0, {SC_MIN, SC_MIN, SC_PHRY, SC_HARM}, DM_BAILE, 100, KIT_909, 0, HC_FLAT, FL_TOM, 0,
+     {BA_TAMBOR, BA_MANDEL, BA_TAMBOR}, 29, KM_DOUBLE, 90, {PR_ONE, PR_I_VII, PR_I_IV}, 2, CS_STAB, VM_PLAIN,
+     {AP_CHOP, AP_CHOP}, LD_RIFF, AMT(100, 100, 25, 55, 85), {KIT_909, SR_808, SR_STAB, SR_CHANT, SR_COWBELL}, SR_TEXTURE,
      1, 2, 20, 2, FM_PARTS, 5, HF_LOOP, GSP_HEAVY},
 };
 #define NGENRE (sizeof GENRE / sizeof GENRE[0])
@@ -654,7 +659,7 @@ static const uint16_t GGRAM[] = {   /* (gen3: + LIFT, 2 = none; V10.6n: the owne
     GG(1, 1, 1, 1, 1, 1, 1), GG(0, 1, 0, 0, 0, 1, 2), GG(1, 1, 1, 1, 1, 1, 1),   /* IDM GLITCH IDM AMBIENT IDM WEIRD */
     GG(0, 0, 1, 0, 0, 1, 2), GG(2, 0, 1, 2, 0, 0, 5), GG(0, 0, 0, 0, 0, 0, 2), GG(0, 0, 0, 0, 0, 0, 2),   /* KRAUT EBM NEO CLASSIC FUGA */
     GG(2, 0, 0, 2, 0, 0, 6), GG(1, 0, 1, 1, 1, 0, 4),   /* ELECTRO METAL TECHNO ROCK */
-    GG(0, 1, 0, 0, 0, 1, 2), GG(1, 2, 0, 2, 1, 0, 5), GG(2, 1, 0, 2, 0, 0, 6),   /* DREAM POP PHONK BAILE FUNK */
+    GG(0, 1, 0, 0, 0, 1, 2), GG(1, 2, 0, 2, 1, 0, 5), GG(2, 1, 0, 2, 0, 0, 4),   /* DREAM POP PHONK BAILE FUNK */
 };
 _Static_assert(sizeof GGRAM / sizeof GGRAM[0] == NGENRE, "GGRAM: a grammar a genre");
 
