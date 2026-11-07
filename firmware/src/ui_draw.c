@@ -1897,26 +1897,23 @@ static void draw_columns(void)
 static const char *const SPLASH_LINES[] = {FELUCCA_VERSION, "by Juan Jiant"};
 static uint8_t spl_anim;                            /* main.c: 1 = the signature to be written (splash_write) */
 /* (V10.6k) the logo (ui_signature.h, tools/gen_logo.py: "jiant fm" in the owner's pen, a point every ~3 px) up to point
- * n (>= SIG_N: whole), its outline (a round pen 5 px wide, in the thermal scale as it is written: violet to red,
- * orange, yellow) filled to fill % (0: the outline alone, the pen's tip white while it writes). Nothing computed but
+ * n (>= SIG_N: whole), a round pen 5 px wide, solid, in the thermal scale as it is written (violet to red, orange,
+ * yellow), the pen's tip white while it writes (V10.6n: was an outline filled at the end). Nothing computed but
  * the colour: no curves, no creatures (the 0.5.2 signature and its beings were ~1.9 KB) */
 static uint16_t sig_col(uint32_t i)                 /* the thermal scale along the writing: violet, red, orange, yellow */
 {
     return ux.mono || settings.palette == UI_BW_INDEX ? T_TEXT : heat_col(24 + (int32_t)(i * 220u / SIG_N));
 }
-static void splash_sig(uint32_t n, int32_t fill)
+static void splash_sig(uint32_t n)
 {
-    uint32_t i, pass;
+    uint32_t i;
     cv_begin(240, SIG_H + 12, T_BG);
-    for (pass = 0; pass < 2u; pass++)                   /* the pen (a rounded square), then its inside (a cross) */
-        for (i = 0; i < SIG_N && i < n; i++) {
-            int32_t x = (240 - SIG_W) / 2 + SIG_PTS[2u * i], y = 6 + (SIG_PTS[2u * i + 1u] & 127), r = 2 - (int32_t)pass;
-            uint16_t c = i + 1u == n && n < SIG_N ? T_TEXT : sig_col(i);
-            if (pass)
-                c = ux_mix(T_BG, c, fill);
-            cv_rect(x - r, y - r + 1, 2 * r + 1, 2 * r - 1, c);
-            cv_rect(x - r + 1, y - r, 2 * r - 1, 2 * r + 1, c);
-        }
+    for (i = 0; i < SIG_N && i < n; i++) {             /* the pen (a rounded square, 5 px), solid as it writes */
+        int32_t x = (240 - SIG_W) / 2 + SIG_PTS[2u * i], y = 6 + (SIG_PTS[2u * i + 1u] & 127);
+        uint16_t c = i + 1u == n && n < SIG_N ? T_TEXT : sig_col(i);
+        cv_rect(x - 2, y - 1, 5, 3, c);
+        cv_rect(x - 1, y - 2, 3, 5, c);
+    }
     cv_blit(0, SPL_SY);
 }
 static void draw_splash(void)
@@ -1928,9 +1925,9 @@ static void draw_splash(void)
         cv_text_in(0, (int32_t)k * 16, 240, &AF_S, SPLASH_LINES[k], k ? T_DIM : T_MID, T_BG);
     cv_blit(0, SPL_TY);
     if (spl_anim && !(ui_prefs & PREF_ANIM_OFF))
-        splash_sig(0, 0);
+        splash_sig(0);
     else
-        splash_sig(SIG_N, 100);
+        splash_sig(SIG_N);
     lcd_sync();
 }
 /* main.c's splash loop: the signature as written ms after the start */
@@ -1938,8 +1935,7 @@ static void splash_write(uint32_t ms)
 {
     if (!spl_anim || (ui_prefs & PREF_ANIM_OFF))
         return;
-    splash_sig(ms >= SPL_WRITE ? SIG_N : SIG_N * ms / SPL_WRITE,   /* written as an outline, then filled in 0.4 s */
-               ms <= SPL_WRITE ? 0 : ms >= SPL_WRITE + 400u ? 100 : (int32_t)(ms - SPL_WRITE) / 4);
+    splash_sig(ms >= SPL_WRITE ? SIG_N : SIG_N * ms / SPL_WRITE);   /* (V10.6n: solid as it writes, the owner) */
     lcd_sync();
 }
 
