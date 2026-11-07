@@ -17,8 +17,10 @@ enum { GP_DRUMS, GP_BASS, GP_CHORDS, GP_ARP, GP_LEAD, GP_N };   /* the parts the
 /* (V10.6n) the maps in pairs (a map and its neighbour, index ^ 1: SEQ + SELECT's retries), the club's four on the floor
  * first: HOUSE .. TECHNO take the club's stabs (gen.c gclub), HOUSE .. HBASS the pools' top end (DM_TRIBAL on: their own) */
 enum { DM_HOUSE, DM_DEEP, DM_TECHHOUSE, DM_TECHNO, DM_HARD, DM_HBASS, DM_CUMBIA, DM_TRIBAL, DM_REGG, DM_DEMBOW,
-       DM_PHONK, DM_PHONK2, DM_BAILE, DM_BAILE2, DM_ELECTRO, DM_BREAKS, DM_AMEN, DM_DNB, DM_EBM, DM_EBM2, DM_EBM3, DM_EBM4, DM_METAL, DM_TROCK,
-       DM_BOC, DM_DREAM, DM_MOTORIK, DM_SPARSE, DM_NONE };
+       DM_PHONK, DM_PHONK2, DM_TRAP, DM_DRILL, DM_BAILE, DM_BAILE2, DM_ELECTRO, DM_BREAKS, DM_AMEN, DM_DNB, DM_EBM, DM_EBM2,
+       DM_EBM3, DM_EBM4, DM_METAL, DM_TROCK, DM_ROCK, DM_SYN80, DM_BOC, DM_DREAM, DM_BOOMBAP, DM_JAZZ, DM_MOTORIK, DM_SPARSE,
+       DM_NONE };   /* (V10.6w: HIP HOP's trap and drill by the phonk's (the hats' rolls), TECHNO ROCK's rock and synth
+                                                         * 80s by its own, JAZZ beside boom bap) */
 /* (0.9.7, flash) the maps and the pools below are the text tools/gen_drum_maps.py reads (not compiled): build/gen/
  * gen_drum_maps.h holds them packed, each lane once at 16 levels a nibble (GM_LANE), the tables as lane numbers
  * (DRUM_MAP_I, HAT_POOL_I ..: gen.c gm_level) */
@@ -51,6 +53,12 @@ static const char *const DRUM_MAP[][8] = {
      * 10; the mandelao's "tum tcha": the 808 on the one alone (a pickup), the same claps, the toms, a rim */
     [DM_PHONK]     = {"X......6..X.....", "........X.......", "........9.......", "7.7.7.7.7.7.7.7.", "", "", "", ""},
     [DM_PHONK2]    = {"X...X...X...X.8.", "", "...X..X.....X...", "...X..X.....X...", "", "", "", ""},
+    /* (V10.6w, the owner: "all the hip hop in one") HIP HOP's throws (gen.c gen_pick, GSUB): trap at 136 .. 150 in half
+     * time (the kick on 1, 2's "a" and 3's "and", the snare and the clap on 3, sixteenth hats rolled before the snare
+     * and the bar's end: the rolls below); UK drill (the snare on 3 and its pickup on 4's "and", the hats' 3 3 2 skips,
+     * the kick sparse under a sliding 808) */
+    [DM_TRAP]      = {"X......6..X.....", "........X.......", "........9.......", "8585858585858585", "", "", "", ""},
+    [DM_DRILL]     = {"X.........8.....", "........X.....6.", "........9.......", "7..7..7.7..7..7.", "", "", "", ""},
     [DM_BAILE]     = {"X..7..7.....6...", "", "...X..X.....X...", "...X..X.....X...", "", "........8.7.....", "", ""},
     [DM_BAILE2]    = {"X.............5.", "", "...X..X.....X...", "...X..X.....X...", "", "........7.7.....", "..............5.", ""},
     [DM_ELECTRO]   = {"X.....8...8..7..", "....X.......X...", "....5.......5...", "7474747474747474", "", "", "", "6..6..6...6.6..."},
@@ -72,10 +80,22 @@ static const char *const DRUM_MAP[][8] = {
      * bar's end, the snare on 2 and 4, eighths; techno rock (the Prodigy, the Chemical Brothers): a live kit's backbeat */
     [DM_METAL]     = {"X.X...X.X.X.5555", "....X.......X...", "", "8.8.8.8.8.8.8.8.", "", "", "", ""},
     [DM_TROCK]     = {"X.....7.X.6.....", "....X.......X..3", "", "7.5.7.5.7.5.7.5.", "..............6.", "", "", ""},
+    /* (V10.6w, the owner: "rock and synth 80s inside TECHNO ROCK") its throws: rock's backbeat (the kick on 1, 3 and 3's
+     * "and", eighths, the crash on the fill's one); the 80s drum machine's (a Linn's four on the floor, the snare with a
+     * clap on 2 and 4, sixteenths) */
+    [DM_ROCK]      = {"X.......X.6.....", "....X.......X...", "", "8.6.8.6.8.6.8.6.", "", "", "", ""},
+    [DM_SYN80]     = {"X...X...X...X...", "....X.......X...", "....6.......6...", "7474747474747474", "", "", "", ""},
     /* (V10.6n) Boards of Canada's hip hop break, late and sparse */
     [DM_BOC]       = {"X......6..8.....", "....X.......X...", "", "6.4.6.4.6.4.6.4.", "", "", "......3.........", ""},
     /* (V10.6n) dream pop's slow drum machine: a soft kick, the snare on 2 and 4, eighths */
     [DM_DREAM]     = {"X.......X.6.....", "....X.......X...", "", "6.4.6.4.6.4.6.4.", "", "", "", ""},
+    /* (V10.6w) HIP HOP's boom bap (swung, the kick on 1, 2's "a", 3's "and", the backbeat, eighths; its lofi throw takes
+     * the Boards of Canada break above); JAZZ in swung eighths (a step an eighth: gen.c's BPM the half of the felt
+     * 116 .. 176, the bar two of jazz's): the kick feathered on every beat (its lane low: gen.c gen_kit), the hi-hat's
+     * foot on 2 and 4, the ride's
+     * "ding, ding-da ding" (2 and 4 accented, the "da" the swung "and"), the snare's comping the ghosts' (gen.c) */
+    [DM_BOOMBAP]   = {"X......7..9.....", "....X.......X...", "", "7.5.7.5.7.5.7.5.", "..............6.", "", "", ""},
+    [DM_JAZZ]      = {"6.6.6.6.6.6.6.6.", "", "", "..7...7...7...7.", "7.957.957.957.95", "", "", ""},
     [DM_MOTORIK]   = {"X.6.6...8.6.6...", "....8.......8...", "", "7.5.7.5.7.5.7.5.", "..............3.", "", "", ""},
     [DM_SPARSE]    = {"7...............", "", "", "", "", "", "......3.....4...", "..........3....."},
     [DM_NONE]      = {"", "", "", "", "", "", "", ""},
@@ -100,11 +120,13 @@ enum { FL_NONE, FL_ROLL, FL_TOM, FL_DROP, FL_HAT, FL_LINEAR, FL_KICK16 };
 /* (0.9.9-gen2: the 808's and the DUB kit's kick shorter, 22 -> 12, 18 -> 10) the kits: offsets on the factory kit's {PITCH PMOD DECAY NOISE COLOR} a lane (both patches), then the DRUM track's
  * TONE DECY NOIS DRV */
 enum { KIT_DEF, KIT_909, KIT_808, KIT_CLICK, KIT_INDUS, KIT_SOFT, KIT_BREAKS, KIT_N };   /* (V10.6p: DUB's gone, no genre's) */
+/* (V10.6w, the owner: "open the drums' brightness") the 808's snare, clap, hats and rim less darkened (COLOR -20 -> -6,
+ * -10 -> -4), its TONE -10 -> -4 */
 typedef struct { int8_t d[8][5]; int8_t tone, decy, nois, drv; } gkit_t;
 static const gkit_t KIT[KIT_N] = {
     [KIT_DEF]    = {{{0}}, 0, 0, 0, 0},
     [KIT_909]    = {{{-2, 25, -6, 0, 25}, {0, 0, 6, 10, 10}, {0, 0, 4, 0, 0}, {4, 0, -4, 0, 6}, {4, 0, 0, 0, 6}, {0, 10, 0, 0, 10}, {0, 0, 0, 0, 0}, {0, 0, 0, 0, 0}}, 6, 0, 0, 6},
-    [KIT_808]    = {{{-4, -20, 12, -4, -10}, {-4, -10, -8, 10, -20}, {-2, 0, 0, 0, -10}, {-6, 0, -6, 0, -20}, {-6, 0, -4, 0, -20}, {-4, -10, 10, 0, -10}, {0, 0, 0, 0, -10}, {0, 0, 4, 0, 0}}, -10, 6, 0, 0},
+    [KIT_808]    = {{{-4, -20, 12, -4, -10}, {-4, -10, -8, 10, -6}, {-2, 0, 0, 0, -4}, {-6, 0, -6, 0, -6}, {-6, 0, -4, 0, -6}, {-4, -10, 10, 0, -10}, {0, 0, 0, 0, -4}, {0, 0, 4, 0, 0}}, -4, 6, 0, 0},
     [KIT_CLICK]  = {{{2, 10, -16, 0, 0}, {6, 0, -20, 20, 10}, {4, 0, -10, 0, 10}, {6, 0, -10, 0, 10}, {6, 0, -16, 0, 10}, {4, 0, -16, 0, 0}, {6, 0, -6, 0, 10}, {4, 0, -10, 0, 10}}, 10, -16, -6, 0},
     [KIT_INDUS]  = {{{-2, 30, 6, 12, 40}, {0, 20, 10, 20, 30}, {0, 0, 6, 10, 20}, {0, 0, 8, 10, 20}, {0, 0, 10, 10, 20}, {0, 20, 8, 10, 30}, {0, 10, 4, 10, 20}, {0, 0, 0, 10, 20}}, 12, 6, 10, 40},
     [KIT_SOFT]   = {{{0, -10, 6, 6, -25}, {-2, 0, 8, 14, -18}, {-2, 0, 6, 0, -20}, {-4, 0, 2, 0, -30}, {-4, 0, 6, 0, -30}, {-2, -10, 6, 6, -20}, {-2, 0, 4, 0, -20}, {-2, 0, 4, 0, -20}}, -20, 4, 4, 0},
@@ -120,7 +142,8 @@ static const gkit_t KIT[KIT_N] = {
 enum { BA_OFFBEAT, BA_OFFOCT, BA_BOUNCE, BA_DEEPWALK, BA_ROLL16, BA_OCTBNC, BA_SYNTHW, BA_PSY, BA_PUMP8, BA_UKG,
        BA_TUMBAO, BA_BOSSA, BA_ROCK8, BA_PUNK16, BA_DUST, BA_MOTORIK, BA_ANGULAR, BA_JUNGLE, BA_DNB, BA_WOBBLE, BA_PEDAL,
        BA_FIFTHS, BA_NEOARP, BA_SEQ16, BA_ACID, BA_NITZER1, BA_NITZER2, BA_NITZER3, BA_DAF,
-       BA_ROTHER, BA_VILLA, BA_GALLOP, BA_EBMOFF, BA_EBM2B, BA_CUMBIA, BA_HBASS, BA_REGG, BA_TAMBOR, BA_PH808, BA_N,
+       BA_ROTHER, BA_VILLA, BA_GALLOP, BA_EBMOFF, BA_EBM2B, BA_CUMBIA, BA_HBASS, BA_REGG, BA_TAMBOR, BA_PH808, BA_WALK,
+       BA_WALK2, BA_N,
        BA_RF1 = BA_N, BA_RF2, BA_RF3, BA_RF4, BA_FL1, BA_MANDEL, BA_NALL };   /* (V10.6p: the riffs past the basses: EXPLORE's
                                                          * basses never one; gen.c gen_riff) */
 /* (0.9.7, flash) the archetypes below are the text tools/gen_drum_maps.py reads (not compiled): build/gen/gen_bass.h holds
@@ -177,6 +200,11 @@ static const barch_t BASS_ARCH[BA_NALL] = {
     [BA_TAMBOR]   = {"R==R==R=....R===", "a..a..a.....a...", 1},
     [BA_PH808]    = {"R==R==R=R===R=8=", "a..a..a.a...s.s.", 1},
     [BA_MANDEL]   = {"R===..........R.", "a.............g.", 1},
+    /* (V10.6w) JAZZ's walking bass in swung eighths (a step an eighth: a quarter note two steps, held): the chord's root,
+     * third, fifth, seventh and octave, the fifth and third back down, a semitone into the next root from under; or the
+     * scale's 2 and 3 up to the fifth, the octave, the seventh, the fifth, a step of the scale into the next root */
+    [BA_WALK]     = {"R=3=5=7=8=5=3=A=", 0, 1},
+    [BA_WALK2]    = {"R=2=3=5=8=7=5=S=", 0, 1},
     /* (V10.6p) the leads' riffs (gen.c gen_riff), in the key's degrees from its tonic: R 2 .. 9 the mode's 1st .. 9th, A
      * the 7th under, S the 6th under, L the 5th under, N the 10th; 'a' an accent, 's' a slide. Phonk's 808 cowbell
      * (Kordhell's Murder in My Mind, DVRST's Close Eyes): the tonic as a pedal under a line in sixteenths, 3 + 3 + 2
@@ -217,7 +245,7 @@ typedef struct { uint8_t n; int8_t deg[4]; uint8_t q[4]; } gprog_t;
  * would come out diminished (or augmented) does not take that progression (gen.c tries the genre's next one) */
 enum { PR_ONE, PR_I_VII, PR_I_VI, PR_I_IV, PR_I_V, PR_I_II, PR_I_III, PR_IV_I, PR_AEOL, PR_TRANCE, PR_MINOR4, PR_ANDAL,
        PR_EPIC, PR_50S, PR_CYCLE, PR_DEEP4, PR_DEEPVI, PR_JAZZ, PR_SUS, PR_NEOCL, PR_PHRY, PR_ELEC, PR_DREAM, PR_DREAM2,
-       PR_N };
+       PR_TURN, PR_N };
 static const gprog_t PROG[PR_N] = {
     [PR_ONE]     = {1, {0}, {Q_7}},                                           /* i7 (a pedal) */
     [PR_I_VII]   = {2, {0, 6}, {Q_TRI, Q_TRI | F_FLAT}},                      /* i bVII (I bVII: borrowed) */
@@ -243,6 +271,7 @@ static const gprog_t PROG[PR_N] = {
     [PR_ELEC]    = {4, {0, 6, 5, 6}, {Q_TRI, Q_TRI, Q_TRI, Q_TRI}},           /* (gen6) i VII VI VII: electro's */
     [PR_DREAM]   = {4, {0, 5, 3, 3}, {Q_ADD9, Q_7, Q_7, Q_ADD9}},             /* (V10.6n) Imaj9 vi7 IVmaj7: dream pop's */
     [PR_DREAM2]  = {4, {0, 2, 3, 3}, {Q_7, Q_7, Q_ADD9, Q_7}},                /* Imaj7 iii7 IV */
+    [PR_TURN]    = {4, {0, 5, 1, 4}, {Q_7, Q_7, Q_7, Q_7}},                   /* (V10.6w) Imaj7 vi7 ii7 V7: jazz's turnaround */
 };
 /* (0.8.3) a genre's harmony: its family (how it composes) and what it may colour with */
 enum { HF_LOOP, HF_JAZZY, HF_POP, HF_COLOR, HF_CINE, HF_JAZZ };   /* modal loops; 7th loops; functional pop; colour
@@ -262,7 +291,7 @@ enum { VM_PAD, VM_PLAIN, VM_RICH, VM_SUS, VM_QUART, VM_POWER, VM_PLANE };
  * broken sixteenths (UKG), trance (gated sixteenths), (V10.6n) chugged (a metal riff: power chords palm-muted on a
  * figure of eighths and sixteenths, low) */
 enum { CS_HOLD, CS_SWELL, CS_STAB, CS_PULSE, CS_DUB, CS_SKANK, CS_COMP, CS_POWER, CS_DRONE, CS_SPARSE, CS_BROKEN,
-       CS_TRANCE, CS_CHUG };
+       CS_TRANCE, CS_CHUG, CS_CHARL };   /* (V10.6w) CHARL: jazz's Charleston comping (gen.c gen_pads) */
 /* (V10.6n) the chugged riffs (bit p the step p of the bar): eighths, the gallop, a syncopated push, a broken burst */
 static const uint16_t CHUG_FIG[4] = {0x5555u, 0x6DB7u, 0x5749u, 0xDB5Bu};
 /* the arp: an order over the chord's notes (indices, +4 an octave up, -1 the end), its rate in steps, its gate */
@@ -413,7 +442,7 @@ static const uint8_t ENV_RULE[6][4] = {
     {GR(0, 15), GR(24, 127), GR(0, 127), GR(8, 63)},    /* bass */
     {GR(0, 127), GR(0, 127), GR(0, 127), GR(0, 127)},   /* the others */
 };
-#define GSTAB(p) ((0x1C7Cu >> (p)) & 1u)                /* CS_STAB PULSE DUB SKANK COMP BROKEN TRANCE CHUG: the chords short */
+#define GSTAB(p) ((0x3C7Cu >> (p)) & 1u)                /* CS_STAB PULSE DUB SKANK COMP BROKEN TRANCE CHUG CHARL: the chords short */
 /* the names the song generator never picks (the cheerful, the odd), whatever the role */
 static const char *const GEN_NEVER[] = {"ARCADE", "BYTEBEAT", "GOSPEL", "ROCK DRIVE", "METAL", "BYTE VAR", "FLOAT ARP",
                                         "BYTE TONE"};   /* (V10.6p: FLOAT FM gone, no preset's name now) */
@@ -634,6 +663,25 @@ static const ggenre_t GENRE[] = {
      {BA_TAMBOR, BA_MANDEL, BA_TAMBOR}, 29, KM_DOUBLE, 90, {PR_ONE, PR_I_VII, PR_I_IV}, 2, CS_STAB, VM_PLAIN,
      {AP_CHOP, AP_CHOP}, LD_RIFF, AMT(100, 100, 25, 55, 85), {KIT_909, SR_808, SR_STAB, SR_CHANT, SR_COWBELL}, SR_TEXTURE,
      1, 2, 20, 2, FM_PARTS, 5, HF_LOOP, GSP_HEAVY},
+    /* (V10.6w, the owner: "jazz has to sound like jazz") a swing quartet in swung eighths (DM_JAZZ: a step an eighth,
+     * the tempo shown the half of the felt 116 .. 176): the ride's "ding, ding-da ding", the hi-hat's foot on 2 and 4,
+     * the kick feathered, the snare's soft comping; the walking bass in quarters on the chord's tones and its approach
+     * notes; ii-V-I and the I vi ii V turnaround in sevenths (secondary dominants, the turnaround's ii V in the last
+     * chord: gen.c gplan), the EP's rootless voicings comped on Charleston's 1 and 2's "and" (gen_pads CS_CHARL), a
+     * vibraphone's line with its chromatic approaches */
+    {"JAZZ", 58, 88, 70, {SC_MAJ, SC_MAJ, SC_DOR, SC_MIN}, DM_JAZZ, 100, KIT_SOFT, 2, HC_FLAT, FL_NONE, 1,
+     {BA_WALK, BA_WALK2, BA_WALK}, 28, KM_DOUBLE, 100, {PR_JAZZ, PR_TURN, PR_JAZZ}, 1, CS_CHARL, VM_RICH,
+     {AP_WALK, AP_UPDOWN}, LD_MOTIF, AMT(100, 95, 80, 0, 55), {KIT_SOFT, SR_UPRIGHT, SR_EP, SR_PIANO, SR_SINEKEY}, SR_TEXTURE,
+     0, 1, 30, 0, FM_PARTS, 70, HF_JAZZ | HX_RAISE | HX_SEC | HX_APPR, 0},
+    /* (V10.6w, the owner: "all the hip hop inside one HIP HOP") a throw one of five (GSUB below): trap (Metro Boomin,
+     * Southside: half time, sixteenth hats rolled, the 808 long and sliding, bells over minor chords), UK drill (the
+     * snare's pickup, the hats' skips, the 808 sliding, dark strings), pluggnb (trap's beat soft, an EP's seventh chords),
+     * boom bap (Pete Rock, DJ Premier: 86 .. 96 swung, a break's kit, a sub, soul keys) and lofi (the break late and
+     * soft, 70 .. 88 swung more, an EP's sevenths with the tape's wobble) */
+    {"HIP HOP", 136, 150, 0, {SC_MIN, SC_MIN, SC_HARM, SC_PHRY}, DM_TRAP, 100, KIT_808, 0, HC_FLAT, FL_HAT, 0,
+     {BA_WOBBLE, BA_PH808, BA_WOBBLE}, 29, KM_DOUBLE, 110, {PR_I_VI, PR_MINOR4, PR_AEOL}, 2, CS_SPARSE, VM_RICH,
+     {AP_BROKEN, AP_UPDOWN}, LD_HOOK, AMT(95, 100, 50, 40, 45), {KIT_808, SR_808, SR_PAD, SR_PLUCK, SR_BELL}, SR_TEXTURE,
+     0, 1, 35, 0, FM_PARTS, 0, HF_POP | HX_RAISE, 0},
 };
 #define NGENRE (sizeof GENRE / sizeof GENRE[0])
 /* (0.9.9-gen1) each genre's PATTERN GRAMMAR past its maps and archetypes (GENRE's order): on the bass, how many ACCENTs
@@ -660,8 +708,35 @@ static const uint16_t GGRAM[] = {   /* (gen3: + LIFT, 2 = none; V10.6n: the owne
     GG(0, 0, 1, 0, 0, 1, 2), GG(2, 0, 1, 2, 0, 0, 5), GG(0, 0, 0, 0, 0, 0, 2), GG(0, 0, 0, 0, 0, 0, 2),   /* KRAUT EBM NEO CLASSIC FUGA */
     GG(2, 0, 0, 2, 0, 0, 6), GG(1, 0, 1, 1, 1, 0, 4),   /* ELECTRO METAL TECHNO ROCK */
     GG(0, 1, 0, 0, 0, 1, 2), GG(1, 2, 0, 2, 1, 0, 5), GG(2, 1, 0, 2, 0, 0, 4),   /* DREAM POP PHONK BAILE FUNK */
+    GG(0, 0, 0, 0, 0, 0, 4), GG(1, 2, 0, 1, 1, 0, 5),   /* JAZZ HIP HOP */
 };
 _Static_assert(sizeof GGRAM / sizeof GGRAM[0] == NGENRE, "GGRAM: a grammar a genre");
+/* (V10.6w) a genre's throws, each its own style (gen.c gen_pick: a throw one of them, its fields over the genre's row,
+ * a mutant's never): HIP HOP's trap (the row), drill, pluggnb, boom bap, lofi; TECHNO ROCK's techno rock (the row),
+ * rock, synth 80s. The throws' count, then a throw its count of (field, value) pairs, the pairs */
+#define GSO(f, v) (uint8_t)__builtin_offsetof(ggenre_t, f), (uint8_t)(v)
+static const uint8_t GSUB_HH[] = {
+    5,   /* HIP HOP */
+    0,
+    5, GSO(drum, DM_DRILL), GSO(bpm_lo, 138), GSO(bass[0], BA_DNB), GSO(bass[2], BA_DNB), GSO(snd[GP_CHORDS], SR_STRINGS),
+    5, GSO(kit, KIT_SOFT), GSO(snd[GP_CHORDS], SR_EP), GSO(snd[GP_LEAD], SR_SINEKEY), GSO(prog[0], PR_DEEPVI), GSO(hx, HF_JAZZY),
+    14, GSO(drum, DM_BOOMBAP), GSO(bpm_lo, 86), GSO(bpm_hi, 96), GSO(swing, 30), GSO(human, 45), GSO(kit, KIT_BREAKS),
+    GSO(ghosts, 1), GSO(fills, FL_NONE), GSO(bass[0], BA_DUST), GSO(bass[1], BA_JUNGLE), GSO(bass[2], BA_DUST),
+    GSO(snd[GP_BASS], SR_SUB), GSO(snd[GP_CHORDS], SR_KEYS), GSO(hx, HF_JAZZY),
+    15, GSO(drum, DM_BOC), GSO(bpm_lo, 70), GSO(bpm_hi, 88), GSO(swing, 45), GSO(human, 60), GSO(kit, KIT_SOFT),
+    GSO(ghosts, 1), GSO(fills, FL_NONE), GSO(bass[0], BA_FIFTHS), GSO(bass[1], BA_DUST), GSO(bass[2], BA_PEDAL),
+    GSO(snd[GP_BASS], SR_SUB), GSO(snd[GP_CHORDS], SR_EP), GSO(hx, HF_JAZZY), GSO(spec, GSP_WOW),
+};
+static const uint8_t GSUB_TR[] = {
+    3,   /* TECHNO ROCK */
+    0,
+    8, GSO(drum, DM_ROCK), GSO(bpm_lo, 112), GSO(bass[0], BA_ROCK8), GSO(bass[1], BA_ROCK8), GSO(snd[GP_BASS], SR_ROCKBASS),
+    GSO(kick_mode, KM_DOUBLE), GSO(human, 55), GSO(prog[0], PR_CYCLE),
+    18, GSO(drum, DM_SYN80), GSO(bpm_lo, 100), GSO(bpm_hi, 122), GSO(kit, KIT_909), GSO(bass[0], BA_OCTBNC),
+    GSO(bass[1], BA_SYNTHW), GSO(snd[GP_BASS], SR_HOOK), GSO(snd[GP_CHORDS], SR_PAD), GSO(pads, CS_HOLD),
+    GSO(voicing, VM_PLAIN), GSO(snd[GP_LEAD], SR_LEAD), GSO(hx, HF_POP | HX_RAISE), GSO(prog[0], PR_AEOL),
+    GSO(prog[1], PR_EPIC), GSO(prog[2], PR_ANDAL), GSO(human, 0), GSO(kick_mode, KM_DOUBLE), GSO(wet, 50),
+};
 
 /* ------------------------------------------------------------------------------------------- (0.8.6) EXPLORE --- */
 /* GENRE's first choice and the dice's default: no genre's template, every one of its rules thrown (gen.c gx_genre).

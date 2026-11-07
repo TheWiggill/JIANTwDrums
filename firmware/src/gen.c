@@ -531,7 +531,8 @@ static void gen_drums(track_t *t, uint32_t len)
             if ((s->time == ST_NOTE && (s->hit & 0x18u)) || !ch[i - 1u] || !gch(55 + gs.energy / 4u)) continue;
             gdrum_hit(t, i, 3, 44 + (int32_t)gs.energy / 5, 0);
         }
-    } else if (gs.energy < 34u) {                       /* the room: half the open hats and the percussion gone */
+    } else if (gs.energy < 34u && g->human < 40u) {    /* the room: half the open hats and the percussion gone (V10.6w:
+                                                         * a band's ride kept, jazz's) */
         for (i = 0; i < len; i++) {
             step_t *s = &t->step[i];
             if (s->time != ST_NOTE || !(s->hit & 0xD0u) || !gch(50)) continue;
@@ -610,9 +611,9 @@ static void gen_drums(track_t *t, uint32_t len)
             }
         }
     }
-    if (g->drum - DM_REGG < 4u) {                       /* (0.6.93) the hats' rolls: a step before the snare and the bar's
+    if (g->drum - DM_REGG < 6u) {                       /* (0.6.93) the hats' rolls: a step before the snare and the bar's
                                                          * end, sixteenth or triplet rolls (V10.6n: reggaeton's, dembow's,
-                                                         * phonk's; V10.6p: both phonk maps) */
+                                                         * phonk's; V10.6p: both phonk maps; V10.6w: trap's, drill's) */
         for (i = 0; i < len; i++) {
             step_t *s = &t->step[i];
             uint32_t p = i % 16u;
@@ -880,6 +881,9 @@ static void gen_pads(track_t *t, uint32_t len)
         case CS_DUB: o = dub[p]; break;
         case CS_SKANK: o = p % 4u == 2u; break;
         case CS_COMP: o = (comp[p] && gch(70 + a / 4u)) || (p == 0u && gch(40)) || (!comp[p] && (p == 6u || p == 10u || p == 13u) && gch(a / 4u)); break;
+        case CS_CHARL: o = ((0x0909u >> p) & 1u) || (((0xC080u >> p) & 1u) && gch(30)); break;   /* (V10.6w) JAZZ's
+                                                         * Charleston in its eighths: 1 and 2's "and" a bar (0 3, 8 11),
+                                                         * now and then the next bar anticipated (7 15) or 4 (14) */
         case CS_POWER: o = p == 0u || (p == 8u && gch(60)); break;
         case CS_BROKEN: o = brk[p]; break;
         case CS_CHUG: o = (int)((CHUG_FIG[stab1 * 2u + (a > 60u)] >> p) & 1u); break;   /* (V10.6n: a riff, the amount's) */
@@ -909,7 +913,7 @@ static void gen_pads(track_t *t, uint32_t len)
         case CS_PULSE: hold = (int)stab1; vel = p % 4u ? 76 : 86; break;
         case CS_DUB: vel = p == 2u ? 92 : 78; break;
         case CS_SKANK: vel = 84; break;
-        case CS_COMP: hold = p == 14u || p == 7u; vel = p == 0u ? 84 : 80; break;
+        case CS_COMP: case CS_CHARL: hold = p == 14u || p == 7u; vel = p == 0u ? 84 : 80; break;
         case CS_POWER: on = on && (p != 8u || (b & 1u)); hold = p == 8u ? 5 : 7; vel = 96; break;   /* (a push every other bar) */
         case CS_DRONE: on = i == 0u; hold = (int)len - 1; vel = 70; break;
         case CS_SPARSE: on = pp == 0u && (i == 0u || (gci(i) & 1u) == 0u || sparse > 66u); hold = (int)cl - 1; vel = 76; break;
@@ -1652,11 +1656,13 @@ static void gen_kit(track_t *t)
     t->p[P_E7] = (int16_t)clamp(k->drv * 2 / 3 + (gs.g->spec & GSP_HEAVY ? grr(24, 40) : 0), 0, 127);   /* (gen2: the kit's
                                                          * DRIVE two thirds; V10.6p: a heavy genre's driven harder) */
     t->p[P_FTYPE] = 0;
-    t->p[P_FCUT] = (int16_t)(gs.g->human >= 40u ? grr(118, 127) : grr(104, 120));
+    t->p[P_FCUT] = (int16_t)grr(gs.g->human >= 40u ? 122 : 114, 127);   /* (V10.6w, the owner: the drums' brightness
+                                                         * open: 8.4 .. 16 kHz, a band's 12.5 .. 16; was 5 .. 11) */
     t->p[P_FRES] = (int16_t)grr(0, 14);
     t->p[P_LN3] = (int16_t)(gs.g->hats == HC_MACHINE ? 112 : 118);   /* (the hats a little under) */
     t->p[P_LN4] = 118;
     t->p[P_LN6] = t->p[P_LN7] = 110;
+    if (gs.g->drum == DM_JAZZ) t->p[P_LN0] = 72;        /* (V10.6w) JAZZ's kick feathered, under the ride */
     if (gclub()) {                                      /* (gen5) the kick in front: the rest of the kit under it */
         t->p[P_LN0] = 127;
         t->p[P_LN1] = 104;
@@ -2407,6 +2413,13 @@ static void gen_pick(void)
 {
     const ggenre_t *g = gs.g;
     uint32_t k, pr, steps;
+    const uint8_t *u = g->drum == DM_TRAP ? GSUB_HH : g->drum == DM_TROCK ? GSUB_TR : 0;
+    if (u && !gs.mutant) {                              /* (V10.6w) HIP HOP's, TECHNO ROCK's throws: one style of theirs,
+                                                         * its fields over the row (gen_tables.c GSUB; g is gmut, every
+                                                         * caller's) */
+        for (k = gr() % *u++; k; k--) u += 1u + 2u * *u;
+        for (k = *u++; k; k--, u += 2) ((uint8_t *)&gmut)[u[0]] = u[1];
+    }
     gs.root = (int16_t)(g->lead == LD_EBM ? grr(2, 9) : grr(0, 11));   /* (gen6: DAF's dark E F F# G) */
     {   /* (0.8.3) the key: always a mode of seven, so the CHORD page, the chords, the arp and the lead stand on it; a
          * genre's pentatonic or blues is its lead's palette over the mode that holds it (dorian where the genre is
@@ -2651,7 +2664,7 @@ static void gen_make(void)
                 t->p[P_SLEN] = (int16_t)len;
                 if (r == RL_BASS) t->p[P_SGATE] = (int16_t)clamp(g->bass_gate, 1, 127);
                 else if (r == RL_PAD) t->p[P_SGATE] = (int16_t)(g->pads == CS_STAB || g->pads == CS_DUB || g->pads == CS_SKANK || g->pads == CS_BROKEN || g->pads == CS_CHUG ? grr(25, 45) :
-                                                              g->pads == CS_TRANCE ? 35 : g->pads == CS_COMP ? 60 : 120);
+                                                              g->pads == CS_TRANCE ? 35 : g->pads == CS_COMP || g->pads == CS_CHARL ? 60 : 120);
                 else if (r == RL_LEAD) t->p[P_SGATE] = (int16_t)(g->lead == LD_MECH ? 50 : 85);
                 else if (r != RL_ARP) t->p[P_SGATE] = 120;
                 if (r != RL_DRUM) dlevel(t, len);

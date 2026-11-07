@@ -621,6 +621,46 @@ int main(void)
             }
             bad += gcheck("EBM x 10 seeds: three drum maps at least, five riffs at least (V10.6m)", ebm_m >= 3u && ebm_b >= 5u);
         }
+        {   /* (V10.6w, the owner) HIP HOP one genre, its throws trap drill pluggnb boom bap lofi (each its map, its
+             * tempo); TECHNO ROCK's techno rock, rock and synth 80s; JAZZ in swung eighths: the ride's ding ding-da, the
+             * hat's foot on 2 and 4, the kick feathered, a walking bass in quarters, the chords on Charleston's 1 and
+             * 2's "and", ii-V's sevenths */
+            uint32_t hh = 0, slow = 0, fast = 0, tr = 0, jz = 1, walk = 0, comp = 0, sev = 0, nch = 0, i2;
+            uint8_t sm2[64] = {0};
+            for (seeds = 1; seeds <= 24u; seeds++) {
+                gen_with(genre_of("HIP HOP"), seeds, 50, 0);
+                if (!sm2[gs.g->drum]) { sm2[gs.g->drum] = 1; hh++; }
+                slow += song.g[G_BPM] < 100 && song.g[G_SWING] >= 30;
+                fast += song.g[G_BPM] >= 130 && song.g[G_SWING] == 0;
+            }
+            bad += gcheck("HIP HOP x 24: trap, drill, boom bap, lofi maps (4); swung slow throws and straight fast ones", hh == 4u && slow && fast);
+            memset(sm2, 0, sizeof sm2);
+            for (seeds = 1; seeds <= 12u; seeds++) {
+                gen_with(genre_of("TECHNO ROCK"), seeds, 50, 0);
+                if (!sm2[gs.g->drum]) { sm2[gs.g->drum] = 1; tr++; }
+            }
+            bad += gcheck("TECHNO ROCK x 12: its own, rock's and the synth 80s' maps (3)", tr == 3u);
+            for (seeds = 1; seeds <= 6u; seeds++) {
+                const track_t *d, *b, *c;
+                gen_with(genre_of("JAZZ"), seeds, 50, 0);
+                if (gs.trk_of[RL_DRUM] >= NTRK || gs.trk_of[RL_BASS] >= NTRK || gs.trk_of[RL_PAD] >= NTRK) { jz = 0; continue; }
+                d = &trk[gs.trk_of[RL_DRUM]]; b = &trk[gs.trk_of[RL_BASS]]; c = &trk[gs.trk_of[RL_PAD]];
+                jz &= song.g[G_SWING] >= 60 && song.g[G_BPM] >= 55 && song.g[G_BPM] <= 90;
+                for (i2 = 0; i2 < 16u; i2++) {
+                    const step_t *s2 = &d->step[i2];
+                    uint32_t h2 = s2->time == ST_NOTE ? s2->hit : 0u;
+                    if (i2 % 2u == 0u && !(h2 & 16u)) jz = 0;                       /* the ride on every beat */
+                    if ((i2 % 4u == 2u) != !!(h2 & 8u)) jz = 0;                     /* the hat's foot on 2 and 4 only */
+                    if (h2 & 4u) jz = 0;                                              /* no clap */
+                }
+                for (i2 = 0; i2 < 16u; i2++) walk += (b->step[i2].time == ST_NOTE) == (i2 % 2u == 0u);
+                for (i2 = 0; i2 < 16u; i2++) comp += c->step[i2].time == ST_NOTE && (i2 % 8u == 0u || i2 % 8u == 3u || i2 % 8u == 7u || i2 == 14u);
+                for (i2 = 0; i2 < 16u; i2++) comp -= c->step[i2].time == ST_NOTE && !(i2 % 8u == 0u || i2 % 8u == 3u || i2 % 8u == 7u || i2 == 14u);
+                for (i2 = 0; i2 < gs.nch; i2++) { nch++; sev += gs.ch[i2].q == Q_7 || gs.ch[i2].q == Q_9 || gs.ch[i2].q == Q_6 || gs.ch[i2].q == Q_R9; }
+            }
+            bad += gcheck("JAZZ x 6: swung eighths (SWING 60+, 55..90 BPM), the ride, the hat on 2 and 4, no clap", jz);
+            bad += gcheck("JAZZ x 6: a walking bass in quarters, the chords on Charleston's figure, sevenths", walk == 96u && comp >= 12u && sev * 10u >= nch * 9u);
+        }
         for (seeds = 1; seeds <= 40u; seeds++) {
             gen_with(0, seeds, 50, 0);
             if (gs.mutant) {

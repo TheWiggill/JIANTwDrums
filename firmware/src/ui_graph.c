@@ -521,12 +521,16 @@ static void pr_split(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t c, uin
         cv_rect(x + k * (pw + 1), y, pw, h, c);
 }
 /* a note's colour in the lens's pictures, as the mock-up's: JIANT on the heat ramp, a note warm (115; a chord's a
- * little warmer), an accent near white (243); another palette the notes ACCENT, an accent TEXT (the highlight) */
-static uint16_t lz_note(const step_t *st, int acc, uint16_t c)
+ * little warmer), an accent near white (243); another palette the notes ACCENT, an accent TEXT (the highlight).
+ * (V10.6w, the owner: "the whole system one visual language") JIANT's notes (n: the note; a kit's lane -1) their pitch
+ * class's own heat, as SCL's keys (ui_lzpage.c note_col), an accent toward white */
+static uint16_t lz_note(const step_t *st, int acc, int32_t n)
 {
-    (void)c;
-    if (settings.palette == UI_JIANT_INDEX)
+    if (settings.palette == UI_JIANT_INDEX) {
+        if (n >= 0 && !ux.mono)
+            return ux_mix(note_col((uint32_t)n), T_TEXT, acc ? 55 : 0);
         return heat_col(acc ? 243 : st->n > 1u ? 146 : 115);
+    }
     return acc ? T_TEXT : T_ACCENT;
 }
 /* (seq2d) a component's colour by its family, as the mock-up's: the pitch (ARP SEQ OCT TRANSPOSE RANDOM BEND) ACCENT,
@@ -612,11 +616,11 @@ static void bar_cell(const track_t *t, uint32_t b, int32_t x, int32_t y, int32_t
             for (l = 0; l < NLANE; l++)
                 if ((step_lanes_of(TSEL,st) >> l) & 1u)
                     cv_rect(sx, top + (int32_t)l * nh / (int32_t)NLANE, mw, nh / (int32_t)NLANE > 2 ? 2 : 1,
-                            lz_note(st, (step_accents_of(TSEL,st) >> l) & 1u, c));
+                            lz_note(st, (step_accents_of(TSEL,st) >> l) & 1u, -1));
             continue;
         }
         cv_rect(sx, top + nh - 2 - ((int32_t)st->note[0] - lo) * (nh - 2) / (hi - lo), mw, 2,
-                lz_note(st, (st->flags & SF_ACCENT) != 0u, c));
+                lz_note(st, (st->flags & SF_ACCENT) != 0u, st->note[0]));
     }
     s[0] = (char)('1' + b);
     s[1] = 0;
@@ -656,11 +660,11 @@ static void pr_bars(const step_t *st, int32_t x, int32_t w, uint16_t c, int acc_
         if (*first < -1000)
             *first = y;
         if (y < PR_Y0)
-            pr_split(x, PR_Y0, w, 1, c ? c : lz_note(st, acc, ACC), hits);
+            pr_split(x, PR_Y0, w, 1, c ? c : lz_note(st, acc, j < 4u ? n : -1), hits);
         else if (y >= ybot)
-            pr_split(x, ybot - 1, w, 1, c ? c : lz_note(st, acc, ACC), hits);
+            pr_split(x, ybot - 1, w, 1, c ? c : lz_note(st, acc, j < 4u ? n : -1), hits);
         else
-            pr_split(x, y, w, PR_RH - 1, c ? c : lz_note(st, acc, ACC), hits);
+            pr_split(x, y, w, PR_RH - 1, c ? c : lz_note(st, acc, j < 4u ? n : -1), hits);
     }
 }
 /* (0.9.9-seq2b, the approved mock-up's R1 .. R3) the playheads' colours: the sequencer's ACCENT, FUGUE's heads 2 .. 4 the
@@ -872,9 +876,9 @@ static void graph_grid(const track_t *t, uint16_t c)
             uint32_t b = 1u << l;
             int32_t x = 40 + (int32_t)i * 12;
             if ((step_lanes_of(TSEL,st) & b) && step_ratchet(st) > 1u)
-                pr_split(x, y + hy, 10, 10, lz_note(st, step_accents_of(TSEL,st) & b, c), step_ratchet(st));
+                pr_split(x, y + hy, 10, 10, lz_note(st, step_accents_of(TSEL,st) & b, -1), step_ratchet(st));
             else if (step_lanes_of(TSEL,st) & b)
-                cv_rect(x, y + hy, 10, 10, lz_note(st, step_accents_of(TSEL,st) & b, c));
+                cv_rect(x, y + hy, 10, 10, lz_note(st, step_accents_of(TSEL,st) & b, -1));
             else
                 cv_rect(x + 4, y + hy + 4, 2, 2, i % 4u == 0u || sel ? T_MID : T_DIM);
             if (sel && base + i == ui.cursor)          /* the cursor: a 1 px frame */

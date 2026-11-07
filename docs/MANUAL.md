@@ -1378,7 +1378,8 @@ turned leaves the drums and the lead as they were. The screen shows **LAST: HOUS
 The genres, as KNOB 1 turns them after EXPLORE and RANDOM (V10.6n: the owner's list, in its order):
 MINIMAL TECHNO, HARD TECHNO, HARD BASS, HOUSE, DEEP HOUSE, TECH HOUSE, TRIBAL, CUMBIA, REGGAETON, DEMBOW, ELECTRO,
 BREAKBEAT, DRUM & BASS, IDM GLITCH, IDM AMBIENT, IDM WEIRD, KRAUT, EBM, NEO CLASSIC, FUGA, ELECTRO METAL, TECHNO ROCK,
-DREAM POP, PHONK, BAILE FUNK. Each one knows its tempo
+DREAM POP, PHONK, BAILE FUNK, JAZZ, HIP HOP (V10.6w: HIP HOP's throws each one of trap, drill, pluggnb, boom bap
+or lofi; TECHNO ROCK's techno rock, rock or synth 80s; JAZZ in swung eighths, its BPM the half of the felt tempo). Each one knows its tempo
 range, its scales and chord progressions, its drum map and kit, its bass archetypes and register, how its chords, arp
 and lead speak, which sound recipe each role takes, how human it plays and its space (reverb type, delay type and
 time, how wet).
