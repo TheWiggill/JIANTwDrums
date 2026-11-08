@@ -2698,16 +2698,17 @@ static int test_menu_tabs(void)
         ok &= n >= 1u && n <= MTAB_ROWS && f < MI_COUNT;
         for (i = 0; i < MI_COUNT; i++)                  /* its rows in one run */
             ok &= (MI_TAB[i] == t) == (i >= f && i < f + n);
-        ok &= 14 + (int32_t)n * (n > 7u ? 15 : n > 6u ? 17 : 20) <= LZ_GRAPH_H;   /* (0.8.5 the lens: TAB's rows in the panel;
+        ok &= 14 + (int32_t)n * (n > 8u ? 10 : n > 7u ? 15 : n > 6u ? 17 : 20) <= LZ_GRAPH_H;   /* (V10.6z6: CONTROL's
+                                                         * twelve 10 apart) */   /* (0.8.5 the lens: TAB's rows in the panel;
                                                          * 0.8.9 seven: 17 apart; 0.9.7 eight: 15) */
         for (i = f; i < f + n; i++)                     /* .. ROW's chips, every value */
             ok &= i >= MI_VALUES || 16 + (int32_t)((menu_n(i) + 2u) / 3u) * 20 <= LZ_GRAPH_H;
     }
     for (i = 0; i < MI_COUNT; i++) ok &= MI_TAB[i] < MTAB_COUNT;
     ui_prefs = 0;
-    bad += check("MENU tabs: DISPLAY CONTROL AUDIO SYSTEM (8 8 8 8 rows: 0.8.9 SKIN, 0.9.7 SCOPE, 0.9.9-stab CPU CLOCK, p1 CPU CORES, MIDI MAP, LEARN, LOAD in AUDIO; V10.12 BLUETOOTH; V10.6z4 OCT BEND in AUDIO), 1..8 each in a run, their rows and values fit the lens's panel",
+    bad += check("MENU tabs: DISPLAY CONTROL AUDIO SYSTEM (8 12 8 8 rows: 0.8.9 SKIN, 0.9.7 SCOPE, 0.9.9-stab CPU CLOCK, p1 CPU CORES, MIDI MAP, LEARN, LOAD in AUDIO; V10.12 BLUETOOTH; V10.6z4 OCT BEND in AUDIO; V10.6z6 VELOCITY VEL MIN AFTERTOUCH VEL LEARN in CONTROL), each in a run, their rows and values fit the lens's panel",
                  ok && MTAB_COUNT == 4u && str_eq(MTAB_NAME[0], "DISPLAY") && mtab_rows(MTAB_DISPLAY) == 8u &&
-                 mtab_rows(MTAB_CONTROL) == 8u && mtab_rows(MTAB_AUDIO) == 8u && mtab_rows(MTAB_SYSTEM) == 8u);   /* (0.6.58: INIT SYSTEM;
+                 mtab_rows(MTAB_CONTROL) == 12u && mtab_rows(MTAB_AUDIO) == 8u && mtab_rows(MTAB_SYSTEM) == 8u);   /* (0.6.58: INIT SYSTEM;
                                                                          * 0.6.72: MIDI OUT in CONTROL; 0.9.9-stab: CPU CLOCK in SYSTEM) */
 
     ui_power_on();
@@ -2879,9 +2880,9 @@ static int test_menu_tabs(void)
     hold(B_HOME);
     frame();
     ok = ui.menu == 1 && ui.mlv == 1u && lz_on() && lz_fam() == LZ_MENU && lz_tabs() == 4u && lz_tab_lit(0) &&
-         lz_crumb_is("MENU \xB7 DISPLAY \xB7 COLOR") && lz_count_is("1/32");
+         lz_crumb_is("MENU \xB7 DISPLAY \xB7 COLOR") && lz_count_is("1/36");
     turn(EN_SELECT, 1); frame();
-    ok &= ui.mlv == 1u && lz_tab_lit(0) && lz_crumb_is("MENU \xB7 DISPLAY \xB7 SKIN") && lz_count_is("2/32");
+    ok &= ui.mlv == 1u && lz_tab_lit(0) && lz_crumb_is("MENU \xB7 DISPLAY \xB7 SKIN") && lz_count_is("2/36");
     turn(EN_ALGO, 1); frame();
     ok &= menu_tab() == MTAB_CONTROL && lz_tab_lit(1) && lz_crumb_is("MENU \xB7 CONTROL \xB7 HOLD");
     turn(EN_SELECT, 2); frame();
@@ -2890,7 +2891,7 @@ static int test_menu_tabs(void)
     ok &= (fx_latch & 1u) != 0u;
     turn(EN_K3, -1); frame();
     menu_close();
-    bad += check("0.9.2 MENU: four tabs (the row's lit), MENU . TAB . ROW and n/32 (0.9.7: SCOPE; 0.9.9-stab: CPU CLOCK; p1: CPU CORES, MIDI MAP, LEARN; V10.12: BLUETOOTH; V10.6z4: OCT BEND); ALGORITHM the tab, any knob the value", ok && MI_COUNT == 32u);
+    bad += check("0.9.2 MENU: four tabs (the row's lit), MENU . TAB . ROW and n/36 (0.9.7: SCOPE; 0.9.9-stab: CPU CLOCK; p1: CPU CORES, MIDI MAP, LEARN; V10.12: BLUETOOTH; V10.6z4: OCT BEND; V10.6z6: the keys' four); ALGORITHM the tab, any knob the value", ok && MI_COUNT == 36u);
 
     /* (V10.12) MENU > SYSTEM > BLUETOOTH: OFF by default (no mark: older settings), refused while playing, ON kept in
      * TRIO's retired favourites row with its mark; here (no radio, no segment) ON reads NO SEG; OFF again; the boot

@@ -1676,6 +1676,16 @@ static void apply_preset(uint32_t pi)                 /* the selected track's so
     }
 }
 static void set_engine(uint32_t ei) { set_engine_of(TSEL, ei); }
+/* (V10.6z6) a new sound (INIT SOUND, the power-on / NEW PROJECT parts): the keys' pressure (vel.c) audible, AFTERTOUCH
+ * on (the setting itself: power-on reads it before the main loop): its matrix's slot 4, if free, AT -> CUT by 20 */
+static void vel_at_route(track_t *t)
+{
+    if (!((VEL_SET2 ^ 2u) & 3u) || drum_track(t) || t->p[P_M1SRC + 9] || t->p[P_M1SRC + 10])   /* (AFTERTOUCH OFF: none) */
+        return;
+    t->p[P_M1SRC + 9] = MS_AT;
+    t->p[P_M1SRC + 10] = MD_CUT;
+    t->p[P_M1SRC + 11] = 20;
+}
 /* (0.6.46) INIT SOUND, NEW PROJECT, (0.6.49) the power-on: the engine's own defaults (its EDIT values as the engine
  * declares them, not its first preset's colour; the envelope, VOICE and the filter envelope as a new track has them),
  * dry (no DIST CHOR DLY REV send: the effects are the player's to add), on FM6 the init voice */
@@ -1694,6 +1704,7 @@ static void init_sound_of(track_t *t, uint32_t ei)
     for (i = 0; i < 4u; i++)
         t->p[P_DIST + i] = 0;
     fm6_init_voice(t);
+    vel_at_route(t);                          /* (V10.6z6) the keys' pressure audible */
     load_end(t);
 }
 /* (0.9.9) the power-on, INIT SYSTEM and NEW PROJECT: part i (engines.c TRK_DEF) its engine with its preset's sound
@@ -1708,6 +1719,7 @@ static void power_sound_of(track_t *t, uint32_t i)
         dx_kit_load(TRK_DEF[i % NPART][1]);
     for (k = 0; k < 4u; k++)
         t->p[P_DIST + k] = 0;
+    vel_at_route(t);                          /* (V10.6z6) the keys' pressure audible on a new project's sounds */
 }
 
 static void track_defaults(track_t *t)

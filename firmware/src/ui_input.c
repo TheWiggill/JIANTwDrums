@@ -1837,6 +1837,7 @@ slot_action:
         break;
     default:                                              /* G_INITSND */
         set_engine(TSEL->eng_req);                        /* engine defaults + its first preset (the steps stay) */
+        vel_at_route(TSEL);                               /* (V10.6z6: the keys' pressure audible, vel.c) */
         ui_message("SOUND INIT");
         ui.force = 1;
         break;
@@ -1874,7 +1875,8 @@ static __attribute__((noinline)) void kx_frame(void)
     for (g = 0; g < 2u; g++)
         if (!((fm1_in.buttons >> panel.btn[g ? B_OCTUP : B_OCTDN]) & 1u))
             kx_g[g] = 0;
-    g = ((kx_g[0] >> i) & 1u) | ((kx_g[1] >> i) & 1u) << 1;
+    g = ((kx_g[0] >> i) & 1u) | ((kx_g[1] >> i) & 1u) << 1 | (uint32_t)(vs.atl[i % NTRK] >> 4) << 2;   /* (V10.6z6: and
+                                                         * the keys' pressure, 0..7, seq.c kx_block) */
     if (g != kx_recd && rec_on(TSEL) && !drum_track(TSEL))   /* (only recording: else it would become the base) */
         (void)motion_capture(TSEL, P_XPR, (int16_t)(127 - (int32_t)g));
     kx_recd = (uint8_t)g;

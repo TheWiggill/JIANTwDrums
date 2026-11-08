@@ -7,7 +7,7 @@
  * USB LEVEL; 1.1: CLICK, CLICK LEVEL, COUNT-IN), USB SERIAL, RESTORE LAST (1.2), then CALIBRATION (the setup screen: HARDWARE CALIBRATION) and ABOUT, the two rows with no
  * value (MI_VALUES: the rows before them hold one). 1.0.5: in four tabs (MI_TAB). */
 enum { MI_COLOR, MI_SKIN, MI_SCOPE, MI_STYLE, MI_LARGE, MI_ANIM, MI_LEDS, MI_SCROFF, MI_HOLD, MI_ACCEL, MI_LATCH, MI_BPMLOCK, MI_SCLLED, MI_MIDIOUT,
-       MI_MIDIMAP, MI_LEARN, MI_LOWCUT, MI_USB,
+       MI_MIDIMAP, MI_LEARN, MI_VEL, MI_VELMIN, MI_AT, MI_VLEARN, MI_LOWCUT, MI_USB,
        MI_CLICK, MI_CLKLVL, MI_COUNTIN, MI_TRACKS, MI_LOAD, MI_OCTBEND, MI_SERIAL, MI_RESTORE, MI_CPU, MI_CLOCK, MI_BT, MI_PANEL, MI_INIT, MI_ABOUT, MI_COUNT };   /* (1.1: the
                                                                                              * metronome's rows in AUDIO; 1.2: RESTORE LAST in
                                                                                              * SYSTEM, SCALE LEDS in CONTROL; 0.9.9-stab: CPU
@@ -15,6 +15,7 @@ enum { MI_COLOR, MI_SKIN, MI_SCOPE, MI_STYLE, MI_LARGE, MI_ANIM, MI_LEDS, MI_SCR
 #define MI_VALUES MI_PANEL
 static const char *const MI_NAME[MI_COUNT] = {"COLOR", "SKIN", "SCOPE", "STYLE", "LARGE", "ANIM", "LEDS", "SCREEN OFF", "HOLD", "KNOB ACCEL", "FX LATCH", "BPM LOCK",
                                               "SCALE LEDS", "MIDI OUT", "MIDI MAP", "LEARN",
+                                              "VELOCITY", "VEL MIN", "AFTERTOUCH", "VEL LEARN",
                                               "SPEAKER EQ", "USB LEVEL", "CLICK", "CLICK LEVEL", "COUNT-IN", "TRACKS", "LOAD",
                                               "OCT BEND", "USB",
                                               "RESTORE LAST", "CPU CORES", "CPU CLOCK", "BLUETOOTH", "CALIBRATION", "INIT SYSTEM", "ABOUT"};
@@ -23,7 +24,8 @@ static const char *const MI_NAME[MI_COUNT] = {"COLOR", "SKIN", "SCOPE", "STYLE",
  * most MTAB_ROWS each (the page does not scroll: ui_menu.c fits them). A new row joins a tab here, a new tab is
  * appended (its index is what the editor is told) */
 enum { MTAB_DISPLAY, MTAB_CONTROL, MTAB_AUDIO, MTAB_SYSTEM, MTAB_COUNT };
-#define MTAB_ROWS 8u                           /* (0.8.9: DISPLAY's seven with SKIN; 0.9.7: eight with SCOPE) */
+#define MTAB_ROWS 12u                          /* (0.8.9: DISPLAY's seven with SKIN; 0.9.7: eight with SCOPE; V10.6z6:
+                                                * CONTROL's twelve, the keys' four as its third set) */
 static const char *const MTAB_NAME[MTAB_COUNT] = {"DISPLAY", "CONTROL", "AUDIO", "SYSTEM"};
 static const uint8_t MI_TAB[MI_COUNT] = {
     MTAB_DISPLAY, MTAB_DISPLAY, MTAB_DISPLAY, MTAB_DISPLAY, MTAB_DISPLAY,   /* COLOR SKIN (0.8.9) SCOPE (0.9.7) STYLE LARGE */
@@ -34,6 +36,8 @@ static const uint8_t MI_TAB[MI_COUNT] = {
     MTAB_CONTROL,                                                           /* SCALE LEDS (1.2) */
     MTAB_CONTROL,                                                           /* MIDI OUT (JIANT 0.6.72) */
     MTAB_CONTROL, MTAB_CONTROL,                                             /* MIDI MAP, LEARN (p1, main 0.9.12's LEARN) */
+    MTAB_CONTROL, MTAB_CONTROL, MTAB_CONTROL, MTAB_CONTROL,                 /* VELOCITY, VEL MIN, AFTERTOUCH, VEL LEARN
+                                                                             * (V10.6z6, vel.c) */
     MTAB_AUDIO, MTAB_AUDIO, MTAB_AUDIO, MTAB_AUDIO, MTAB_AUDIO,             /* SPEAKER EQ, USB LEVEL, CLICK, CLICK LEVEL,
                                                                              * COUNT-IN */
     MTAB_AUDIO,                                                             /* TRACKS (JIANT 0.6.18) */
@@ -124,6 +128,15 @@ static const char *const MIDIOUT_N[4] = {"KEYS", "CLOCK", "ALL", "OFF"};
 /* (V10.6z4) OCT BEND (ui_input.c kx_press, seq.c kx_block): OCT+ held on a note bends up this far, OCT- a vibrato; OFF:
  * OCT is the octave with a note held too, as before. Stored as its place ^ 2 (oct_xp): 0, every older setting, 2 ST */
 static const char *const OCTBEND_N[8] = {"OFF", "1 ST", "2 ST", "3 ST", "4 ST", "5 ST", "7 ST", "12 ST"};
+/* (V10.6z6) the keys' velocity and pressure (vel.c: VEL_SET, VEL_SET2): VELOCITY's curve (OFF: every key 100), VEL MIN's
+ * floor, AFTERTOUCH's sensitivity (OFF: none), VEL LEARN (RESET: the calibration's seeds back, then ON) */
+/* each: its settings byte, the field's shift, mask and ^ (its stored form), its count, its names (w bytes apart) */
+typedef struct { uint8_t *b; uint8_t sh, m, x, n, w; const char *nm; } vel_row_t;
+static const vel_row_t VEL_ROW[4] = {{&VEL_SET, 0, 3, 2, 4, 7, "OFF\0\0\0\0SOFT\0\0\0NORMAL\0HARD"},
+                                     {&VEL_SET, 2, 7, 2, 8, 3, "1\0\00010\00020\00030\00040\00050\00064\00080"},
+                                     {&VEL_SET2, 0, 3, 2, 4, 5, "OFF\0\0LOW\0\0MID\0\0HIGH"},
+                                     {&VEL_SET2, 2, 3, 0, 3, 6, "ON\0\0\0\0OFF\0\0\0RESET"}};
+static const vel_row_t *vel_row(uint32_t row) { return row >= MI_VEL && row <= MI_VLEARN ? &VEL_ROW[row - MI_VEL] : 0; }
 /* (JIANT 0.9.9-stab, as 0.9.12) MENU > SYSTEM > CPU CLOCK: 360 MHZ (the default: the boot stage's clock, M-VAVE's V15
  * runs it so with the core rails at 1.60 / 1.38 V, hal/fm1_sys.h fm1_rails_boot) or 320 MHZ (JieLi's rated clock, as
  * M-VAVE's open firmware and Skiff run it: ~11 % fewer cycles a block), switched at boot before the audio and the second
@@ -169,8 +182,9 @@ static const menu_flag_t *menu_flag(uint32_t row)
 /* a row's value as 0..menu_n(row) - 1 in the order the menu steps it (LEDS: OFF DIM LO DIM HI INV, LEDS_MENU) */
 static uint32_t menu_n(uint32_t row)
 {
+    const vel_row_t *vr = vel_row(row);
     return row == MI_COLOR ? NPALETTES : row == MI_SKIN ? SKIN_N : row == MI_LOWCUT || (row >= MI_CLICK && row <= MI_COUNTIN) || row == MI_LOAD || row == MI_BT ? 3u :
-           row == MI_HOLD || row == MI_MIDIOUT || row == MI_LEARN ? 4u : row == MI_OCTBEND ? 8u : row == MI_MIDIMAP ? MLM_N : row == MI_USB ? 6u : row == MI_SERIAL ? 5u + FELUCCA_USB_HOST : row == MI_LEDS ? LEDS_COUNT : row == MI_SCROFF ? NELEM(SCROFF_N) : 2u;
+           row == MI_HOLD || row == MI_MIDIOUT || row == MI_LEARN ? 4u : vr ? vr->n : row == MI_OCTBEND ? 8u : row == MI_MIDIMAP ? MLM_N : row == MI_USB ? 6u : row == MI_SERIAL ? 5u + FELUCCA_USB_HOST : row == MI_LEDS ? LEDS_COUNT : row == MI_SCROFF ? NELEM(SCROFF_N) : 2u;
 }
 static uint32_t menu_get(uint32_t row)
 {
@@ -178,6 +192,9 @@ static uint32_t menu_get(uint32_t row)
     uint32_t i = 0;
     if (f)
         return ((ui_prefs | (uint32_t)ui_rec_prefs << 8) & f->bit) != 0;
+    const vel_row_t *vr = vel_row(row);
+    if (vr)                                            /* (V10.6z6) */
+        return ((*vr->b >> vr->sh) ^ vr->x) & vr->m;
     switch (row) {
     case MI_COLOR: return settings.palette % NPALETTES;
     case MI_SKIN: return skin_pos(ui_skin);
@@ -209,6 +226,9 @@ static const char *menu_vname(uint32_t row, uint32_t v)
     const menu_flag_t *f = menu_flag(row);
     if (f)
         return f->name[v & 1u];
+    const vel_row_t *vr = vel_row(row);
+    if (vr)
+        return vr->nm + v % vr->n * vr->w;
     switch (row) {
     case MI_COLOR: return UI_PALETTES[v % NPALETTES].name;
     case MI_SKIN: return SKIN_NAME[SKIN_ORDER[v % SKIN_N]];
@@ -246,6 +266,13 @@ static void menu_put(uint32_t row, uint32_t v)
         else
             ui_prefs = (uint8_t)(v ? ui_prefs | f->bit : ui_prefs & ~f->bit);
         fx_usb_fixed = (ui_prefs & PREF_USB_FIXED) != 0u;   /* (at once; every frame too: ui_input) */
+        return;
+    }
+    if (vel_row(row)) {                                /* (V10.6z6: vel.c vel_poll takes it the next pass) */
+        const vel_row_t *r = vel_row(row);
+        if (row == MI_VLEARN && v == 2u && menu_get(row) != 2u)   /* (RESET: the seeds, then learning as ON: vel.c) */
+            vk_cal = 2;
+        *r->b = (uint8_t)((*r->b & ~(r->m << r->sh)) | ((v ^ r->x) & r->m) << r->sh);
         return;
     }
     switch (row) {

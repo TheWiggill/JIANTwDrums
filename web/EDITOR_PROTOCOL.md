@@ -166,6 +166,7 @@ regenerated from `params.c` and compared.
 | 0.x (no tag) | Felucca 1.0 .. JIANT V10.6z2 | v1 .. v7 and the tagged additions described in this file |
 | 1.0 | V10.6z3 | the contract; `INFO` tag `43 02 01 00`; `WATCH` bits 2..4 and the pushes `TRANSPORT` (40), `PUNCH` (41), `MUTATE` (42); NRPN for every automatable parameter and the globals (`docs/NRPN.md`), sent for knob moves with MIDI OUT ALL |
 | 1.1 | V10.6z5 | `VEL` (81): the velocity diagnostic (below); `INFO` tag `43 02 01 01` |
+| 1.2 | V10.6z6 | `VEL` ops 4 and 5: the keys' velocity, calibration and pressure (below); MENU ids 27..30 (VELOCITY, VEL MIN, AFTERTOUCH, VEL LEARN); `INFO` tag `43 02 01 02` |
 
 ## 1.0: performance pushes (40-42)
 
@@ -206,6 +207,34 @@ conversions not done by the next tick; the MASTER pot as the scan reads it, −1
   pressed harder; −1: none);
 - 2, a capture (the first key touched while none runs): `key, count (56), count × v14`: 8 pulled-up readings before
   the touch, then 48 from it (~2.2 ms apart), each `reading | 1024` when it was a driven one.
+
+From 1.2 (V10.6z6) the key sensing also runs whenever MENU > CONTROL > VELOCITY or AFTERTOUCH is not OFF (the
+defaults: NORMAL, MID), the diagnostic or not: `on` in the reply says whether the *diagnostic* is on (its presses
+and captures queued), `drive` is the drive the scan uses (2 unless the diagnostic asked for another; the velocity's
+calibration belongs to drive 2 and learns only there). Op 2 turns the diagnostic off; the sensing stays on for the
+velocity.
+
+## 1.2: the keys' velocity (81, ops 4 and 5)
+
+| op | request | what it does |
+| --- | --- | --- |
+| 4 | `4` | the keys' velocity, calibration and pressure now (a live view: poll it, ~20 a second is fine) |
+| 5 | `5` | the calibration back to its seeds (as MENU > CONTROL > VEL LEARN RESET), saved; then as op 4 |
+
+Reply: the common part (`op, on, drive, lost v14, timeouts v14, master v14`), then (only on a firmware whose
+Bluetooth segment is installed: the code is there; otherwise the reply ends here):
+
+- `curve` (VELOCITY: 0 OFF, 1 SOFT, 2 NORMAL, 3 HARD), `min` (VEL MIN, 1..80), `at` (AFTERTOUCH: 0 OFF, 1 LOW,
+  2 MID, 3 HIGH), `learn` (0/1), `mean` (the mean of the recent velocities, what the top row C#5..G5 plays: it has no
+  converter), `strikes` (a count of the strikes measured, 7 bits: a new one when it changes), `last` (the key of the
+  last strike, 0..19);
+- then 20 × (`vel, reading v14, hard v14, normal v14, soft v14, pressure`), keys 0..19 (F3..C5): the key's last
+  velocity (1..127, 0 none yet), the driven reading it came from (lower = harder), the key's calibration (its HARD,
+  NORMAL and SOFT references, 0..1023: the velocity maps the reading through them, 112 / 76 / 36 before VELOCITY's
+  curve and VEL MIN), and its pressure now (0..127, 0 when not held).
+
+The velocity is continuous: piecewise linear through the three references, half the slope past either end, clamped
+1..127; SOFT `v + v (127 - v) / 254`, HARD `v - v (127 - v) / 254`; VEL MIN scales 1..127 onto MIN..127.
 
 ## NRPN (1.0)
 
@@ -1005,6 +1034,12 @@ DRUM track's lane 8 level, 127 on every synth part): 127 − (bit 0 vibrato, bit
 leaves such records on a synth track as it likes (their value is not a level there). With MIDI OUT ALL they go out as
 CC1 and pitch bend (full = OCT BEND's range). GATE's `DESC` default is 127 (100 %) since V10.6z4 (64 before); stores
 still leave out 64, so a project or user preset saved at 50 % loads 50 %.
+V10.6z6 (protocol 1.2) appends index 27..30, the keys' velocity and pressure (CONTROL; count 31): 27 **VELOCITY**
+(0 OFF, 1 SOFT, 2 NORMAL, 3 HARD; NORMAL the default: OFF plays every key 100 as before), 28 **VEL MIN** (0 "1",
+1 "10", 2 "20", 3 "30", 4 "40", 5 "50", 6 "64", 7 "80"; 20 the default: the velocity's floor), 29 **AFTERTOUCH**
+(0 OFF, 1 LOW, 2 MID, 3 HIGH; MID the default), 30 **VEL LEARN** (0 ON, 1 OFF, 2 RESET: setting RESET puts the
+calibration's seeds back, then it learns as ON). A synth track's recording of the keys' pressure joins the
+expression keys' in id 90: 127 − (gates | pressure 0..7 << 2), 96..127 (pressure p plays as p × 18).
 
 The device's AUDIO tab shows SPEAKER EQ, USB LEVEL, CLICK, CLICK LEVEL, COUNT-IN (index 9, 10, 12, 13, 14).
 CLICK: the metronome while the transport runs: OFF, REC (while a track is armed), ON (always); CLICK LEVEL its

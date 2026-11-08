@@ -23,7 +23,7 @@ enum { ED_INFO = 1, ED_GET, ED_SET, ED_DUMP, ED_DESC, ED_STEP_GET, ED_STEP_SET, 
 /* (V10.6z3) the protocol's version, INFO's tag 43 02 major minor: 1.0 the stability contract (web/EDITOR_PROTOCOL.md
  * "Stability contract"): from it on only additive changes; a minor for each addition, a major never (a break) */
 #define ED_PROTO_MAJOR 1u
-#define ED_PROTO_MINOR 1u   /* (V10.6z5) 1.1: VEL (81) */
+#define ED_PROTO_MINOR 2u   /* (V10.6z5) 1.1: VEL (81); (V10.6z6) 1.2: VEL ops 4, 5 (the keys' velocity) */
 enum { ED_VM_READ = 80 };   /* (V10.10) read-only: 256 B of the stock VM (0xE7000 + 256 x a[0], a[0] < 48: the radio's
                               * RF trims and BT address, web/btcheck.html); reply: a[0], then 256 x (hi nibble, lo nibble) */
 /* (V10.6z5, 1.1) the velocity diagnostic (vel_diag.c, web/vel.html): op 0 status, 1 on (drive 0..4), 2 off, 3 the next
@@ -55,6 +55,20 @@ static void ed_v(int32_t v)
     ed_b(u);
     ed_b(u >> 7);
 }
+#ifdef VD_NK
+/* (V10.6z6, 1.2) VEL ops 4 / 5's tail: the keys' velocity settings, the strikes, each key's last strike, calibration and
+ * pressure (web/EDITOR_PROTOCOL.md) */
+static void ed_vel_live(void)
+{
+    uint32_t i;
+    ed_b(vs.curve); ed_b(vs.min); ed_b(vs.atr); ed_b(vs.learn); ed_b(vk_mean ? vk_mean : 100u);
+    ed_b(vs.rn); ed_b(vs.last);
+    for (i = 0; i < VK_NK; i++) {
+        ed_b(vk[i].vel); ed_v(vs.vd[i]); ed_v(vs.ref[i][0] >> 4); ed_v(vs.ref[i][1] >> 4);
+        ed_v(vs.ref[i][2] >> 4); ed_b(vk[i].at);
+    }
+}
+#endif
 static void ed_str(const char *s, uint32_t max)   /* ASCII, 0-terminated */
 {
     uint32_t i;
@@ -879,12 +893,19 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
         static vd_cap_t c;
         vd_ev_t e;
         uint32_t k = 0;
-        if (!na || a[0] > 3u)
+        if (!na || a[0] > 5u)
             return;
         if (a[0] == 1u || a[0] == 2u)
             vd_set(a[0] == 1u, na > 1u ? a[1] : 2u);
-        ed_b(a[0]); ed_b(fm1_an.want); ed_b(fm1_an.drive);
+        if (a[0] == 5u)
+            vk_cal = 2;                             /* (1.2) the calibration's seeds back (vel.c vel_poll) */
+        ed_b(a[0]); ed_b(vs.diag); ed_b(fm1_an.drive);
         ed_v(vd_lost); ed_v(fm1_an.timeouts); ed_v(fm1_an.master);
+        if (a[0] >= 4u) {                           /* (1.2) the keys' velocity (in the Bluetooth segment: cold) */
+            if (bt_hw_seg())
+                ed_vel_live();
+            break;
+        }
         if (a[0] != 3u)
             break;
         ed_b(k = vd_next(&c, &e));

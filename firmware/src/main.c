@@ -415,6 +415,7 @@ static void fm1_main(void)
         master_poll();
 #ifdef VD_NK
         vd_poll();                                      /* (V10.6z5) the velocity diagnostic's last press, when on */
+        vel_poll();                                     /* (V10.6z6) key velocity and pressure: the settings, the sampling */
 #endif
 #if FELUCCA_DUAL_CORE
         said = cpu_lost(said);                          /* (p1) the second core given up: 1 CORE for good */

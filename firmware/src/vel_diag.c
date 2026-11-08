@@ -1,6 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Juan Ignacio Antonucci (Juan Jiant) */
-/* (V10.6z5) The velocity diagnostic: stage 1 of key velocity. It measures each key's analog contact so that we can
+/* (V10.6z6) Stage 2, the keys' velocity and pressure (src/vel.c, vel_kb.h), shares this sampling: it runs whenever
+ * MENU > CONTROL > VELOCITY or AFTERTOUCH is not OFF (vd_apply), the diagnostic's presses and captures only while the
+ * diagnostic is on (vs.diag); the strike's window and the pressure: vd_sample's driven samples, vel.c vel_driven.
+ * (V10.6z5) The velocity diagnostic: stage 1 of key velocity. It measures each key's analog contact so that we can
  * see whether a unit gives a usable velocity, and changes nothing else: no sound, no note, no key detection (the
  * digital scan decides every press and release as before; this only listens). Off at power-on.
  *
@@ -40,6 +43,7 @@
 #endif
 enum { VD_OPEN, VD_TOUCHED, VD_DOWN };
 
+#include "vel_kb.h"                   /* (V10.6z6) the velocity the keys play: vel.c, from here (vel_driven, vel_lift) */
 typedef struct {
     uint16_t pre[VD_PRE];               /* the last pulled-up samples, a ring */
     uint16_t pmin, dmin;                /* the lowest pulled-up / driven reading since the touch */
@@ -62,6 +66,9 @@ static volatile uint8_t vd_cw, vd_cbusy, vd_cready;   /* the one written; its ke
 static vd_ev_t vd_ev[VD_NEV], vd_last;  /* the presses not read yet; the last one (the message line) */
 static volatile uint8_t vd_ev_w, vd_ev_r, vd_last_n;
 static volatile uint16_t vd_lost;       /* presses and captures nobody read in time */
+static void vel_driven(uint32_t key, const vd_key_t *k, uint32_t v);   /* (vel.c) */
+static void vel_lift(uint32_t key, uint32_t strike);
+static void vel_wait(uint32_t k);
 
 static uint32_t vd_note(uint32_t col, uint32_t rowbit)   /* the note on (column, row bit), VD_NK if none */
 {
@@ -96,18 +103,23 @@ static void vd_sample(uint32_t col, uint32_t rowbit, uint32_t v, uint32_t driven
     k = &vd_key[key];
     if (driven) {                               /* only the force: no state change (a driven graze reads open too) */
         k->dnext = 0;
-        if (k->st != VD_OPEN && v < k->dmin)
-            k->dmin = (uint16_t)v;
+        if (k->st != VD_OPEN) {
+            if (v < k->dmin)
+                k->dmin = (uint16_t)v;
+            vel_driven(key, k, v);              /* (V10.6z6) the strike's window, the pressure (vel.c) */
+        }
         vd_cap_add(key, v | VD_DRIVEN);
-        return;
+        goto wait;
     }
     if (k->st == VD_OPEN && v < VD_TOUCH) {
         uint32_t i;
         k->st = VD_TOUCHED;
         k->t_touch = now;
-        k->pmin = k->dmin = k->dt = (uint16_t)VD_NONE;
+        k->pmin = k->dmin = k->dt = vs.strike[key] = (uint16_t)VD_NONE;
         k->up = 0;
-        if (!vd_cbusy) {                        /* a capture: the samples before, then this one on */
+        vk[key].pend = 1;                       /* (V10.6z6) the strike's window open (vel.c) */
+        vk[key].vel = vk[key].at = 0;
+        if (!vd_cbusy && vs.diag) {             /* a capture: the samples before, then this one on */
             vd_cap_t *c = &vd_cap[vd_cw];
             c->key = (uint8_t)key;
             for (i = 0; i < VD_PRE; i++)
@@ -129,6 +141,9 @@ static void vd_sample(uint32_t col, uint32_t rowbit, uint32_t v, uint32_t driven
             k->up = 0;
         else if (++k->up >= 2u) {               /* let go (a graze: back over VD_TOUCH): the press queued */
             k->st = VD_OPEN;
+            vel_lift(key, k->dt == VD_NONE ? VD_NONE : vs.strike[key]);   /* (V10.6z6: no pressure; a seated one learnt) */
+            if (!vs.diag)
+                goto kept;
             vd_last.key = (uint8_t)key;
             vd_last.dt = k->dt;
             vd_last.pmin = k->pmin;
@@ -142,9 +157,12 @@ static void vd_sample(uint32_t col, uint32_t rowbit, uint32_t v, uint32_t driven
             }
         }
     }
+kept:
     k->pre[k->pi] = (uint16_t)v;
     k->pi = (uint8_t)((k->pi + 1u) % VD_PRE);
     k->dnext = k->st != VD_OPEN;                /* touched or held: the next sample driven */
+wait:
+    vel_wait(key);                              /* (V10.6z6) a press waiting for its strike: not past its time */
 }
 
 /* (the scan's ISR) drive the next sample of the key at (col, rowbit)? */
@@ -155,23 +173,34 @@ static int vd_drive(uint32_t col, uint32_t rowbit)
 }
 
 /* ---------------------------------------------------------------- main loop --- */
-/* on (drive 0: no driven samples; 1..4 its strength, 2 Velo's) or off; off at power-on */
-static void vd_set(uint32_t on, uint32_t drive)
+/* (V10.6z6) the scan's sampling as wanted: on while the diagnostic or the keys' velocity / pressure (vel_kb.h vk_on)
+ * want it, the diagnostic's drive (else Velo's 2, the one calibrated); off, the scan lets go at its next tick */
+static void vd_apply(void)
 {
-    if (!on) {
-        fm1_an.want = 0;                        /* (the scan lets go at its next tick) */
+    if (!vs.diag && !vk_on) {
+        fm1_an.want = 0;
         return;
     }
     if (!fm1_an.want && !fm1_an.on) {           /* (a fresh start: nothing from before) */
         memset(vd_key, 0, sizeof vd_key);
+        fm1_an.master = fm1_an.batt = -1;       /* (until the scan's first readings) */
+    }
+    fm1_an.drive = vs.diag ? vs.dlv : 2u;
+    fm1_an.want = 1;
+    fm1_an.on = 1;
+}
+/* the diagnostic on (drive 0: no driven samples; 1..4 its strength, 2 Velo's) or off; off at power-on. (V10.6z6) Off,
+ * the sampling stays on while the keys' velocity or pressure use it */
+static void vd_set(uint32_t on, uint32_t drive)
+{
+    if (on && !vs.diag) {                       /* (its queue fresh: nothing from before) */
         vd_cbusy = vd_cready = 0;
         vd_ev_r = vd_ev_w;
         vd_lost = 0;
-        fm1_an.master = fm1_an.batt = -1;       /* (until the scan's first readings) */
     }
-    fm1_an.drive = (uint8_t)(drive > 4u ? 4u : drive);
-    fm1_an.want = 1;
-    fm1_an.on = 1;
+    vs.diag = (uint8_t)(on != 0u);
+    vs.dlv = (uint8_t)(drive > 4u ? 4u : drive);
+    vd_apply();
 }
 
 /* the next thing to read: 2 a capture (*c), 1 a press (*e), 0 nothing; taken */
@@ -239,7 +268,7 @@ static void vd_line(char *b, const vd_ev_t *e)
 static void vd_poll(void)
 {
     static uint8_t seen;
-    if (!fm1_an.want && !fm1_an.on)
+    if (!vs.diag)
         return;
     if (seen != vd_last_n) {
         char b[28];

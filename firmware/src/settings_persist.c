@@ -69,6 +69,7 @@ static int settings_import(persist_t *p, int n)
     if (p->favorites.factory[15][24] > 3u)         /* MIDI OUT (JIANT 0.6.72, ui.c midi_out_mode): unknown = KEYS */
         p->favorites.factory[15][24] = 0;
     settings_fix15(p->favorites.factory[15]);
+    vk_cal = 0;                                     /* (V10.6z6) the keys' calibration read again (vel.c) */
     p->magic = PERSIST_MAGIC;
     p->palette = palette_to_stored(palette_from_stored(p->palette));
     settings.magic = SETTINGS_MAGIC;
