@@ -387,12 +387,12 @@ static const grecipe_t RECIPE[SR_N] = {
     /* dubstep's wobble: the fat saws, the resonant low-pass moved by an LFO on the beat */
     [SR_WOW]      = {{{EG_A, 14}, {EG_A, 16}, NO_}, GR(0, 7), GR(72, 95), GR(104, 127), GR(24, 39), GR(32, 47), GR(48, 71), GR4(0, 7), GFT(0, 8), GNOWV, GLFO(44, 13), GDC(40, 0), V_LEGATO},
     /* ---- chords, pads */
-    [SR_PAD]      = {{{EG_A, 15}, {EG_FM, 4}, {EG_PH, 9}}, GR(56, 103), GR(80, 103), GR(104, 119), GR(80, 111), GR(40, 71), GR(8, 23), GR4(4, 19), GFT(0, 0), GNOWV, GLFO(12, 3), GDC(0, 40), V_POLY},
-    [SR_STRINGS]  = {{{EG_A, 11}, {EG_FM, 4}, {EG_PH, 2}}, GR(40, 79), GR(80, 103), GR(104, 127), GR(72, 103), GR(48, 79), GR(8, 23), GR4(0, 11), GFT(0, 0), GNOWV, GLFO(12, 2), GDC(0, 56), V_POLY},
+    [SR_PAD]      = {{{EG_A, 15}, {EG_PH, 2}, {EG_PH, 9}}, GR(56, 103), GR(80, 103), GR(104, 119), GR(80, 111), GR(40, 71), GR(8, 23), GR4(4, 19), GFT(0, 0), GNOWV, GLFO(12, 3), GDC(0, 40), V_POLY},
+    [SR_STRINGS]  = {{{EG_A, 11}, {EG_A, 22}, {EG_PH, 2}}, GR(40, 79), GR(80, 103), GR(104, 127), GR(72, 103), GR(48, 79), GR(8, 23), GR4(0, 11), GFT(0, 0), GNOWV, GLFO(12, 2), GDC(0, 56), V_POLY},
     [SR_CHOIR]    = {{{EG_VO, 0}, {EG_VO, 4}, {EG_FM, 4}}, GR(56, 103), GR(88, 103), GR(104, 119), GR(80, 111), GR(56, 95), GR(0, 7), GR4(0, 7), GFT(0, 0), GNOWV, GLFO(8, 2), GDC(0, 60), V_POLY},
     [SR_ORGAN]    = {{{EG_WH, 8}, {EG_WH, 1}, {EG_PH, 1}}, GR(0, 7), GR(64, 71), GR(120, 127), GR(24, 47), GR(56, 95), GR(0, 7), GR4(0, 3), GFT(0, 0), GNOWV, 0, GDC(0, 8), V_POLY},
     [SR_EP]       = {{{EG_FM, 0}, {EG_FM, 5}, {EG_PH, 8}}, GR(0, 7), GR(72, 95), GR(16, 55), GR(48, 79), GR(56, 95), GR(0, 15), GR4(4, 19), GFT(0, 0), GNOWV, 0, GDC(0, 20), V_POLY},
-    [SR_STAB]     = {{{EG_A, 18}, {EG_PH, 10}, {EG_FM, 3}}, GR(0, 7), GR(56, 71), GR(24, 71), GR(24, 47), GR(48, 79), GR(16, 39), GR4(16, 39), GFT(0, 0), GNOWV, 0, GDC(8, 28), V_POLY},
+    [SR_STAB]     = {{{EG_A, 18}, {EG_PH, 10}, {EG_WH, 2}}, GR(0, 7), GR(56, 71), GR(24, 71), GR(24, 47), GR(48, 79), GR(16, 39), GR4(16, 39), GFT(0, 0), GNOWV, 0, GDC(8, 28), V_POLY},
     [SR_DUBCHORD] = {{{EG_A, 18}, {EG_WH, 2}, {EG_A, 3}}, GR(0, 7), GR(48, 71), GR(16, 63), GR(32, 55), GR(48, 71), GR(24, 47), GR4(12, 31), GFT(2, 0), GNOWV, 0, GDC(0, 32), V_POLY},
     /* ---- arps, leads */
     [SR_PLUCK]    = {{{EG_A, 20}, {EG_FM, 7}, {EG_A, 8}}, GR(0, 7), GR(40, 63), GR(0, 23), GR(32, 63), GR(56, 87), GR(24, 47), GR4(28, 55), GFT(0, 0), GNOWV, 0, GDC(0, 8), V_POLY},
@@ -402,7 +402,7 @@ static const grecipe_t RECIPE[SR_N] = {
     [SR_CHIP]     = {{{EG_A, 24}, {EG_LO, 6}, {EG_A, 20}}, GR(0, 7), GR(40, 79), GR(24, 79), GR(16, 47), GR(72, 111), GR(8, 31), GR4(8, 27), GFT(0, 0), GNOWV, 0, 0, V_LEGATO},
     [SR_KEYS]     = {{{EG_A, 23}, {EG_PH, 15}, {EG_WH, 1}}, GR(0, 7), GR(64, 87), GR(16, 55), GR(40, 71), GR(56, 95), GR(0, 23), GR4(4, 19), GFT(0, 0), GNOWV, 0, GDC(0, 20), V_POLY},
     /* ---- textures */
-    [SR_DRONE]    = {{{EG_A, 22}, {EG_A, 19}, {EG_FM, 4}}, GR(88, 119), GR(88, 103), GR(120, 127), GR(96, 127), GR(32, 63), GR(16, 39), GR4(0, 11), GFT(0, 0), GNOWV, GLFO(16, 1), GDC(0, 44), V_POLY},
+    [SR_DRONE]    = {{{EG_A, 22}, {EG_A, 19}, {EG_PH, 9}}, GR(88, 119), GR(88, 103), GR(120, 127), GR(96, 127), GR(32, 63), GR(16, 39), GR4(0, 11), GFT(0, 0), GNOWV, GLFO(16, 1), GDC(0, 44), V_POLY},
     [SR_NOISE]    = {{{EG_NO, 4}, {EG_NO, 7}, {EG_NO, 5}}, GR(80, 119), GR(88, 103), GR(104, 127), GR(80, 119), 0, 0, 0, GFT(7, 0), GNOWV, 0, 0, V_POLY},
     [SR_TEXTURE]  = {{{EG_NO, 5}, {EG_NO, 6}, {EG_LO, 11}}, GR(64, 111), GR(88, 103), GR(104, 127), GR(88, 119), GR(40, 71), GR(16, 47), GR4(0, 11), GFT(2, 0), GNOWV, GLFO(20, 2), GDC(0, 32), V_POLY},
     [SR_HOOVER]   = {{{EG_A, 17}, {EG_A, 6}, {EG_PH, 6}}, GR(0, 15), GR(56, 95), GR(56, 95), GR(32, 63), GR(56, 95), GR(8, 23), GR4(8, 31), GFT(0, 0), GNOWV, 0, GDC(24, 48), V_POLY},
@@ -434,6 +434,56 @@ static const grecipe_t RECIPE[SR_N] = {
     [SR_CHANT]    = {{{EG_VO, 5}, {EG_VO, 5}, {EG_VO, 1}}, GR(0, 7), GR(40, 63), GR(0, 23), GR(16, 31), GR(64, 95), GR(0, 15), GR4(0, 7), GFT(0, 0), GNOWV, 0, GDC(8, 0), V_POLY},
     [SR_DIST]     = {{{ENGI_STRING, 1}, {EG_A, 9}, {EG_PH, 11}}, GR(0, 7), GR(32, 55), GR(16, 47), GR(8, 31), GR(56, 87), GR(8, 31), GR4(8, 27), GFT(0, 0), GWV(0, 0, 0), 0, GDC(60, 8), V_POLY},
 };
+/* (the GENE mix pass) each archetype's options evened: a trim a sound (3 nibbles, the options' 0 1 2, signed, x 3 dB:
+ * gen.c gen_sound), from the host render of twelve throws of every genre: what a sound gives at LEVEL 0 dB while it
+ * sounds beside the others of its role (V10.6z9: a SUB BASS 9 dB over a FAT BASS or a REESE, a STRINGS or a DARK PAD
+ * 10 over a stab, the 808 COWBELL and the CHANT 11 .. 15 under the other leads) */
+#define RT(a, b, c) (uint16_t)(((a) & 15) | ((b) & 15) << 4 | ((c) & 15) << 8)
+static const uint16_t RTRIM[SR_N] = {
+    [SR_SUB] = RT(-4, 0, 0),
+    [SR_ACID] = RT(-1, -1, 0),
+    [SR_REESE] = RT(1, 1, 0),
+    [SR_FMBASS] = RT(0, -1, 0),
+    [SR_ROCKBASS] = RT(-1, 0, 0),
+    [SR_HOOK] = RT(1, 2, 0),
+    [SR_WOW] = RT(0, 0, 0),
+    [SR_PAD] = RT(-1, -2, -1),
+    [SR_STRINGS] = RT(-4, -3, -4),
+    [SR_CHOIR] = RT(-1, -2, 0),
+    [SR_ORGAN] = RT(0, -1, -2),
+    [SR_EP] = RT(0, -1, -1),
+    [SR_STAB] = RT(2, 0, 2),
+    [SR_DUBCHORD] = RT(3, 3, 3),
+    [SR_PLUCK] = RT(2, -3, 1),
+    [SR_BELL] = RT(-1, -2, 2),
+    [SR_LEAD] = RT(-1, -1, -2),
+    [SR_VOXLEAD] = RT(0, 1, -4),
+    [SR_CHIP] = RT(-1, 2, -1),
+    [SR_KEYS] = RT(-1, -1, 2),
+    [SR_DRONE] = RT(-4, -4, -4),
+    [SR_NOISE] = RT(0, -2, 0),
+    [SR_TEXTURE] = RT(3, 1, 0),
+    [SR_HOOVER] = RT(-1, 0, -2),
+    [SR_WALL] = RT(-4, -4, -3),
+    [SR_GTR] = RT(-2, -1, 2),
+    [SR_SINEKEY] = RT(0, 1, 0),
+    [SR_EBMBASS] = RT(3, 0, 0),
+    [SR_808] = RT(-2, 0, 0),
+    [SR_UPRIGHT] = RT(0, 0, 0),
+    [SR_TECHBASS] = RT(1, 2, 0),
+    [SR_SUPERSAW] = RT(0, 0, 0),
+    [SR_PIANO] = RT(1, -2, 0),
+    [SR_HARPSI] = RT(2, 1, 0),
+    [SR_DIST] = RT(1, 1, 0),
+    [SR_COWBELL] = RT(6, 0, 0),
+    [SR_FLUTE] = RT(0, 3, 0),
+    [SR_CHANT] = RT(4, 0, 6),
+};
+/* (the GENE mix pass) the pads' and the strings' second option PHASE's STRING and ANALOG's DARK PAD, the drones' third
+ * PHASE's GLASS PAD, FM6's SOFT PAD's place: its operators' slow attacks (~1 s) under GEN's chords, stabbed or sparse,
+ * left a chord's part 27 .. 34 dB under (DRUM & BASS's pad gone one throw in three); the stabs' third WHEEL's GOSPEL
+ * (the house organ's stab), FM6's BRASS's place: its swell under a stab 20 dB from one throw to the next. FM6's PAD
+ * is the choirs' still */
 /* (gen3) the amp envelope a role keeps whatever its archetype (gen.c gen_sound clamps ATK DEC SUS REL into these GR ranges):
  * a LEAD's sustain 44..75 % (never the organ's or the choir's full one: a medium decay to it, a short release; a bell's,
  * an EP's, a pluck's lead, its archetype's sustain under 56, a pluck's), an ARP's a pluck's (a fast attack, a short-medium decay, a low sustain), the CHORDS stabbed short (STAB PULSE DUB SKANK COMP
@@ -575,9 +625,10 @@ static const ggenre_t GENRE[] = {
      1, 1, 40, 0, FM_PARTS, 20, HF_LOOP, 0},
     /* Photek, Ed Rush & Optical (Wormhole), Goldie: the breakbeat, a reese bass, a dark pad */
     {"DRUM & BASS", 172, 176, 0, {SC_MIN, SC_DOR, SC_MIN, SC_PHRY}, DM_DNB, 100, KIT_BREAKS, 2, HC_FLAT, FL_LINEAR, 0,
-     {BA_DNB, BA_JUNGLE, BA_WOBBLE}, 29, KM_DOUBLE, 90, {PR_I_VI, PR_DEEP4, PR_ONE}, 2, CS_SPARSE, VM_RICH,
+     {BA_DNB, BA_JUNGLE, BA_WOBBLE}, 29, KM_DOUBLE, 90, {PR_I_VI, PR_DEEP4, PR_MINOR4}, 2, CS_SPARSE, VM_RICH,
      {AP_BROKEN, AP_CYCLE3}, LD_SPARSE, AMT(95, 95, 50, 20, 30), {KIT_BREAKS, SR_REESE, SR_PAD, SR_PLUCK, SR_LEAD}, SR_NOISE,
-     2, 4, 50, 1, FM_CLUB, 0, HF_JAZZY, 0},
+     2, 4, 38, 1, FM_CLUB, 0, HF_JAZZY, 0},   /* (the GENE mix pass: the pedal's place a four-chord minor loop, i iv VII
+                                                         * III, half its throws a single chord before; drier, 50 -> 38) */
     /* ---- (V10.6n) IDM, three ways (the drums a break programmed, then edited: gen.c gidm_edit; the harmony warm and
      * simple: the complexity in one dimension) */
     /* Autechre, Aphex Twin's edits (Windowlicker, Come to Daddy), Squarepusher: the Amen edited bar by bar (rolls,
@@ -715,6 +766,45 @@ static const uint16_t GGRAM[] = {   /* (gen3: + LIFT, 2 = none; V10.6n: the owne
     GG(0, 0, 0, 0, 0, 0, 4), GG(1, 2, 0, 1, 1, 0, 5),   /* JAZZ HIP HOP */
 };
 _Static_assert(sizeof GGRAM / sizeof GGRAM[0] == NGENRE, "GGRAM: a grammar a genre");
+/* (the GENE mix pass, the owner: "it sounds unprofessional, previous versions better mixed") each genre's mix, a role's
+ * level past gen_mix's in 1.5 dB steps (-8 .. 7, a nibble a role: DRUM BASS, PAD LEAD, ARP TEX; the texture's 4 dB),
+ * set from the stems of eight throws a genre on the host, each part's loudness while it plays (0.37 s windows, gated
+ * as LUFS) beside the drums': the club's bass ~3 dB under them (V10.6z9: 4 .. 13), drum & bass's level with them (the
+ * reese's weight, V10.6k's balance), the chords ~9, the hooks ~7, the arp ~11, the texture ~20 under (V10.6z9: 11 ..
+ * 21, 18 .. 31, 23 .. 38, 40 .. 51: buried); the drums still the loudest. The genres the owner tuned by ear (JAZZ,
+ * CUMBIA, NEO CLASSIC, FUGA, DREAM POP, ELECTRO METAL, TECHNO ROCK) at their balance as it was, RTRIM's evening made
+ * up (tests/gen_test.c: the mix pass) */
+#define GMX(d, b, p, l, a, t) {(uint8_t)(((d) & 15) | ((b) & 15) << 4), (uint8_t)(((p) & 15) | ((l) & 15) << 4), (uint8_t)(((a) & 15) | ((t) & 15) << 4)}
+static const uint8_t GMIX[][3] = {
+    GMX(0, -2, -2, 0, 5, 0),   /* MINIMAL TECHNO */
+    GMX(-3, -1, 0, 0, 7, 6),   /* HARD TECHNO */
+    GMX(-3, 7, 3, 7, 0, 6),   /* HARD BASS */
+    GMX(-1, 2, 1, 0, 7, 0),   /* HOUSE */
+    GMX(-2, 3, 2, 0, 7, 0),   /* DEEP HOUSE */
+    GMX(-3, 0, -1, 0, 7, 0),   /* TECH HOUSE */
+    GMX(-3, 4, 1, 0, 7, 5),   /* TRIBAL */
+    GMX(0, 1, 2, 2, 0, -2),   /* CUMBIA */
+    GMX(-3, 0, -2, 7, 7, 4),   /* REGGAETON */
+    GMX(-3, 2, -2, 6, 0, 4),   /* DEMBOW */
+    GMX(-3, 0, 1, 7, 7, 5),   /* ELECTRO */
+    GMX(-2, 1, -2, 5, 6, 5),   /* BREAKBEAT */
+    GMX(-3, -3, 0, 6, 5, 6),   /* DRUM & BASS */
+    GMX(-1, -3, 1, 4, -1, 3),   /* IDM GLITCH */
+    GMX(-3, 0, 0, 3, 3, 4),   /* IDM AMBIENT */
+    GMX(0, -3, 0, 2, 5, 3),   /* IDM WEIRD */
+    GMX(-3, 1, 5, 7, 7, 5),   /* KRAUT */
+    GMX(-3, 3, 0, 7, 7, 0),   /* EBM */
+    GMX(0, 0, 4, 3, 2, 3),   /* NEO CLASSIC */
+    GMX(0, 0, 5, 1, 1, 2),   /* FUGA */
+    GMX(0, -2, -2, 4, -5, 1),   /* ELECTRO METAL */
+    GMX(0, -1, 0, 3, 0, 1),   /* TECHNO ROCK */
+    GMX(-1, 4, -3, -1, 2, 3),   /* DREAM POP */
+    GMX(-3, 1, -2, 7, 7, 4),   /* PHONK */
+    GMX(-3, -1, -3, 7, 7, 4),   /* BAILE FUNK */
+    GMX(0, 0, 0, 1, 0, -2),   /* JAZZ */
+    GMX(-3, -2, -1, 7, 5, 4),   /* HIP HOP */
+};
+_Static_assert(sizeof GMIX / sizeof GMIX[0] == NGENRE, "GMIX: a mix a genre");
 /* (V10.6w) a genre's throws, each its own style (gen.c gen_pick: a throw one of them, its fields over the genre's row,
  * a mutant's never): HIP HOP's trap (the row), drill, pluggnb, boom bap, lofi; TECHNO ROCK's techno rock (the row),
  * rock, synth 80s. The throws' count, then a throw its count of (field, value) pairs, the pairs */

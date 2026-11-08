@@ -1489,7 +1489,7 @@ static int16_t gnear(int32_t c, int32_t w) { return (int16_t)(c ? clamp(grr(c - 
 /* (0.9.9-gen1) a role's sound as its archetype has it (gen_tables.c RECIPE): the archetype's engine and preset (a bass
  * its first two options only: the archetype's engine), the engine's knobs a little their own, then the archetype's
  * targets in the engine's parameters (the wave, the filter, its envelope, the amp envelope, glide, drive, chorus) */
-static void gen_sound(track_t *t, uint32_t role, uint32_t ri)
+static __attribute__((noinline)) void gen_sound(track_t *t, uint32_t role, uint32_t ri)
 {
     const grecipe_t *r = &RECIPE[ri];
     static const uint8_t EW[2][3] = {{55, 30, 15}, {70, 30, 0}};
@@ -1519,7 +1519,9 @@ static void gen_sound(track_t *t, uint32_t role, uint32_t ri)
     for (i = 0; i < 8u; i++) {                          /* (a sixteenth of each range: still that sound, a bit its own) */
         const param_desc_t *d = track_desc(t, P_E0 + i);
         int32_t span = (d->max - d->min) / 16;
-        if (!d->label || d->label[0] == '-' || d->max <= d->min || d->fmt == F_ENUM || !span) continue;
+        if (!d->label || d->label[0] == '-' || d->max <= d->min || d->fmt == F_ENUM || d->names || !span) continue;   /* (the
+                                                         * GENE mix pass: a list's never: FM6's ALG and SLOT moved by it took
+                                                         * another patch, an empty bank slot, the bass 36 dB gone) */
         if (d->fmt == F_SEMI) {                         /* (V10.38) an interval: consonant (0, 4th, 5th, octave) */
             t->p[P_E0 + i] = (int16_t)(gch(25) ? semi_pick(gr(), d->min, d->max) : clamp(semi_snap(t->p[P_E0 + i]), d->min, d->max));
             continue;
@@ -1591,12 +1593,15 @@ static void gen_sound(track_t *t, uint32_t role, uint32_t ri)
     if (ri == SR_GTR || ri == SR_DRONE) {               /* (a tremolo: AUTO PAN on the beat) */
         t->p[P_APDEP] = (int16_t)grr(30, 60); t->p[P_APSYNC] = 1; t->p[P_APRATE] = (int16_t)grr(4, 6); t->p[P_APWAVE] = (int16_t)(ri == SR_GTR ? 3 : 0);
     }
+    /* (the GENE mix pass) the sound's own loudness evened (gen_tables.c RTRIM: an option's trim, 3 dB steps), carried
+     * to gen_mix on LEVEL (112: 0 dB); an engine EXPLORE chose instead: none */
+    t->p[P_LEVEL] = (int16_t)(112 + (e == r->o[o][0] && pre == r->o[o][1] ? 6 * ((int16_t)(RTRIM[ri] << (12u - 4u * o)) >> 12) : 0));
 }
 /* (0.9.9-gen2) the owner: the drums "eat the rest of the sounds": every lane's DECAY shorter, twice a nibble a lane
  * (KICK SNARE CLAP HATC HATO TOM RIM BELL: -12 0 -8 -6 -12 -14 -4 -6; the snare shortened below), a constant (not a
  * table: the pinned sound's .rodata stays where it is) */
 #define DX_SHORT(l) (2 * (int32_t)((0x32763406u >> (4u * (l))) & 15u))
-static void gen_kit(track_t *t)
+static __attribute__((noinline)) void gen_kit(track_t *t)
 {
     const gkit_t *k = &KIT[gs.g->kit];
     uint32_t l, i;
@@ -1673,7 +1678,7 @@ static void gen_kit(track_t *t)
     }
 }
 /* the mix and the humanity of a role */
-static void gen_mix(track_t *t, uint32_t r)
+static __attribute__((noinline)) void gen_mix(track_t *t, uint32_t r)
 {
     const ggenre_t *g = gs.g;
     int32_t wet = (int32_t)g->wet + (gs.energy < 34 ? 20 : gs.energy > 66 ? -15 : 0), hum = (int32_t)(gs.human);
@@ -1689,8 +1694,15 @@ static void gen_mix(track_t *t, uint32_t r)
      * half and on the bass and the chords only */
     t->p[P_LEVEL] = (int16_t)clamp((r == RL_DRUM ? 110 : r == RL_BASS ? 114 : r == RL_LEAD ? (g->lead == LD_RIFF ? 108 : 92) : r == RL_ARP ? 96 :
                                     r == RL_TEX ? (g->tex == SR_NOISE ? 56 : 66) : 100) +
-                                   (r == RL_BASS || r == RL_PAD ? GG_LIFT(GGR) / 2 : 0), 1, 127);   /* (the genre's own: GGRAM) */
-    t->p[P_PAN] = (int16_t)(r == RL_ARP ? grr(-30, -10) : r == RL_TEX ? grr(10, 30) : r == RL_PAD ? grr(-8, 8) : r == RL_LEAD ? grr(-6, 12) : 0);
+                                   (r == RL_BASS || r == RL_PAD ? GG_LIFT(GGR) / 2 : 0) +   /* (the genre's own: GGRAM) */
+                                   (gs.gi < NGENRE ? (r == RL_TEX ? 8 : 3) * ((int8_t)(GMIX[gs.gi][r >> 1] << (r & 1u ? 0 : 4)) >> 4) : 0) +
+                                   (r == RL_DRUM ? 0 : t->p[P_LEVEL] - 112), 1, 127);   /* (gen_sound's trim) */
+                                                        /* (the GENE mix pass) a role's level as the genre's mix wants it
+                                                         * (gen_tables.c GMIX, 1.5 dB steps, the texture's 4 dB;
+                                                         * measured on the parts' stems) */
+    t->p[P_PAN] = (int16_t)(r == RL_ARP ? grr(-40, -16) : r == RL_TEX ? grr(16, 40) : r == RL_PAD ? grr(-8, 8) : r == RL_LEAD ? grr(4, 22) : 0);
+                                                        /* (the GENE mix pass: the arp and the lead apart, either side;
+                                                         * V10.6n's mixes 23 .. 33 dB of side under the middle, a mono's) */
     t->p[P_REV] = (int16_t)clamp((r == RL_PAD || r == RL_TEX ? grr(45, 95) : r == RL_LEAD ? grr(30, 70) : r == RL_ARP ? grr(20, 60) :
                                   r == RL_DRUM ? grr(4, 20) : grr(0, 6)) * (40 + wet) / 100, 0, 127);
     t->p[P_DLY] = (int16_t)clamp((r == RL_LEAD || r == RL_ARP ? grr(25, 70) : r == RL_PAD && (g->pads == CS_DUB || g->pads == CS_SKANK) ? grr(55, 95) :
@@ -2573,6 +2585,13 @@ static void gen_make(void)
         g = gs.g = &gmut;
     }
     gen_pick();
+    /* (the GENE mix pass, the owner: "more results different from each other", "drum and bass sounded better") a DRUM
+     * & BASS throw on the Amen two times in five (jungle's break, its own map beside the two-step's); the club's three
+     * parts (MINIMAL TECHNO, HOUSE, DEEP HOUSE, TECH HOUSE: no arp, no lead) a hook on the arp's track in 45 % of the
+     * throws (the genre's arp: a pluck's blip sequence, a house piano's broken chords), the rest as the genre has it */
+    if (!gx.on && g->drum == DM_DNB && gch(40)) gmut.drum = DM_AMEN;
+    if (!gx.on && !g->amt[GP_ARP] && !g->amt[GP_LEAD] && g->drum < DM_CUMBIA && gp.amt[GP_ARP] == GA_AUTO && gch(45))
+        gs.amt[GP_ARP] = (uint8_t)(25u + gs.energy / 4u);
     gs.fm6 = 0;
     gs.song = (uint8_t)(gform() == FM_LOOP ? 0u : gform() == FM_CLUB ? 2u : 1u);   /* (V10.6m: no fill in a song's patterns) */
     /* the orchestration: the drums (unless the genre or the knob leaves them out), then the melodic roles with an
@@ -2730,6 +2749,8 @@ static void gen_make(void)
         song.g[G_DPING] = (int16_t)(gr() % 2u);
         song.g[G_DFDBK] = (int16_t)clamp(song.g[G_DFDBK], 0, 85);
     }
+    song.g[G_CSTER] = (int16_t)grr(20, 50);             /* (the GENE mix pass) the chorus wide, the delay's right echo */
+    song.g[G_WIDTH] = (int16_t)grr(30, 80);             /* later: the space round the parts in stereo */
     rng_state = gq | 1u;
     macro_dice(3);
     if (gx.on && gch(50)) gx_heads();                  /* (0.8.6) EXPLORE: PLAYHEADS, half the pieces (before the sections: each

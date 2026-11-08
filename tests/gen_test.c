@@ -1239,6 +1239,76 @@ int main(void)
         bad += gcheck("(0.9.9-gen3) every genre x 2: the drums in front, 96 % of the parts' energy at most (p3), the leveler in its range, the mix loud",
                       !over && !lev_bad && rms_db / n >= -15.5);
     }
+    /* ---- (the GENE mix pass, the owner: "unprofessional, previous versions better mixed") the electronic genres x 3
+     * seeds, 4 bars of LOOP, each part's loudness while it plays (its 0.37 s windows within 30 dB of its loudest, as
+     * LUFS gates, as the mix was set from): the bass 10 dB under the drums at most (V10.6z9: HARD BASS's 13.2, TRIBAL's
+     * 12.9, ELECTRO's 11.6, TECH HOUSE's 10.5 on average), every melodic part within 25 dB of them (V10.6z9: the arps,
+     * leads and textures 20 .. 47 under, an FM6 bass 36 dB gone), no part 3 dB over them, EBM's shouts aside; no engine's list (FM6's ALG, its SLOT) moved off its
+     * preset by GEN's jitter (V10.6z9: a bank slot's silence) */
+    {
+        static const char *const EL[] = {"MINIMAL TECHNO", "HARD TECHNO", "HARD BASS", "HOUSE", "DEEP HOUSE", "TECH HOUSE",
+                                         "ELECTRO", "EBM", "BREAKBEAT", "DRUM & BASS", "IDM GLITCH", "PHONK"};
+        uint32_t e, sd, n = 0, bass_bad = 0, mel_bad = 0, front_bad = 0, list_bad = 0;
+        for (e = 0; e < NELEM(EL); e++)
+            for (g = 0; g < NGENRE; g++) {
+                if (strcmp(GENRE[g].name, EL[e])) continue;
+                for (sd = 0; sd < 3u; sd++) {
+                    static double win[NPART][64];
+                    double er[RL_TEX + 1] = {0}, ep[NPART] = {0};   /* (RL_N is ui_layer.c's macro here) */
+                    uint32_t b, nb, i, p, w;
+                    gen_reset();
+                    gen_with(g + 1u, 4040u + 11u * g + 1000u * sd, 50, 0);
+                    for (p = 0; p < NTRK; p++) {
+                        const track_t *t = &trk[p];
+                        const engine_t *en = ENGINES[t->eng_req % NENGINES];
+                        if (gs.role[p] != RL_DRUM && t->preset < en->npresets)
+                            for (i = 0; i < 8u; i++)
+                                if (en->edit[i].names && en->edit[i].fmt != F_ENUM && t->p[P_E0 + i] != en->presets[t->preset].e[i]) list_bad++;
+                    }
+                    nb = (uint32_t)(4u * 4u * 60u * FS / (uint32_t)song.g[G_BPM] / CTL);
+                    if (nb > 64u * 256u) nb = 64u * 256u;
+                    memset(win, 0, sizeof win);
+                    song.master_q12 = 4096;
+                    transport_req = 1;
+                    for (b = 0; b < nb; b++) {
+                        int32_t o[2 * CTL];
+                        if (b % 32u == 0u) { ui_input(); song_poll(); host_ticks += 20000u; fm1_ms += 20u; }
+                        fx_stems = 1;
+                        mix_block(o, CTL);
+                        for (p = 0; p < NPART; p++)
+                            if (gs.act[gs.role[p]] && !(gs.role[p] == RL_TEX && p != gs.trk_of[RL_TEX]))
+                                for (i = 0; i < CTL; i++) win[p][b / 256u] += (double)stem_buf[p][i] * stem_buf[p][i];
+                    }
+                    fx_stems = 0;
+                    transport_req = 2;
+                    { int32_t o[2 * CTL]; ui_input(); mix_block(o, CTL); }
+                    for (p = 0; p < NPART; p++) {               /* (the windows within 30 dB of the loudest: its power sounding) */
+                        double mx = 0, sum = 0;
+                        uint32_t nw = 0;
+                        for (w = 0; w < nb / 256u; w++) if (win[p][w] > mx) mx = win[p][w];
+                        for (w = 0; w < nb / 256u; w++) if (mx > 0 && win[p][w] > mx * 1e-3) { sum += win[p][w]; nw++; }
+                        ep[p] = nw ? sum / nw : 0;
+                        er[gs.role[p] % (RL_TEX + 1u)] += ep[p];
+                    }
+                    n++;
+                    if (er[RL_DRUM] <= 0) continue;
+                    if (gs.act[RL_BASS] && 10 * log10(er[RL_BASS] / er[RL_DRUM] + 1e-12) < -10) {
+                        bass_bad++;
+                        printf("  %s seed %u: the bass %.1f dB under the drums\n", GENRE[g].name, 4040u + 11u * g + 1000u * sd, -10 * log10(er[RL_BASS] / er[RL_DRUM] + 1e-12));
+                    }
+                    for (p = RL_PAD; p <= RL_ARP; p++)
+                        if (gs.act[p] && er[p] > 0 && !(p == RL_LEAD && gs.g->lead == LD_EBM) && 10 * log10(er[p] / er[RL_DRUM]) < -25) {
+                            mel_bad++;
+                            printf("  %s seed %u: role %u %.1f dB under the drums\n", GENRE[g].name, 4040u + 11u * g + 1000u * sd, p, -10 * log10(er[p] / er[RL_DRUM]));
+                        }
+                    for (p = RL_BASS; p <= RL_TEX; p++) if (er[p] > er[RL_DRUM] * 2.0) front_bad++;
+                }
+            }
+        printf("gen: the mix pass: %u electronic pieces, the bass over 10 dB under the drums %u, a melodic part over 25 dB under %u, a part 3 dB over the drums %u, lists moved %u\n",
+               n, bass_bad, mel_bad, front_bad, list_bad);
+        bad += gcheck("(the GENE mix pass) the electronic genres x 3: the bass and the melodic parts heard, the drums in front, the presets' lists kept",
+                      n >= 30u && bass_bad <= 1u && mel_bad <= 2u && front_bad <= 2u && !list_bad);
+    }
     /* ---- (0.9.9-gen1) the same seed, the same piece (and a different one from another seed), every genre */
     {
         uint32_t det = 0;
