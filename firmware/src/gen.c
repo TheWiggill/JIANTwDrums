@@ -611,9 +611,10 @@ static void gen_drums(track_t *t, uint32_t len)
             }
         }
     }
-    if (g->drum - DM_REGG < 6u) {                       /* (0.6.93) the hats' rolls: a step before the snare and the bar's
+    if (g->drum - DM_REGG < 6u || g->drum >= DM_REGG2) {   /* (0.6.93) the hats' rolls: a step before the snare and the bar's
                                                          * end, sixteenth or triplet rolls (V10.6n: reggaeton's, dembow's,
-                                                         * phonk's; V10.6p: both phonk maps; V10.6w: trap's, drill's) */
+                                                         * phonk's; V10.6p: both phonk maps; V10.6w: trap's, drill's;
+                                                         * V10.7.2: perreo's, dembow rapido's) */
         for (i = 0; i < len; i++) {
             step_t *s = &t->step[i];
             uint32_t p = i % 16u;
@@ -2426,7 +2427,9 @@ BTAPP_FN static void gen_pick(void)
 {
     const ggenre_t *g = gs.g;
     uint32_t k, pr, steps;
-    const uint8_t *u = g->drum == DM_TRAP ? GSUB_HH : g->drum == DM_TROCK ? GSUB_TR : 0;
+    const uint8_t *u = g->drum == DM_TRAP ? GSUB_HH : g->drum == DM_TROCK ? GSUB_TR : g->drum == DM_CUMBIA ? GSUB_CU :
+                       g->drum == DM_REGG ? GSUB_RG : g->drum == DM_DEMBOW ? GSUB_DB : 0;   /* (V10.7.2: the latin
+                                                         * genres' throws too) */
     if (u && !gs.mutant) {                              /* (V10.6w) HIP HOP's, TECHNO ROCK's throws: one style of theirs,
                                                          * its fields over the row (gen_tables.c GSUB; g is gmut, every
                                                          * caller's) */

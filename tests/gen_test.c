@@ -433,7 +433,11 @@ int main(void)
                 for (i = 0; i < NSTEP; i++) {
                     uint32_t j;
                     if (tt.step[i].time != ST_NOTE) continue;
-                    for (j = 0; j < tt.step[i].n; j++) { n_c++; keyc_bad += !in_scale(&tt, tt.step[i].note[j]); }
+                    for (j = 0; j < tt.step[i].n; j++) {   /* (V10.7.2: the minor key's raised leading tone, its V's
+                                                         * major third, is the key's: cumbia's rule, more minor throws) */
+                        n_c++;
+                        keyc_bad += !in_scale(&tt, tt.step[i].note[j]) && (uint32_t)(tt.step[i].note[j] - tt.p[P_ROOT] + 120) % 12u != 11u;
+                    }
                 }
             }
             {   /* B: the chords turned (its first bass note another root than A's) */
@@ -574,7 +578,7 @@ int main(void)
             if (gs.act[RL_LEAD]) { leads++; sus_lt += trk[gs.trk_of[RL_LEAD]].p[P_SUS] <= 95; }
         }
         if (lo < 26u || hi > 70u) printf("  cumbia bass %u..%u\n", lo, hi);
-        bad += gcheck("CUMBIA x 4: the bass between D1 (an approach under A1) and A#4, its tempo 76..92 (the owner's demos: 77)", lo >= 26u && hi <= 70u && song.g[G_BPM] >= 76 && song.g[G_BPM] <= 92);
+        bad += gcheck("CUMBIA x 4: the bass between D1 (an approach under A1) and A#4, its tempo 76..100 (V10.7.2: sonidera 76..88, villera, digital)", lo >= 26u && hi <= 70u && song.g[G_BPM] >= 76 && song.g[G_BPM] <= 100);
         bad += gcheck("  the leads not all at full sustain", !leads || sus_lt > 0u);
     }
     /* ---- (0.6.96) a new piece: MUTATE off on every track (a reroll kept the lanes), the anchor the piece */
@@ -598,7 +602,8 @@ int main(void)
             if (!seen_m[gs.g->drum]) { seen_m[gs.g->drum] = 1; maps++; }
             if (!seen_p[gs.g->pads]) { seen_p[gs.g->pads] = 1; plays++; }
         }
-        bad += gcheck("CUMBIA x 12 seeds: its own drum map and chord play every throw (V10.6n: the neighbours gone)", maps == 1u && plays == 1u);
+        bad += gcheck("CUMBIA x 12 seeds: its own three maps (V10.7.2: sonidera villera digital) and one chord play (the keys' offbeats)",
+                      maps == 3u && plays == 1u && seen_m[DM_CUMBIA] && seen_m[DM_CUMB2] && seen_m[DM_CUMB3]);
         {   /* (V10.6m) the top end a genre's own: JAZZ, BOSSA, DUB and AFROBEAT keep their maps, their closed hats never
              * more than the map's (no sixteenths from the pools); EBM's throws differ (its maps, its riffs) */
             const uint32_t KEEP[4] = {genre_of("CUMBIA"), genre_of("REGGAETON"), genre_of("TRIBAL"), genre_of("BREAKBEAT")};
@@ -609,11 +614,13 @@ int main(void)
                     uint32_t d, i2, n = 0, lim = 0;
                     gen_with(KEEP[g2], seeds, 50, 0);
                     d = gs.trk_of[RL_DRUM];
-                    for (i2 = 0; i2 < 16u; i2++) lim += gm_level(DRUM_MAP_I[GENRE[KEEP[g2] - 1u].drum][3], i2) != 0u;
+                    uint32_t dm = gs.g->drum, fam = dm == GENRE[KEEP[g2] - 1u].drum || (g2 == 0u && (dm == DM_CUMB2 || dm == DM_CUMB3)) ||
+                                                (g2 == 1u && dm == DM_REGG2);   /* (V10.7.2: the latin throws' own maps) */
+                    for (i2 = 0; i2 < 16u; i2++) lim += gm_level(DRUM_MAP_I[dm][3], i2) != 0u;
                     for (i2 = 0; i2 < 16u; i2++) n += trk[d].step[i2].time == ST_NOTE && (trk[d].step[i2].hit & 8u);
-                    if (gs.g->drum != GENRE[KEEP[g2] - 1u].drum || n > lim + 2u) { own = 0; printf("  %s %u: map %u, hats %u of %u\n", gs.g->name, seeds, gs.g->drum, n, lim); }
+                    if (!fam || n > lim + 2u) { own = 0; printf("  %s %u: map %u, hats %u of %u\n", gs.g->name, seeds, gs.g->drum, n, lim); }
                 }
-            bad += gcheck("CUMBIA REGGAETON TRIBAL BREAKBEAT x 6: their own maps, no pool's sixteenth hats (V10.6m)", own);
+            bad += gcheck("CUMBIA REGGAETON TRIBAL BREAKBEAT x 6: their own maps (V10.7.2: their throws'), no pool's sixteenth hats (V10.6m)", own);
             for (seeds = 1; seeds <= 10u; seeds++) {
                 gen_with(genre_of("EBM"), seeds, 50, 0);
                 if (!sm[gs.g->drum]) { sm[gs.g->drum] = 1; ebm_m++; }
@@ -1380,6 +1387,112 @@ int main(void)
         printf("gen:   all melodic OFF: melodic tracks with notes %u, empty kits %u\n", full, emp);
         bad += gcheck("V10.8 GEN with BASS CHORDS ARP LEAD OFF: the drums alone", !full && !emp);
         for (k = 0; k < GP_N; k++) gp.amt[k] = GA_AUTO;
+    }
+    {   /* (V10.7.2, the owner: "CUMBIA, REGGAETON and DEMBOW very bad: each has very clear rules") every throw of the
+         * three keeps its genre's rules (gen_tables.c: the rows, DM_CUMB2 .., GSUB_CU ..), twelve seeds a genre:
+         * CUMBIA 76 .. 100, its kick on every beat (digital's on 1 and 3), the guiro on every beat of every bar, the
+         * bass's tonica-quinta (on the beat, the root at the bar's one, its notes the chord's root and fifth, an
+         * anticipated next root, a pickup), major or minor, I IV V only (the V major), the keys on the "and"s;
+         * REGGAETON 88 .. 100, the kick on every beat, the snare on the dembow's 3 6 11 14 and nowhere else, the 808's
+         * onsets on the kick or the tresillo / dembow, natural minor (no raised V), the chords sounding every bar;
+         * DEMBOW 115 .. 132, the kick on every beat, the snare 3 6 11 14 (rapido's extra on 10), the clap on it,
+         * sixteenths of hats, denser than reggaeton, one or two chords, the chants (the arp) on the snare's steps, the
+         * 808 on the bar's one; and their throws differ (sonidera, villera, digital; classic, perreo, romantico; classic,
+         * rapido) */
+        uint32_t gi, seeds, i, ok_t[3] = {1, 1, 1}, ok_k[3] = {1, 1, 1}, ok_s[3] = {1, 1, 1}, ok_b[3] = {1, 1, 1}, ok_h[3] = {1, 1, 1};
+        uint32_t ok_c[3] = {1, 1, 1}, ok_x[3] = {1, 1, 1}, nmap[3] = {0, 0, 0}, dens[3] = {0, 0, 0}, nbar[3] = {0, 0, 0};
+        uint32_t lo_t[3] = {255, 255, 255}, hi_t[3] = {0, 0, 0};
+        uint8_t seen[3][64] = {{0}};
+        static const char *const LN[3] = {"CUMBIA", "REGGAETON", "DEMBOW"};
+        gen_reset();
+        for (gi = 0; gi < 3u; gi++)
+            for (seeds = 1; seeds <= 12u; seeds++) {
+                const track_t *d, *b, *pd, *ar;
+                uint32_t len, bl, bpm, bars, br, p, dig;
+                gen_with(genre_of(LN[gi]), seeds, 50, 0);
+                bpm = (uint32_t)song.g[G_BPM];
+                if (bpm < lo_t[gi]) lo_t[gi] = bpm;
+                if (bpm > hi_t[gi]) hi_t[gi] = bpm;
+                if (!seen[gi][gs.g->drum]) { seen[gi][gs.g->drum] = 1; nmap[gi]++; }
+                dig = gs.g->drum == DM_CUMB3;
+                if (gi == 0u ? bpm < 76u || bpm > 100u : gi == 1u ? bpm < 88u || bpm > 100u : bpm < 115u || bpm > 132u) ok_t[gi] = 0;
+                if (!gs.act[RL_DRUM] || !gs.act[RL_BASS]) { ok_x[gi] = 0; continue; }
+                d = &trk[gs.trk_of[RL_DRUM]]; b = &trk[gs.trk_of[RL_BASS]];
+                len = (uint32_t)d->p[P_SLEN]; bl = (uint32_t)b->p[P_SLEN]; bars = len / 16u;
+                for (br = 0; br < bars; br++) {
+                    uint32_t sn = 0, ch = 0, hits = 0, kb = 0, beat;
+                    for (p = 0; p < 16u; p++) {
+                        const step_t *s = &d->step[br * 16u + p];
+                        uint32_t h = s->time == ST_NOTE ? s->hit : 0u, l;
+                        for (l = 0; l < 8u; l++) hits += (h >> l) & 1u;
+                        if (p % 4u == 0u && (h & 1u)) kb |= 1u << (p / 4u);
+                        if (h & 2u) sn |= 1u << p;
+                        if (h & 8u) { ch |= 1u << (p / 4u); if (gi == 2u) ch += 16u; }
+                    }
+                    dens[gi] += hits; nbar[gi]++;
+                    if (dig ? (kb & 5u) != 5u : kb != 15u) ok_k[gi] = 0;   /* (the kick: every beat; digital 1 and 3) */
+                    if (gi && br + 1u < bars) {                 /* (the snare: the dembow's steps; the fill bar's free) */
+                        uint32_t want = 0x4848u, extra = gs.g->drum == DM_DEMB2 ? 0x0400u : 0u;
+                        if ((sn & want) != want || (sn & ~(want | extra))) ok_s[gi] = 0;
+                    }
+                    if (gi == 0u && (ch & 15u) != 15u) ok_h[gi] = 0;   /* (the guiro never stops) */
+                    if (gi == 2u && (ch >> 4) < 12u) ok_h[gi] = 0;     /* (dembow: sixteenths of hats) */
+                    for (beat = 0; gi == 0u && beat < 4u; beat++) {   /* (the cumbia bass on every beat, sounding) */
+                        uint32_t j = (br * 16u + beat * 4u) % bl;
+                        if (b->step[j].time == ST_REST) ok_b[gi] = 0;
+                    }
+                    if (b->step[(br * 16u) % bl].time != ST_NOTE && gchord_starts(br * 16u)) ok_b[gi] = 0;   /* (the one) */
+                }
+                for (i = 0; i < bl; i++) {                       /* the bass's notes */
+                    const step_t *s = &b->step[i];
+                    const gch_t *c = gchord(i), *nc = gchord_next(i);
+                    uint32_t pc, r, f, rn;
+                    if (s->time != ST_NOTE) continue;
+                    pc = s->note[0] % 12u; r = gchord_root_pc(i); f = (r + (uint32_t)giv(c, 4)) % 12u;
+                    rn = (uint32_t)gtone(nc, 0, 12) % 12u;
+                    if (gi == 0u && pc != r && pc != f && !(pc == rn && i % 16u >= 12u) && i % 16u != 14u) ok_b[gi] = 0;
+                    if (gi && !((0x5959u >> (i % 16u)) & 1u)) ok_b[gi] = 0;   /* (on 0 3 6 8 11 12 14, 4 the kick's double) */
+                    if (gi == 0u && i % 16u == 0u && pc != r) ok_b[gi] = 0;
+                }
+                if (gi == 0u) {                                  /* cumbia's harmony and keys */
+                    if (gs.scale != SC_MIN && gs.scale != SC_MAJ) ok_c[gi] = 0;
+                    for (i = 0; i < gs.nch; i++) {
+                        if (gs.ch[i].deg != 0u && gs.ch[i].deg != 3u && gs.ch[i].deg != 4u) ok_c[gi] = 0;
+                        if (gs.ch[i].deg == 4u && giv(&gs.ch[i], 2) != 4) ok_c[gi] = 0;   /* (the V major) */
+                    }
+                    if (gs.act[RL_PAD]) {
+                        pd = &trk[gs.trk_of[RL_PAD]];
+                        for (i = 0; i < (uint32_t)pd->p[P_SLEN]; i++)   /* (the phrase's fourth bar: one step pushed, gen_pads) */
+                            if (pd->step[i].time == ST_NOTE && i % 4u != 2u && !(i / 16u % 4u == 3u && i % 16u >= 10u)) ok_c[gi] = 0;
+                    }
+                } else {
+                    if (gs.scale != SC_MIN && gs.scale != SC_PHRY && gs.scale != SC_HARM) ok_c[gi] = 0;
+                    if (gi == 1u) for (i = 0; i < gs.nch; i++) if (gs.ch[i].deg == 4u && giv(&gs.ch[i], 2) == 4) ok_c[gi] = 0;   /* (no raised V) */
+                    if (gi == 1u && gs.act[RL_PAD]) {            /* (the chords sounding every bar) */
+                        pd = &trk[gs.trk_of[RL_PAD]];
+                        for (br = 0; br < (uint32_t)pd->p[P_SLEN] / 16u; br++) {
+                            uint32_t on = 0;
+                            for (p = 0; p < 16u; p++) on += pd->step[br * 16u + p].time != ST_REST;
+                            if (!on) ok_c[gi] = 0;
+                        }
+                    }
+                    if (gi == 2u && gs.pn > 2u) ok_c[gi] = 0;
+                    if (gi == 2u && gs.act[RL_ARP]) {             /* (the chants on the snare's steps) */
+                        ar = &trk[gs.trk_of[RL_ARP]];
+                        for (i = 0; i < (uint32_t)ar->p[P_SLEN]; i++) if (ar->step[i].time == ST_NOTE && !((0x4848u >> (i % 16u)) & 1u)) ok_c[gi] = 0;
+                    }
+                }
+            }
+        for (gi = 0; gi < 3u; gi++)
+            printf("gen:   %-9s %u..%u BPM, %u maps; kick %u snare %u bass %u hats %u harmony %u parts %u; %u hits a bar\n", LN[gi], lo_t[gi], hi_t[gi],
+                   nmap[gi], ok_k[gi], ok_s[gi], ok_b[gi], ok_h[gi], ok_c[gi], ok_x[gi], nbar[gi] ? dens[gi] / nbar[gi] : 0u);
+        bad += gcheck("V10.7.2 CUMBIA x 12: 76..100, kick every beat (digital 1 3), guiro every beat, tonica-quinta, I IV V, keys on the and",
+                      ok_t[0] && ok_k[0] && ok_h[0] && ok_b[0] && ok_c[0] && ok_x[0] && nmap[0] == 3u);
+        bad += gcheck("V10.7.2 REGGAETON x 12: 88..100, four on the floor, snare 3 6 11 14, the 808 on kick or tresillo, minor",
+                      ok_t[1] && ok_k[1] && ok_s[1] && ok_b[1] && ok_c[1] && ok_x[1] && nmap[1] == 2u && lo_t[1] < 92u && hi_t[1] > 96u);
+        bad += gcheck("V10.7.2 DEMBOW x 12: 115..132, the riddim, sixteenth hats, denser than reggaeton, 1..2 chords, chants on 3 6 11 14",
+                      ok_t[2] && ok_k[2] && ok_s[2] && ok_b[2] && ok_h[2] && ok_c[2] && ok_x[2] && nmap[2] == 2u && hi_t[2] > 124u &&
+                      nbar[1] && nbar[2] && dens[2] / nbar[2] > dens[1] / nbar[1] + 4u);
     }
     printf(bad ? "gen: %d FAILED\n" : "gen: all passed\n", bad);
     return bad ? 1 : 0;

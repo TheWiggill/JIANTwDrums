@@ -19,7 +19,8 @@ enum { GP_DRUMS, GP_BASS, GP_CHORDS, GP_ARP, GP_LEAD, GP_N };   /* the parts the
 enum { DM_HOUSE, DM_DEEP, DM_TECHHOUSE, DM_TECHNO, DM_HARD, DM_HBASS, DM_CUMBIA, DM_TRIBAL, DM_REGG, DM_DEMBOW,
        DM_PHONK, DM_PHONK2, DM_TRAP, DM_DRILL, DM_BAILE, DM_BAILE2, DM_ELECTRO, DM_BREAKS, DM_AMEN, DM_DNB, DM_EBM, DM_EBM2,
        DM_EBM3, DM_EBM4, DM_METAL, DM_TROCK, DM_ROCK, DM_SYN80, DM_BOC, DM_DREAM, DM_BOOMBAP, DM_JAZZ, DM_MOTORIK, DM_SPARSE,
-       DM_NONE };   /* (V10.6w: HIP HOP's trap and drill by the phonk's (the hats' rolls), TECHNO ROCK's rock and synth
+       DM_CUMB2, DM_CUMB3, DM_REGG2, DM_DEMB2, DM_NONE };   /* (V10.7.2: the latin throws' maps past DM_SPARSE, so SEQ +
+                                                         * SELECT's dice and their pairs stay as they were) */   /* (V10.6w: HIP HOP's trap and drill by the phonk's (the hats' rolls), TECHNO ROCK's rock and synth
                                                          * 80s by its own, JAZZ beside boom bap) */
 /* (0.9.7, flash) the maps and the pools below are the text tools/gen_drum_maps.py reads (not compiled): build/gen/
  * gen_drum_maps.h holds them packed, each lane once at 16 levels a nibble (GM_LANE), the tables as lane numbers
@@ -35,8 +36,9 @@ static const char *const DRUM_MAP[][8] = {
      * hat on every offbeat (the bass bounces there too), hard eighths */
     [DM_HBASS]     = {"X...X...X...X...", "", "....X.......X...", "8.6.8.6.8.6.8.6.", "..9...9...9...9.", "", "", ""},
     /* (V10.6n) cumbia (Damas Gratis, Chancha Via Circuito; V10.6u the owner's two demos, 77 BPM): the kick on every
-     * beat, the guiro's ch-chk-chk from the "e" (accented there), the llamador on every "and", a conga's answer */
-    [DM_CUMBIA]    = {"X...8...X...8...", "", "..6...6...6...6.", ".855.855.855.855", "", "...5.......5....", "", ""},
+     * beat, the guiro's scrape on the "e" and the "and" of every beat (V10.7.2: the owner's demos measured, .XX. a beat,
+     * the "e" accented; was three a beat), the llamador on every "and", a conga's answer */
+    [DM_CUMBIA]    = {"X...8...X...8...", "", "..6...6...6...6.", ".96..96..96..96.", "", "...5.......5....", "", ""},
     /* (V10.6n) the dembow riddim: the kick on every beat, the snare 3 + 3 + 2 (the "a" of 1, the "and" of 2 ..);
      * Dominican dembow harder, the clap doubling it, sixteenths of guira, a tom's answer */
     [DM_REGG]      = {"X...X...X...X...", "...X..X....X..X.", "", "7.7.7.7.7.7.7.7.", "", "", "..........4.....", ""},
@@ -98,6 +100,19 @@ static const char *const DRUM_MAP[][8] = {
     [DM_JAZZ]      = {"6.6.6.6.6.6.6.6.", "", "", "..7...7...7...7.", "7.957.957.957.95", "", "", ""},
     [DM_MOTORIK]   = {"X.6.6...8.6.6...", "....8.......8...", "", "7.5.7.5.7.5.7.5.", "..............3.", "", "", ""},
     [DM_SPARSE]    = {"7...............", "", "", "", "", "", "......3.....4...", "..........3....."},
+    /* (V10.7.2, the owner: "cumbia, reggaeton and dembow very bad: each has very clear rules") the latin throws' own
+     * maps (gen_tables.c GSUB_CU .. : a throw one of them). Cumbia villera (Damas Gratis, Pibes Chorros, Yerba Brava):
+     * the kick on every beat, the timbal on 2 and 4, the guiro's "chiqui-chiqui" (a stroke on the beat, two on its
+     * "and" and "a"), the conga's llamador on every "and". Digital cumbia (ZZK: Chancha Via Circuito, El Remolon): the
+     * 2/4 of the tambora (the kick on 1 and 3), the guiro's .XX., the llamador a rim on the "and"s, the conga's answer.
+     * Perreo (Tainy, the Bad Bunny era): the dembow (the kick on every beat, the snare 3 + 3 + 2 on the "a" of 1, the
+     * "and" of 2, the "a" of 3, the "and" of 4) with the clap on it, sixteenth hats (rolled: gen.c), a rim. Dominican
+     * dembow rapido (El Alfa, Chimbala): the same riddim with the snare's extra hit on 3's "and", the clap, flat
+     * sixteenths, the open hat off the beat, the toms' answer */
+    [DM_CUMB2]     = {"X...X...X...X...", "....7.......7...", "", "8.668.668.668.66", "", "..5...5...5...5.", "", ""},
+    [DM_CUMB3]     = {"X.......X.......", "", "", ".96..96..96..96.", "", "...5.......5....", "..6...6...6...6.", ""},
+    [DM_REGG2]     = {"X...X...X...X...", "...X..X....X..X.", "...7..7....7..7.", "8.5.8.5.8.5.8.55", "", "", "..........4.....", ""},
+    [DM_DEMB2]     = {"X...X...X...X...", "...X..X...7X..X.", "...7..7....7..7.", "6666666666666666", "..7...7...7...7.", "..6..6....6..6..", "", ""},
     [DM_NONE]      = {"", "", "", "", "", "", "", ""},
 };
 /* (0.6.97) a throw's own hats and percussion: a hat pattern, an open hat pattern and a percussion line from these pools
@@ -148,7 +163,7 @@ enum { BA_OFFBEAT, BA_OFFOCT, BA_BOUNCE, BA_DEEPWALK, BA_ROLL16, BA_OCTBNC, BA_S
        BA_FIFTHS, BA_NEOARP, BA_SEQ16, BA_ACID, BA_NITZER1, BA_NITZER2, BA_NITZER3, BA_DAF,
        BA_ROTHER, BA_VILLA, BA_GALLOP, BA_EBMOFF, BA_EBM2B, BA_CUMBIA, BA_HBASS, BA_REGG, BA_TAMBOR, BA_PH808, BA_WALK,
        BA_WALK2, BA_N,
-       BA_RF1 = BA_N, BA_RF2, BA_RF3, BA_RF4, BA_FL1, BA_MANDEL, BA_NALL };   /* (V10.6p: the riffs past the basses: EXPLORE's
+       BA_RF1 = BA_N, BA_RF2, BA_RF3, BA_RF4, BA_FL1, BA_MANDEL, BA_CUMB2, BA_CUMB3, BA_RGTRES, BA_NALL };   /* (V10.6p: the riffs past the basses: EXPLORE's
                                                          * basses never one; gen.c gen_riff) */
 /* (0.9.7, flash) the archetypes below are the text tools/gen_drum_maps.py reads (not compiled): build/gen/gen_bass.h holds
  * them a byte a step (BA_STEP: the note's code | the flag's << 4; gen.c ba_note, ba_flag), each its first step and bars */
@@ -193,10 +208,11 @@ static const barch_t BASS_ARCH[BA_NALL] = {
     [BA_GALLOP]   = {"R.RRR.RRR.RRR.RR", "a...a...a...a...", 1},
     [BA_EBMOFF]   = {".R.8.R.8.R.8.R.8", ".a...a...a...a..", 1},
     [BA_EBM2B]    = {"R.R.R.R.R.R.R.R.R.R.R.R.3.3.5.5.", "a.......a.......a.......a.......", 2},
-    /* (V10.6n) cumbia's bass (V10.6u, the owner's demos): the kick's note on every beat, held, the fifth on 3; hard bass's
+    /* (V10.6n) cumbia's bass (V10.7.2: the tonica-quinta, the rule: the root on the beat, the fifth under it on the
+     * next, a note every beat on the kick, held); hard bass's
      * offbeat eighths bouncing under the kick, the riff's turn up the third and the fifth; reggaeton's 808 on the kick
      * and the dembow's 3 + 3 + 2 */
-    [BA_CUMBIA]   = {"R==.R==.5==.R==.", "a...............", 1},
+    [BA_CUMBIA]   = {"R==.L==.R==.L==.", "a.......a.......", 1},
     [BA_HBASS]    = {"..R...R...R...R...R...R...3...5.", "..a...a...a...a...a...a...a...a.", 2},
     [BA_REGG]     = {"R..R..R.R..R..R.", "a.......a.....s.", 1},
     /* (V10.6p) baile funk's 808 on the tamborzao's kick, held; phonk's 808 (V10.6u: the Brazilian map's, its 3 3 2
@@ -204,6 +220,12 @@ static const barch_t BASS_ARCH[BA_NALL] = {
     [BA_TAMBOR]   = {"R==R==R=....R===", "a..a..a.....a...", 1},
     [BA_PH808]    = {"R==R==R=R===R=8=", "a..a..a.a...s.s.", 1},
     [BA_MANDEL]   = {"R===..........R.", "a.............g.", 1},
+    /* (V10.7.2, past the riffs: EXPLORE's never) cumbia's bajo cumbiero (the root a quarter, the fifth two eighths:
+     * "pum, pa-pa" a half bar) and villera's (the tonica-quinta, the next chord's root anticipated on 4's "and");
+     * reggaeton's 808 in the tresillo (3 + 3 + 2 eighths a bar, held: Despacito's, Tainy's) */
+    [BA_CUMB2]    = {"R==.5.5.R==.5.5.", "a.......a.......", 1},
+    [BA_CUMB3]    = {"R==.L==.R==.L.N=", "a.......a.....a.", 1},
+    [BA_RGTRES]   = {"R=====R=====R===", "a.....a.....a...", 1},
     /* (V10.6w) JAZZ's walking bass in swung eighths (a step an eighth: a quarter note two steps, held): the chord's root,
      * third, fifth, seventh and octave, the fifth and third back down, a semitone into the next root from under; or the
      * scale's 2 and 3 up to the fifth, the octave, the seventh, the fifth, a step of the scale into the next root */
@@ -365,7 +387,7 @@ typedef struct {
 enum { SR_SUB, SR_ACID, SR_REESE, SR_FMBASS, SR_ROCKBASS, SR_HOOK, SR_WOW, SR_PAD, SR_STRINGS, SR_CHOIR, SR_ORGAN,
        SR_EP, SR_STAB, SR_DUBCHORD, SR_PLUCK, SR_BELL, SR_LEAD, SR_VOXLEAD, SR_CHIP, SR_KEYS, SR_DRONE, SR_NOISE,
        SR_TEXTURE, SR_HOOVER, SR_WALL, SR_GTR, SR_SINEKEY, SR_EBMBASS, SR_808, SR_UPRIGHT, SR_TECHBASS, SR_SUPERSAW,
-       SR_PIANO, SR_HARPSI, SR_DIST, SR_COWBELL, SR_FLUTE, SR_CHANT, SR_N };   /* (V10.6p: SUPERSAW gone, no genre's) */
+       SR_PIANO, SR_HARPSI, SR_DIST, SR_COWBELL, SR_FLUTE, SR_CHANT, SR_MALLET, SR_N };   /* (V10.6p: SUPERSAW gone, no genre's) */
 /* the factory presets by their place (eng_analog.c, eng_phase.c .. : ANALOG 2 SQR BASS, 4 ACID, 7 SUB BASS ..) */
 static const grecipe_t RECIPE[SR_N] = {
     /* ---- basses: their engine fixed */
@@ -433,6 +455,9 @@ static const grecipe_t RECIPE[SR_N] = {
     [SR_FLUTE]    = {{{ENGI_ANIMAL, 25}, {EG_WH, 3}, {ENGI_ANIMAL, 5}}, GR(0, 15), GR(48, 79), GR(56, 87), GR(16, 39), GR(96, 119), GR(0, 15), GR4(4, 11), GFT(0, 0), GNOWV, 0, 0, V_LEGATO},
     [SR_CHANT]    = {{{EG_VO, 5}, {EG_VO, 5}, {EG_VO, 1}}, GR(0, 7), GR(40, 63), GR(0, 23), GR(16, 31), GR(64, 95), GR(0, 15), GR4(0, 7), GFT(0, 0), GNOWV, 0, GDC(8, 0), V_POLY},
     [SR_DIST]     = {{{ENGI_STRING, 1}, {EG_A, 9}, {EG_PH, 11}}, GR(0, 7), GR(32, 55), GR(16, 47), GR(8, 31), GR(56, 87), GR(8, 31), GR4(8, 27), GFT(0, 0), GWV(0, 0, 0), 0, GDC(60, 8), V_POLY},
+    /* (V10.7.2) the latin plucks: STRING's MARIMBA (Dominican dembow's riff), NYLON (reggaeton romantico's guitar
+     * picked); short, no sustain */
+    [SR_MALLET]   = {{{ENGI_STRING, 7}, {ENGI_STRING, 7}, {ENGI_STRING, 0}}, GR(0, 7), GR(48, 71), GR(0, 7), GR(24, 47), GR(64, 95), GR(0, 15), GR4(0, 15), GFT(0, 0), GNOWV, 0, GDC(0, 4), V_POLY},
 };
 /* (the GENE mix pass) each archetype's options evened: a trim a sound (3 nibbles, the options' 0 1 2, signed, x 3 dB:
  * gen.c gen_sound), from the host render of twelve throws of every genre: what a sound gives at LEVEL 0 dB while it
@@ -478,6 +503,7 @@ static const uint16_t RTRIM[SR_N] = {
     [SR_COWBELL] = RT(6, 0, 0),
     [SR_FLUTE] = RT(0, 3, 0),
     [SR_CHANT] = RT(4, 0, 6),
+    [SR_MALLET] = RT(4, 4, 4),   /* (V10.7.2: STRING's mallet and nylon ~15 dB under the plucks, measured) */
 };
 /* (the GENE mix pass) the pads' and the strings' second option PHASE's STRING and ANALOG's DARK PAD, the drones' third
  * PHASE's GLASS PAD, FM6's SOFT PAD's place: its operators' slow attacks (~1 s) under GEN's chords, stabbed or sparse,
@@ -593,22 +619,36 @@ static const ggenre_t GENRE[] = {
     /* ---- latin */
     /* (V10.6n) digital and villera cumbia (Damas Gratis, Pibes Chorros; Chancha Via Circuito, Dengue Dengue Dengue;
      * V10.6u the owner's demos: 77 BPM, a brighter kit): the guiro's sixteenths, the kick and the bass on every beat,
-     * the llamador on the "and", the keys' offbeat chords, an organ-accordion's melody in thirds, i iv V / I IV V */
-    {"CUMBIA", 76, 92, 10, {SC_MIN, SC_MAJ, SC_MIN, SC_DOR}, DM_CUMBIA, 100, KIT_909, 0, HC_FLAT, FL_TOM, 0,
-     {BA_CUMBIA, BA_BOSSA, BA_TUMBAO}, 33, KM_DOUBLE, 60, {PR_CYCLE, PR_I_V, PR_I_IV}, 1, CS_SKANK, VM_PLAIN,
+     * the llamador on the "and", the keys' offbeat chords, an organ-accordion's melody in thirds. (V10.7.2, the owner:
+     * "very clear rules") the rules every throw keeps: the 2/4 (the kick on every beat or on 1 and 3), the guiro never
+     * stopping, the bass's tonica-quinta on the beat (no bossa, no salsa tumbao: its downbeat silent), the keys on every
+     * "and", major or minor (no dorian), I V / I IV V I / i iv V i with the V major; its throws (GSUB_CU) sonidera (the
+     * row, the owner's 77), villera (88 .. 98: the timbal on 2 and 4, the chiqui-chiqui, the root anticipated, two bars
+     * a chord) and digital (90 .. 100: the tambora's 1 and 3, a sub's half notes, an arpeggio over it) */
+    {"CUMBIA", 76, 88, 10, {SC_MIN, SC_MAJ, SC_MIN, SC_MAJ}, DM_CUMBIA, 100, KIT_909, 0, HC_FLAT, FL_ROLL, 0,
+     {BA_CUMBIA, BA_CUMB2, BA_CUMBIA}, 33, KM_DOUBLE, 60, {PR_CYCLE, PR_I_V, PR_I_IV}, 1, CS_SKANK, VM_PLAIN,
      {AP_ALBERTI, AP_UPDOWN}, LD_HOOK, AMT(90, 95, 55, 0, 60), {KIT_909, SR_FMBASS, SR_ORGAN, SR_PLUCK, SR_ORGAN}, SR_TEXTURE,
      1, 1, 35, 0, FM_PARTS, 30, HF_POP | HX_RAISE, GSP_THIRDS},
     /* (V10.6n) reggaeton (Daddy Yankee, Tainy, the Bad Bunny era): the dembow riddim, an 808 sub on the kick, i VI III VII,
-     * a plucked lead */
-    {"REGGAETON", 88, 98, 0, {SC_MIN, SC_MIN, SC_PHRY, SC_DOR}, DM_REGG, 100, KIT_808, 0, HC_FLAT, FL_HAT, 0,
-     {BA_REGG, BA_REGG, BA_WOBBLE}, 29, KM_DOUBLE, 90, {PR_AEOL, PR_EPIC, PR_I_VI}, 1, CS_SPARSE, VM_PAD,
+     * a plucked lead. (V10.7.2) its rules: 88 .. 100, the kick on every beat, the snare on the dembow's 3 + 3 + 2 (the
+     * sixteenths 3 6 11 14), eighth or sixteenth hats rolled into the snare, the 808 on the kick or in the tresillo,
+     * natural minor (i VI III VII, i iv VII III, VI VII i), the chords held under it (was sparse: a bar of two silent);
+     * its throws (GSUB_RG) the classic (the row), perreo (92 .. 100, the clap on the dembow, sixteenths, the 808's
+     * 3 3 2 sliding, the vocal chops on the snare's steps) and romantico (88 .. 94, the 808 in the
+     * tresillo, a guitar picked) */
+    {"REGGAETON", 90, 96, 0, {SC_MIN, SC_MIN, SC_MIN, SC_PHRY}, DM_REGG, 100, KIT_808, 0, HC_FLAT, FL_HAT, 0,
+     {BA_REGG, BA_RGTRES, BA_REGG}, 29, KM_DOUBLE, 90, {PR_AEOL, PR_I_VI, PR_EPIC}, 1, CS_HOLD, VM_PAD,
      {AP_BROKEN, AP_UPDOWN}, LD_HOOK, AMT(95, 95, 45, 35, 50), {KIT_808, SR_808, SR_PAD, SR_PLUCK, SR_PLUCK}, SR_TEXTURE,
      2, 1, 40, 0, FM_PARTS, 5, HF_POP, 0},
     /* (V10.6n) Dominican dembow (El Alfa, Bulova): faster and harsher, more percussion, one chord's stabs again and
-     * again, chants */
-    {"DEMBOW", 115, 130, 0, {SC_MIN, SC_PHRY, SC_MIN, SC_HARM}, DM_DEMBOW, 100, KIT_808, 0, HC_MACHINE, FL_HAT, 0,
-     {BA_REGG, BA_OFFBEAT, BA_REGG}, 29, KM_DOUBLE, 70, {PR_ONE, PR_I_VII, PR_PHRY}, 2, CS_STAB, VM_POWER,
-     {AP_PULSE, AP_OCTAVES}, LD_OSTINATO, AMT(100, 90, 45, 0, 55), {KIT_808, SR_808, SR_STAB, SR_PLUCK, SR_LEAD}, SR_VOXLEAD,
+     * again, chants. (V10.7.2) its rules: 115 .. 132, the riddim's kick on every beat and its snare 3 + 3 + 2 doubled
+     * by the clap, sixteenths of guira and their rolls, the toms' answer, the 808 on the kick (no house offbeat bass),
+     * one chord or two (i, i bVII, i bII), a marimba's riff of a few notes looped (no held saw), the chants chopped
+     * on the snare's steps (call and response; the held talk box gone); its throws (GSUB_DB) the classic (115 .. 124)
+     * and rapido (124 .. 132, the snare's extra hit, the open hat off the beat, the kit driven) */
+    {"DEMBOW", 115, 124, 0, {SC_MIN, SC_PHRY, SC_MIN, SC_HARM}, DM_DEMBOW, 100, KIT_808, 0, HC_MACHINE, FL_HAT, 0,
+     {BA_REGG, BA_PH808, BA_RGTRES}, 29, KM_DOUBLE, 70, {PR_ONE, PR_I_VII, PR_PHRY}, 2, CS_STAB, VM_POWER,
+     {AP_CHOP, AP_CHOP}, LD_OSTINATO, AMT(100, 90, 40, 45, 55), {KIT_808, SR_808, SR_STAB, SR_CHANT, SR_MALLET}, SR_NOISE,
      1, 2, 20, 0, FM_PARTS, 0, HF_LOOP, 0},
     /* ---- electro, breaks */
     /* (gen6) Anthony Rother (Sex With The Machines, Hacker), DMX Krew, Cybotron: a pure 808 broken (the kick on 1, the
@@ -785,7 +825,7 @@ static const uint8_t GMIX[][3] = {
     GMX(-3, 4, 1, 0, 7, 5),   /* TRIBAL */
     GMX(0, 1, 2, 2, 0, -2),   /* CUMBIA */
     GMX(-3, 0, -2, 7, 7, 4),   /* REGGAETON */
-    GMX(-3, 2, -2, 6, 0, 4),   /* DEMBOW */
+    GMX(-3, 2, -2, 7, 7, 4),   /* DEMBOW (V10.7.2: the marimba's riff and the chants' arp up: phonk's levels) */
     GMX(-3, 0, 1, 7, 7, 5),   /* ELECTRO */
     GMX(-2, 1, -2, 5, 6, 5),   /* BREAKBEAT */
     GMX(-3, -3, 0, 6, 5, 6),   /* DRUM & BASS */
@@ -820,6 +860,27 @@ static const uint8_t GSUB_HH[] = {
     15, GSO(drum, DM_BOC), GSO(bpm_lo, 70), GSO(bpm_hi, 88), GSO(swing, 45), GSO(human, 60), GSO(kit, KIT_SOFT),
     GSO(ghosts, 1), GSO(fills, FL_NONE), GSO(bass[0], BA_FIFTHS), GSO(bass[1], BA_DUST), GSO(bass[2], BA_PEDAL),
     GSO(snd[GP_BASS], SR_SUB), GSO(snd[GP_CHORDS], SR_EP), GSO(hx, HF_JAZZY), GSO(spec, GSP_WOW),
+};
+/* (V10.7.2) the latin genres' throws (gen_tables.c DM_CUMB2 ..): CUMBIA's sonidera (the row), villera, digital;
+ * REGGAETON's classic (the row), romantico, perreo; DEMBOW's classic (the row), rapido */
+static const uint8_t GSUB_CU[] = {
+    3,   /* CUMBIA */
+    0,
+    6, GSO(drum, DM_CUMB2), GSO(bpm_lo, 88), GSO(bpm_hi, 98), GSO(bass[0], BA_CUMB3), GSO(bass[2], BA_CUMB3), GSO(cbars, 2),
+    8, GSO(drum, DM_CUMB3), GSO(bpm_lo, 90), GSO(bpm_hi, 100), GSO(bass[0], BA_FIFTHS), GSO(bass[2], BA_CUMB2),
+    GSO(snd[GP_BASS], SR_SUB), GSO(amt[GP_ARP], 35), GSO(kit, KIT_808),
+};
+static const uint8_t GSUB_RG[] = {
+    3,   /* REGGAETON */
+    0,
+    5, GSO(bpm_lo, 88), GSO(bpm_hi, 94), GSO(bass[0], BA_RGTRES), GSO(arp[0], AP_UPDOWN), GSO(snd[GP_ARP], SR_MALLET),
+    9, GSO(drum, DM_REGG2), GSO(bpm_lo, 92), GSO(bpm_hi, 100), GSO(bass[0], BA_PH808), GSO(bass[2], BA_PH808),
+    GSO(arp[0], AP_CHOP), GSO(arp[1], AP_CHOP), GSO(snd[GP_ARP], SR_CHANT), GSO(prog[1], PR_MINOR4),
+};
+static const uint8_t GSUB_DB[] = {
+    2,   /* DEMBOW */
+    0,
+    5, GSO(drum, DM_DEMB2), GSO(bpm_lo, 124), GSO(bpm_hi, 132), GSO(bass[2], BA_REGG), GSO(spec, GSP_HEAVY),
 };
 static const uint8_t GSUB_TR[] = {
     3,   /* TECHNO ROCK */
