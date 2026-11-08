@@ -611,7 +611,7 @@ enum { GR_NONE, GR_ADSR, GR_LFO, GR_STEPS, GR_ARP, GR_SCALE, GR_FX, GR_ROLL, GR_
        GR_SLCR, GR_MOD, GR_PATS, GR_SONG, GR_TOOLS, GR_CHANCE, GR_MOTION, GR_EVENTS, GR_DXSND, GR_MSEQ, GR_SLPIT,
        GR_FMOP, GR_FMOP2, GR_FMENV,
        GR_COMP, GR_EUCLID, GR_MORPH, GR_DXIMG, GR_FUGUE, GR_SHAPE, GR_PUNCH, GR_BUSES, GR_FOCUS, GR_STAGE,
-       GR_LYRIC, GR_GCOMP, GR_LIVE, GR_SCENE, GR_SONGSAVE, GR_SPLIT, GR_SPLIT2, GR_LYRSTEP, GR_TRACKGEN };   /* append only */   /* (0.8.5:
+       GR_LYRIC, GR_GCOMP, GR_LIVE, GR_SCENE, GR_SONGSAVE, GR_SPLIT, GR_SPLIT2, GR_LYRSTEP, GR_TRACKGEN, GR_SWARM };   /* append only */   /* (0.8.5:
                                                          * LENTE's EDIT > FOCUS, ENV > STAGE) */   /* (0.6.99) FX > PUNCH: the punch-in lane */   /* (JIANT 0.6.39) SEQ > COMP: the step components (ui_input.c comp_*, ui_graph.c graph_comp) */   /* (JIANT 0.6.10, from Felucca 1.5: FM6's operator pages, ui_fm6op.c) */
 
 typedef struct {
@@ -807,6 +807,9 @@ static const page_t PAGES[] = {
     {"CLIPS", FAM_SAVE, SC_GLOBAL, GR_SONG, {0xFF, 0xFF, 0xFF, 0xFF}},   /* (V10.6s) tracks x parts: KNOB 1 the track, 2 the part,
                                                          * OCT+ the cell, OCT- the track stops, F3-B3 a part, REC the song
                                                          * (ui_lzsave.c graph_clips, song_main.c clip_launch) */
+    {"SWARM", FAM_EDIT, SC_TRACK, GR_SWARM, {0xFF, 0xFF, 0xFF, 0xFF}},   /* (V10.6z6) a SWARM track's FAR / NEAR: SIDE RATE MOVE
+                                                         * TONE, (SWARM 2) SIDE NOISE MOD NOW (ui_dx.c sw_ui_*) */
+    {"SWARM 2", FAM_EDIT, SC_TRACK, GR_SWARM, {0xFF, 0xFF, 0xFF, 0xFF}},
 };
 #define SPLIT_PAGE(pg) ((uint32_t)((pg)->graph - GR_SPLIT) < 2u)
 #define FIT_PAGE(pg) ((pg)->fam == FAM_SEQ && (pg)->id[0] == P_SLEN && (pg)->id[1] == 0xFFu)

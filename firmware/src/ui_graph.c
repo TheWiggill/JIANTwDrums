@@ -1570,6 +1570,7 @@ static uint32_t graph_signature(void)
     if (pg->scope == SC_ENGINE && trk_eng(t) == ENGI_DRUM)
         h ^= ui.frame * 2654435761u;                 /* DRUM-X: the specimen moves every frame */
     if (pg->graph == GR_DXSND) h ^= ui.frame * 2654435761u ^ dx_sig();
+    if (pg->graph == GR_SWARM) h ^= ui.frame * 2654435761u;   /* (V10.6z6: the morph, live) */
     if (pg->scope == SC_ENGINE && trk_eng(t) == ENGI_FM6)   /* the patch (PAT's algorithm, levels, FB) */
         h ^= (fm6_pgen[(t - trk) % NTRK] + 1u) * 2246822519u;
     if (fop_page(pg->graph))                         /* (0.6.77) OPERATOR, OP ENV (track pages): the patch, the operator */

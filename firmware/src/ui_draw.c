@@ -1369,6 +1369,11 @@ static void draw_columns(void)
         }
         return;
     }
+    if (cur_page()->graph == GR_SWARM) {               /* (V10.6z6) EDIT > SWARM, SWARM 2 (ui_dx.c) */
+        if (bt_hw_seg())
+            sw_ui_cards_bt(cur_page());
+        return;
+    }
     if (cur_page()->graph == GR_LIVE) {                /* (p2) GLO > LIVE (ui_live.c) */
         live_cards();
         return;

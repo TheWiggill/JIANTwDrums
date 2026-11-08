@@ -231,7 +231,7 @@ static void graph_focus_lz(const track_t *t)
 static int graph_edit_lz(const track_t *t, const page_t *pg)
 {
     uint32_t e = trk_eng(t);
-    if (pg->scope == SC_ENGINE && e != ENGI_DRUM && !(FELUCCA_FM4 && e == ENGI_DIGITAL))
+    if ((pg->scope == SC_ENGINE && e != ENGI_DRUM && !(FELUCCA_FM4 && e == ENGI_DIGITAL)) || pg->graph == GR_SWARM)
         graph_sound_lz(t);
     else if (pg->id[0] == P_FTYPE)
         graph_filter_lz(t, pg);

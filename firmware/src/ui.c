@@ -595,6 +595,8 @@ static int page_visible(uint32_t i)
         return e == ENGI_ANALOG || ENGINES[e] == &ENG_PHASE;   /* (0.6.81: every ANALOG WAVE) */
     }
     if(PAGES[i].graph==GR_TRACKGEN) return trackgen_ok(TSEL);
+    if (PAGES[i].graph == GR_SWARM)                     /* (V10.6z6) FAR / NEAR: a SWARM track's */
+        return trk_eng(TSEL) == ENGI_INPUT && TSEL->p[P_E0] == AIN_SW;
     if (PAGES[i].graph == GR_LYRIC || PAGES[i].graph == GR_LYRSTEP)
         return trk_engp(TSEL) == &ENG_FORMANT;
     if (PAGES[i].graph == GR_PATS || PAGES[i].graph == GR_CHANCE)   /* (0.6.37) PHRASES, a step's CHANCE: out of the */
@@ -2008,6 +2010,8 @@ static uint32_t dx_pagen(const page_t *pg)            /* SOUND 1..3; (0.5.1) X-M
 static void dx_knob(const page_t *pg, uint32_t k, int32_t s);
 static void dx_cards(const page_t *pg);
 static void dx_kit3_knob(uint32_t k, int32_t s);      /* (0.6.54) KIT 3: TONE's BP, FEEDBK */
+static void sw_ui_knob(const page_t *pg, uint32_t k, int32_t s);   /* (V10.6z6) EDIT > SWARM, SWARM 2 */
+static void sw_ui_cards_bt(const page_t *pg);
 #define SONG_TRK(pg) ((pg)->graph == GR_SONG && (pg)->title[0] == 'T')   /* (add15-beta5) TIMELINE (was ARRANGE 2) */
 #define SONG_PARTS(pg) ((pg)->graph == GR_SONG && (pg)->title[0] == 'P')   /* (V10.6o) PARTS */
 #define SONG_CLIPS(pg) ((pg)->graph == GR_SONG && (pg)->title[0] == 'C')   /* (V10.6s) CLIPS */

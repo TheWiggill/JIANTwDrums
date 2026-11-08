@@ -1409,6 +1409,10 @@ static void edit_param(uint32_t slot, int32_t steps)
         dx_knob(pg, slot, steps);
         return;
     }
+    if (pg->graph == GR_SWARM) {                          /* (V10.6z6) EDIT > SWARM: FAR / NEAR (ui_dx.c) */
+        sw_ui_knob(pg, slot, steps);
+        return;
+    }
     if (pg->graph == GR_FOCUS) {                          /* (0.8.5) EDIT > FOCUS */
         focus_knob(slot, steps);
         return;
@@ -3094,7 +3098,7 @@ static void ui_input_frame(void)
         if (ui.home || pg->scope == SC_STEP || pg->scope == SC_TRK || page_desc(pg, k, &hv) ||
             ((pg->graph == GR_USER || pg->graph == GR_MOD || pg->graph == GR_MSEQ || pg->graph == GR_PATS || BAR_PAGE(pg)) &&
              k == 0u)
-            || FIT_PAGE(pg) || SPLIT_PAGE(pg) || pg->graph == GR_SONG || pg->graph == GR_DXSND || pg->graph == GR_FOCUS || pg->graph == GR_STAGE ||
+            || FIT_PAGE(pg) || SPLIT_PAGE(pg) || pg->graph == GR_SONG || pg->graph == GR_DXSND || pg->graph == GR_SWARM || pg->graph == GR_FOCUS || pg->graph == GR_STAGE ||
             pg->graph == GR_GCOMP || pg->graph == GR_LIVE) {   /* (not an empty column) */
             ui.hot_col = (uint8_t)k;
             ui.hot_t = 40, ui.knob_ms = fm1_ms;

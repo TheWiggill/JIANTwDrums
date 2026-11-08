@@ -216,3 +216,31 @@ static uint32_t dx_sig(void)
 }
 
 
+
+/* (V10.6z6) EDIT > SWARM, SWARM 2 on a SWARM track (eng_input.c sw_sv): KNOB 1 SIDE (FAR / NEAR, as SOUND's A / B), then
+ * the side's values: RATE MOVE TONE, NOISE MOD; SWARM 2's KNOB 4 NOW, where the morph is (0 FAR .. 128 NEAR), named by
+ * what gives it (PROX, AIR, SELF: none). In the Bluetooth segment (its pages are a SWARM track's; without the segment
+ * they show nothing and turn nothing) */
+static uint8_t sw_ui_side;
+static BTAPP_FN void sw_ui_knob_bt(const page_t *pg, uint32_t k, int32_t s)
+{
+    uint32_t q = pg->title[5] == ' ' ? 3u : 0u;
+    if (k == 0u)
+        sw_ui_side = s > 0;
+    else if (k + q - 1u < SWS_N)
+        sw_sv_put(TSEL, sw_ui_side, k + q - 1u, sw_sv(TSEL, sw_ui_side, k + q - 1u) + accel(EN_K1 + k, s, 127));
+}
+static BTAPP_FN void sw_ui_cards_bt(const page_t *pg)
+{
+    static const char *const LB[8] = {"RATE", "MOVE", "TONE", "NOISE", "MOD", "SELF", "AIR", "PROX"};
+    uint32_t q = pg->title[5] == ' ' ? 3u : 0u, c, i;
+    char val[8];
+    hot_gauge_column(0, "SIDE", sw_ui_side ? "NEAR" : "FAR", sw_ui_side ? 1000 : 0);
+    for (c = 1; c < 4u; c++) {                          /* (RATE as the note, 1/1 .. 1/32; NOW the morph, by its source) */
+        int32_t v = (i = c + q - 1u) < SWS_N ? sw_sv(TSEL, sw_ui_side, i) : sm.mq;
+        val[0] = '1', val[1] = '/';
+        fmt_int(val + (i ? 0 : 2), i ? v : 1 << ((uint32_t)v * 6u >> 7));
+        hot_gauge_column(c, LB[i < SWS_N ? i : 5u + sm.src % 3u], val, v * 1000 / 128);
+    }
+}
+static void sw_ui_knob(const page_t *pg, uint32_t k, int32_t s) { if (bt_hw_seg()) sw_ui_knob_bt(pg, k, s); }

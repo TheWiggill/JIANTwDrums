@@ -345,7 +345,7 @@ static void swarm_input(void)
         struct sw_dev *d = &sw[0];
         uint32_t o[4], k;
         trk[1].p[P_E6] = 63;                            /* (V10.6v: OCTAVE's first half, 4 octaves) */
-        for (k = 0; k < 4u; k++) { uint8_t p8[30] = {0, 28, 9, 9, 9, 9, 9, 9}; bt_air_tap(p8, 30, 40, 38); for (v = 0; v < SW_N && sw[v].id != (((9u | 9u << 8 | 9u << 16 | 9u << 24) ^ (9u << 5 | 9u << 13)) | 1u); v++) {} d = &sw[v % SW_N]; uin_on = 0; { int32_t out[2 * CTL]; audio_block(out, CTL); } o[k] = d->oct; }
+        for (k = 0; k < 4u; k++) { uint8_t p8[30] = {0, 28, 9, 9, 9, 9, 9, 9}; bt_air_tap(p8, 30, 40, 38); for (v = 0; v < SW_N && sw[v].id != (((9u | 9u << 8 | 9u << 16 | 9u << 24) ^ (9u << 5 | 9u << 13)) | 1u); v++) {} d = &sw[v % SW_N]; uin_on = 0; { int32_t out[2 * CTL]; uint32_t w = 0; do audio_block(out, CTL); while (d->hit && ++w < 3000u); } o[k] = d->oct; }   /* (V10.6z6: a hit on the grid's next step) */
         check("INPUT: SWARM OCTAVE: each hit of a device an octave up, round", o[1] == (o[0] + 1u) % 4u && o[2] == (o[1] + 1u) % 4u);
         trk[1].p[P_E6] = 0;
     }

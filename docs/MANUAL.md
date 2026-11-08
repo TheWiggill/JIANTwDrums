@@ -850,6 +850,53 @@ Each draws into whatever rectangle it is given (EDIT's left panel, HOME's middle
 for the six, 1.4 KB of RAM (the pool); each page draws no dearer than ANALOG's EDIT page with its being did; nothing
 in the sound.
 
+### EXT › SWARM: a melody from how near you are (V10.6z6)
+
+**EXT** (engine 15) plays an external signal; its **SOURCE** **SWARM** makes the sound out of the Bluetooth around the
+FM-1 instead of the USB audio input. Since V10.6z6 SWARM is a **melody**, not only a drone: a **lead** voice plays notes
+on the tempo's grid, and **how near something is** decides what it plays and how it sounds. The devices heard around
+(MENU › SYSTEM › BLUETOOTH **AIR**) are still voices of their own underneath, a quieter bed.
+
+**Where the closeness comes from** (EDIT › SWARM 2, KNOB 4 says which, and the morph 0–128):
+
+| Source | When | How quick |
+| --- | --- | --- |
+| **PROX** | BLUETOOTH **ON** with a central (a phone, a computer) connected: the link's RSSI, ~90–130 packets a second, as the matrix's PROX reads it (its FAR / NEAR points and MIN / MAX / SPEED on MENU › SYSTEM › BLUETOOTH). Not calibrated: its own range (the highest level nearest). | fast (~12 ms on top of PROX's own smoothing) |
+| **AIR** | BLUETOOTH **AIR**: the **nearest** device heard (the strongest advertisement), through PROX's FAR / NEAR points when they are stored, else by how far its level is over the weakest device heard. | ~0.4 s (advertisements come a few times a second) |
+| **SELF** | nothing heard: a slow walk, mostly far, so SWARM still plays. | slow |
+
+PROX wins over AIR when both could give it. Calibrate PROX (FAR with the phone away, NEAR with it on the FM-1) and SWARM
+follows exactly that range.
+
+**FAR and NEAR.** Like DRUM-X's patches A and B, SWARM keeps **two states** and plays between them: the closeness is the
+morph, all the time, by itself (FAR at 0, NEAR at 128, every value in between mixed). EDIT › **SWARM** and **SWARM 2**
+edit them: **KNOB 1 SIDE** (FAR / NEAR), then that side's values:
+
+| Value | What it does | Factory FAR | Factory NEAR |
+| --- | --- | --- | --- |
+| **RATE** | the grid the lead plays on, in time with the transport (its own clock when stopped): 1/1, 1/2, 1/4, 1/8, 1/16, 1/32. The notes' length follows it (a pedal at 1/1, short at 1/32). | 1/2 | 1/16 |
+| **MOVE** | how much the melody does on its own: under 24 a pedal (the same note re-struck softly); 24–63 a neighbour and back; from 41 some rests; from 64 an **arpeggio** of the chord's tones (1 3 5 8 5 3) on the melody's note; from 81 octave jumps. | 12 | 100 |
+| **TONE** | sine → square, dark → open, past 90 a fold; the FM index. | 24 | 100 |
+| **NOISE** | noise into the lead, coloured by TONE (a breath when dark, a hiss when open). | 30 | 12 |
+| **MOD** | the modulators: vibrato (depth and rate), the FM's depth, and how much of CHAOS acts. | 14 | 88 |
+
+Projects and presets from before V10.6z6 open with the factory pair (the two states live in slots no EXT sound used).
+
+**The melody.** On every step of the grid the lead looks at how the closeness changed since the last step:
+**coming nearer, it goes up** the scale; **moving away, down**; quick moves two degrees at once; still, MOVE decides
+(pedal, neighbours, the arpeggio). Its notes are in the track's **ROOT / SCALE** (SCL page), from C3 over two octaves
+(OCTAVE past half: three), turning back at the ends. With **SCALE CHR** it plays the **blues** (1 b3 3 4 b5 5 b7) and
+slides into b3, 3, b5, 5 and b7 from a semitone below now and then. The devices' own hits wait for the grid's next
+step too, so nothing comes in off the beat.
+
+**The devices.** Every device heard adds modulation depth: one device mild, eight extreme. **CHAOS** is the ceiling:
+what acts is CHAOS × that depth (the chain of voices, the fold, the ring as before), so CHAOS 0 keeps SWARM clean
+however many phones are around. The factory SWARM presets set CHAOS 70–100. A device's own timbre (V10.6v) colours the
+lead too: the nearest one gives it its FM ratio and depth.
+
+**The screen.** EDIT 1 / 2 and the SWARM pages show the swarm (each device a square at its note, its place in the
+image) with a bar under it: the morph, FAR left, NEAR right.
+
 ### FILTER (every engine)
 
 EDIT > **FILTER**: **TYPE** LP, HP, BP, **COMB**, **COMB-** or **MS20** (a comb tuned to the note you play; CUT moves it, RES is how much
