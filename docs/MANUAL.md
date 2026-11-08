@@ -1,6 +1,6 @@
 # JIANT FM — User Manual
 
-**JIANT FM V10.7 for the M-VAVE FM-1**
+**JIANT FM V10.7.1 for the M-VAVE FM-1**
 
 > *Versión en español: [MANUAL.es.md](MANUAL.es.md).*
 
@@ -204,17 +204,11 @@ Vestal's, *Velo*, github.com/charlesvestal/fm1-velocity, GPL-3.0). JIANT reads i
 
 - **Velocity**: how hard the key lands, in the first milliseconds after it touches. It is continuous (1..127: every
   strike between soft and hard gives a value between), then MENU > CONTROL > **VELOCITY**'s curve and **VEL MIN**'s
-  floor. It is steadier than in V10.6z9: two readings near the bottom of the strike count as their mean, a key still
-  coming down gets one reading more, the ends of the scale are a little gentler and each strike leans an eighth of
-  the way towards your recent ones, so the same strike gives nearly the same velocity (a third less spread in the
-  tests) while soft and hard stay as far apart. A note waits for its strike one reading of its key (2.2 ms), two
-  (4.4 ms) only when the key is still coming down, so the latency stays under what you can feel. It reaches
+  floor. A note waits at most one reading of its key (2.2 ms) for its strike, under what you can feel. It reaches
   everything a key plays: the sound (the engines and the matrix's VEL), chords and strums, the arpeggiator, recording
   (only 127 records as an accent) and MIDI OUT. VELOCITY **OFF**: every key 100, as before.
-- **The top row (C#5..G5)** has no sensor (the FM-1 cannot read those seven keys' pressure), so it **follows your
-  dynamics**: mostly your last few strikes (the nearby keys F4..C5 count most), a little of your longer average, and
-  a small human variation, never one fixed value (100 until you play the others). Play softly below it and it plays
-  softly; hit a few hard ones and it comes up with you. It has no aftertouch (a chord with sensed keys keeps theirs).
+- **The top row (C#5..G5)** has no sensor (the FM-1 cannot read those seven keys' pressure), so it plays the **average of
+  your recent strikes** (100 until you play the others). It has no aftertouch (a chord with sensed keys keeps theirs).
 - **Calibration**: every key is different, and each learns your own soft, normal and hard strikes as you play (VEL
   LEARN ON, the default: it moves slowly, a stray strike does not throw it). It starts from the factory calibration
   (measured on the owner's FM-1) and is kept in the settings, written half a minute after you stop playing. **VEL

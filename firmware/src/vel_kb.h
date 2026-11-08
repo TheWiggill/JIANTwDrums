@@ -13,8 +13,7 @@
 typedef struct {
     uint8_t vel;                        /* the strike's velocity 1..127 so far (0: no driven reading yet) */
     uint8_t at;                         /* the key's pressure 0..127, smoothed (0 when let go) */
-    uint8_t pend;                       /* touched, the strike's window still open (the note may wait for it); 2: one
-                                         * sample more (vel.c VD_EXT) */
+    uint8_t pend;                       /* touched, the strike's window still open (the note may wait for it) */
 } vk_t;
 /* the settings (main loop: menu_items.c, vel.c vel_poll): favorites.factory[15][13] VELOCITY (bits 0-1, its place ^ 2:
  * 0, every older setting, NORMAL) and VEL MIN (bits 2-4, its place ^ 2: 20); [15][14] AFTERTOUCH (bits 0-1, its place
@@ -24,13 +23,11 @@ typedef struct {
 /* the keys' velocity state, one block (one base address for the ISR's code; out of the merged statics, VK_BSS) */
 typedef struct {                        /* (the bytes first: short offsets) */
     uint8_t on;                         /* bit 0 VELOCITY not OFF, bit 1 AFTERTOUCH not OFF (vel.c vel_poll) */
-    uint8_t mean;                       /* the mean of the recent velocities (vel.c: the top row's 1/4); 0: 100 */
+    uint8_t mean;                       /* the mean of the recent velocities: the top row's (no converter); 0: 100 */
     uint8_t cal;                        /* the main loop's calibration (vel.c vel_poll): 0 to read from the settings
                                          * (power-on, a restore: settings_persist.c), 1 read, 2 to reset (VEL LEARN RESET) */
     uint8_t curve, min, atr, learn;     /* (vel.c) the settings as the ISR reads them: curve 0..3, MIN, AFTERTOUCH 0..3 */
     uint8_t dirty, last, rn;            /* (vel.c) learnt since the last save; the last strike's key; the strikes */
-    uint8_t fast, hz;                   /* (vel.c) the last few strikes' velocity (the top row's; 0: the mean), the top
-                                         * row's variation (a sequence) */
     uint8_t diag, dlv;                  /* (vel_diag.c) the diagnostic on (its presses and captures queued), its drive */
     uint8_t atl[VK_NTRK], ato[VK_NTRK];       /* (seq.c kx_block) each track's held keys' pressure; MIDI OUT's last / 2 */
     uint8_t arpv[VK_NTRK];              /* (seq.c) each track's arp notes' velocity: its keys' last, ^ 100 */
@@ -56,3 +53,10 @@ static vel_t vs VK_BSS;
 #define vk_cal (vs.cal)
 #define kb_velx (vs.velx)
 #define KB_VEL(k) (kb_velx[k] ^ 100u)
+/* the velocity of key k's press now: 100 with VELOCITY OFF (bit for bit as before); its strike's, or the mean */
+static inline uint32_t vk_vel(uint32_t k)
+{
+    if (!(vk_on & 1u))
+        return 100u;
+    return k < VK_NK && vk[k].vel ? vk[k].vel : vk_mean ? vk_mean : 100u;
+}

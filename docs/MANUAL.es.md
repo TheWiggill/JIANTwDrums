@@ -1,6 +1,6 @@
 # JIANT FM — Manual de usuario
 
-**JIANT FM V10.7 para el M-VAVE FM-1**
+**JIANT FM V10.7.1 para el M-VAVE FM-1**
 
 > *English version: [MANUAL.md](MANUAL.md).*
 
@@ -211,18 +211,11 @@ de Charles Vestal, *Velo*, github.com/charlesvestal/fm1-velocity, GPL-3.0). JIAN
 
 - **Velocidad**: qué tan fuerte llega la tecla, en los primeros milisegundos después de tocar. Es continua (1..127:
   cada toque entre suave y fuerte da un valor intermedio), y después pasa por la curva de MENU > CONTROL >
-  **VELOCITY** y el piso de **VEL MIN**. Es más estable que en V10.6z9: dos lecturas cerca del fondo del golpe cuentan
-  como su promedio, una tecla que todavía está bajando recibe una lectura más, las puntas de la escala son un poco más
-  suaves y cada golpe se acerca un octavo a tus golpes recientes, así que el mismo golpe da casi la misma velocidad
-  (un tercio menos de dispersión en las pruebas) y suave y fuerte siguen igual de separados. Una nota espera a su
-  toque una lectura de su tecla (2,2 ms), dos (4,4 ms) solo si la tecla todavía está bajando: la latencia queda por
-  debajo de lo que se nota. Llega a todo lo que toca una tecla: el sonido (los motores y el VEL de la matriz), los
+  **VELOCITY** y el piso de **VEL MIN**. Una nota espera como mucho una lectura de su tecla (2,2 ms), por debajo de lo que se nota. Llega a todo lo que toca una tecla: el sonido (los motores y el VEL de la matriz), los
   acordes y el strum, el arpegiador, la grabación (solo 127 se graba como acento) y el MIDI OUT. VELOCITY **OFF**:
   todas las teclas 100, como antes.
-- **La fila de arriba (C#5..G5)** no tiene sensor (el FM-1 no puede leer la presión de esas siete teclas), así que
-  **sigue tu dinámica**: sobre todo tus últimos golpes (los de las teclas vecinas F4..C5 pesan más), un poco de tu
-  promedio más largo y una pequeña variación humana, nunca un valor fijo (100 hasta que toques las otras). Si tocás
-  suave abajo, toca suave; si das unos golpes fuertes, sube con vos. No tiene aftertouch (un acorde con teclas
+- **La fila de arriba (C#5..G5)** no tiene sensor (el FM-1 no puede leer la presión de esas siete teclas), así que toca con el
+  **promedio de tus golpes recientes** (100 hasta que toques las otras). No tiene aftertouch (un acorde con teclas
   sensadas conserva el de ellas).
 - **Calibración**: cada tecla es distinta, y cada una aprende tus toques suave, normal y fuerte mientras tocás (VEL
   LEARN ON, por defecto: se mueve despacio, un toque raro no la desarma). Empieza de la calibración de fábrica (medida
