@@ -1,12 +1,3 @@
-Warning: truncated output (original token count: 30050)
-Total output lines: 1409
-
-Warning: truncated output (original token count: 30219)
-Total output lines: 1414
-
-Warning: truncated output (original token count: 79905)
-Total output lines: 3440
-
 # JIANT FM
 
 **Bio-synthetic operating system for the M-VAVE FM-1** — synthesis, sequencing, mutation, performance.
