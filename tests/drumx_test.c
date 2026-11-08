@@ -144,6 +144,55 @@ int main(int argc, char **argv)
         check(nm, pk > 1036 && pk < 32000 && fabs(dc) < pk * 0.02 && ended, "peak %d, DC %.0f", pk, dc);
     }
 
+    /* 1k (V10.6z8, the owner: "the hats a giant low clap", "the kick sounds like a snare"): every factory kit at
+     * MORPH 0 / 64 / 127 with its preset's TONE / DECY / NOIS, the voice alone (dx_run_fx): each hat bright (the
+     * energy of its first difference over its own: 4 sin^2(pi f / fs), 0.08 at 2 kHz, 0.47 at 4.5 kHz, 0.68 at
+     * 6 kHz; the LOFI and HIP HOP hats were 0.10 .. 0.25, a clap's), each kick a body (its noise, the hit less the
+     * same hit with NOISE 0, under 3 % of its energy: V10.6q's kit was 10 .. 30 %) */
+    {
+        static int32_t y0[FS / 4], y1[FS / 4];
+        double hmin = 9, kmax = 0;
+        uint32_t k, m, w, h;
+        for (k = 0; k < DX_NKIT; k++) {
+            int32_t c = DRUM_PRESETS[k].e[2] - 64, d = DRUM_PRESETS[k].e[3] - 64, nz = DRUM_PRESETS[k].e[4] - 64;
+            dx_kit_load(k);
+            for (m = 0; m <= 127u; m += 127u / 2u)
+                for (h = 0; h < 3u; h++) {               /* the closed hat, the open hat, the kick */
+                    uint32_t ln = h == 2u ? DV_KICK : DV_HATC + h, b;
+                    double e0 = 0, e1 = 0;
+                    for (w = 0; w < (h == 2u ? 2u : 1u); w++) {
+                        dx_voice_t v;
+                        dx_lane_t L = dx_kit[ln];
+                        int32_t *y = w ? y0 : y1;
+                        if (w)
+                            L.a[DXP_NOISE] = L.b[DXP_NOISE] = 0;
+                        dx_kit[ln] = L;
+                        memset(&v, 0, sizeof v);
+                        dx_trigger(&v);
+                        for (b = 0; b + CTL <= FS / 4u; b += CTL)
+                            dx_run_fx(&dx_kit[ln], &v, (int32_t)m, 0, d, c, nz, 0, 0, y + b, CTL, 0);
+                    }
+                    dx_kit_load(k);
+                    if (h < 2u) {
+                        for (b = 1; b < FS / 4u; b++) {
+                            e0 += (double)y1[b] * y1[b];
+                            e1 += (double)(y1[b] - y1[b - 1]) * (y1[b] - y1[b - 1]);
+                        }
+                        hmin = e1 / (e0 + 1) < hmin ? e1 / (e0 + 1) : hmin;
+                    } else {
+                        for (b = 0; b < FS / 4u; b++) {
+                            e0 += (double)y1[b] * y1[b];
+                            e1 += (double)(y1[b] - y0[b]) * (y1[b] - y0[b]);
+                        }
+                        kmax = e1 / (e0 + 1) > kmax ? e1 / (e0 + 1) : kmax;
+                    }
+                }
+        }
+        dx_kit_load(0);                                  /* (the factory kit again, as hostsim.c boots it) */
+        check("every factory kit: hats bright (above ~4.5 kHz), kicks a body (noise under 3 %)", hmin > 0.45 && kmax < 0.03,
+              "the darkest hat %.2f, the noisiest kick %.3f", hmin, kmax);
+    }
+
     /* 2 */
     {
         double r0, r1, rm;

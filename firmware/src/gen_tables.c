@@ -122,6 +122,10 @@ enum { FL_NONE, FL_ROLL, FL_TOM, FL_DROP, FL_HAT, FL_LINEAR, FL_KICK16 };
 enum { KIT_DEF, KIT_909, KIT_808, KIT_CLICK, KIT_INDUS, KIT_SOFT, KIT_BREAKS, KIT_N };   /* (V10.6p: DUB's gone, no genre's) */
 /* (V10.6w, the owner: "open the drums' brightness") the 808's snare, clap, hats and rim less darkened (COLOR -20 -> -6,
  * -10 -> -4), its TONE -10 -> -4 */
+/* (V10.6z8, the owner: JAZZ's hats "a giant very low clap all the time") KIT_SOFT's hats were COLOR -30 and its TONE
+ * -14 more: gen.c gen_kit's band-pass at ~2.5 kHz, a clap's. Now +28 (gen_kit halves it: +14, TONE's -14 made up): the
+ * band at the top (~8 kHz) as every other kit's; its open hat (JAZZ's ride) longer and with more of its metal: a ping,
+ * not a wash */
 typedef struct { int8_t d[8][5]; int8_t tone, decy, nois, drv; } gkit_t;
 static const gkit_t KIT[KIT_N] = {
     [KIT_DEF]    = {{{0}}, 0, 0, 0, 0},
@@ -129,7 +133,7 @@ static const gkit_t KIT[KIT_N] = {
     [KIT_808]    = {{{-4, -20, 12, -4, -10}, {-4, -10, -8, 10, -6}, {-2, 0, 0, 0, -4}, {-6, 0, -6, 0, -6}, {-6, 0, -4, 0, -6}, {-4, -10, 10, 0, -10}, {0, 0, 0, 0, -4}, {0, 0, 4, 0, 0}}, -4, 6, 0, 0},
     [KIT_CLICK]  = {{{2, 10, -16, 0, 0}, {6, 0, -20, 20, 10}, {4, 0, -10, 0, 10}, {6, 0, -10, 0, 10}, {6, 0, -16, 0, 10}, {4, 0, -16, 0, 0}, {6, 0, -6, 0, 10}, {4, 0, -10, 0, 10}}, 10, -16, -6, 0},
     [KIT_INDUS]  = {{{-2, 30, 6, 12, 40}, {0, 20, 10, 20, 30}, {0, 0, 6, 10, 20}, {0, 0, 8, 10, 20}, {0, 0, 10, 10, 20}, {0, 20, 8, 10, 30}, {0, 10, 4, 10, 20}, {0, 0, 0, 10, 20}}, 12, 6, 10, 40},
-    [KIT_SOFT]   = {{{0, -10, 6, 6, -25}, {-2, 0, 8, 14, -18}, {-2, 0, 6, 0, -20}, {-4, 0, 2, 0, -30}, {-4, 0, 6, 0, -30}, {-2, -10, 6, 6, -20}, {-2, 0, 4, 0, -20}, {-2, 0, 4, 0, -20}}, -20, 4, 4, 0},
+    [KIT_SOFT]   = {{{0, -10, 6, 6, -25}, {-2, 0, 8, 14, -18}, {-2, 0, 6, 0, -20}, {-4, 0, 2, 0, 28}, {-4, 0, 16, -20, 28}, {-2, -10, 6, 6, -20}, {-2, 0, 4, 0, -20}, {-2, 0, 4, 0, -20}}, -20, 4, 4, 0},
     [KIT_BREAKS] = {{{2, 6, -4, 8, 10}, {2, 6, 2, 16, 20}, {0, 0, 2, 4, 10}, {0, 0, 4, 6, 0}, {0, 0, 8, 6, 0}, {2, 6, 0, 8, 10}, {0, 0, 0, 4, 10}, {0, 0, 0, 0, 0}}, 4, 0, 6, 10},
 };
 

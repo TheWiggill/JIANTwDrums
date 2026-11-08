@@ -237,11 +237,18 @@ static __attribute__((noinline)) void dx_run_fx(const dx_lane_t *L, dx_voice_t *
         int32_t o = clamp(k ? nofs : cofs, -64, 63), *x = &q[k ? DXP_NOISE : DXP_COLOR];
         *x += o > 0 ? o * (127 - *x < 63 ? 127 - *x : 63) / 63 : o * (*x < 64 ? *x : 64) / 64;
     }
+    if (!ln)                                             /* (V10.6z8, the owner: "the kick sounds like a snare") the
+                                                          * KICK's NOISE on a cube: the kit's 40 (V10.6q) or 4..24 (before)
+                                                          * as good as none, the body whole; the knob up to 127 still there
+                                                          * (64: an eighth, 100: a half) */
+        q[DXP_NOISE] = (q[DXP_NOISE] * q[DXP_NOISE] * q[DXP_NOISE]) >> 14;
     ta = dx_tau((uint32_t)q[DXP_DECAY]);
     tn = (L->mode >> 4) & 1u ? (ta >> 2 < 8000u ? ta >> 2 : 8000u) : ta;   /* SNAP: a quarter, 8 ms at most (V10.6q: a click) */
     tp = ((L->mode >> 5) & 3u) == DXM_LONG ? (uint32_t)clamp((int32_t)(ta / 2u), 4000, 250000)
-                                           : (uint32_t)clamp((int32_t)(ta / 8u), 1000, 25000);    /* (V10.6q: / 12, 15 ms: thin;
-                                                          * / 6, 40 ms: a zap. / 8, 25 ms: the click and the body) */
+                                           : (uint32_t)clamp((int32_t)(ta / (ln ? 8u : 6u)), 1000, ln ? 25000 : 40000);
+                                                         /* (V10.6q: / 12, 15 ms: thin; / 8, 25 ms: the click and the
+                                                          * body; V10.6z8: the KICK's / 6, 40 ms again, as before V10.6q:
+                                                          * the big sweep the owner asked back) */
     p16 = 384 + q[DXP_PITCH] * 12 + tune16;
     depth = q[DXP_PMOD] * 6;
     ea0 = v->live ? v->ea : 1 << 30;                     /* (V10.6q) the block's start: a hit struck again while it rings
@@ -289,7 +296,9 @@ static __attribute__((noinline)) void dx_run_fx(const dx_lane_t *L, dx_voice_t *
     ng = (ng * 11) >> 4;
     cw = wave == DXW_METAL && ln == DV_BELL;             /* (V10.6q) the cowbell: the CMOS one (below), its band on its
                                                           * pitch, between its two squares (its COLOR the timbre) */
-    cx = cw ? clamp(((p16 - 360) * 19 >> 8) + 4, 0, 113) : q[DXP_COLOR];   /* (the filter's cutoff, as a COLOR) */
+    cx = cw ? clamp(((p16 - 360) * 19 >> 8) + 4, 0, 113) : q[DXP_COLOR] + (!ln << 5);   /* (the filter's cutoff, as a
+                                                          * COLOR; V10.6z8: the KICK's 2 1/4 octaves up, its noise turned
+                                                          * up a knock, a beater: not a rumble under the body) */
     if (flt < DXF_HP && cx < 96)                         /* (V10.6q) LP, BP: the band's power goes with its cutoff, the
                                                           * gain back as 1 / sqrt(fc) to COLOR 96's (x8 at most): a dark
                                                           * snare or clap as loud as a bright one (were up to 18 dB under) */
@@ -367,9 +376,12 @@ static __attribute__((noinline)) void dx_run_fx(const dx_lane_t *L, dx_voice_t *
             }
         }
         v->ph = ph;
-        if (L->mode & DX_DRIVE)                         /* (JIANT 0.4) DRIVE: x3 into the soft clip, the level near */
+        if (L->mode & DX_DRIVE) {                       /* (JIANT 0.4) DRIVE: x3 into the soft clip, the level near */
+            int32_t dl = 14000 + !ln * 8000;             /* (V10.6q: 14000, was 22000: +4 dB louder; V10.6z8: the KICK's
+                                                          * 22000 again, its punch as before V10.6q) */
             for (i = 0; i < n; i++)
-                y[i] = (softclip(y[i] * 3) * 14000) >> 15;   /* (V10.6q: 14000, was 22000: +4 dB louder) */
+                y[i] = (softclip(y[i] * 3) * dl) >> 15;
+        }
         if (fold) {                                      /* (JIANT 0.5) FOLD: after the envelope, so it follows it */
             int32_t g = 16 + ((fold * fold * 5) >> 10), c = g * 6144 / (8 + g);   /* (Q4: x1 .. x5.9 on fold^2; V10.6q,
                                                           * was on fold: +5..+14 dB at the first steps); out x 1.5 g / (0.5
@@ -451,11 +463,14 @@ static __attribute__((noinline)) void dx_run_fx(const dx_lane_t *L, dx_voice_t *
  * is the factory kit (DX_KIT_DEF, below). dx_kit is the music's kit: a section's (project.c keeps it in the project,
  * the song stages it with the section), edited on EDIT > SOUND (ui_input.c). Loaded whole by a preset (ui.c
  * apply_preset_to: dx_kit_load) into the section's kit; INIT SOUND and a new project take the first */
+/* (V10.6z8, the owner: "the kicks sound like a snare", "the hats a giant low clap") every KICK as before V10.6q (LP,
+ * its old NOISE and COLOR: V10.6q's HP noise at 40 was the snare in it); the 808 BOOM, LOFI DUST, ACOUSTIC, DUB ROOTS
+ * and HIP HOP hats' COLOR up (their band at 1.2 .. 2.5 kHz under the preset's TONE: now ~5 .. 8 kHz) */
 typedef struct { dx_lane_t lane[8]; uint8_t lay[8]; uint8_t snd[8]; } dx_kit_t;
 static const dx_kit_t DX_KITS[] = {
     {   /* DRUM-X */
         {
-            {DX_MODE(DXW_SINE, DXF_HP, 1), {9, 70, 72, 40, 44}, {14, 100, 88, 46, 84}},   /* KICK */
+            {DX_MODE(DXW_SINE, DXF_LP, 1), {9, 70, 72, 4, 20}, {14, 100, 88, 10, 60}},   /* KICK */
             {DX_MODE(DXW_FM, DXF_BP, 0), {40, 30, 52, 80, 90}, {46, 18, 64, 104, 70}},   /* SNARE */
             {DX_MODE(DXW_SINE, DXF_BP, 0), {60, 0, 46, 127, 84}, {54, 0, 58, 127, 76}},   /* CLAP */
             {DX_MODE(DXW_METAL, DXF_HP, 0), {100, 0, 22, 96, 116}, {108, 0, 14, 112, 122}},   /* HAT CL */
@@ -468,7 +483,7 @@ static const dx_kit_t DX_KITS[] = {
     },
     {   /* 909 CLUB */
         {
-            {DX_MODE(DXW_SINE, DXF_HP, 1) | DX_DRIVE, {7, 90, 68, 40, 74}, {12, 120, 84, 46, 114}},   /* KICK */
+            {DX_MODE(DXW_SINE, DXF_LP, 1) | DX_DRIVE, {7, 90, 68, 4, 50}, {12, 120, 84, 10, 90}},   /* KICK */
             {DX_MODE(DXW_FM, DXF_BP, 0), {40, 34, 60, 92, 104}, {46, 22, 72, 116, 84}},   /* SNARE */
             {DX_MODE(DXW_SINE, DXF_BP, 0), {60, 0, 52, 127, 88}, {54, 0, 64, 127, 80}},   /* CLAP */
             {DX_MODE(DXW_METAL, DXF_HP, 0), {106, 0, 16, 96, 126}, {114, 0, 8, 112, 127}},   /* HAT CL */
@@ -481,11 +496,11 @@ static const dx_kit_t DX_KITS[] = {
     },
     {   /* 808 BOOM */
         {
-            {DX_MODE(DXW_SINE, DXF_HP, 1) | DXM_LONG << 5, {3, 40, 102, 40, 30}, {8, 70, 118, 46, 70}},   /* KICK */
+            {DX_MODE(DXW_SINE, DXF_LP, 1) | DXM_LONG << 5, {3, 40, 102, 0, 6}, {8, 70, 118, 6, 46}},   /* KICK */
             {DX_MODE(DXW_SINE, DXF_BP, 0), {36, 18, 46, 90, 66}, {42, 6, 58, 114, 46}},   /* SNARE */
             {DX_MODE(DXW_SINE, DXF_BP, 0), {56, 0, 50, 127, 70}, {50, 0, 62, 127, 62}},   /* CLAP */
-            {DX_MODE(DXW_METAL, DXF_HP, 0), {92, 0, 14, 96, 92}, {100, 0, 6, 112, 98}},   /* HAT CL */
-            {DX_MODE(DXW_METAL, DXF_HP, 0), {92, 0, 60, 96, 88}, {100, 0, 72, 112, 94}},   /* HAT OP */
+            {DX_MODE(DXW_METAL, DXF_HP, 0), {92, 0, 14, 96, 118}, {100, 0, 6, 112, 124}},   /* HAT CL */
+            {DX_MODE(DXW_METAL, DXF_HP, 0), {92, 0, 60, 96, 114}, {100, 0, 72, 112, 120}},   /* HAT OP */
             {DX_MODE(DXW_SINE, DXF_HP, 1) | DXM_LONG << 5, {24, 26, 82, 14, 42}, {30, 46, 92, 20, 62}},   /* TOM */
             {DX_MODE(DXW_BELL, DXF_HP, 1), {65, 10, 14, 16, 38}, {72, 24, 20, 30, 52}},   /* RIM */
             {DX_MODE(DXW_METAL, DXF_BP, 1), {62, 0, 56, 34, 0}, {66, 0, 66, 46, 16}},   /* BELL */
@@ -494,11 +509,11 @@ static const dx_kit_t DX_KITS[] = {
     },
     {   /* LOFI DUST */
         {
-            {DX_MODE(DXW_SINE, DXF_HP, 1), {11, 78, 58, 40, 24}, {16, 108, 74, 46, 64}},   /* KICK */
+            {DX_MODE(DXW_SINE, DXF_LP, 1), {11, 78, 58, 14, 0}, {16, 108, 74, 20, 40}},   /* KICK */
             {DX_MODE(DXW_FM, DXF_BP, 1), {44, 30, 36, 104, 68}, {50, 18, 48, 127, 48}},   /* SNARE */
             {DX_MODE(DXW_SINE, DXF_BP, 0), {62, 0, 36, 127, 60}, {56, 0, 48, 127, 52}},   /* CLAP */
-            {DX_MODE(DXW_METAL, DXF_BP, 0), {104, 0, 12, 96, 88}, {112, 0, 4, 112, 94}},   /* HAT CL */
-            {DX_MODE(DXW_METAL, DXF_BP, 0), {104, 0, 48, 96, 84}, {112, 0, 60, 112, 90}},   /* HAT OP */
+            {DX_MODE(DXW_METAL, DXF_BP, 0), {104, 0, 12, 96, 124}, {112, 0, 4, 112, 127}},   /* HAT CL */
+            {DX_MODE(DXW_METAL, DXF_BP, 0), {104, 0, 48, 96, 120}, {112, 0, 60, 112, 126}},   /* HAT OP */
             {DX_MODE(DXW_SINE, DXF_HP, 1), {32, 40, 52, 20, 34}, {38, 60, 62, 30, 54}},   /* TOM */
             {DX_MODE(DXW_BELL, DXF_HP, 1), {69, 10, 8, 16, 30}, {76, 24, 14, 30, 44}},   /* RIM */
             {DX_MODE(DXW_METAL, DXF_BP, 1), {66, 0, 32, 34, 10}, {70, 0, 42, 46, 36}},   /* BELL */
@@ -507,7 +522,7 @@ static const dx_kit_t DX_KITS[] = {
     },
     {   /* INDUSTRIAL */
         {
-            {DX_MODE(DXW_FM, DXF_HP, 1) | DX_DRIVE, {7, 104, 80, 40, 64}, {12, 127, 96, 46, 104}},   /* KICK */
+            {DX_MODE(DXW_FM, DXF_LP, 1) | DX_DRIVE, {7, 104, 80, 18, 64}, {12, 127, 96, 24, 104}},   /* KICK */
             {DX_MODE(DXW_METAL, DXF_HP, 0), {42, 54, 64, 102, 124}, {48, 42, 76, 126, 104}},   /* SNARE */
             {DX_MODE(DXW_SINE, DXF_BP, 0), {60, 0, 54, 127, 108}, {54, 0, 66, 127, 100}},   /* CLAP */
             {DX_MODE(DXW_METAL, DXF_HP, 0), {100, 0, 32, 106, 127}, {108, 0, 24, 122, 127}},   /* HAT CL */
@@ -520,11 +535,11 @@ static const dx_kit_t DX_KITS[] = {
     },
     {   /* ACOUSTIC */
         {
-            {DX_MODE(DXW_SINE, DXF_HP, 1), {9, 60, 64, 40, 24}, {14, 90, 80, 46, 58}},   /* KICK */
+            {DX_MODE(DXW_SINE, DXF_LP, 1), {9, 60, 64, 12, 0}, {14, 90, 80, 18, 34}},   /* KICK */
             {DX_MODE(DXW_BELL, DXF_BP, 0), {38, 30, 56, 98, 74}, {44, 18, 68, 122, 54}},   /* SNARE */
             {DX_MODE(DXW_SINE, DXF_BP, 0), {58, 0, 48, 127, 66}, {52, 0, 60, 127, 58}},   /* CLAP */
-            {DX_MODE(DXW_METAL, DXF_HP, 0), {96, 0, 18, 96, 86}, {104, 0, 10, 112, 92}},   /* HAT CL */
-            {DX_MODE(DXW_METAL, DXF_HP, 0), {96, 0, 66, 96, 82}, {104, 0, 78, 112, 88}},   /* HAT OP */
+            {DX_MODE(DXW_METAL, DXF_HP, 0), {96, 0, 18, 96, 116}, {104, 0, 10, 112, 122}},   /* HAT CL */
+            {DX_MODE(DXW_METAL, DXF_HP, 0), {96, 0, 66, 96, 112}, {104, 0, 78, 112, 118}},   /* HAT OP */
             {DX_MODE(DXW_BELL, DXF_HP, 1), {28, 28, 70, 20, 8}, {34, 48, 80, 30, 28}},   /* TOM */
             {DX_MODE(DXW_BELL, DXF_HP, 1), {61, 10, 16, 16, 26}, {68, 24, 22, 30, 40}},   /* RIM */
             {DX_MODE(DXW_METAL, DXF_BP, 1), {62, 0, 46, 34, 20}, {66, 0, 56, 46, 44}},   /* BELL */
@@ -533,11 +548,11 @@ static const dx_kit_t DX_KITS[] = {
     },
     {   /* DUB ROOTS */
         {
-            {DX_MODE(DXW_SINE, DXF_HP, 1) | DXM_LONG << 5, {3, 58, 92, 40, 24}, {8, 88, 108, 46, 62}},   /* KICK */
+            {DX_MODE(DXW_SINE, DXF_LP, 1) | DXM_LONG << 5, {3, 58, 92, 4, 0}, {8, 88, 108, 10, 38}},   /* KICK */
             {DX_MODE(DXW_FM, DXF_BP, 0), {34, 30, 64, 88, 80}, {40, 18, 76, 112, 60}},   /* SNARE */
             {DX_MODE(DXW_SINE, DXF_BP, 0), {58, 0, 52, 127, 72}, {52, 0, 64, 127, 64}},   /* CLAP */
-            {DX_MODE(DXW_METAL, DXF_HP, 0), {98, 0, 20, 96, 94}, {106, 0, 12, 112, 100}},   /* HAT CL */
-            {DX_MODE(DXW_METAL, DXF_HP, 0), {98, 0, 68, 96, 90}, {106, 0, 80, 112, 96}},   /* HAT OP */
+            {DX_MODE(DXW_METAL, DXF_HP, 0), {98, 0, 20, 96, 122}, {106, 0, 12, 112, 127}},   /* HAT CL */
+            {DX_MODE(DXW_METAL, DXF_HP, 0), {98, 0, 68, 96, 118}, {106, 0, 80, 112, 124}},   /* HAT OP */
             {DX_MODE(DXW_SINE, DXF_HP, 1), {26, 40, 76, 14, 44}, {32, 60, 86, 20, 64}},   /* TOM */
             {DX_MODE(DXW_BELL, DXF_HP, 1), {59, 10, 24, 16, 46}, {66, 24, 30, 30, 60}},   /* RIM */
             {DX_MODE(DXW_METAL, DXF_BP, 1), {64, 0, 52, 34, 8}, {68, 0, 62, 46, 40}},   /* BELL */
@@ -546,7 +561,7 @@ static const dx_kit_t DX_KITS[] = {
     },
     {   /* TECHNO RAW */
         {
-            {DX_MODE(DXW_FM, DXF_HP, 1) | DX_DRIVE, {7, 96, 74, 40, 56}, {12, 126, 90, 46, 96}},   /* KICK */
+            {DX_MODE(DXW_FM, DXF_LP, 1) | DX_DRIVE, {7, 96, 74, 10, 56}, {12, 126, 90, 16, 96}},   /* KICK */
             {DX_MODE(DXW_FM, DXF_HP, 0), {40, 40, 46, 102, 110}, {46, 28, 58, 126, 90}},   /* SNARE */
             {DX_MODE(DXW_SINE, DXF_BP, 0), {60, 0, 48, 127, 94}, {54, 0, 60, 127, 86}},   /* CLAP */
             {DX_MODE(DXW_METAL, DXF_HP, 0), {104, 0, 14, 100, 127}, {112, 0, 6, 116, 127}},   /* HAT CL */
@@ -559,7 +574,7 @@ static const dx_kit_t DX_KITS[] = {
     },
     {   /* BREAKS */
         {
-            {DX_MODE(DXW_SINE, DXF_HP, 1), {11, 78, 68, 40, 56}, {16, 108, 84, 46, 96}},   /* KICK */
+            {DX_MODE(DXW_SINE, DXF_LP, 1), {11, 78, 68, 12, 32}, {16, 108, 84, 18, 72}},   /* KICK */
             {DX_MODE(DXW_FM, DXF_BP, 1), {42, 38, 54, 96, 112}, {48, 26, 66, 120, 92}},   /* SNARE */
             {DX_MODE(DXW_SINE, DXF_BP, 0), {60, 0, 48, 127, 94}, {54, 0, 60, 127, 86}},   /* CLAP */
             {DX_MODE(DXW_METAL, DXF_BP, 0), {100, 0, 26, 102, 116}, {108, 0, 18, 118, 122}},   /* HAT CL */
@@ -573,11 +588,11 @@ static const dx_kit_t DX_KITS[] = {
     {   /* HIP HOP (V10.34, a user's ask): boom bap: a round kick with a knock, a fat cracking snare, a tight clap,
          * dusty hats (band-passed), a low tom, a woody rim, a shaker in the BELL's place */
         {
-            {DX_MODE(DXW_SINE, DXF_HP, 1), {6, 84, 74, 40, 50}, {10, 112, 90, 46, 86}},   /* KICK */
+            {DX_MODE(DXW_SINE, DXF_LP, 1), {6, 84, 74, 8, 26}, {10, 112, 90, 16, 62}},   /* KICK */
             {DX_MODE(DXW_FM, DXF_BP, 1), {38, 34, 62, 106, 82}, {44, 22, 76, 124, 62}},   /* SNARE */
             {DX_MODE(DXW_SINE, DXF_BP, 0), {58, 0, 42, 127, 76}, {52, 0, 54, 127, 66}},   /* CLAP */
-            {DX_MODE(DXW_METAL, DXF_BP, 0), {98, 0, 12, 96, 84}, {106, 0, 6, 112, 92}},   /* HAT CL */
-            {DX_MODE(DXW_METAL, DXF_BP, 0), {98, 0, 54, 96, 80}, {106, 0, 66, 112, 88}},   /* HAT OP */
+            {DX_MODE(DXW_METAL, DXF_BP, 0), {98, 0, 12, 96, 116}, {106, 0, 6, 112, 122}},   /* HAT CL */
+            {DX_MODE(DXW_METAL, DXF_BP, 0), {98, 0, 54, 96, 110}, {106, 0, 66, 112, 116}},   /* HAT OP */
             {DX_MODE(DXW_SINE, DXF_HP, 1), {26, 36, 70, 14, 40}, {32, 56, 80, 20, 60}},   /* TOM */
             {DX_MODE(DXW_BELL, DXF_HP, 1), {61, 10, 10, 16, 34}, {68, 24, 16, 30, 48}},   /* RIM */
             {DX_MODE(DXW_METAL, DXF_BP, 0), {84, 0, 20, 110, 70}, {92, 0, 28, 124, 80}},   /* SHAKER */
