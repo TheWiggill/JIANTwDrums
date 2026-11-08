@@ -893,6 +893,15 @@ on the tempo's grid, and **how near something is** decides what it plays and how
 PROX wins over AIR when both could give it. Calibrate PROX (FAR with the phone away, NEAR with it on the FM-1) and SWARM
 follows exactly that range.
 
+**Calibrating FAR / NEAR** (MENU › SYSTEM › BLUETOOTH, OCT+ on the row while ON or AIR runs: the PROX page). (V10.6z8)
+OCT− (FAR) or OCT+ (NEAR) now takes the point over **~2.5 s**: the screen says **HOLD STILL…** and the page counts
+**HOLD STILL: FAR 0–100 %**; keep the phone where it is until **PROX FAR SET** / **PROX NEAR SET**. The point is the
+median of those seconds, not one reading, so taking it twice at the same place gives the same point (the RSSI of
+advertisements is noisy: one reading could land anywhere). Leave the page while it takes and nothing is stored. With
+**AIR** the level the matrix's PROX reads is also smoothed four times longer and moves only once it changes by more
+than about a level and a half (a hysteresis): steady where you stand, it still follows a hand in or out within a few
+seconds. (SWARM's own AIR closeness keeps its ~0.4 s.)
+
 **FAR and NEAR.** Like DRUM-X's patches A and B, SWARM keeps **two states** and plays between them: the closeness is the
 morph, all the time, by itself (FAR at 0, NEAR at 128, every value in between mixed). EDIT › **SWARM** and **SWARM 2**
 edit them: **KNOB 1 SIDE** (FAR / NEAR), then that side's values:
@@ -1405,6 +1414,13 @@ strip (its rows by their length, a white line where it plays) with its length an
 
 - **PLAY** on ARRANGE plays the song from the top; again: stop. (Until 0.8.4 OCT+ did too; now it adds a row.)
 - When the song ends (or you stop it), the music you had before pressing PLAY comes back (SONG END).
+- (V10.6z8) **A sound you change while a song plays stays.** Change a track's preset, its engine, a sound knob (EDIT,
+  ENV, LFO, FX, MOD… anything a preset sets), an FM6 patch or the DRUM-X kit while a song (or a GENE song, or a quick
+  chain) plays, and that track keeps your sound over every section after it: the sections still bring their steps,
+  pattern (LEN, DIV, swing, gate), arpeggio, scale, mix (level, pan) and mutes. Stopping then keeps your sounds (no SONG
+  END restore over them) and PLAY again keeps holding them. They follow the sections again after a new GENE throw,
+  a project or section loaded, a live section jump or a CLIPS launch, or, for one track, EDIT layer **RECALL** (G3; it
+  works while a song plays now): the section's stored sound back, and the next sections' after it.
 - END: **STOP** plays the song once, **x2–x8** that many times, **LOOP** forever.
 - If a row points to an empty section the song won't start: the screen says **PATTERN A EMPTY** (or B, C, D).
 - While a song plays, step editing is blocked (**STOP TO EDIT**).
@@ -2154,6 +2170,12 @@ LOAD only changes how things are rendered: **projects keep their settings** and 
 FM-1). The cards of swapped effects say LITE or ECO. LOAD frees **CPU**, not RAM: the firmware reserves all its memory
 at start-up. The **CPU** card (KNOB 4 on SYSTEM) and the header's load meter show the audio load. TRACKS and LOAD are
 device settings, not part of a project.
+
+### SYSTEM 2 (GLO > SYSTEM 2)
+
+A status page: **USB** (OFF, WAIT, BUS, ENUM, MIDI), **TRS IN** (the MIDI messages come in on the jack) and **BT** (the
+Bluetooth state). Nothing is edited here: (V10.6z8) turning a knob says **EDIT: MENU > BLUETOOTH** — Bluetooth is set in
+the MENU (hold HOME, tab SYSTEM, row BLUETOOTH; OCT+ there opens the PROX page).
 
 ### ROUTE (GLO > SYSTEM, KNOB 3)
 

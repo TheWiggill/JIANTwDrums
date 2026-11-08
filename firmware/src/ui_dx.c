@@ -50,7 +50,7 @@ static uint8_t dx_send_of(int32_t ix)
     return ix <= 0 ? 0u : (uint8_t)((uint32_t)((ix - 1) / 16 + 1) << 6 | (uint32_t)(((ix - 1) % 16 + 1) * 4 - 1));
 }
 /* KNOB k (0..3) turned s on a SOUND page or X-MOD */
-static void dx_knob(const page_t *pg, uint32_t k, int32_t s)
+static __attribute__((noinline)) void dx_knob(const page_t *pg, uint32_t k, int32_t s)
 {
     dx_lane_t *L = &dx_kit[dx_ui_lane & 7u];
     uint8_t *v = dx_ui_side ? L->b : L->a;

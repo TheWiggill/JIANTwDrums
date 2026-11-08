@@ -2688,6 +2688,17 @@ static uint32_t lz_tabs(void);
 static int lz_count_is(const char *s);
 static void wdt_ms(void) { fm1_ms++; }
 static void wdt_key(void) { fm1_ms++; if (fm1_ms % 50u == 0u) fm1_in.notes = 1u; }   /* a key pressed after a moment */
+/* (V10.6z8) PROX's page taking a point: its BPC_MS as menu_input runs it (bt_cal_tick each frame), the clock put back
+ * after (no frame: the later tests' frame counts and times stay) */
+static void prox_take(void)
+{
+    uint32_t ms = fm1_ms, i;
+    for (i = 0; i < (BPC_MS + 200u) / 16u; i++) {
+        fm1_ms += 16u;
+        bt_cal_tick();
+    }
+    fm1_ms = ms;
+}
 static int test_menu_tabs(void)
 {
     int bad = 0, ok = 1;
@@ -3057,11 +3068,14 @@ static int test_menu_tabs(void)
         press(B_OCTUP);
         ok &= ui.menu == 3u && menu_get(MI_BT) == 1u;
         press(B_OCTDN);                                    /* FAR: the hand away, level 80 */
+        ok &= msg_is("HOLD STILL...") && bpc.on == 1u && favorites.factory[6][22] == 0u;   /* (V10.6z8: ~2.5 s of it) */
+        prox_take();
         ok &= ui.menu == 3u && favorites.factory[6][22] == 160u && msg_is("PROX FAR SET") && menu_get(MI_BT) == 1u;
         for (k = 0; k < 40u; k++)
             w[k] = LV(40u);
         { uint32_t r_; for (r_ = 0; r_ < 8u; r_++) bt_prox_step(w, 40, 1, t += 400u); }
         press(B_OCTUP);                                    /* NEAR: the hand on the antenna, level 40 */
+        prox_take();
         bt_prox_step(w, 0, 1, t += 10u);
         ok &= favorites.factory[6][23] == 80u && msg_is("PROX NEAR SET") && mod_prox > 32600;
         for (k = 0; k < 40u; k++)

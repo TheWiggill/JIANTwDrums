@@ -549,6 +549,7 @@ static int song_draft_begin(void)
     }
     song_draft = 1;
     dice_secs = 0;
+    snd_held = snd_seen = 0;                          /* (V10.6z8: a throw, the sections' sounds) */
     live.dirty = 0; live.cur = live.req = -1; sec_stage.ready = 0;
     proj_cur = PROJ_NO_SLOT; proj_name[0] = 0;
     memset(proj_slot, 0, sizeof proj_slot);
@@ -664,7 +665,8 @@ static void song_poll(void)
         char name[PROJ_NAME_LEN + 1u];
         chain.ended = 0;
         str_cpy(name, proj_name, sizeof name);
-        if (chain.kept && proj_import(&proj_scratch, &song_keep, sizeof song_keep) &&
+        if (chain.kept && !snd_held && proj_import(&proj_scratch, &song_keep, sizeof song_keep) &&   /* (V10.6z8: sounds
+                                                         * the player changed: the music stays as the song left it) */
             !project_restore_runtime(&proj_scratch)) {
             proj_cur = cur;                           /* (the music before the song: its slot and name) */
             live.cur = (int8_t)((int32_t)(chain.kept >> 1) - 1);

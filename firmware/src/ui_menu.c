@@ -322,7 +322,7 @@ static void menu_cards(void)
                     (int32_t)menu_get(r) * 1000 / (int32_t)(menu_n(r) - 1u) : -1);
     }
 }
-static void menu_panel(void)
+static __attribute__((noinline)) void menu_panel(void)
 {
     uint32_t t = menu_tab(), f = mtab_first(t), n = mtab_rows(t), k, r;
     char v[16];
@@ -408,6 +408,9 @@ static void menu_panel(void)
  * code in the segment (bt.c BTAPP_*; it opens only with the radio running: the segment checked). A meter of PROX, the
  * level and the last RSSI word (hex), the two points; OCT- stores FAR (the hand away), OCT+ NEAR (the hand on the back
  * over the antenna, top left); SELECT or ALGORITHM back to the rows, HOME closes the menu (saved there, menu_close) */
+#define BPC_MS 2500u
+static struct { uint32_t t0, ts; uint8_t on, n, v[64]; } bpc __attribute__((section(".bss.bpc")));   /* (V10.6z8) a point
+                                                         * being taken (bt_cal_tick): 1 FAR 2 NEAR, its samples */
 static const char BP_S[][28] BTAPP_RO = {"BLUETOOTH \xB7 PROX", "SELECT: BACK", "NOT CONNECTED", "NOT CALIBRATED",
                                           "OCT-  FAR: PHONE AWAY", "OCT+  NEAR: PHONE ON THE", "FM-1, TOP LEFT (ANTENNA)",
                                           "PROX FAR SET", "PROX NEAR SET", "LEVEL ", "   RAW ", "FAR ", "   NEAR ", "%",
@@ -451,7 +454,11 @@ BTAPP_FN static void bt_prox_panel(const aafont_t *fx, const aafont_t *fm, const
         b[4] = b[9] = b[14] = ' '; b[19] = 0;
         cv_text_r(228, 44 - AF_X_CAP_Y, fx, b, T_DIM, T_SURF);
     }
-    if (BT_CAL[0] != BT_CAL[1]) {
+    if (bpc.on) {                                       /* (V10.6z8) a point being taken: how far */
+        str_cpy(b, bpc.on > 1u ? "HOLD STILL: NEAR " : "HOLD STILL: FAR ", sizeof b);
+        fmt_int(b + str_len(b), (int32_t)((fm1_ms - bpc.t0) * 100u / BPC_MS));
+        str_cpy(b + str_len(b), BP_S[13], 2);
+    } else if (BT_CAL[0] != BT_CAL[1]) {
         str_cpy(b, BP_S[11], sizeof b);
         fmt_fix(b + str_len(b), BT_CAL[0] * 5, 1);
         str_cpy(b + str_len(b), BP_S[12], 10);
@@ -469,7 +476,7 @@ BTAPP_FN static void bt_prox_panel(const aafont_t *fx, const aafont_t *fm, const
     fmt_int(b + str_len(b), (int32_t)BT_SPEED() + 1);
     cv_text(10, 136 - AF_S_CAP_Y, fs, b, T_TEXT);
 }
-BTAPP_FN static void bt_prox_input(uint32_t up, uint32_t dn)
+static __attribute__((noinline)) void bt_prox_input(uint32_t up, uint32_t dn)   /* (V10.6z8: out of the full segment) */
 {
     int32_t z = 0, v = 0, w = 0;
     if (panel_enc(EN_SELECT) || panel_enc(EN_ALGO)) {
@@ -486,18 +493,52 @@ BTAPP_FN static void bt_prox_input(uint32_t up, uint32_t dn)
             ui_message(BP_S[2]);
             return;
         }
-        BT_CAL[up] = (uint8_t)clamp((bp.lvl + 64) >> 7, 0, 252);
-        if (BT_CAL[0] && BT_CAL[1] && (BT_CAL[0] > BT_CAL[1] ? BT_CAL[0] - BT_CAL[1] : BT_CAL[1] - BT_CAL[0]) < 8u) {
-            ui_message("FAR AND NEAR TOO CLOSE");       /* (V10.20) under 4 levels apart: noise, not distance */
-            return;
-        }
-        ui_message(BP_S[7u + up]);
+        bpc.on = (uint8_t)(up + 1u);                    /* (V10.6z8: ~2.5 s of it, bt_cal_tick) */
+        bpc.n = 0;
+        bpc.t0 = bpc.ts = fm1_ms;
+        ui_message("HOLD STILL...");
+        ui.force = 1;
     }
 }
-static uint32_t bt_prox_sig(void) { return ui.menu == 3 ? (uint32_t)mod_prox * 31u + bp.raw * 977u + bp.w4[0] * 13u + bp.w4[1] * 17u + bp.w4[2] * 19u + bp.w4[3] * 23u + bp.src * 29u + bp.have * 37u + bp.seen * 41u + (bt_hw_rxdiag() >> 4) * 43u + bp.conn * 5u + BT_CAL[0] * 3u + BT_CAL[1] * 7u + BT_TUNE[0] * 11u + BT_TUNE[1] * 53u + BT_TUNE[2] * 59u : 0u; }
+/* (V10.6z8, a Discord user: "near / far jump chaotically") a point stored is the median of BPC_MS of the level (a
+ * sample every 40 ms: an advertisement's RSSI is noisy, one reading was a lottery), not the reading of the press.
+ * menu_input runs it each frame while PROX's page is up (away longer: dropped) */
+static void bt_cal_tick(void)
+{
+    uint32_t i, j, n, k = bpc.on - 1u;
+    uint8_t x;
+    if (!bpc.on)
+        return;
+    if (fm1_ms - bpc.t0 >= BPC_MS + 1000u) {
+        bpc.on = 0;
+        return;
+    }
+    if (bp.conn && bp.have && fm1_ms - bpc.ts >= 40u && bpc.n < sizeof bpc.v) {
+        bpc.ts = fm1_ms;
+        bpc.v[bpc.n++] = (uint8_t)clamp((bp.lvl + 64) >> 7, 0, 252);
+    }
+    if (fm1_ms - bpc.t0 < BPC_MS)
+        return;
+    bpc.on = 0;
+    ui.force = 1;
+    if (!(n = bpc.n)) {
+        ui_message(BP_S[2]);
+        return;
+    }
+    for (i = 1; i < n; i++)                             /* (sorted: its middle) */
+        for (j = i; j && bpc.v[j - 1u] > bpc.v[j]; j--)
+            x = bpc.v[j], bpc.v[j] = bpc.v[j - 1u], bpc.v[j - 1u] = x;
+    BT_CAL[k] = bpc.v[n / 2u];
+    if (BT_CAL[0] && BT_CAL[1] && (BT_CAL[0] > BT_CAL[1] ? BT_CAL[0] - BT_CAL[1] : BT_CAL[1] - BT_CAL[0]) < 8u) {
+        ui_message("FAR AND NEAR TOO CLOSE");           /* (V10.20) under 4 levels apart: noise, not distance */
+        return;
+    }
+    ui_message(BP_S[7u + k]);
+}
+static uint32_t bt_prox_sig(void) { return ui.menu == 3 ? (bpc.on ? (fm1_ms - bpc.t0) / 100u * 67u : 0u) + (uint32_t)mod_prox * 31u + bp.raw * 977u + bp.w4[0] * 13u + bp.w4[1] * 17u + bp.w4[2] * 19u + bp.w4[3] * 23u + bp.src * 29u + bp.have * 37u + bp.seen * 41u + (bt_hw_rxdiag() >> 4) * 43u + bp.conn * 5u + BT_CAL[0] * 3u + BT_CAL[1] * 7u + BT_TUNE[0] * 11u + BT_TUNE[1] * 53u + BT_TUNE[2] * 59u : 0u; }
 
 static void confirm_open(uint32_t kind, uint32_t trk);   /* (0.6.58) INIT SYSTEM: ui_input.c */
-static void draw_menu(void)
+static __attribute__((noinline)) void draw_menu(void)
 {
     uint32_t sig;
     sig = ui.menu * 7u + ui.menu_sel * 131u + settings.palette * 1009u + settings.lowcut * 7919u + settings_hold * 3511u +
@@ -589,9 +630,10 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
     int32_t s;
     uint32_t k, up = (oct >> 1) & 1u, dn = oct & 1u;
     if (ui.menu == 3) {                                /* (V10.14) PROX's page (only opened with the radio running) */
-        if (bt_up == BT_RUN)
+        if (bt_up == BT_RUN) {
             bt_prox_input(up, dn);
-        else
+            bt_cal_tick();
+        } else
             ui.menu = 1;
         enc_drop();
         return;

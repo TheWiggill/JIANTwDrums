@@ -115,7 +115,7 @@ static int ed_bk_panel_valid(const panel_t *p)
     }
     return 1;
 }
-static uint32_t ed_bk_commit(void)
+static __attribute__((noinline)) uint32_t ed_bk_commit(void)
 {
     uint8_t *raw = ED_BK_RAW;
     uint32_t obj;
@@ -225,7 +225,7 @@ static int proj_store_len(uint32_t len)
     return len == sizeof(project_store_t) || len == PROJ_STORE_VA || len == PROJ_STORE_V9 || len == PROJ_STORE_V8 ||
            len == PROJ_STORE_V7;
 }
-static uint32_t ed_bk_write(const uint8_t *a, uint32_t n)
+static __attribute__((noinline)) uint32_t ed_bk_write(const uint8_t *a, uint32_t n)
 {
     /* the arguments first: a malformed request never stops the transport */
     if (n < 2u || a[0] > 3u || (a[1] > 10u && (a[1] < ED_BK_SONG || a[1] >= ED_BK_SONG + NSONG * 4u))) return 1;

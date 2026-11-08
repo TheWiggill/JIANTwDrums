@@ -1020,7 +1020,7 @@ static uint32_t ga_idx(uint32_t a)
     for (i = 0; i < sizeof GA_LIST && GA_LIST[i] != a; i++) {}
     return i < sizeof GA_LIST ? i : 0u;
 }
-static void gco_knob(uint32_t slot, int32_t steps)
+static __attribute__((noinline)) void gco_knob(uint32_t slot, int32_t steps)
 {
     gcomp_t *c = &glane[gl_cur % GL_N];
     uint32_t a = CO_ACT(c->comp);
@@ -1342,8 +1342,6 @@ static void load_end(track_t *t)
     motion_rebase(t);
 }
 
-static int param_kept(uint32_t i);
-
 /* a 16-step pattern (PATTERNS[] format, user presets too) into steps 1..16, the rest empty, LEN 16 */
 static void load_pat16(track_t *t, const uint8_t *note, const uint8_t *flags)
 {
@@ -1454,21 +1452,6 @@ static void pat_load_ui(track_t *t, uint32_t n)
     ui_say("LOADED ", b);
 }
 
-/* the track's settings, not the sound's: what a sound load (factory or user preset, an engine jump,
- * TOOLS INIT) leaves alone. The mix (LEVEL, PAN, MUTE: the TRACKS faders), the arpeggiator (ARP, ARP 2),
- * the scale and key map (SCL), the pattern parameters (LEN, DIV, SWING, GATE) and the SLICER insert,
- * which chops whatever the track plays in time with its sequencer */
-static int param_kept(uint32_t i)
-{
-    return i == P_LEVEL || i == P_PAN || i == P_MUTE || (i >= P_AMODE && i <= P_SGATE) ||
-           (i >= P_SLCR && i <= P_SLDEPTH) || i == P_SOFS || i == P_POFS ||
-           (!FELUCCA_FM4 && (i == P_HVEL || i == P_HTIM || i == P_HGAT || i == P_HRQ)) ||   /* (0.6.87) HUMAN: the sequencer's, a sound
-                                                         * keeps it (FELUCCA_FM4: DIGITAL's OP SUS / LEVEL there) */
-           (!FELUCCA_FM4 && (i == P_CHRD || i == P_CVOI || i == P_CSTR || i == P_CLEN || i == P_TCHAN ||
-                             i == P_MCFG));   /* (0.7.0) SCL > CHORD, C.LEN, CHANCE: the sequencer's too (a
-                                                         * community report: browsing presets switched CHORD off); (V10.6i)
-                                                         * MUTATE's old slots are ENV 2's now: a sound's, set by its preset */
-}
 
 /* a retired preset kept as an alias (SAMPLE's, gone with it in JIANT): none now. -> the preset k stands for */
 static uint32_t preset_orig(const engine_t *e, uint32_t k) { (void)e; return k; }

@@ -155,7 +155,7 @@ static void graph_scene(void)
 /* (V10.6j) SCENE's DRUM: key k's beat into the kit, 16 steps (main loop: ui_input.c's poll; the key in the audio side
  * only asks, seq.c scn_dreq). STYLE FOUR BREAK HALF SPARSE; the higher the key in its octave, the busier: hats in 16ths,
  * a clap, an open hat, a fill */
-static void sc_beat(void)
+static __attribute__((noinline)) void sc_beat(void)
 {
     static const uint16_t KICK[4] = {0x1111, 0x0481, 0x0801, 0x0101}, SNR[4] = {0x1010, 0x1010, 0x0100, 0x1000},
                           HAT[4] = {0x4444, 0x5555, 0x5555, 0x4040};

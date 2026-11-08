@@ -906,7 +906,7 @@ static void note_drop(step_t *st, uint32_t j)           /* note j out of the ste
     if (st->n) st->note[--st->n] = 0;
     if (!st->n && !st->hit) st->time = ST_REST;
 }
-static void note_edit(uint32_t slot, int32_t steps)
+static __attribute__((noinline)) void note_edit(uint32_t slot, int32_t steps)
 {
     track_t *t = TSEL;
     uint32_t len = t->p[P_SLEN] > 0 ? (uint32_t)t->p[P_SLEN] : 1u, c = ui.cursor, i;
@@ -987,7 +987,7 @@ static int32_t step_velpos(const step_t *st)
 {
     return (st->flags & SF_SLIDE) ? (st->flags & SF_ACCENT ? 130 : 129) : (st->flags & SF_ACCENT) ? 128 : st->vel ? st->vel : 96;
 }
-static void step_edit(uint32_t slot, int32_t steps)
+static __attribute__((noinline)) void step_edit(uint32_t slot, int32_t steps)
 {
     step_t *st = &TSEL->step[ui.cursor];
     uint32_t i;
@@ -1055,7 +1055,7 @@ static void step_edit(uint32_t slot, int32_t steps)
  * ACTION (OFF and the twelve, then BEND; a new one its VALUE's default, LENGTH 1), KNOB 2 LENGTH 1..32 (a RAMP's: 1..32
  * steps, then 1..16 bars), KNOB 3 CONDITION (ALWAYS 25 50 75 % FIRST !FIRST FILL !FILL PRE !PRE NEI !NEI, ELSE on COMP 2 alone: MONO; then
  * 1:2 .. 16:16, !1:2 .. !16:16), KNOB 4 VALUE (core.h). OFF clears the component. The step's CHANCE and RATCH: CHANCE */
-static void comp_knob(uint32_t slot, int32_t steps)
+static __attribute__((noinline)) void comp_knob(uint32_t slot, int32_t steps)
 {
     step_t *st = &TSEL->step[ui.cursor];
     uint32_t k = comp_slot(), a = comp_view();
@@ -1168,7 +1168,7 @@ static void shape_knob(uint32_t slot, int32_t steps)
 }
 /* (0.8.5) EDIT > FOCUS: KNOB 1 the parameter (E1..E8 with a name, no wrap), 2 its value, 3 the SRC of the MOD slot aimed
  * at it (from OFF: a free slot takes it, its DEST E1..E8; back to OFF: the slot free again), 4 that slot's AMT */
-static void focus_knob(uint32_t slot, int32_t steps)
+static __attribute__((noinline)) void focus_knob(uint32_t slot, int32_t steps)
 {
     uint32_t k = focus_k(), f = k, n;
     int32_t j = focus_slot(k);
@@ -1315,7 +1315,7 @@ static int tl_play(void)
 }
 /* TIMELINE's keys: F3..D4 T1..T6 muted / sounding in the cursor's row (its scene: none yet, the state now, as
  * ARRANGE's SCENE; the row playing: at once), F4..B4 the ALGORITHM track's FROM A..D (its letter again: the row's own) */
-static void tl_keys(uint32_t pressed)
+static __attribute__((noinline)) void tl_keys(uint32_t pressed)
 {
     uint32_t k, p, r = ui.song_row;
     for (k = 0; k < 27u; k++) {
@@ -1637,6 +1637,11 @@ sect:
         knob_cap(TSEL, P_M1DST + 3u * mod_ui_slot);
         return;
     }
+    if (pg->id[0] == G_MIDI && pg->scope == SC_GLOBAL) {   /* (V10.6z8, a Discord user) GLO > SYSTEM 2 shows, edits nothing */
+        ui_message("EDIT: MENU > BLUETOOTH");
+        str_cpy(ui.msg2, "HOLD HOME, TAB SYSTEM", sizeof ui.msg2);
+        return;
+    }
     d = page_desc(pg, slot, &vp);
     if (!d || !vp || d->max == d->min)
         return;
@@ -1699,7 +1704,7 @@ static void tools_arm(void)
 }
 /* OCT+ on an action page: the picked action. A load stays picked (browse and load again); the others
  * are dropped once done. Flash writes only while stopped; over the user's data: the dialog */
-static void act_do(void)
+static __attribute__((noinline)) void act_do(void)
 {
     uint32_t c = act_col(), id, k = (uint32_t)song.g[G_SLOT] - 1u;
     if (!c--)
@@ -1989,7 +1994,7 @@ static void ent_knob(uint32_t k, int32_t s)
     else ui.ent_oct = (uint8_t)clamp(ui.ent_oct + d, 1, 3);
     ent_message();
 }
-static void ent_commit(void)
+static __attribute__((noinline)) void ent_commit(void)
 {
     track_t *t = TSEL;
     uint32_t len = t->p[P_SLEN] > 0 ? (uint32_t)t->p[P_SLEN] : 1u, cur = ui.cursor, i, j, n = 0, span;
@@ -2860,12 +2865,11 @@ static void ui_input_frame(void)
                     }
                     ui_message(drum_track(TSEL) && drum_elsewhere(TSEL) ? "INIT, KIT KEPT" : "SOUND INIT");
                 }
-            } else if (kind == CF_RECALL_SOUND) {       /* the section's stored sound (ui_layer.c EDIT) */
-                if (!chain_busy()) {
-                    int sl = project_recall_slot();
-                    if (sl < 0 || project_recall_sound((uint32_t)sl, song.sel)) ui_message("NOTHING SAVED");
-                    else ui_message("SOUND RECALLED");
-                }
+            } else if (kind == CF_RECALL_SOUND) {       /* the section's stored sound (ui_layer.c EDIT); (V10.6z8) a song
+                                                         * playing too: the track's sound follows the sections again */
+                int sl = project_recall_slot();
+                if (sl < 0 || project_recall_sound((uint32_t)sl, song.sel)) ui_message("NOTHING SAVED");
+                else ui_message("SOUND RECALLED");
             } else {
                 track_t *t = &trk[ui.confirm_trk % NTRK];
                 load_begin(t, LOAD_PAT);

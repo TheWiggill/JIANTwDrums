@@ -295,7 +295,7 @@ static void organ(uint32_t k, int32_t cx, int32_t cy)
     GFX_HOOK_ALIGN(gx - 30, 0, gx + 30, 0, AL_H, "BEING organ name centred");
     cv_text_in(gx - 30, gy - 28, 60, &AF_X, d->label, hot ? T_ACCENT : T_MID, T_SURF);
 }
-static void graph_home_being(void)
+static __attribute__((noinline)) void graph_home_being(void)
 {
     uint32_t c = song.sel % NTRK, k;
     int32_t cx = 120, cy = 68, bx = cx * 16, by = cy * 16;

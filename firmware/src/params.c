@@ -352,6 +352,30 @@ static int32_t enum_orig(const param_desc_t *d, int32_t v)
     (void)d;
     return v;
 }
+static uint32_t as_mix(uint32_t h, const void *p, uint32_t n)   /* FNV-1a, continued (project.c autosave_sig; song_play.c snd_sig) */
+{
+    const uint8_t *b = p;
+    while (n--) {
+        h ^= *b++;
+        h *= 16777619u;
+    }
+    return h;
+}
+/* the track's settings, not the sound's: what a sound load (factory or user preset, an engine jump,
+ * TOOLS INIT) leaves alone. The mix (LEVEL, PAN, MUTE: the TRACKS faders), the arpeggiator (ARP, ARP 2),
+ * the scale and key map (SCL), the pattern parameters (LEN, DIV, SWING, GATE) and the SLICER insert,
+ * which chops whatever the track plays in time with its sequencer */
+static int param_kept(uint32_t i)
+{
+    return i == P_LEVEL || i == P_PAN || i == P_MUTE || (i >= P_AMODE && i <= P_SGATE) ||
+           (i >= P_SLCR && i <= P_SLDEPTH) || i == P_SOFS || i == P_POFS ||
+           (!FELUCCA_FM4 && (i == P_HVEL || i == P_HTIM || i == P_HGAT || i == P_HRQ)) ||   /* (0.6.87) HUMAN: the sequencer's, a sound
+                                                         * keeps it (FELUCCA_FM4: DIGITAL's OP SUS / LEVEL there) */
+           (!FELUCCA_FM4 && (i == P_CHRD || i == P_CVOI || i == P_CSTR || i == P_CLEN || i == P_TCHAN ||
+                             i == P_MCFG));   /* (0.7.0) SCL > CHORD, C.LEN, CHANCE: the sequencer's too (a
+                                                         * community report: browsing presets switched CHORD off); (V10.6i)
+                                                         * MUTATE's old slots are ENV 2's now: a sound's, set by its preset */
+}
 
 /* a stored value as the parameter takes it (projects, user presets, motion): inside d's range. FM6's SLOT is never
  * stored as a bank slot (JIANT 0.6.11, from Felucca 1.4.1): 9..40 (B1..B32) is 8, OWN, and the patch comes with what is

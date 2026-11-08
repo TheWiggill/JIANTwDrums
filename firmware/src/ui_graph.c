@@ -1220,7 +1220,7 @@ BTAPP_FN static void ramp_draw_bt(const track_t *t, uint32_t dr, int32_t top, ui
  * every page); COMP the steps with the cursor's component a bar on top ACCENT, another component a thin MID one;
  * AUTOMATION / AUTO LIST the records at the foot (a lock ACCENT, automation TEXT; AUTO LIST the row picked framed THEME);
  * MUTATE a chip, the next mutation; TRACK the notes PITCH moves them to, MID outlines */
-static void seq_overlay(const track_t *t, const page_t *pg)
+static __attribute__((noinline)) void seq_overlay(const track_t *t, const page_t *pg)
 {
     uint32_t dr = drum_track(t), len = (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP), base = ui.bank * 16u, i, k;
     int32_t top = dr ? 19 : PR_Y0, bot = dr ? 19 + 8 * 15 - 1 : PR_Y0 + PR_ROWS * PR_RH, x, w;
@@ -1416,7 +1416,7 @@ static void toast_pill(void)
 static void sound_name(const track_t *t, char *b);   /* (ui_draw.c) */
 static void gen_panel(void);                         /* (0.8.5) gen.c: GEN in HOME's lens */
 static uint32_t gen_draw_sig(void);
-static uint32_t graph_signature(void)
+static __attribute__((noinline)) uint32_t graph_signature(void)
 {
     const page_t *pg = cur_page();
     const track_t *t = TSEL;
@@ -1824,7 +1824,7 @@ static void track_strip(uint32_t c, uint32_t sel, uint32_t st, uint32_t mute, ui
  * beside it, PAN (from the middle) and the REV send as the two bars under it */
 #define T6_W 38
 #define T6_X(c) (3 + 39 * (int32_t)(c))
-static void track_col6(uint32_t c, uint32_t sel, uint32_t st, uint32_t mute, uint32_t hot, uint32_t lvl, int32_t pan,
+static __attribute__((noinline)) void track_col6(uint32_t c, uint32_t sel, uint32_t st, uint32_t mute, uint32_t hot, uint32_t lvl, int32_t pan,
                        int32_t rv, const char *b)
 {
     char v[8];
@@ -1886,7 +1886,7 @@ static void track_col6(uint32_t c, uint32_t sel, uint32_t st, uint32_t mute, uin
         cv_rect(4, 113, rv * pw / 127 + 1, 3, mute ? T_DIM : hot == 3u ? T_ACCENT : heat_col(40 + rv * 3 / 2));
     cv_blit((uint32_t)T6_X(c), lz_on() ? graph_y() + 9u : Y_GRAPH);   /* (0.8.5: GLO's lens, the panel under the cards) */
 }
-static void draw_tracks(void)
+static __attribute__((noinline)) void draw_tracks(void)
 {
     uint32_t c, sk = strip_kind() == SK_TRK, six = !sk;   /* (0.6.80: the six columns with every COLOR and STYLE;
                                                          * MENU > LARGE: four, bigger) */

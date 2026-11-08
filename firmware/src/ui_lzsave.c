@@ -447,7 +447,7 @@ static void graph_sound(void)
 /* (V10.24, the user's pick A) PRESETS in two columns: at the left the engines (their being, how many presets), the
  * selected track's lit; at the right the list (LIST's) around the sound, its engine named only when another's. KNOB 1
  * plays each as it passes; OCT+ keeps it, OCT- brings back the sound from before the browse (ui_input.c br_undo) */
-static void graph_lz_presets(void)
+static __attribute__((noinline)) void graph_lz_presets(void)
 {
     uint32_t total, cur = preset_pos(&total), e, k, i, first, r, rc = 0, rows = (graph_h() - 2u) / 15u;
     rows = rows > 9u ? 9u : rows;

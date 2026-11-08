@@ -206,7 +206,7 @@ static void mom_forget(uint32_t t)                      /* track t's sound repla
 }
 /* the knob k's value on the page under, if a plain parameter (a track's or a song global; not a list, an action, a step,
  * the kit, an operator: those are not momentary) */
-static int16_t *mom_vp(uint32_t k, const param_desc_t **d)
+static __attribute__((noinline)) int16_t *mom_vp(uint32_t k, const param_desc_t **d)
 {
     const page_t *pg = cur_page();
     int16_t *vp = 0;
@@ -724,7 +724,7 @@ static void session_dice(uint32_t seed)
 #define GLO_TAP 7u
 #define GLO_UNDO 8u                                     /* (0.6.21) G4: UNDO the last big change (project.c undo_do) */
                                                         /* (V10.6) A4 FREEZE, B4 REVERT ALL and SEQ's D5 REVERT gone with MUTATE */
-static void layer_key(uint32_t l, uint32_t k)
+static __attribute__((noinline)) void layer_key(uint32_t l, uint32_t k)
 {
     uint32_t p = key_place(k), i;
     if (l == LAYER_GLO) {
@@ -918,7 +918,7 @@ static uint32_t layer_leds(uint32_t *br)
             on = e == 0u;
             can = (mask >> e) & 1u;
         } else if (l == LAYER_EDIT && !b) {             /* INIT and RECALL breathe (RECALL: a stored section) */
-            can = !chain_busy() && (p == LY_INIT || (p == LY_RECALL && edit_recallable()));
+            can = (p == LY_INIT && !chain_busy()) || (p == LY_RECALL && edit_recallable());   /* (V10.6z8: RECALL in a song) */
         } else if (l == LAYER_EDIT && p < NLANE && drum_track(TSEL)) {   /* DRUM: a sound sounding lit, muted dark */
             on = !dx_lane_muted(p);
         } else if (l == LAYER_SEQ) {                    /* the tools breathe (not while a song plays); DRUM: the lane */
@@ -1071,7 +1071,7 @@ static uint32_t ly_keyname(uint32_t l, int blk, uint32_t p, char *nm)
         if (p > LY_RECALL)
             return LS_OFF;
         str_cpy(nm, p == LY_INIT ? (drum_track(TSEL) ? "INIT+KIT" : "INIT") : drum_track(TSEL) ? "RCL+KIT" : "RECALL", 12);
-        return p == LY_RECALL && !edit_recallable() ? LS_DIM : busy;
+        return p == LY_RECALL ? (edit_recallable() ? LS_OFF : LS_DIM) : busy;   /* (V10.6z8: RECALL in a song too) */
     }
     if (l == LAYER_SEQ) {
         if (blk) {

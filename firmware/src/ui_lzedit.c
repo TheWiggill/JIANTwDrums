@@ -30,7 +30,7 @@ static void ed_cap(int32_t x, int32_t y, const char *s, uint16_t c)   /* a capti
 {
     cv_text(x, y - AF_X_CAP_Y, &AF_X, s, c);
 }
-static void graph_sound_lz(const track_t *t)
+static __attribute__((noinline)) void graph_sound_lz(const track_t *t)
 {
     const engine_t *e = trk_engp(t);
     uint32_t k, two = cur_page()->id[0] != P_E0, n = 0;

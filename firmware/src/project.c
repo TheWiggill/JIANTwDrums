@@ -1498,12 +1498,17 @@ static int project_recall_slot(void)
  * and sound (the parameters a sound load sets: not LEVEL PAN MUTE, the pattern's, the SLICER: param_kept), its FM6
  * patch; a DRUM track also the section's DRUM-X kit. The steps and the motion stay. 0 done, 1 nothing stored there */
 static void sound_put(project_t *p, uint32_t k);
-static int project_recall_sound(uint32_t slot, uint32_t k)
+static __attribute__((noinline)) int project_recall_sound(uint32_t slot, uint32_t k)
 {
     project_t *p = &proj_scratch;
     if (slot > 3u || !proj_import(p, &proj_slot[slot], sizeof(project_store_t)) || !proj_ok(p) || !proj_engines_ok(p))
         return 1;
     sound_put(p, k);
+    k = 1u << k | (uint32_t)(trk[k].eng_req == ENGI_DRUM) << NTRK;   /* (V10.6z8) the sections' sound again (a song: */
+    fm1_irq_off();                                      /* from the next section on) */
+    snd_held &= (uint8_t)~k;
+    snd_seen &= (uint8_t)~k;
+    fm1_irq_on();
     return 0;
 }
 /* track k's sound (engine, sound parameters, FM6 patch; DRUM: the DRUM-X kit) from project p; the rest plays on */
@@ -1575,6 +1580,7 @@ static int project_restore_runtime(const project_t *input)
     seq_stop();
     transport_req = 0;
     chain.ended = 0;                                    /* (a song stopped by this load: the load wins, song_poll keeps out) */
+    snd_held = snd_seen = 0;                            /* (V10.6z8: the sounds the sections' again) */
     memset(track_env, 0, sizeof track_env);
     for (i = 0; i < NTRK; i++) track_pk[i] = 0;
     memcpy(dx_kit, dx_kit_ok(p->dx) ? p->dx : DX_KIT_DEF, sizeof dx_kit);   /* (the section's DRUM-X kit) */
@@ -1959,15 +1965,6 @@ static struct {
     uint8_t wrote, err;                          /* a write since power-on (last is valid); the last one failed */
 } as __attribute__((section(".pool")));
 
-static uint32_t as_mix(uint32_t h, const void *p, uint32_t n)   /* FNV-1a, continued */
-{
-    const uint8_t *b = p;
-    while (n--) {
-        h ^= *b++;
-        h *= 16777619u;
-    }
-    return h;
-}
 
 /* what an autosave would hold, hashed (no copy, no RAM): project_capture's values */
 static uint32_t autosave_sig(void)

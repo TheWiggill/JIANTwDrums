@@ -159,6 +159,7 @@ static struct {
     uint8_t mn[12], mx[12], src, lock, seen;            /* (V10.18) each reading's range on this link; the one used; kept
                                                          * (a point stored); a link seen */
     int32_t alo, ahi;                                   /* (V10.6z6) SWARM's range of the level, not calibrated (Q8) */
+    int32_t hl;                                         /* (V10.6z8) AIR: the level PROX maps, a level's backlash (Q8) */
 } bp;
 /* (V10.61, the user's ask: a narrower field, PROX let go without taking the phone far away) thresholds over the
  * calibrated FAR .. NEAR, in 5 % steps: [19] MIN 0..18 (0 .. 90 %: under it PROX is 0, so a phone a little away
@@ -197,9 +198,12 @@ BTAPP_FN static void bt_sw_prox(uint32_t conn)
     sw_pxv = (int16_t)(BT_CAL[0] != BT_CAL[1] ? mod_prox : clamp((l - bp.alo) * 32767 / (bp.ahi - bp.alo > 1536 ? bp.ahi - bp.alo : 1536), 0, 32767));
     sw_pxon = 1;
 }
+/* (V10.6z8, a Discord user: AIR's FAR / NEAR "jump chaotically") AIR's level (advertisements, every device's, far
+ * noisier than a central's link): smoothed twice as long and, before PROX maps it, held within one level of it (a
+ * backlash: the noise left under a level moves nothing) */
 BTAPP_FN static void bt_prox_step(const uint16_t *w, uint32_t n, uint32_t conn, uint32_t now)
 {
-    uint32_t i, j, k, m[9];
+    uint32_t i, j, k, m[9], air = bt_get() == 2u;
     if (!conn)
         bp.have = bp.wn = 0;
     bp.conn = (uint8_t)conn;
@@ -214,13 +218,14 @@ BTAPP_FN static void bt_prox_step(const uint16_t *w, uint32_t n, uint32_t conn, 
                 m[q] = m[q - 1u];
             m[q] = x;
         }
-        bp.lvl = bp.have ? bp.lvl + ((int32_t)(m[k / 2u] << 8) - bp.lvl) / (32 >> BT_SPEED()) : (int32_t)(m[k / 2u] << 8);   /* (V10.20:
+        bp.lvl = bp.have ? bp.lvl + ((int32_t)(m[k / 2u] << 8) - bp.lvl) / ((32 << 2 * air) >> BT_SPEED()) : (int32_t)(m[k / 2u] << 8);   /* (V10.20:
                                                          * the median of nine, ~32 packets: ~0.3 s; was five, ~6: on
                                                          * the hardware a random sample and hold, the channels' hops) */
         bp.have = 1;
     }
     if (conn && bp.have) {
-        mod_prox = (int16_t)bt_prox_map(bp.lvl);
+        bp.hl = air ? clamp(bp.hl, bp.lvl - 384, bp.lvl + 384) : bp.lvl;
+        mod_prox = (int16_t)bt_prox_map(bp.hl);
         bp.t = now;
         if (n)
             bt_sw_prox(conn);                           /* (V10.6z6: SWARM's, a packet at a time) */

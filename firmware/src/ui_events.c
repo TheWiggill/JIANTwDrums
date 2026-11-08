@@ -112,7 +112,7 @@ static int ev_busy(void)
 }
 
 /* KNOB slot turned s on AUTO LIST */
-static void ev_knob(uint32_t slot, int32_t s)
+static __attribute__((noinline)) void ev_knob(uint32_t slot, int32_t s)
 {
     track_t *t = TSEL;
     uint8_t idx[MOTION_MAX];

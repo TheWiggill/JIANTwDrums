@@ -1985,7 +1985,7 @@ static void draw_uboot(void)
  * PLAY stops it. Drawn again on each beat (seq.c's state; the header stays live) */
 #define CI_Y 88                                       /* the cells: 4 x 48 px, 8 px apart, 72 tall */
 #define CI_H 72
-static void draw_countin(void)
+static __attribute__((noinline)) void draw_countin(void)
 {
     static uint32_t shown;
     uint32_t total = cin_total, e = total - cin_left, j, sig = total * 64u + e + 1u;

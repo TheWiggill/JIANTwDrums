@@ -167,7 +167,9 @@ def main(src, dst):
                   # pass) and its conditions, a lyric's POS, the PLAYHEADS back in phase, a chord glide's note, USB's
                   # control transfers, a step's parts
                   "voice_victim", "shift_prepare_pass", "shift_cond", "sy_seek", "live_heads", "cg_near", "e0_chunk",
-                  "step_parts"}
+                  "step_parts",
+                  # (V10.6z8) a section's change: the sounds the player changed
+                  "snd_sig", "snd_own"}
     names, hit = ((size_names() | cold_ui) - isr) | input_size | event_size, set()
     def mark(m):
         if m.group(2) not in names:

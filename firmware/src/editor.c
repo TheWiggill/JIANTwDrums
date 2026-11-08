@@ -406,7 +406,7 @@ static int ed_lm_ok(const uint8_t *a)                  /* (0.8.5) eight lane mod
         if (a[i] >= LM_N) return 0;
     return 1;
 }
-static int ed_args_ok(uint32_t cmd, const uint8_t *a, uint32_t n)
+static __attribute__((noinline)) int ed_args_ok(uint32_t cmd, const uint8_t *a, uint32_t n)
 {
     switch (cmd) {
     case ED_INFO: case ED_DUMP: case ED_PING:

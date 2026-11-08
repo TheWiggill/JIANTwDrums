@@ -576,7 +576,7 @@ static void graph_mutate(const track_t *t, const eu_t *e)
     cv_text(4, h - 10, &AF_X, "OCT+ MUTATE", T_ACCENT);
     cv_text_r(234, h - 10, &AF_X, "OCT- ANCHOR", T_THEME, T_SURF);
 }
-static void graph_euclid(const track_t *t)
+static __attribute__((noinline)) void graph_euclid(const track_t *t)
 {
     static const char *const LN[NLANE + 1] = {"ALL", "BD", "SD", "CP", "CH", "OH", "TM", "RS", "CB"};
     static const char *const NN[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
