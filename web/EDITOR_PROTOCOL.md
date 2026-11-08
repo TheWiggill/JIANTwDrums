@@ -166,7 +166,7 @@ regenerated from `params.c` and compared.
 | 0.x (no tag) | Felucca 1.0 .. JIANT V10.6z2 | v1 .. v7 and the tagged additions described in this file |
 | 1.0 | V10.6z3 | the contract; `INFO` tag `43 02 01 00`; `WATCH` bits 2..4 and the pushes `TRANSPORT` (40), `PUNCH` (41), `MUTATE` (42); NRPN for every automatable parameter and the globals (`docs/NRPN.md`), sent for knob moves with MIDI OUT ALL |
 | 1.1 | V10.6z5 | `VEL` (81): the velocity diagnostic (below); `INFO` tag `43 02 01 01` |
-| 1.2 | V10.6z6 | `VEL` ops 4 and 5: the keys' velocity, calibration and pressure (below); MENU ids 27..30 (VELOCITY, VEL MIN, AFTERTOUCH, VEL LEARN); `INFO` tag `43 02 01 02` |
+| 1.2 | V10.6z7 | `VEL` ops 4 and 5: the keys' velocity, calibration and pressure (below); MENU ids 27..30 (VELOCITY, VEL MIN, AFTERTOUCH, VEL LEARN); `INFO` tag `43 02 01 02` |
 
 ## 1.0: performance pushes (40-42)
 
@@ -208,7 +208,7 @@ conversions not done by the next tick; the MASTER pot as the scan reads it, −1
 - 2, a capture (the first key touched while none runs): `key, count (56), count × v14`: 8 pulled-up readings before
   the touch, then 48 from it (~2.2 ms apart), each `reading | 1024` when it was a driven one.
 
-From 1.2 (V10.6z6) the key sensing also runs whenever MENU > CONTROL > VELOCITY or AFTERTOUCH is not OFF (the
+From 1.2 (V10.6z7) the key sensing also runs whenever MENU > CONTROL > VELOCITY or AFTERTOUCH is not OFF (the
 defaults: NORMAL, MID), the diagnostic or not: `on` in the reply says whether the *diagnostic* is on (its presses
 and captures queued), `drive` is the drive the scan uses (2 unless the diagnostic asked for another; the velocity's
 calibration belongs to drive 2 and learns only there). Op 2 turns the diagnostic off; the sensing stays on for the

@@ -1,5 +1,10 @@
 # Diagnóstico de velocidad de las teclas (JIANT V10.6z5)
 
+> **Desde la V10.6z7 la velocidad y el aftertouch ya son parte del firmware**: MENU > CONTROL > **VELOCITY**, **VEL
+> MIN**, **AFTERTOUCH** y **VEL LEARN** (ver el [manual](MANUAL.es.md#velocidad-y-aftertouch-de-las-teclas-v106z7)). La
+> misma página muestra ahora, en *En vivo*, la velocidad de cada nota y la calibración de cada tecla. El diagnóstico de
+> abajo (la primera etapa, V10.6z5) sigue disponible para medir un equipo y mandarnos el archivo.
+
 Este diagnóstico **mide** cuánta presión le das a cada tecla, para saber si tu FM-1 puede tener velocidad
 (notas más fuertes cuanto más fuerte tocás). Es la primera etapa: **no cambia el sonido ni cómo suenan las
 teclas**. Las notas siguen sonando igual que siempre; el diagnóstico solo escucha y anota.
@@ -29,7 +34,7 @@ teclas**. Las notas siguen sonando igual que siempre; el diagnóstico solo escuc
 3. Abrí la página **https://juanjiant-bit.github.io/JIANT/webapp/vel/** en Chrome.
 4. Tocá **"1. Conectar el FM-1"**. Chrome pregunta si la página puede *controlar y reprogramar tus dispositivos
    MIDI*: elegí **Permitir** (hace falta para hablar con el FM-1; la página no instala nada).
-   Arriba tiene que aparecer *Conectado: JIANT V10.6z5 …*.
+   Arriba tiene que aparecer *Conectado: JIANT …* con la versión instalada (V10.6z5 o posterior).
 5. Dejá **Drive** en **2 (normal)** y tocá **"2. Activar la medición"**.
 6. Probá una tecla: en la pantalla del FM-1 aparece un mensaje como `VEL C4 D412 P188 2.2MS`, y en la página
    aparece la misma línea en grande y en el registro. Si eso pasa, está todo funcionando.
