@@ -23,9 +23,14 @@ enum { ED_INFO = 1, ED_GET, ED_SET, ED_DUMP, ED_DESC, ED_STEP_GET, ED_STEP_SET, 
 /* (V10.6z3) the protocol's version, INFO's tag 43 02 major minor: 1.0 the stability contract (web/EDITOR_PROTOCOL.md
  * "Stability contract"): from it on only additive changes; a minor for each addition, a major never (a break) */
 #define ED_PROTO_MAJOR 1u
-#define ED_PROTO_MINOR 0u
+#define ED_PROTO_MINOR 1u   /* (V10.6z5) 1.1: VEL (81) */
 enum { ED_VM_READ = 80 };   /* (V10.10) read-only: 256 B of the stock VM (0xE7000 + 256 x a[0], a[0] < 48: the radio's
                               * RF trims and BT address, web/btcheck.html); reply: a[0], then 256 x (hi nibble, lo nibble) */
+/* (V10.6z5, 1.1) the velocity diagnostic (vel_diag.c, web/vel.html): op 0 status, 1 on (drive 0..4), 2 off, 3 the next
+ * press or capture; the reply: op, on, drive, lost, ADC timeouts, MASTER (v14 each), then for op 3 kind (0 nothing,
+ * 1 a press: key, touch -> press 1/10 ms, lowest pulled-up, lowest driven; 2 a capture: key, count, count x the
+ * readings | 1024 driven), v14 each, -1 none */
+enum { ED_VEL = 81 };
 
 static uint8_t ed_out[600];
 static uint32_t ed_n;
@@ -869,6 +874,30 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
         for (i = 0; i < 256u; i++) { ed_b(b[i] >> 4); ed_b(b[i] & 15u); }
         break;
     }
+#ifdef VD_NK
+    case ED_VEL: {
+        static vd_cap_t c;
+        vd_ev_t e;
+        uint32_t k = 0;
+        if (!na || a[0] > 3u)
+            return;
+        if (a[0] == 1u || a[0] == 2u)
+            vd_set(a[0] == 1u, na > 1u ? a[1] : 2u);
+        ed_b(a[0]); ed_b(fm1_an.want); ed_b(fm1_an.drive);
+        ed_v(vd_lost); ed_v(fm1_an.timeouts); ed_v(fm1_an.master);
+        if (a[0] != 3u)
+            break;
+        ed_b(k = vd_next(&c, &e));
+        if (k == 1u) {
+            ed_b(e.key); ed_v((int16_t)e.dt); ed_v((int16_t)e.pmin); ed_v((int16_t)e.dmin);   /* (VD_NONE: -1) */
+        } else if (k == 2u) {
+            ed_b(c.key); ed_b(VD_CAP);
+            for (i = 0; i < VD_CAP; i++)
+                ed_v(c.v[i]);
+        }
+        break;
+    }
+#endif
     default:
         return;
     }

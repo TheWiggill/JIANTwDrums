@@ -180,6 +180,10 @@ run "user presets (UP_PUT parser, bank round trip, versions, PHYS DRUM kept, SAM
 
 $CC -o "$OUT/input_test" tests/input_test.c
 run "keys and buttons: fast press, long release, bouncy contacts (one note each), glitches, encoders" "$OUT/input_test"
+$CC -Ibuild/gen -Ifirmware/src -o "$OUT/vel_diag_test" tests/vel_diag_test.c
+run "velocity diagnostic (V10.6z5): the scan's ADC slots, MASTER kept, drive, presses and captures on synthetic traces" "$OUT/vel_diag_test"
+$CC -Ifirmware/src -o "$OUT/boot_lz4_test" tests/boot_lz4_test.c
+run "the boot's packed RAM code (V10.6z5): LZ4 blocks back byte for byte, the build's own too" "$OUT/boot_lz4_test"
 
 $CC -o "$OUT/midi_uart_test" tests/midi_uart_test.c
 run "TRS MIDI parser" "$OUT/midi_uart_test"

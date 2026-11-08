@@ -131,6 +131,13 @@ jobs:
           ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 build/song-check/expr-keys | tee build/song-check/expr-keys.log
           cc -O1 -g -w -Wno-implicit-function-declaration -fsanitize=address,bounds -Ibuild/gen -Ifirmware/src tests/legato_rec_test.c -lm -o build/song-check/legato-rec
           ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 LEGATO_REC_VERBOSE=1 build/song-check/legato-rec | tee build/song-check/legato-rec.log
+      - name: Velocity diagnostic and the boot's packed RAM code (V10.6z5)
+        run: |
+          set -euo pipefail
+          cc -O1 -g -w -fsanitize=address,undefined -Ibuild/gen -Ifirmware/src tests/vel_diag_test.c -o build/song-check/vel-diag
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 build/song-check/vel-diag | tee build/song-check/vel-diag.log
+          cc -O1 -g -w -fsanitize=address,undefined -Ifirmware/src tests/boot_lz4_test.c -o build/song-check/boot-lz4
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 build/song-check/boot-lz4 | tee build/song-check/boot-lz4.log
       - name: Verified pre-split baseline for UI regression comparison
         uses: actions/checkout@v4
         with:

@@ -377,10 +377,74 @@ static void con_params(void)
 }
 
 #endif
+/* (V10.6z5) the velocity diagnostic (vel_diag.c): `vel on [DRIVE 0..4] | off`; while on and the console open, each
+ * press ("vel C4 D412 P188 2.2MS") and each capture ("vel C4 pre ..", "vel C4 post ..", d: a driven reading) */
+static void con_vel_ev(const vd_ev_t *e)
+{
+    char b[24];
+    vd_line(b, e);
+    con_puts("vel ");
+    con_puts(b);
+    con_puts("\r\n");
+}
+static void con_vel_cap(const vd_cap_t *c)
+{
+    uint32_t i;
+    char b[4];
+    vd_key_name(b, c->key);
+    for (i = 0; i < VD_CAP; i++) {
+        if (i == 0u || i == VD_PRE) {
+            con_puts(i ? "\r\nvel " : "vel ");
+            con_puts(b);
+            con_puts(i ? " post" : " pre");
+        }
+        con_putc(' ');
+        if (c->v[i] & VD_DRIVEN)
+            con_putc('d');
+        con_dec(c->v[i] & 0x3FFu);
+    }
+    con_puts("\r\n");
+}
+static void con_vel_drain(void)                         /* (cdc_task) */
+{
+    static vd_cap_t c;
+    vd_ev_t e;
+    uint32_t k;
+    if (!cdc.dtr)
+        return;
+    while ((k = vd_next(&c, &e)) != 0u) {
+        con.stalled = 0;
+        if (k == 2u)
+            con_vel_cap(&c);
+        else
+            con_vel_ev(&e);
+    }
+}
+static void con_vel(const char *p)
+{
+    if (con_word(&p, "on")) {
+        while (*p == ' ')
+            p++;
+        vd_set(1, *p >= '0' && *p <= '4' ? (uint32_t)(*p - '0') : 2u);
+    } else if (con_word(&p, "off")) {
+        vd_set(0, 0);
+    }
+    con_puts(fm1_an.want ? "vel on, drive " : "vel off");
+    if (fm1_an.want)
+        con_dec(fm1_an.drive);
+    con_puts("  lost ");
+    con_dec(vd_lost);
+    con_puts("  adc_timeouts ");
+    con_dec(fm1_an.timeouts);
+    con_puts("  master ");
+    con_dec(fm1_an.master);
+    con_puts("\r\n");
+}
+
 static void con_exec(const char *p)
 {
     if (con_word(&p, "help") || con_word(&p, "?"))
-        con_puts("status  dbg  crash  uboot yes\r\n"
+        con_puts("status  dbg  crash  vel on|off  uboot yes\r\n"
 #if FELUCCA_CONSOLE_VERBOSE
                  "inp  params  memr ADDR [LEN]  flr OFF [LEN]\r\n"
 #endif
@@ -391,6 +455,8 @@ static void con_exec(const char *p)
         con_dbg();
     else if (con_word(&p, "crash"))
         con_crash();
+    else if (con_word(&p, "vel"))
+        con_vel(p);
 #if FELUCCA_CONSOLE_VERBOSE
     else if (con_word(&p, "inp"))
         con_inp();
@@ -416,6 +482,7 @@ static void con_exec(const char *p)
 
 static void cdc_task(void)                              /* main loop */
 {
+    con_vel_drain();                                   /* (V10.6z5) the velocity diagnostic, when on */
     if (cdc.dtr && !con.dtr_seen) {
         con_puts("\r\nJIANT ");
         con_puts(FELUCCA_VERSION);

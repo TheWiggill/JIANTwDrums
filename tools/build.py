@@ -557,17 +557,28 @@ def build_app():
     img = bytearray((OUT / "text.bin").read_bytes())
     # .ram_text, .c1_text (0.6.71: the second core's loop), .hot_text (0.6.78: core 0's hot audio code) and .data follow .text at their load addresses; crt0 copies
     # them by words
-    for sect, lname in (("ramtext.bin", "_rt_load"), ("c1text.bin", "_c1t_load"), ("hottext.bin", "_hot_load"),
-                        ("data.bin", "_data_load")):
-        load = symv(lname)
-        if load % 4:
-            raise SystemExit(f"{lname} {load:#x} is not word aligned")
+    # (V10.6z5) packed: app.ld links their load images outside the flash (PACKED); here one LZ4 block each
+    # (tools/lz4blk.py compress_small), one after the other from _etext on (the end of .text), in this order; main.c
+    # fm1_cstart unpacks them into their sections (firmware/src/boot_lz4.h). Each block is unpacked here as boot_lz4
+    # does it and must give its section back byte for byte
+    load = symv("_etext")
+    if load % 4 or load - APP_XIP != len(img):
+        raise SystemExit(f"_etext {load:#x}: not word aligned or not the end of .text")
+    stream, raw_total = bytearray(), 0
+    for sect, lo, hi in (("ramtext.bin", "_rt_start", "_rt_end"), ("c1text.bin", "_c1t_start", "_c1t_end"),
+                         ("hottext.bin", "_hot_start", "_hot_end"), ("data.bin", "_data_start", "_data_end")):
         blob = (OUT / sect).read_bytes() if (OUT / sect).exists() else b""
-        if blob:
-            if load - APP_XIP < len(img):
-                raise SystemExit(f"{lname} overlaps the image")
-            img += b"\xff" * (load - APP_XIP - len(img))
-            img += blob
+        if len(blob) != symv(hi) - symv(lo):
+            raise SystemExit(f"{sect}: {len(blob)} B, its section {lo}..{hi} {symv(hi) - symv(lo)} B")
+        at = len(stream)
+        stream += lz4blk.compress_small(blob) if blob else b""
+        back, end = lz4blk.boot_unpack(bytes(stream), at, len(blob))
+        if back != blob or end != len(stream):
+            raise SystemExit(f"{sect}: its LZ4 block does not unpack to it (boot_lz4)")
+        raw_total += len(blob)
+    (OUT / "boot_lz4.bin").write_bytes(stream)   # (tests/boot_lz4_test.c unpacks it with boot_lz4.h)
+    img += stream
+    print(f"boot: RAM code and data {raw_total} B packed to {len(stream)} B (LZ4, unpacked by fm1_cstart)")
     img += b"\xff" * (-len(img) % 4)
     bt_segment(img, symv)
     (OUT / "felucca.bin").write_bytes(img)

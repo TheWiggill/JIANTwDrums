@@ -120,7 +120,42 @@ def main(src, dst):
                "proj_unpack_bt", "about_load", "bt_prox_panel", "bt_prox_input",
                "fm4_abs", "fm4_lg", "fm4_ms", "fm4_samples", "fm4_rate", "fm4_fall", "fm4_level", "fm4_outlevel", "fm4_convert_bt",
                "crash_log_put", "cpu_status", "cpu_put"}   # (V10.6z4: a crash's record, the CPU menu)
-    names, hit = ((size_names() | cold_ui) - isr) | input_size, set()
+    # (V10.6z5) more code an interrupt reaches but runs once an event, never once a sample: a note's start and end
+    # (the engines' note_on hooks, the voice's allocation, the words VOICE sings: once a word), MIDI's and USB's
+    # configuration and messages, the arpeggiator's and the keys' chords, the descriptors (UI text the ENG[] tables
+    # name), a crash's report, the USB host's descriptor parse. Chosen from a callgrind profile of tests/cpu_vg.c
+    # (built -O1 -fno-inline: every function's own instructions): together they are < 0.1 % of the audio path's
+    # instructions there; none is in HOT_FNS or called from RAM code (build.py's RAM code size is unchanged)
+    event_size = {
+                  "add_note_on", "ain_note_on", "analog_desc", "analog_from_chip", "analog_from_trio",
+                  "analog_note_on", "animal_desc", "animal_init", "animal_note_on", "arp_chord", "arp_chord_off",
+                  "arp_forget", "arp_off", "arp_owner", "arp_silence", "bt_hw_seg", "chord_auto", "chord_pick",
+                  "cin_begin", "cp_order", "crash_code", "delay_zero", "drum_lane", "drum_note_lane", "drum_note_on",
+                  "drum_oct_note", "drum_oct_of", "dx_mute_set", "dxo_hit", "dxo_off", "dxo_on", "dxo_part",
+                  "dxp_choke", "e0_send", "eng_gone", "fg_release", "fg_reset", "fm1_fault_c", "fm6_done",
+                  "fm6_note_on", "formant_desc", "formant_note_on", "glide_from_trk", "glide_set", "glide_sung",
+                  "hex8", "input_desc", "input_off", "input_on", "kb_lat", "kb_map", "key_next", "key_place",
+                  "live_next", "live_swap", "lm_hits", "lm_once", "load_admit", "load_cost_q8", "lofi_desc",
+                  "lofi_note_on", "lv_neutral", "ly_at", "ly_pick", "ly_word", "mc_lost", "midi_channel",
+                  "midi_clock_transport", "midi_expression", "midi_expression_channel", "midi_forget_track",
+                  "midi_local_held", "midi_mapped", "midi_note_event", "midi_note_held", "midi_out_event_at",
+                  "midi_pedal_up", "midi_release", "midi_targets", "midi_track", "midi_val_set", "ml_free_cc",
+                  "ml_map", "mn_get", "mo_key", "mo_plays", "mo_send", "mod_midi", "mono_pick", "mono_play",
+                  "mono_remove", "motion_begin", "motion_desc", "motion_enabled", "motion_set_event", "name_of",
+                  "noise_desc", "noise_note_on", "nrpn_g_ok", "param_desc_of", "param_fit", "params_by_count",
+                  "perf_buf_done", "perf_buf_start", "perf_glt_seg", "perf_glt_step", "perf_hush_end", "perf_key",
+                  "perf_len", "perf_mute", "perf_unhush", "pfx_hush", "pfx_lane_at", "pfx_lane_put", "pfx_rec_ok",
+                  "phase_note_on", "rec_note", "rec_on", "rec_release", "rev_line_clear", "room_zero", "scale_mask",
+                  "scale_snap", "scale_steps", "seq_note_off", "seq_note_on", "seq_release", "seq_unit",
+                  "shed_voice", "shift_step_pass", "sl_enter", "sound_v04", "sp_chain", "srec_stop", "st_micro_set",
+                  "step_lm_any", "step_lmode", "step_rolls", "step_set_chance", "step_set_lmode", "step_set_ratchet",
+                  "str_cpy", "string_desc", "string_note_on", "sy_en_expand", "sy_enter", "sy_es_tok", "sy_gen_word",
+                  "sy_norm", "sy_norm_lang", "sy_phrase_len", "sy_take_entry", "sy_tok", "sy_word", "sy_word_next",
+                  "track_desc", "trk_all_off", "trk_chance", "trk_fade_out", "trk_kit", "trk_note_off", "trk_nvoice",
+                  "trk_trans", "uac_ep4_reset", "uac_rate_set", "uac_stream", "uh_parse_midi", "uh_parse_uac",
+                  "uin_ep_config", "voice_begin", "voice_cap", "voice_off_at", "voice_room", "voice_start_rec",
+                  "wheel_note_on"}
+    names, hit = ((size_names() | cold_ui) - isr) | input_size | event_size, set()
     def mark(m):
         if m.group(2) not in names:
             return m.group(0)

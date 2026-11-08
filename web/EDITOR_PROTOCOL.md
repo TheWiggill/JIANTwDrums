@@ -132,7 +132,7 @@ tag of the addition, as before).
 
 - **Framing**: `F0 7D 46 4C cmd args F7`, one reply per request with the same `cmd` (no reply: an unknown command or
   a wrong fixed length), pushes never replies; the encodings v14, u32, pack7, strings.
-- **Command numbers** 1..10, 16..42, 64..77 and 80 as listed in this file; 11..15 stay reserved (no reply).
+- **Command numbers** 1..10, 16..42, 64..77, 80 and (1.1) 81 as listed in this file; 11..15 stay reserved (no reply).
 - **Reply layouts**: every byte stays where it is. New bytes only at the end of a reply, behind a request byte that
   asks for them (as `STEP_GET`'s flag 1, `WATCH`'s bits), or as a new `INFO` tag before `59`.
 - **INFO's prefix**: version string, NENGINES, P_COUNT, G_COUNT, NSTEP, P_E0, NENGINES engine names, NTRK,
@@ -165,6 +165,7 @@ regenerated from `params.c` and compared.
 | --- | --- | --- |
 | 0.x (no tag) | Felucca 1.0 .. JIANT V10.6z2 | v1 .. v7 and the tagged additions described in this file |
 | 1.0 | V10.6z3 | the contract; `INFO` tag `43 02 01 00`; `WATCH` bits 2..4 and the pushes `TRANSPORT` (40), `PUNCH` (41), `MUTATE` (42); NRPN for every automatable parameter and the globals (`docs/NRPN.md`), sent for knob moves with MIDI OUT ALL |
+| 1.1 | V10.6z5 | `VEL` (81): the velocity diagnostic (below); `INFO` tag `43 02 01 01` |
 
 ## 1.0: performance pushes (40-42)
 
@@ -181,6 +182,30 @@ sends the state as it is first (`TRANSPORT`, `PUNCH`; `MUTATE` counts from then 
   GLITCH, 22 LOOP 3, 23 LOOP 5, 24 LOOP 7. `tracks`: the MIDI effects' tracks, 0 ALL, 1 SYN, 2 DRM.
 - **MUTATE** (42): `track, count`: a EUCLID MUTATE of that track (EVERY's, or OCT+ on the MUTATE page); count is
   the track's MUTATEs since power-on, 7 bits, so a missed frame shows as a jump.
+
+## 1.1: the velocity diagnostic (81)
+
+`VEL` turns the key sensing of the velocity diagnostic on and off and reads what it measured
+(`firmware/src/vel_diag.c`, `docs/VELOCITY_DIAG.es.md`; the page `web/vel.html` uses it). It never changes the sound
+or how the keys play; it is off at power-on. Request: `op [drive]`; a firmware before 1.1 does not answer.
+
+| op | request | what it does |
+| --- | --- | --- |
+| 0 | `0` | status only |
+| 1 | `1 drive` | on; `drive` 0..4 (0: no driven samples; 2 the default, Velo's DRIVE 2); again while on: the drive only |
+| 2 | `2` | off (the scan lets go at its next tick) |
+| 3 | `3` | the next press or capture measured, taken (read until `kind` 0) |
+
+Reply: `op, on (0/1), drive, lost v14, timeouts v14, master v14` (presses or captures nobody read in time; ADC
+conversions not done by the next tick; the MASTER pot as the scan reads it, −1 none yet), then for op 3 `kind`:
+
+- 0: nothing to read;
+- 1, a press (sent when the key is let go): `key, dt v14, pmin v14, dmin v14`: the key 0..19 (0 F3 .. 19 C5: the
+  rows PA7 / PA8, the top row has no converter), touch to seated in 1/10 ms (−1: a graze, never seated), the lowest
+  reading with the row pulled up and the lowest with it driven high during the press (0..1023, 1023 open, lower
+  pressed harder; −1: none);
+- 2, a capture (the first key touched while none runs): `key, count (56), count × v14`: 8 pulled-up readings before
+  the touch, then 48 from it (~2.2 ms apart), each `reading | 1024` when it was a driven one.
 
 ## NRPN (1.0)
 
