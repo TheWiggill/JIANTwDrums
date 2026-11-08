@@ -47,7 +47,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: github-pages
-          run-id: 42420827054
+          run-id: 42425335101
           github-token: ${{ github.token }}
           path: build/released
       - name: Exact tested firmware
@@ -89,7 +89,7 @@ jobs:
           pages=Path('build/pages');fw=pages/'preview/firmware'
           def digest(p):return hashlib.sha256(p.read_bytes()).hexdigest()
           def protected():
-              return {p.relative_to(pages).as_posix():digest(p) for p in pages.rglob('*') if p.is_file() and not p.relative_to(pages).as_posix().startswith(('preview/firmware/','preview/webapp/installer/','preview/webapp/editor/'))}
+              return {p.relative_to(pages).as_posix():digest(p) for p in pages.rglob('*') if p.is_file() and not p.relative_to(pages).as_posix().startswith(('preview/firmware/','preview/webapp/installer/','preview/webapp/editor/','preview/webapp/vel/'))}
           before=protected()
           prior=json.loads((fw/'versions.json').read_text())
           old={v['file']:digest(fw/v['file']) for v in prior}
@@ -99,13 +99,16 @@ jobs:
           editions=json.loads(edition_path.read_text())
           for entry in prior:
               editions.setdefault(entry['version'],{k:entry[k] for k in ('edition','status') if k in entry})
-          editions[m['version']]={'edition':'OCT EXPR','status':'beta'}
+          editions[m['version']]={'edition':'VEL DIAG','status':'beta'}
           edition_path.write_text(json.dumps(editions))
           shutil.copyfile('build/candidate/web/editor.html','web/editor.html')
           make_site.main('build/candidate/build/felucca.fwsc',m['version'],'build/new-preview',str(fw))
           for sub in ('firmware','webapp/installer','webapp/editor'):
               shutil.rmtree(pages/'preview'/sub)
               shutil.copytree(Path('build/new-preview')/sub,pages/'preview'/sub)
+          if Path('build/candidate/web/vel.html').exists():   # (V10.6z5) the velocity diagnostic's page, from the candidate
+              (pages/'preview/webapp/vel').mkdir(parents=True,exist_ok=True)
+              shutil.copyfile('build/candidate/web/vel.html',pages/'preview/webapp/vel/index.html')
           fw=pages/'preview/firmware';versions=json.loads((fw/'versions.json').read_text())
           assert versions[0]['version']==m['version'] and len(versions)==min(len(prior)+1,make_site.KEEP_OLD+1)   # (the oldest beyond KEEP_OLD drops off)
           for name,h in old.items():assert not (fw/name).exists() or digest(fw/name)==h,'previous beta package changed'
