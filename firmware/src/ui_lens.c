@@ -41,11 +41,11 @@ typedef struct { const char *nm, *tab; } ng_t;                /* a group: its na
 typedef struct { const nv_t *e; const ng_t *g; uint8_t n, ng; } ch_t;
 #define NV(t, nm, g, lv) {t, nm, g, lv}
 static const nv_t CE_HOME[] = {NV(0, "ECO", 0, 0), NV(0, "MACROS", 0, 0), NV(0, "BEING", 1, 1), NV(0, "ROUTES", 1, 1),
-                               NV(0, "GEN 1", 2, 2), NV(0, "GEN 2", 2, 2), NV(0, "GEN 3", 2, 2)};
-static const ng_t CG_HOME[] = {{"ECO", 0}, {"BEING", 0}, {"GEN", 0}};
+                               NV(0, "GENE 1", 2, 2), NV(0, "GENE 2", 2, 2), NV(0, "GENE 3", 2, 2)};
+static const ng_t CG_HOME[] = {{"ECO", 0}, {"BEING", 0}, {"GENE", 0}};
 static const nv_t CE_SYN[] = {NV("EDIT 1", 0, 0, 0), NV("EDIT 2", 0, 0, 0), NV("FILTER", 0, 1, 1), NV("MORPH", 0, 1, 1),
                               NV("RETRIG", 0, 1, 1), NV("ROTOR", 0, 1, 1), NV("WORDS", 0, 1, 1), NV("STEREO", 0, 1, 1),
-                              NV("FOCUS", 0, 2, 2), NV("VOICE", 0, 3, 1), NV("VOICE 2", 0, 3, 1)};   /* (V10.49: STEREO; the
+                              NV("SWARM", 0, 1, 1), NV("SWARM 2", 0, 1, 1), NV("FOCUS", 0, 2, 2), NV("VOICE", 0, 3, 1), NV("VOICE 2", 0, 3, 1)};   /* (V10.49: STEREO; the
                                                          * voices' pages last, after the sound's (the user)) */
 static const ng_t CG_SYN[] = {{"SOUND", 0}, {"TONE", 0}, {"FOCUS", 0}, {"VOICE", 0}};
 static const nv_t CE_FM6[] = {NV("EDIT 1", 0, 0, 0), NV("EDIT 2", 0, 0, 0), NV("FILTER", 0, 1, 1), NV("STEREO", 0, 1, 1),
@@ -100,7 +100,8 @@ static const ng_t CG_SCL[] = {{"KEY", 0}, {"CHORD", 0}, {"SCENE", 0}};
 static const nv_t CE_ARP[] = {NV("ARP", 0, 0, 2), NV("ARP 2", 0, 0, 2)};
 static const ng_t CG_ARP[] = {{"ARP", 0}};
 enum { SV_LIB, SV_PROJ, SV_SOUND };
-static const nv_t CE_SAVE[] = {NV("TIMELINE", 0, 0, SV_PROJ), NV("PROJECT", "SECTIONS", 0, SV_PROJ),   /* (V10.1) composing first */
+static const nv_t CE_SAVE[] = {NV("TIMELINE", 0, 0, SV_PROJ), NV("PARTS", 0, 0, SV_PROJ), NV("CLIPS", 0, 0, SV_PROJ),
+                               NV("PROJECT", "SECTIONS", 0, SV_PROJ),   /* (V10.1) composing first; V10.6o PARTS; V10.6s CLIPS */
                                NV("PROJECT", "PROJECTS", 1, SV_LIB), NV("ARRANGE", 0, 1, SV_PROJ), NV("TOOLS", 0, 1, SV_LIB), NV("SAVE SONG AS", 0, 1, SV_PROJ),
                                NV("USER", 0, 2, SV_SOUND), NV("PRESETS", 0, 2, SV_SOUND)};
 static const ng_t CG_SAVE[] = {{"SONG", 0}, {"PROJECT", 0}, {"SOUND", 0}};

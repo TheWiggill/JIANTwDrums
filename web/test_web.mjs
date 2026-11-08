@@ -50,6 +50,15 @@ function installerCheck() {
   for (const k of ["n085Title", "n085What", "n085Risk", "n085Keep", "n085Confirm"])
     ok((html.match(new RegExp(`\\b${k}: "`, "g")) || []).length === 2, `installer: ${k} in English and Japanese`);
   ok(/<div lang="es"[^>]*>[\s\S]*Aviso antes de instalar 0\.8\.5[\s\S]*backup completo/.test(html), "installer: the notice in Spanish");
+  /* (V10.6p) 6 songs: the warning before Install, in every language it has, a backup button there; Install asks for a
+   * backup saved (or a go without one) */
+  for (const k of ["sixTitle", "sixText", "sixBackup", "sixConfirm", "sixSaved"])
+    ok((html.match(new RegExp(`\\b${k}: "`, "g")) || []).length === 2, `installer: ${k} in English and Japanese`);
+  ok(/<div lang="es"[^>]*>[\s\S]*Esta versión guarda 6 canciones \(antes 8\)\. Hacé un backup de tus proyectos antes de actualizar/.test(html),
+     "installer: the 6-song warning in Spanish");
+  ok(html.indexOf('id="backup-go"') > 0 && html.indexOf('id="backup-go"') < html.indexOf('id="go"') &&
+     /if \(!backedUp && !confirm\(t\("sixConfirm"\)\)\)/.test(html) && /saveArchive\(archive\); backedUp = true;/.test(html),
+     "installer: BACKUP before Install; Install without one asks first");
 }
 
 /* ------------------------------------------------------------ editor protocol --- */
@@ -172,7 +181,7 @@ async function editorMock() {
   inp.onmidimessage = (e) => link.receive(e.data);
   const rq = async (r, o) => link.request(r, o);
   const info = E.parse[E.CMD.INFO](await rq(E.req.info()));
-  ok(info.nengines === 16 && info.engines[15] === "INPUT" && info.engines[1] === "-" && info.engines[12] === "FM6" && info.engines[13] === "ADD" && info.engines[14] === "ANIMAL"
+  ok(info.nengines === 16 && info.engines[15] === "EXT" && info.engines[1] === "-" && info.engines[12] === "FM6" && info.engines[13] === "ADD" && info.engines[14] === "ANIMAL"
  && info.engines[5] === "VOICE" && info.engines[6] === "-" && info.engines[7] === "WHEEL" && info.engines[8] === "STRING" && info.engines[9] === "-" && info.engines[10] === "DRUM" && info.engines[11] === "NOISE" && info.pcount === 123 && info.pe0 === 115 && info.engines[4] === "-",
     "editor: INFO");
   let descs = 0;
@@ -209,8 +218,8 @@ async function editorMock() {
     const on = E.parse[E.CMD.DUMP](await rq(E.req.dump()), info);
     await rq(E.req.preset(0, 2));
     const off = E.parse[E.CMD.DUMP](await rq(E.req.dump()), info);
-    ok(on.p[52] === 1 && on.p[53] === 12 && on.p[54] === -30 && off.p.slice(49, 61).every((v) => v === 0),
-      "editor: a factory preset turns every matrix slot off");
+    ok(on.p[52] === 1 && on.p[53] === 12 && on.p[54] === -30 && !(off.p[52] === 1 && off.p[53] === 12 && off.p[54] === -30),
+      "editor: a factory preset replaces the matrix (V10.6i: its own slots, the rest off)");
   }
   {
     /* ROTATE and PITCH (core.h P_SOFS, P_POFS = 81, 82, just before P_E0 83; SHIFT's OFFSET and PITCH until 0.6.91, once the
@@ -279,16 +288,16 @@ async function editorMock() {
   ok(!prefs.favorites[info.nengines][31] && !E.devicePresetRows(info, names, prefs).some((r) => r.user), "editor: erased slot disappears and loses star");
   {   /* the lists in the device's order (engines.c ENGINE_ORDER, 0.9.9): DRUM VOICE ANIMAL first, "-" never; the numbers stay */
     const shown = E.engineOrder(info.engines).map((i) => info.engines[i]);
-    ok(shown.join() === "DRUM,VOICE,ANIMAL,LOFI,ANALOG,FM6,PHASE,WHEEL,NOISE,STRING,ADD,INPUT" &&
-       E.engineOrder(info.engines).join() === "10,5,14,3,0,12,2,7,11,8,13,15",
-       "editor: engines listed DRUM VOICE ANIMAL LOFI ANALOG FM6 PHASE WHEEL NOISE (0.9.9; indices kept)");
+    ok(shown.join() === "DRUM,ANALOG,PHASE,FM6,VOICE,ANIMAL,MATH,WHEEL,NOISE,STRING,ADD,EXT" &&
+       E.engineOrder(info.engines).join() === "10,0,2,12,5,14,3,7,11,8,13,15",
+       "editor: engines listed DRUM ANALOG PHASE FM6 VOICE ANIMAL MATH WHEEL NOISE (V10.6d; indices kept)");
     ok(E.engineOrder(["ANALOG", "X", "-", "DRUM", "FM6"]).join() === "3,0,4,1", "editor: an unknown engine follows the known ones");
     ok(E.engineOrder(["ANALOG", "DIGITAL", "FM6", "DRUM"]).join() === "3,0,2,1", "editor: DIGITAL (FELUCCA_FM4 builds) after the others");
     m.state.favorites[10][0] = m.state.favorites[12][0] = true;
     await rq(E.req.uiSet(3, 0));
     prefs = await E.readDevicePreferences(rq, info, names, prefs);
     const rows = E.devicePresetRows(info, names, prefs).filter((r) => !r.user), eng = [...new Set(rows.map((r) => r.engine))];
-    ok(eng.join() === "10,5,14,3,0,12,2,7,11,8,13,15", "editor: device presets in the device's engine order (DRUM first; snd5: STRING ADD last)");
+    ok(eng.join() === "10,0,2,12,5,14,3,7,11,8,13,15", "editor: device presets in the device's engine order (DRUM first; snd5: STRING ADD last)");
   }
   const none = await E.readDevicePreferences(() => { throw new Error("unexpected request"); }, { uiCaps: 0 }, []);
   ok(none === null, "editor: old firmware receives no unsupported preference requests");
@@ -1015,9 +1024,9 @@ async function editorTracks() {
   const { m, rq, ev, done } = attachMock({ watchMs: 1000 });
   const info = E.parse[C.INFO](await rq(E.req.info()));
   const tr = E.parse[C.TRACK](await rq(E.req.track()));
-  ok(info.ntrk === 6 && tr.sel === 0 && tr.ntrk === 6 && tr.tracks.map((t) => t.engine).join() === "10,5,14,3,0,12"
-    && tr.tracks[0].preset === 0 && tr.tracks[1].preset === 9 && tr.tracks[4].preset === 14,
-    "tracks: INFO NTRK, TRACK lists 6 parts (0.9.9: DRUM-X, VOICE SINGER EN, ANIMAL, LOFI, ANALOG FAT BASS, FM6)");
+  ok(info.ntrk === 6 && tr.sel === 0 && tr.ntrk === 6 && tr.tracks.map((t) => t.engine).join() === "10,0,2,12,5,14"
+    && tr.tracks[0].preset === 5 && tr.tracks[1].preset === 14 && tr.tracks[2].preset === 9,
+    "tracks: INFO NTRK, TRACK lists 6 parts (V10.6e: DRUM-X ACOUSTIC, ANALOG FAT BASS, PHASE GLASS PAD, FM6, VOICE, ANIMAL)");
   /* the v1 commands follow the selected track */
   const d0 = E.parse[C.DUMP](await rq(E.req.dump()), info);
   const t1 = E.parse[C.TRACK](await rq(E.req.track(1)));
@@ -1025,7 +1034,7 @@ async function editorTracks() {
   await rq(E.req.set(0, 1, 77));
   const td0 = E.parse[C.TRACK_DUMP](await rq(E.req.trackDump(0)), info);
   const td1 = E.parse[C.TRACK_DUMP](await rq(E.req.trackDump(1)), info);
-  ok(t1.sel === 1 && d1.engine === 5 && d0.engine === 10 && td1.p[1] === 77 && td0.p[1] === d0.p[1] && td0.p[1] !== 77,
+  ok(t1.sel === 1 && d1.engine === 0 && d0.engine === 10 && td1.p[1] === 77 && td0.p[1] === d0.p[1] && td0.p[1] !== 77,
     "tracks: TRACK selects; DUMP / SET act on it, TRACK_DUMP reads any track");
   /* steps of a track that is not selected */
   const w = E.parse[C.TRACK_STEP](await rq(E.req.trackStep(2, 5, { n: 2, notes: [60, 67, 0, 0], time: 0, flags: 1, vel: 99 })));
@@ -1045,7 +1054,7 @@ async function editorTracks() {
   const us = E.parse[C.UP_STORE](await rq(E.req.upStore(20, "X"), { timeout: 2500, retries: 0 }));
   const ul = E.parse[C.UP_LOAD](await rq(E.req.upLoad(1), { timeout: 2500, retries: 0 }));
   const dl = E.parse[C.DUMP](await rq(E.req.dump()), info);
-  ok(dd.engine === 3 && us.rc === 0 && ul.rc === 0 && dl.engine === 12, "tracks: track 4 selected -> DUMP engine LOFI, UP_STORE / UP_LOAD rc 0");
+  ok(dd.engine === 12 && us.rc === 0 && ul.rc === 0 && dl.engine === 12, "tracks: track 4 selected -> DUMP engine FM6, UP_STORE / UP_LOAD rc 0");
   /* pushes carry the selected track */
   await rq(E.req.track(0));
   ok(await E.startWatch(rq), "tracks: WATCH on");
@@ -1137,7 +1146,7 @@ async function editorTrackParam() {
   const g = E.parse[C.TRACK_PARAM](await rq(E.req.trackParam(1, PAN)));
   const p2 = await E.mixer.setPan(rq, 2, 0, PAN, -40, true);
   const p1 = await E.mixer.setPan(rq, 1, 0, PAN, 99, true);
-  const alg = E.parse[C.TRACK_PARAM](await rq(E.req.trackParam(5, info.pe0, 50)));   /* track 6 is FM6 (0.9.9): ALG 0..32 */
+  const alg = E.parse[C.TRACK_PARAM](await rq(E.req.trackParam(3, info.pe0, 50)));   /* track 4 is FM6 (V10.6e): ALG 0..32 */
   const lv = E.parse[C.TRACK_PARAM](await rq(E.req.trackParam(3, 0, -5)));
   const sel = E.parse[C.TRACK](await rq(E.req.track()));
   const td2 = E.parse[C.TRACK_DUMP](await rq(E.req.trackDump(2)), info);

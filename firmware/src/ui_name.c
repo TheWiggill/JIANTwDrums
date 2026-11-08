@@ -57,7 +57,7 @@ static void name_close(void)
     nm.kind = NK_NONE;
 }
 /* the keys: 2 = NAME's (silent), 1 = the DRUM grid, 0 = notes (seq.c keyboard_block reads song.grid) */
-static uint32_t keys_mode(void) { return name_on() || gco_on() || ckeys_on() ? 2u : live_mano() ? 3u : (uint32_t)grid_on(); }   /* (seq2f: COMPS, silent; seq2g: COMP too) */
+static uint32_t keys_mode(void) { return name_on() || gco_on() || ckeys_on() || skeys_on() ? 2u : live_mano() ? 3u : (uint32_t)grid_on(); }   /* (seq2f: COMPS, silent; seq2g: COMP too) */
 
 static const char *nm_group(uint32_t p)                /* white key place p's characters */
 {
@@ -369,7 +369,7 @@ static void nm_draw_field(void)
     nm_card(3, "OCT +", nm.kind == NK_LYRIC ? "SET" : nm.kind == NK_USER_SAVE || nm.kind == NK_PROJ_SAVE || nm.kind == NK_SONG_SAVE ? "SAVE" : "WRITE",
             T_ACCENT);                                 /* (WRITE: the new name; SET: the lyric) */
 }
-static void nm_draw_panel(void)
+static __attribute__((noinline)) void nm_draw_panel(void)
 {
     static const char *const FN[5] = {"F#", "G#", "A#", "C#", "D#"};
     uint32_t i, empty = nm.len == 0u, w0 = nm.cur > NM_LEN - 1u ? nm.cur - (NM_LEN - 1u) : 0u;   /* (a lyric: the window) */

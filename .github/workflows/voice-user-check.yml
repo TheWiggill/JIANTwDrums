@@ -1,11 +1,11 @@
 name: VOICE user lyric candidate
 on:
   push:
-    branches: [codex/voice-user-lyrics]
+    branches: [codex/voice-user-lyrics, codex/swarm]
 permissions:
   contents: read
 concurrency:
-  group: voice-user-candidate
+  group: voice-user-candidate-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   check:
@@ -86,6 +86,10 @@ jobs:
           build/song-check/fit | tee build/song-check/fit.log
           cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/probability_component_test.c -lm -o build/song-check/probability
           build/song-check/probability | tee build/song-check/probability.log
+          cc -O1 -g -w -Wno-implicit-function-declaration -fsanitize=address,bounds -Ibuild/gen -Ifirmware/src tests/ramp_test.c -lm -o build/song-check/ramp
+          build/song-check/ramp | tee build/song-check/ramp.log
+          cc -O1 -g -w -Wno-implicit-function-declaration -fsanitize=address,bounds -Ibuild/gen -Ifirmware/src tests/swarm_test.c -lm -o build/song-check/swarm
+          build/song-check/swarm | tee build/song-check/swarm.log
           cc -O1 -w -Wno-implicit-function-declaration -DTIMING_FIT -Ibuild/gen -Ifirmware/src tests/ctl64_timing_test.c -lm -o build/song-check/fit-timing
           build/song-check/fit-timing | tee build/song-check/fit-timing.log
           cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/ctl64_timing_test.c -lm -o build/song-check/timing
@@ -115,6 +119,36 @@ jobs:
           cc -O1 -w -Wno-implicit-function-declaration -Ibuild/gen -Ifirmware/src tests/matrix_editor_test.c -lm -o build/song-check/context-editor
           build/song-check/context-editor | tee build/song-check/context-editor.log
           python3 tests/matrix_web_test.py
+      - name: App protocol contract (editor protocol 1.0, pushes, engine ids, NRPN map)
+        run: |
+          set -euo pipefail
+          cc -O1 -g -w -Wno-implicit-function-declaration -fsanitize=address,bounds -Ibuild/gen -Ifirmware/src tests/app_contract_test.c -lm -o build/song-check/app-contract
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 build/song-check/app-contract | tee build/song-check/app-contract.log
+      - name: Expression keys and the feel of live recording (V10.6z4)
+        run: |
+          set -euo pipefail
+          cc -O1 -g -w -Wno-implicit-function-declaration -fsanitize=address,bounds -Ibuild/gen -Ifirmware/src tests/expr_keys_test.c -lm -o build/song-check/expr-keys
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 build/song-check/expr-keys | tee build/song-check/expr-keys.log
+          cc -O1 -g -w -Wno-implicit-function-declaration -fsanitize=address,bounds -Ibuild/gen -Ifirmware/src tests/legato_rec_test.c -lm -o build/song-check/legato-rec
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 LEGATO_REC_VERBOSE=1 build/song-check/legato-rec | tee build/song-check/legato-rec.log
+      - name: Song sounds held, PROX / AIR calibration median and SYSTEM 2 (V10.6z8)
+        run: |
+          set -euo pipefail
+          cc -O1 -g -w -Wno-implicit-function-declaration -fsanitize=address,bounds -Ibuild/gen -Ifirmware/src tests/song_hold_test.c -lm -o build/song-check/song-hold
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 build/song-check/song-hold | tee build/song-check/song-hold.log
+          cc -O1 -g -w -Wno-implicit-function-declaration -fsanitize=address,bounds -Ibuild/gen -Ifirmware/src tests/prox_cal_test.c -lm -o build/song-check/prox-cal
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 build/song-check/prox-cal | tee build/song-check/prox-cal.log
+      - name: Velocity diagnostic, key velocity and pressure (V10.6z6) and the boot's packed RAM code (V10.6z5)
+        run: |
+          set -euo pipefail
+          cc -O1 -g -w -fsanitize=address,undefined -Ibuild/gen -Ifirmware/src tests/vel_diag_test.c -o build/song-check/vel-diag
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 build/song-check/vel-diag | tee build/song-check/vel-diag.log
+          cc -O1 -g -w -fsanitize=address,undefined -Ibuild/gen -Ifirmware/src tests/vel_test.c -o build/song-check/vel
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 build/song-check/vel | tee build/song-check/vel.log
+          cc -O1 -g -w -Wno-implicit-function-declaration -fsanitize=address,bounds -Ibuild/gen -Ifirmware/src tests/vel_seq_test.c -lm -o build/song-check/vel-seq
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 build/song-check/vel-seq | tee build/song-check/vel-seq.log
+          cc -O1 -g -w -fsanitize=address,undefined -Ifirmware/src tests/boot_lz4_test.c -o build/song-check/boot-lz4
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 build/song-check/boot-lz4 | tee build/song-check/boot-lz4.log
       - name: Verified pre-split baseline for UI regression comparison
         uses: actions/checkout@v4
         with:

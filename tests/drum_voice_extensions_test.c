@@ -6,8 +6,20 @@
 static int extensions(void)
 {
     int bad=0,ok=1;uint32_t k,j,p,r,n;
+    /* (V10.6r) EXTENDED is DRUM-X's default: power-on, an engine switch, INIT SOUND; a kit's load keeps the map
+     * (CLASSIC included); LOFI's RTRG in the same slot is LOFI's alone */
+    ui_power_on();
+    trk[0].p[P_DKEYMODE]=0;power_sound_of(&trk[0],0);
+    ok=trk_eng(&trk[0])==ENGI_DRUM&&trk[0].p[P_DKEYMODE]==1;
+    set_engine_of(&trk[3],ENGI_DRUM);ok&=trk[3].p[P_DKEYMODE]==1;
+    trk[3].p[P_DKEYMODE]=0;apply_preset_to(&trk[3],2);ok&=trk[3].p[P_DKEYMODE]==0;
+    trk[3].p[P_DKEYMODE]=9;apply_preset_to(&trk[3],1);ok&=trk[3].p[P_DKEYMODE]==9;
+    init_sound_of(&trk[3],ENGI_DRUM);ok&=trk[3].p[P_DKEYMODE]==1;
+    set_engine_of(&trk[2],ENGI_LOFI);ok&=trk[2].p[P_LRTRG]==1;
+    trk[2].p[P_LRTRG]=0;apply_preset_to(&trk[2],0);ok&=trk[2].p[P_LRTRG]==1;
+    bad+=check("EXT the default (power-on, engine, INIT); a kit load keeps the map; LOFI's RTRG its own",ok);
     drum_setup();
-    bad+=check("EXT is opt-in: existing kits default to CLASSIC",!drum_ext(dt));
+    bad+=check("CLASSIC still selectable (the octave tests run on it)",!drum_ext(dt));
     dt->p[P_DKEYMODE]=1;
     for(k=35;k<=81;k++) ok &= drum_note_lane(dt,k)==drum_lane(k);
     bad+=check("EXT preserves every GM note 35..81",ok);
@@ -20,6 +32,31 @@ static int extensions(void)
         ok &= !kb_on[k] && !dxo_n[3];
     }
     bad+=check("EXT -1: 13 chromatic kicks and 14 toms, captured note-offs",ok);
+    ok=!strcmp(drum_oct_label(dt,-1),"KICK / TOM");
+    for(j=0;j<NLANE;j++) {                              /* (V10.6r) 2..9: every lane chromatic, the BELL's melodies */
+        dt->p[P_DKEYMODE]=(int16_t)(2+j);
+        char want[12];str_cpy(want,drum_lane_name(dt,j),6);str_cpy(want+str_len(want)," CHROM",7);
+        ok &= !strcmp(drum_oct_label(dt,-1),want);
+        for(k=0;k<27;k++) {
+            song.octave=-1;key_dn(k);lanes_b(2);
+            ok &= kb_snd[k][0]==k && drum_kit[3][j].st==(int32_t)k-13 && drum_note_lane(dt,k)==j;
+            key_upk(k);lanes_b(2);
+            ok &= !kb_on[k] && !dxo_n[3];
+        }
+    }
+    bad+=check("EXT -1 chromatic of any lane (KEY MAP 2..9), its label",ok);
+    dt->p[P_DKEYMODE]=9;ok=1;
+    for(k=0;k<27;k+=5) {                                /* recorded: the same lane, the same pitch */
+        step_t st;step_clear(&st);rec_drum(dt,&st,k,100,0);
+        ok &= st.n==1&&st.note[0]==k&&step_lanes_of(dt,&st)==1u<<DV_BELL;
+        quiet_kit();trk_note_on(dt,st.note[0],100);
+        ok &= drum_kit[3][DV_BELL].st==(int32_t)k-13;
+    }
+    ui.home=0;for(p=0;p<NPAGES;p++) if(str_eq(PAGES[p].title,"KIT 4")) ui.page=(uint8_t)p;
+    dx_kit3_knob(1,5);ok &= dt->p[P_DKEYMODE]==9;
+    dx_kit3_knob(1,-1);ok &= dt->p[P_DKEYMODE]==8;
+    bad+=check("EXT BELL CHROM: recorded steps keep lane and pitch; KIT 4 knob 2 walks the maps",ok);
+    dt->p[P_DKEYMODE]=1;
     ok=1;
     for(k=0;k<12;k++) {
         song.octave=-2;key_dn(k);lanes_b(2);
@@ -53,6 +90,30 @@ static int extensions(void)
         hashes[k]=h;
     }
     bad+=check("EXT: all 27 keys have distinct 16-step fills and recordable rates",ok);
+    /* (V10.6r) the fills are drum fills: a snare roll building, toms high to low, flams, the downbeat after */
+    {
+        dxo_t e={0};e.half=2;uint32_t cnt[4]={0},hits[4]={0},lo=99,okd=1;int32_t last=99;
+        e.note=9;                                       /* snare roll, a bar */
+        for(p=0;p<16;p++){n=dxp_note(&e,p,0,&r);if(n==38){cnt[p/4]++;hits[p/4]+=r;}}
+        ok=hits[0]<=hits[1]&&hits[1]<hits[2]&&hits[2]<hits[3]&&cnt[3]==4;
+        e.note=10;                                      /* toms, a bar: high to low */
+        for(p=0;p<16;p++){n=dxp_note(&e,p,0,&r);int32_t st=DRUM_GM[drum_gm_ix(n)][1];
+            okd &= drum_lane(n)==DV_TOM&&st<=last;last=st;if(st<(int32_t)lo)lo=(uint32_t)(st+50);}
+        ok &= okd&&last<0;
+        e.note=3;dx_in_tch=0;n=dxp_note(&e,0,0,&r);ok &= n==38&&dx_in_tch==3;dx_in_tch=0;
+        e.note=3;n=dxp_note(&e,0,2,&r);ok &= n==36&&dx_in_tch==3;dx_in_tch=0;
+        for(k=0;k<27;k++){e.note=(uint8_t)k;e.rec=255;
+            ok &= dxp_note(&e,0,0,&r)==(k>=18?49u:46u)&&dxp_note(&e,0,2,&r)==36u&&!dxp_note(&e,0,1,&r);
+            e.rec=0;ok &= k>=9||(dxp_note(&e,8,0,&r)==46u);}
+        bad+=check("EXT fills: snare roll 8ths>16ths>32nds, tom descent, flams, open hat/crash + kick on the downbeat",ok);
+        drum_setup();dt->p[P_DKEYMODE]=1;
+        step_t *s0=&dt->step[seq_src(dt,dt->seq_idx)];step_clear(s0);
+        e.note=3;e.vel=100;e.rec=0;dxp_fire(dt,&e,0,0,2);
+        ok=(s0->hit&1u)&&(s0->hit&2u)&&step_lmode(s0,DV_KICK)==LM_FLAM&&step_lmode(s0,DV_SNARE)==LM_FLAM&&!dx_in_tch;
+        step_clear(s0);e.note=9;dxp_fire(dt,&e,14,0,2);
+        ok &= (s0->hit&2u)&&step_lmode(s0,DV_SNARE)==LM_X2;
+        bad+=check("EXT fills record as hits: flams as FLAM, the roll's 32nds as x2",ok);
+    }
     ok=1;
     for(k=0;k<27;k++) {
         drum_setup();dt->p[P_DKEYMODE]=1;song.octave=1;
@@ -196,8 +257,38 @@ static int lyrics(void)
     bad+=check("Project round trip preserves languages, fixed lyrics and EXT key map",ok);
     return bad;
 }
+/* (V10.6r) SCENE: the kit's DRUM role GEN, GENE's drums a key a variation */
+static int scene_gen(void)
+{
+    int bad=0,ok;int16_t *vp;uint32_t k,i,h[4];
+    ui_power_on();song.playing=0;
+    set_engine_of(&trk[0],ENGI_DRUM);trk[0].engine=trk[0].eng_req;
+    sc_trk=0;scn_role[0]=SC_DRUM;
+    const param_desc_t *d=sc_desc(3,&vp);
+    ok=d->max==SC_DGEN&&!strcmp(d->names[SC_DGEN],"GEN");
+    tg_config[0].energy=33;tg_config[0].complex=7;
+    trk[0].p[P_SLEN]=16;sc_put(3,SC_DGEN);
+    d=sc_desc(3,&vp);ok&=scn_pat[0]==SC_DGEN&&*vp==SC_DGEN;
+    bad+=check("SCENE DRUM: GEN shown and chosen",ok);
+    ok=1;
+    for(k=0;k<4;k++) {
+        for(i=0;i<NSTEP;i++) gclear(&trk[0].step[i]);
+        scn_dreq=(uint8_t)(k+1u);sc_beat();
+        uint32_t n=0,x=2166136261u;
+        for(i=0;i<32;i++){const step_t *s=&trk[0].step[i];n+=s->time==ST_NOTE&&s->hit;x=(x^s->hit^i<<8)*16777619u;}
+        ok &= n>=4&&trk[0].p[P_SLEN]>=32;h[k]=x;
+    }
+    ok &= h[0]!=h[1]&&h[0]!=h[2]&&h[0]!=h[3]&&h[1]!=h[2];
+    ok &= tg_config[0].energy==33&&tg_config[0].complex==7&&tg_config[0].role!=4u;
+    bad+=check("SCENE DRUM GEN: each key a GENE beat (base, dense, break, fill); TRACK GEN's settings kept",ok);
+    sc_put(3,1);ok=scn_pat[0]==1;
+    scn_dreq=3;sc_beat();
+    bad+=check("SCENE DRUM: the fixed styles still play",ok&&trk[0].step[0].hit);
+    scn_role[0]=SC_KEEP;
+    return bad;
+}
 int main(void)
 {
-    int bad=extensions()+lyrics();
+    int bad=extensions()+lyrics()+scene_gen();
     printf("drum/voice extensions: %s\n",bad?"FAILED":"all ok");return bad!=0;
 }

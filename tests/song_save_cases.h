@@ -48,37 +48,37 @@ static int song_save_test(void)
     int bad = 0, ok;
     uint32_t before;
     song_fixture();
-    ok = !song_save_as(7, "MY SONG");
-    bad += check("SAVE SONG AS copies a complete song to project 8", ok);
+    ok = !song_save_as(5, "MY SONG");
+    bad += check("SAVE SONG AS copies a complete song to project 6 (V10.6p: the last of 6)", ok);
     ok = song_cur == 0 && live.cur == 2 && trk[0].step[0].note[0] == 90 && dice_secs == 15 &&
          !memcmp(source_before, proj_slot, sizeof source_before) &&
          !memcmp(source_flash, nor + 0x97000u, sizeof source_flash);
     bad += check("source stays open, live edits and source flash remain intact", ok);
     ok = 1;
     for (uint32_t s = 0; s < 4; s++) {
-        uint32_t obj = OBJ_SONG1 + 6u * 4u + s;
+        uint32_t obj = OBJ_SONG1 + 4u * 4u + s;
         ok &= st_load(obj, &proj_wire, sizeof proj_wire) == sizeof proj_wire &&
               proj_import(&proj_scratch, &proj_wire, sizeof proj_wire);
         ok &= proj_scratch.t[0].step[0].note[0] == (s == 2 ? 90 : 48 + s) && proj_scratch.g[G_BPM] == 143;
         if (!s) ok &= !memcmp(proj_scratch.name, "MY SONG", 7);
     }
     bad += check("all sections copied, unsaved C included, current tempo in A-D", ok);
-    ok = !memcmp(song_idx.scene[7], song_idx.scene[0], sizeof song_idx.scene[0]) &&
-         !memcmp(song_idx.tsrc[7], song_idx.tsrc[0], sizeof song_idx.tsrc[0]) &&
-         !memcmp(song_idx.tvar[7], song_idx.tvar[0], sizeof song_idx.tvar[0]) &&
-         song_idx.rows[7].count == 4 && SONG_END(&song_idx.rows[7]) == 3 && song_idx.rows[7].rsv[1] == 0;
+    ok = !memcmp(song_idx.scene[5], song_idx.scene[0], sizeof song_idx.scene[0]) &&
+         !memcmp(song_idx.tsrc[5], song_idx.tsrc[0], sizeof song_idx.tsrc[0]) &&
+         !memcmp(song_idx.tvar[5], song_idx.tvar[0], sizeof song_idx.tvar[0]) &&
+         song_idx.rows[5].count == 4 && SONG_END(&song_idx.rows[5]) == 3 && song_idx.rows[5].rsv[1] == 0;
     bad += check("order, repeats, scenes, track sources and variations preserved", ok);
     memset(&song_idx, 0, sizeof song_idx);
     song_index_load();                          /* read the committed index back, as on reboot */
     live.mode = 0;
-    ok = !song_select(7) && song_cur == 7 && live.mode == 1 && song.g[G_BPM] == 143 && chain_config.count == 4;
+    ok = !song_select(5) && song_cur == 5 && live.mode == 1 && song.g[G_BPM] == 143 && chain_config.count == 4;
     bad += check("reload from flash restores sections, arrangement and SONG mode", ok);
 
     song_fixture();
     before = erases;
     song.playing = 1; ok = song_save_as(1, "X") != 0; song.playing = 0;
     transport_req = 1; ok &= song_save_as(1, "X") != 0; transport_req = 0;
-    ok &= song_save_as(8, "X") != 0;
+    ok &= song_save_as(NSONG, "X") != 0 && song_save_as(7, "X") != 0;   /* (V10.6p: 7, 8 retired) */
     flash_ok = 0; ok &= song_save_as(1, "X") != 0; flash_ok = 1;
     ok &= erases == before;
     bad += check("playing, pending PLAY, invalid slot and no flash refuse without writing", ok);

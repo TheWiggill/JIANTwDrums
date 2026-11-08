@@ -1056,6 +1056,7 @@ static __attribute__((noinline)) void sy_seek(const track_t *t, sing_t *s, uint3
 }
 
 /* the phoneme i begins (its stage st): its time */
+static int16_t sy_cx;                                    /* (V10.6y) the track's CONS - 100 %, 1/64 (core.h vcons_q6) */
 static void sy_enter(sing_t *s, uint32_t lang)
 {
     uint32_t c, ms;
@@ -1078,6 +1079,8 @@ static void sy_enter(sing_t *s, uint32_t lang)
         ms = 70u;                                        /* an offglide */
     else
         ms = P->dur;
+    if (P->cls != PC_VOW)                                /* (V10.6y) CONS: the consonants 50 .. 400 % (sing_block) */
+        ms = (ms * (uint32_t)(64 + sy_cx) + 63u) >> 6;   /* (rounded up: a timed phoneme never held, 0) */
     if (lang != LG_EN)
         ms = ms * 7u / 8u;                               /* (Spanish, Japanese: a little quicker) */
     if (s->i < s->fast)
@@ -1288,6 +1291,7 @@ static void sing_block(track_t *t)
     int32_t pos = clamp(t->p[P_E0], 0, 127);
     sing_t *s = &sing[ti];
     sing_x_t *x = &sing_x[ti];
+    sy_cx = (int16_t)(vcons_q6(t->p[P_VCONS]) - 64u);  /* (V10.6y: sy_enter's, this track's) */
     if (!lang) {
         if (s->lang) {
             memset(s, 0, sizeof *s);

@@ -246,7 +246,7 @@ static uint32_t engine_icon(const char *name)
 #if FELUCCA_FM4
         {"DIGITAL", ICON_ALGORITHM},
 #endif
-        {"PHASE", ICON_PHASE}, {"LOFI", ICON_BITS},
+        {"PHASE", ICON_PHASE}, {"MATH", ICON_BITS},
         {"SAMPLE", ICON_SAMPLE}, {"VOICE", ICON_MOUTH}, {"TRIO", ICON_TRIO}, {"WHEEL", ICON_DRAWBAR},
         {"SLICE", ICON_SLICE},
         {"GRAIN", ICON_GRAIN},
@@ -257,7 +257,7 @@ static uint32_t engine_icon(const char *name)
         {"ANIMAL", ICON_PHYS},                /* (0.8.3: a physical model, as PHYS was) */
         {"STRING", ICON_PHYS},                /* (0.9.9-snd5: a physical model too) */
         {"ADD", ICON_WAVE},
-        {"INPUT", ICON_VOICE},                /* (V10.54) */
+        {"EXT", ICON_VOICE},                /* (V10.54) */
     };
     uint32_t i;
     for (i = 0; i < sizeof M / sizeof M[0]; i++)

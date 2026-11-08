@@ -64,6 +64,10 @@ static inline int32_t gfx_val(uint32_t k)
 #define GFX(k) gfx_val(k)
 static uint8_t macro_v[4];       /* (JIANT) the macros M1..M4, 0..127: the project's (project.c), LFO held turns them */
 _Static_assert(NELEM(N_MSRC) == MS_N && NELEM(N_MDST) == MD_N, "N_MSRC / N_MDST == MS_* / MD_*");
+_Static_assert(PS_LFO == MS_LFO && PS_ENV2 == MS_ENV2 && PS_NOISE == MS_NOISE && PS_MODW == MS_MODW && PS_RAND == MS_RAND &&
+               PD_VIB == MD_VIB && PD_E1 == MD_E1 && PD_FCUT == MD_FCUT && PD_LEVEL == MD_LEVEL && PD_REV == MD_REV,
+               "core.h PS_* / PD_* (a preset's MOD slots) == MS_* / MD_*");
+_Static_assert(LW_DRIFT == 5, "core.h LW_*: params.c N_LWAVE6");
 _Static_assert(P_M2SRC == P_M1SRC + 3 && P_M4AMT == P_M1SRC + 11 && P_M4AMT + 1 == P_FM1_ATK, "matrix slots: 3 ids each");
 #define NMSLOT 4u
 #define MS_VMASK ((1u << MS_ENV) | (1u << MS_VEL) | (1u << MS_KEY) | (1u << MS_RAND) | (1u << MS_ENV2))
@@ -304,11 +308,15 @@ static __attribute__((noinline)) int mod_begin(track_t *t)
 
 /* (JIANT) once an audio block, before the parts (fx.c): CLIP and PUNCH as the master plays them, the stored
  * values plus every track's slots on them (per-voice sources: the latest note-on's value; LFO: the block before) */
+static void (*const volatile DLY_REV_SET)(void);         /* (fx.c: REVERSE's grains, set from flash) */
 static __attribute__((noinline)) void macro_master(void)
 {
     int32_t off[MD_MASTER_END - MD_CLIP] = {0};
-    uint32_t i, k, any = 0;
+    uint32_t i, k, any = 0, sw1 = 0;
     mns_clk++;
+    DLY_REV_SET();
+    if (ain_sw)                                         /* (SWARM: a track's SOURCE; its own block, a USB input too) */
+        AIN_SWARM(CTL);
     ain_follow();
     for (i = 0; i < NTRK; i++) {
         track_env[i] = (int16_t)follow_step(track_env[i], track_pk[i]);
@@ -317,6 +325,8 @@ static __attribute__((noinline)) void macro_master(void)
     track_follow_mask = 0;
     for (i = 0; i < trk_live; i++) {
         const track_t *t = &trk[i];
+        if (t->engine == ENGI_INPUT && t->p[P_E0] == AIN_SW && !sw1)
+            ain_tr = (uint8_t)i, sw1 = 1;               /* (SWARM: the first SWARM track's knobs and scale) */
         any |= t->engine == ENGI_INPUT;
         for (k = 0; k < NMSLOT; k++) {
             uint32_t s = (uint32_t)t->p[P_M1SRC + 3u * k], d = (uint32_t)t->p[P_M1DST + 3u * k];
@@ -336,6 +346,7 @@ static __attribute__((noinline)) void macro_master(void)
         }
     }
     ain_any = (uint8_t)any;
+    ain_sw = (uint8_t)sw1;
     clip_eff = (int16_t)clamp(song.g[G_CLIP] + off[0], 0, 100);
     pnch_eff = (int16_t)clamp(song.g[G_PUNCH] + off[1], 0, 100);
     for (k = 0; k < 8u; k++)

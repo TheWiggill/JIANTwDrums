@@ -452,6 +452,7 @@ static void eu_mutate(uint32_t k, eu_t *e)
     uint32_t p = e->mu[1], w = e->mu[3], dr = drum_track(&trk[k]) != 0, sl = e->lane % (NLANE + 1u), i, al = dr && !sl;
     eul_t *L = al ? &e->a : &e->l[dr ? sl - 1u : 0u];
     int32_t d = (int32_t)(1u + p / 40u);
+    mut_n[k % NTRK]++;                                   /* (V10.6z3) the editor's MUTATE push (editor.c) */
     if (e->mu[2] != 1u) memcpy((uint8_t *)e + EU_Z0, eu_z[k], EU_ZN);
     if (e->mu[2] == 2u && (e->flip ^= 1u) == 0u) { e->seed = eu_zs[k]; eu_gen(k, 0); return; }   /* (PULSE: the anchor's turn) */
     eu_s ^= fm1_ms * 2654435761u + k;
@@ -575,7 +576,7 @@ static void graph_mutate(const track_t *t, const eu_t *e)
     cv_text(4, h - 10, &AF_X, "OCT+ MUTATE", T_ACCENT);
     cv_text_r(234, h - 10, &AF_X, "OCT- ANCHOR", T_THEME, T_SURF);
 }
-static void graph_euclid(const track_t *t)
+static __attribute__((noinline)) void graph_euclid(const track_t *t)
 {
     static const char *const LN[NLANE + 1] = {"ALL", "BD", "SD", "CP", "CH", "OH", "TM", "RS", "CB"};
     static const char *const NN[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};

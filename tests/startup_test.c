@@ -16,7 +16,7 @@ static int startup_case(int saved, int restore, int noprefs)
     want.magic = SONG_MAGIC;
     want.version = SONG_IDX_V;
     want.cur = saved ? 2u : 0u;
-    for (i = 0; i < NSONG; i++) chain_defaults(&want.rows[i]);
+    for (i = 0; i < NSONG_IDX; i++) chain_defaults(&want.rows[i]);   /* (V10.6p: the index keeps 8 songs' room) */
     if (saved) {
         want.rows[2].count = 2;
         want.rows[2].row[0] = (chain_row_t){0, 3};

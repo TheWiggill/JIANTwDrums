@@ -6,6 +6,7 @@
 
 static void route(track_t *t, unsigned src, unsigned dst, int amt)
 {
+    for (unsigned k = 0; k < 12; ++k) t->p[P_M1SRC + k] = 0;   /* (V10.6i: a factory preset's own slots off) */
     t->p[P_M1SRC] = src; t->p[P_M1DST] = dst; t->p[P_M1AMT] = amt;
 }
 

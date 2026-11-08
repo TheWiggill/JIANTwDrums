@@ -22,7 +22,10 @@ static chain_config_t chain_config;           /* the current song's rows */
 #define dice_secs (chain_config.rsv[1])       /* (JIANT 0.6.81) the sections DICE ALL / GEN wrote (bit s); (gen6c) kept with
                                               * the song's rows in flash: after a power cycle GEN's FORM writes them again
                                               * (in RAM they were lost, and every section looked the player's) */
-#define NSONG 8u                              /* songs: four sections each (storage.c: where they are kept) */
+#define NSONG 6u                              /* songs: four sections each (storage.c: where they are kept). (V10.6p) 8
+                                              * before: 7 and 8's flash is the drum sample bank's now (storage.c FL_SAMPLES) */
+#define NSONG_IDX 8u                          /* (V10.6p) the index's room, as before: its layout (flash, backups) kept;
+                                              * rows 7, 8 unused, kept valid for an older firmware's restore */
 #define SONG_MODE_TAG 0xA0u                    /* chain.rsv[2]: saved LOOP/SONG mode, old files have zero */
 #define SONG_MAGIC 0x474E4F53u                /* "SONG" */
 /* (JIANT) a row's scene: when the row goes in (a song, not a quick chain) the tracks' mutes, DRUM's group mutes, the
@@ -36,12 +39,13 @@ typedef struct {
 } scene_t;
 typedef struct {                              /* the song index (flash: OBJ_SONGIDX) */
     uint32_t magic;
-    uint8_t version, cur, rsv[2];
-    chain_config_t rows[NSONG];               /* each song's rows (the current one's: chain_config, kept here) */
-    scene_t scene[NSONG][CHAIN_ROWS];         /* (version 2, JIANT) their scenes; a version 1 index: none */
-    uint32_t tsrc[NSONG][CHAIN_ROWS];         /* (version 3, add15) where each track plays from in the row: 3 bits a track,
+    uint8_t version, cur, rsv[2];             /* rsv[0]: no index yet (RAM only); (V10.6p) rsv[1]: songs 7, 8's
+                                              * retirement checked (song_main.c song_retired) */
+    chain_config_t rows[NSONG_IDX];           /* each song's rows (the current one's: chain_config, kept here) */
+    scene_t scene[NSONG_IDX][CHAIN_ROWS];     /* (version 2, JIANT) their scenes; a version 1 index: none */
+    uint32_t tsrc[NSONG_IDX][CHAIN_ROWS];     /* (version 3, add15) where each track plays from in the row: 3 bits a track,
                                               * 0 the row's section, 1..4 A..D (SAVE > ARRANGE 2); older: all 0 */
-    uint32_t tvar[NSONG][CHAIN_ROWS];         /* (version 4, add15-beta4) each track's variation in the row: 4 bits a track,
+    uint32_t tvar[NSONG_IDX][CHAIN_ROWS];     /* (version 4, add15-beta4) each track's variation in the row: 4 bits a track,
                                               * RV_* (0 none); older: all 0 */
 } song_index_t;
 #define SONG_IDX_V 4u
@@ -95,8 +99,18 @@ static struct {
     int16_t slg[G_SL_N];              /* .. (0.6.3) its SLICER (the globals G_SLMODE ..) */
     volatile uint8_t ready;           /* main: staged; ISR: taken (0) */
     uint8_t row, section;             /* the song row it is for (SEC_LIVE: a live jump), the section (0..3) */
+    uint32_t src;                     /* (V10.6s) CLIPS: each track's part as a row's tsrc has it (SONG REC's rows) */
 } sec_stage __attribute__((section(".lowbuf")));
 static uint8_t sec_stage_fit[NTRK] __attribute__((section(".pool")));   /* (0.6.78: app.ld LOWBUF) */
+/* (V10.6z8, a GENE user: "I change the instruments and at the end of the phrase they go back") a sound the player
+ * changed while a song or a quick chain plays is kept across its sections: bit k track k (its engine, preset, sound
+ * parameters: not param_kept's, its FM6 patch), bit NTRK the DRUM-X kit. Seen at each section's change (song_play.c
+ * sec_apply): the sound unlike what the section before put in (snd_h, snd_seen: valid) is the player's; the
+ * sections still bring the steps, the pattern, the mix and the mutes. Let go by a throw (song_draft_begin), anything
+ * loaded (project_restore_runtime), a live jump or CLIPS (sec_apply, no song), EDIT > RECALL (project_recall_sound) */
+static uint8_t snd_held __attribute__((section(".bss.snd"))), snd_seen __attribute__((section(".bss.snd")));   /* (its own
+                                              * section: out of the merged statics, whose reach every function pays) */
+static uint32_t snd_h[NTRK + 1u] __attribute__((section(".bss.snd")));
 static struct {
     chain_config_t config;
     volatile uint8_t armed, running, row, remaining;   /* remaining: the bars of the row still to play */
@@ -109,7 +123,11 @@ static struct {
     uint8_t rec, kept;                /* kept: bit 0 snapshot valid; bits 1..3 original section + 1 (0 none) */
     uint32_t carry;                   /* samples past the bar line at the end of the block: the first step's */
     uint32_t bar_pos;                 /* samples into the bar (while playing) */
+    uint8_t hold;                     /* (V10.6o) TIMELINE's PLAY: the row round and round (PLAY again: the song goes on) */
 } chain;
+/* (V10.6o) PARTS / TIMELINE: each section's tracks that play (steps, not muted: bit k), read with the sections' names
+ * (ui_graph.c graph_project_used, song_main.c part_scan) */
+static union { uint8_t b[4]; uint32_t w; } part_play;
 static struct {
     volatile int8_t req;              /* a section asked for (staged), in on the next bar; -1 none */
     volatile int8_t cur;              /* the section playing: jumped to, loaded or stored; -1 none */
@@ -121,6 +139,15 @@ static struct {
     uint8_t dirty;                    /* sections stored in RAM, not in flash yet (bit s) */
     uint8_t mode;                     /* 1 SONG: PLAY plays the song; 0 LOOP */
 } live = {.req = -1, .cur = -1};
+
+/* (V10.6s) SAVE > CLIPS (song_main.c clip_launch): each track's part that sounds, 1..4 A..D, CLIP_STOP stopped, 0 not
+ * known (the music is no part as stored), and the one asked for, in on the next bar (0 none). Main loop; derived, not
+ * saved: what goes in sets them (song_poll clip_seen) */
+#define CLIP_STOP 5u
+static uint8_t clip_now[NTRK] __attribute__((section(".lowbuf"))), clip_go[NTRK] __attribute__((section(".lowbuf")));
+static uint8_t clip_mix __attribute__((section(".lowbuf")));   /* song_stage stages CLIPS' launch */
+static uint32_t rec_src[CHAIN_ROWS] __attribute__((section(".lowbuf")));   /* SONG REC's rows: where their tracks
+                                              * played from (sec_stage.src, tsrc's form: CLIPS' launches) */
 
 static void song_mode_restore(void)
 {

@@ -35,29 +35,35 @@ int main(void)
     }
     printf("GEN SONG: %u genre choices have complete, non-identical parts\n", total);
     make_song(1, 31);
-    nav_put(SEC_HOME, "GEN 1"); frame();
+    nav_put(SEC_HOME, "GENE 1"); frame();
     sig = gen_draw_sig();
     press(B_PLAY); events_block(CTL); song_poll(); frame();
-    ok = chain.running && chain.row == 0 && live.cur == 1 && gen_draw_sig() != sig;
-    bad += check("GEN PLAY starts actual arrangement B; progress invalidates the graph", ok);
+    ok = chain.running && chain.row == 0 && live.cur == chain.config.row[0].slot && gen_draw_sig() != sig;   /* (V10.6m: the
+                                                         * club plan starts on A, the drums' intro) */
+    bad += check("GEN PLAY starts the arrangement's first row; progress invalidates the graph", ok);
     sig = gen_draw_sig();
     events_block(chain_bar()); song_poll(); frame();
-    bad += check("GEN progress refreshes at next bar of the same section", chain.remaining == 15 && gen_draw_sig() != sig);
+    bad += check("GEN progress refreshes at next bar of the same section", chain.remaining == chain.config.row[0].bars - 1u && gen_draw_sig() != sig);
     screen_save("build/song-check", "generator-song");
     unsigned transitions = 0, last = chain.row;
-    for (unsigned bar = 1; bar < 129; ++bar) {
+    for (unsigned bar = 1; bar < 400 && !(transitions && chain.row == 0); ++bar) {
         events_block(chain_bar()); song_poll();
         if (chain.row != last) {
+            const scene_t *sc;
             last = chain.row; ++transitions;
-            ok = live.cur == chain.config.row[last].slot;
-            ok &= proj_import(&proj_scratch, &proj_slot[live.cur], sizeof(project_store_t));
-            for (unsigned t = 0; t < NTRK; ++t)
-                ok &= !memcmp(trk[t].step, proj_scratch.t[t].step, sizeof trk[t].step) &&
-                      trk[t].p[P_MUTE] == proj_scratch.t[t].p[P_MUTE];
-            bad += check("GEN next row loads that section's actual notes and mutes", ok);
+            sc = &song_idx.scene[song_cur][last];
+            ok = live.cur == chain.config.row[last].slot && (sc->on & 1u);
+            for (unsigned t = 0; t < NTRK; ++t) {       /* (V10.6m: a track from the section ARRANGE 2 names, its mutes
+                                                         * the row's scene's) */
+                ok &= proj_import(&proj_scratch, &proj_slot[row_src(last, t, chain.config.row[last].slot)], sizeof(project_store_t));
+                ok &= (row_var(last, t) || !memcmp(trk[t].step, proj_scratch.t[t].step, sizeof trk[t].step)) &&
+                      trk[t].p[P_MUTE] == (row_var(last, t) == RV_MUTE ||
+                                           (t < 4u ? (sc->mute >> t) & 1u : (sc->on >> (t - 3u)) & 1u));
+            }
+            bad += check("GEN next row loads that section's actual notes and the row's mutes", ok);
         }
     }
-    bad += check("GEN traverses six rows, including break, and wraps the song", transitions == 6 && chain.row == 0);
+    bad += check("GEN traverses every row, including break, and wraps the song", transitions == chain.config.count && chain.row == 0);
     seq_stop(); song_poll(); frame();
     bad += check("STOP restores the original section identity with its music before SAVE", live.cur == 0 && proj_cur == 0);
     press(B_SAVE); frame();
@@ -68,14 +74,14 @@ int main(void)
      * the draft buffers and may replace them, even while the previous song plays. */
     make_song(1, 31);
     section_store(1); live.mode = 1;
-    nav_put(SEC_HOME, "GEN 2"); frame();
+    nav_put(SEC_HOME, "GENE 2"); frame();
     press(B_PLAY); events_block(CTL); song_poll();
     uint32_t before_seed = gp.seed; gp.sig = gen_sig();
     press(B_OCTUP); events_block(CTL); song_poll(); frame();
     bad += check("GEN 2 rerolls a playing song as a draft and resumes arrangement playback",
                  song_draft && !gform_kept && chain_config.count >= 4 && song.playing && chain.running && gp.seed != before_seed);
     screen_save("build/song-check", "generator-draft-page2");
-    nav_put(SEC_HOME, "GEN 3"); frame();
+    nav_put(SEC_HOME, "GENE 3"); frame();
     bad += check("GEN 3 keeps real parts visible while editing generator settings", gen_page()==2 && chain_config.count>=4);
     screen_save("build/song-check", "generator-draft-page3");
     seq_stop();song_poll();

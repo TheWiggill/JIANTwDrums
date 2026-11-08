@@ -30,7 +30,7 @@ int main(void)
         engine(e);
         for(int a=0;a<=ENGINES[e]->edit[0].max;a++) {
             TSEL->p[P_E0]=a;
-            if(e==ENGI_LOFI)for(int b=0;b<7;b++){TSEL->p[P_E1]=b;sweep();configurations++;}
+            if(e==ENGI_LOFI)for(int b=5;b<7;b++){TSEL->p[P_E1]=b;sweep();configurations++;}
             else if(e==ENGI_INPUT)for(int b=0;b<2;b++){TSEL->p[P_E3]=b;sweep();configurations++;}
             else if(e==ENGI_VOICE)for(int b=0;b<LG_N;b++){TSEL->p[P_VLANG]=b;sweep();configurations++;}
             else{sweep();configurations++;}
@@ -44,7 +44,7 @@ int main(void)
     engine(ENGI_STRING);TSEL->p[P_E0]=SX_FDBK;
     assert(mod_dst_offer(TSEL,MD_E1+3)&&!strcmp(mod_dst_name(TSEL,MD_E1+3),"MOVE"));
     engine(ENGI_LOFI);TSEL->p[P_E1]=RW_BYTE;assert(!strcmp(mod_dst_name(TSEL,MD_E1+2),"ALGO"));
-    TSEL->p[P_E1]=RW_SAW;assert(!mod_dst_offer(TSEL,MD_E1+4));
+    TSEL->p[P_E1]=RW_FLOAT;assert(mod_dst_offer(TSEL,MD_E1+4)&&!strcmp(mod_dst_name(TSEL,MD_E1+4),"MOTION"));   /* (V10.6d: MATH, no chips) */
     engine(ENGI_FM6);assert(!mod_dst_offer(TSEL,MD_E1+7)&&!mod_dst_offer(TSEL,MD_SHP));
     assert(!strcmp(mod_dst_name(TSEL,MD_CUT),"MOD")&&!strcmp(mod_dst_name(TSEL,MD_SHP),"FB+MOD"));
     engine(ENGI_ANALOG);TSEL->p[P_E0]=7;TSEL->p[P_E3]=0;macro_v[0]=127;

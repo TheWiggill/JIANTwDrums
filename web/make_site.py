@@ -8,6 +8,7 @@
                               JieLi SDK files under Apache-2.0, see LICENSING.md)
   webapp/installer/index.html index_pkg.html, self-contained (fm1pkg.js, fm1ota.js, metadata inlined)
   webapp/editor/index.html    editor.html (+ fukiai.ttf, FUKIAI-LICENSE.txt)
+  webapp/vel/index.html       vel.html: the velocity diagnostic (V10.6z5, docs/VELOCITY_DIAG.es.md)
   src/                        not touched
 
   web/make_site.py build/felucca-X.Y.fwsc X.Y OUT_DIR [PREV_DIR]
@@ -114,6 +115,9 @@ def main(pkg, version, out, prev=None):
     for doc in ("LICENSE", "LICENSING.md"):
         shutil.copy(HERE.parent / doc, fw / doc)
     shutil.copy(HERE / "editor.html", ed / "index.html")
+    if (HERE / "vel.html").exists():                # (V10.6z5) the velocity diagnostic's page
+        (out / "webapp" / "vel").mkdir(parents=True, exist_ok=True)
+        shutil.copy(HERE / "vel.html", out / "webapp" / "vel" / "index.html")
     for f in ("fukiai.ttf", "FUKIAI-LICENSE.txt", "fm1backup.js"):
         if (HERE / f).exists():
             shutil.copy(HERE / f, ed / f)

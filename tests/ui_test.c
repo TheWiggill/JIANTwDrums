@@ -162,6 +162,7 @@ static int32_t ut_cv_w(void) { return (int32_t)cv_w; }
 #include "../firmware/src/ui_layer.c"
 #include "../firmware/src/upreset.c"
 #include "../firmware/src/project.c"
+#include "legacy_proj.h"                        /* (V10.6s) FUN6, retired: refused */
 
 static int check(const char *what, int ok)
 {
@@ -492,7 +493,8 @@ static int test_sound_loads(void)
     project_load(1);
     bad += check("a project load leaves no load open", load_depth == 0);
     ui_power_on();
-    host_legacy_sample_perc(t);                /* SAMPLE PERC (SET 4, retired after 1.0.2): every load gives DRUM */
+    host_legacy_sample_perc(t);                /* SAMPLE PERC (SET 4, retired after 1.0.2): (V10.6s) in a project no
+                                                * longer DRUM: ANALOG's first, as every SAMPLE track */
     t->preset = 4;                             /* a project written before the factory removal */
     my_steps(t);
     t->p[P_LEVEL] = 71;
@@ -502,10 +504,9 @@ static int test_sound_loads(void)
     apply_preset_to(t, 0);
     track_defaults_steps(t);
     project_load(0);
-    bad += check("saved SAMPLE PERC project: a DRUM track (its kit), the rest of the sound and every step kept",
-                 t->eng_req == ENGI_DRUM && t->preset == 0u && perc_kit(t) &&
-                 !memcmp(t->p, before.p, P_E0 * sizeof t->p[0]) && !memcmp(t->step, before.step, sizeof t->step));
-    bad += check("  its GM hits play as drums (kick, snare, closed hat on their lanes)", gm_hits_play(t));
+    bad += check("saved SAMPLE PERC project (V10.6s): ANALOG's first (SAMPLE retired), its mix and every step kept",
+                 t->eng_req == ENGI_PHYS_TO && t->preset == 0u && t->p[P_LEVEL] == 71 && t->p[P_REV] == 33 &&
+                 t->p[P_E0] == ENGINES[ENGI_PHYS_TO]->presets[0].e[0] && !memcmp(t->step, before.step, sizeof t->step));
     {   /* a user preset of SAMPLE PERC (UP_PUT from an older editor, or a bank read): DRUM, its kit */
         up_rec_t r;
         int16_t keep[P_COUNT];
@@ -540,30 +541,30 @@ static int test_sound_loads(void)
     trk[3].p[P_SDIV] = 3;
     before = trk[3];
     project_save(1);
-    project_v6_t legacy = {0};
-    project_t decoded;
-    proj_import(&decoded, &proj_slot[1], sizeof proj_slot[1]);
-    legacy.magic = PROJ_MAGIC_V6; legacy.size = sizeof legacy;
-    legacy.parts = 0; legacy.phys = PROJ_PHYS;
-    memcpy(legacy.g, decoded.g, sizeof legacy.g);
-    for (uint32_t ti = 0; ti < PROJ_LT; ti++) {
-        memcpy(legacy.t[ti].p, decoded.t[ti].p, 61u * sizeof(int16_t));
-        memcpy(legacy.t[ti].p + 61, decoded.t[ti].p + P_E0, 8u * sizeof(int16_t));
-        legacy.t[ti].engine = decoded.t[ti].engine; legacy.t[ti].preset = decoded.t[ti].preset;
-        for (uint32_t st = 0; st < NSTEP; st++) memcpy(&legacy.t[ti].step[st], &decoded.t[ti].step[st], sizeof(step10_t));
+    {   /* (V10.6s) an old GM project (FUN6: the drum part as track 4) is retired: the RAM slot holding one is refused,
+         * the slot's flash copy (the save above) loads instead; nothing of the old record reaches the tracks */
+        static project_v6_t legacy;
+        static project_t decoded;
+        memset(&legacy, 0, sizeof legacy);
+        proj_import(&decoded, &proj_slot[1], sizeof proj_slot[1]);
+        legacy.magic = PROJ_MAGIC_V6; legacy.size = sizeof legacy;
+        legacy.parts = 0; legacy.phys = PROJ_PHYS;
+        memcpy(legacy.g, decoded.g, sizeof legacy.g);
+        for (uint32_t ti = 0; ti < PROJ_LT; ti++) {
+            memcpy(legacy.t[ti].p, decoded.t[ti].p, 61u * sizeof(int16_t));
+            memcpy(legacy.t[ti].p + 61, decoded.t[ti].p + P_E0, 8u * sizeof(int16_t));
+            legacy.t[ti].engine = decoded.t[ti].engine; legacy.t[ti].preset = decoded.t[ti].preset;
+        }
+        legacy.t[3].engine = 0;
+        legacy.g[G_DRLVL] = 71; legacy.g[G_DRREV] = 43;
+        legacy.sum = proj_hash(&legacy, offsetof(project_v6_t, sum));
+        bad += check("old GM project (FUN6, retired): refused by import", !proj_import(&decoded, &legacy, sizeof legacy));
+        memcpy(&proj_slot[1], &legacy, sizeof legacy);
+        project_load(1);
+        bad += check("  in the RAM slot: the flash copy loads (the track as saved, not the old drum part)",
+                     trk[3].p[P_SDIV] == 3 && trk[3].p[P_LEVEL] == before.p[P_LEVEL] && trk[3].p[P_LEVEL] != 71 &&
+                     !memcmp(trk[3].step, before.step, sizeof trk[3].step));
     }
-    legacy.t[3].engine = 0;
-    legacy.g[G_DRLVL] = 71; legacy.g[G_DRREV] = 43;
-    legacy.g[G_RTYPE] = 10;                               /* (id 24 was the GM drum part's MIDI channel: 10) */
-    legacy.sum = proj_hash(&legacy, offsetof(project_v6_t, sum));
-    memcpy(&proj_slot[1], &legacy, sizeof legacy);
-    project_load(1);
-    bad += check("old GM projects (the drum part) load as DRUM's kit, their mix and steps kept",
-                 trk[3].eng_req == ENGI_DRUM && trk[3].preset == 0u && perc_kit(&trk[3]) &&
-                 trk[3].p[P_LEVEL] == 71 && trk[3].p[P_REV] == 43 && trk[3].p[P_SDIV] == 3 &&
-                 !memcmp(trk[3].step, before.step, sizeof trk[3].step));
-    bad += check("  their GM hits play as drums", gm_hits_play(&trk[3]));
-    bad += check("  its old drum channel (10, in id 24) loads as REVERB TYPE ROOM", song.g[G_RTYPE] == 0);
     return bad;
 }
 
@@ -1274,7 +1275,14 @@ static int test_dximg(void)
         scn_on = 1; scn_role[2] = SC_BASS;
         ok &= proj_import(&proj_scratch, &st, sizeof st) && !project_restore_runtime(&proj_scratch);
         ok &= !scn_on && !scn_role[2];
-        bad += check("V10.31 SCENE kept with the project: ON and the six roles; a project without it: OFF, all KEEP", ok);
+        scn_pat[1] = 3; scn_pat[4] = 7; scn_pat[5] = 1;
+        project_capture(&proj_scratch);
+        ok &= proj_pack(&st, &proj_scratch);
+        memset(scn_pat, 0, sizeof scn_pat);
+        ok &= proj_import(&proj_scratch, &st, sizeof st) && !project_restore_runtime(&proj_scratch);
+        ok &= scn_pat[1] == 3u && scn_pat[4] == 7u && scn_pat[5] == 1u && !scn_pat[0] && !scn_pat[2];
+        memset(scn_pat, 0, sizeof scn_pat);
+        bad += check("V10.31 SCENE kept with the project: ON and the six roles; a project without it: OFF, all KEEP; (V10.6k) the PATTERNs/STYLEs too", ok);
         scn_on = 0; memset(scn_role, 0, sizeof scn_role);
         ui_power_on();
     }
@@ -1329,7 +1337,7 @@ static int test_dxlay(void)
     memset(fg_set, 0, sizeof fg_set);
     bad += check("FUGUE: kept with the project (FUNC 'F' 'G')", ok);
     system_init();
-    ok = !memcmp(dx_lay, DX_LAY_DEF, sizeof dx_lay) && 1;
+    ok = !memcmp(dx_lay, DX_KITS[TRK_PR_DRUM].lay, sizeof dx_lay) && 1;   /* (V10.6d: the power-on kit's, ACOUSTIC) */
     for (i = 0; i < NTRK; i++) {   /* (0.9.9) TRK_DEF's preset sound (was the engine's own defaults: EDIT, envelope) */
         const engine_t *e = ENGINES[trk[i].eng_req % NENGINES];
         const preset_t *pr = &e->presets[TRK_DEF[i][1]];
@@ -2083,7 +2091,7 @@ static int test_init_system(void)
             ok2 &= seq_is_empty(&trk[k]) && !motion_count(&trk[k]) && trk[k].eng_req == trk_def_engine(k);
         ok2 &= trk[2].p[P_LEVEL] != 30 && trk[2].p[P_REV] != 90;   /* (the first sound's level and sends) */
         ok2 &= song.g[G_BPM] == GP[G_BPM].def && song.g[G_RTYPE] == GP[G_RTYPE].def && !macro_v[1] && !dx_tone &&
-               !dx_mot[XM_DPTH] && !pfx_lane[3] && !memcmp(dx_kit, DX_KIT_DEF, sizeof dx_kit);
+               !dx_mot[XM_DPTH] && !pfx_lane[3] && !memcmp(dx_kit, DX_KITS[TRK_PR_DRUM].lane, sizeof dx_kit);
         ok2 &= song.g[G_TUNE] == 5 && song.g[G_CLOCK] == 1;       /* (the setup stays) */
         bad += check("TOOLS 5 NEW PROJECT: everything as at power-on, CLOCK and TUNE kept", ok2);
         ok2 = !undo_do() && steps_sig(&trk[0]) == sig0 && trk[2].p[P_LEVEL] == 30 && song.g[G_BPM] == 97;
@@ -2680,6 +2688,17 @@ static uint32_t lz_tabs(void);
 static int lz_count_is(const char *s);
 static void wdt_ms(void) { fm1_ms++; }
 static void wdt_key(void) { fm1_ms++; if (fm1_ms % 50u == 0u) fm1_in.notes = 1u; }   /* a key pressed after a moment */
+/* (V10.6z8) PROX's page taking a point: its BPC_MS as menu_input runs it (bt_cal_tick each frame), the clock put back
+ * after (no frame: the later tests' frame counts and times stay) */
+static void prox_take(void)
+{
+    uint32_t ms = fm1_ms, i;
+    for (i = 0; i < (BPC_MS + 200u) / 16u; i++) {
+        fm1_ms += 16u;
+        bt_cal_tick();
+    }
+    fm1_ms = ms;
+}
 static int test_menu_tabs(void)
 {
     int bad = 0, ok = 1;
@@ -2690,16 +2709,17 @@ static int test_menu_tabs(void)
         ok &= n >= 1u && n <= MTAB_ROWS && f < MI_COUNT;
         for (i = 0; i < MI_COUNT; i++)                  /* its rows in one run */
             ok &= (MI_TAB[i] == t) == (i >= f && i < f + n);
-        ok &= 14 + (int32_t)n * (n > 7u ? 15 : n > 6u ? 17 : 20) <= LZ_GRAPH_H;   /* (0.8.5 the lens: TAB's rows in the panel;
+        ok &= 14 + (int32_t)n * (n > 8u ? 10 : n > 7u ? 15 : n > 6u ? 17 : 20) <= LZ_GRAPH_H;   /* (V10.6z6: CONTROL's
+                                                         * twelve 10 apart) */   /* (0.8.5 the lens: TAB's rows in the panel;
                                                          * 0.8.9 seven: 17 apart; 0.9.7 eight: 15) */
         for (i = f; i < f + n; i++)                     /* .. ROW's chips, every value */
             ok &= i >= MI_VALUES || 16 + (int32_t)((menu_n(i) + 2u) / 3u) * 20 <= LZ_GRAPH_H;
     }
     for (i = 0; i < MI_COUNT; i++) ok &= MI_TAB[i] < MTAB_COUNT;
     ui_prefs = 0;
-    bad += check("MENU tabs: DISPLAY CONTROL AUDIO SYSTEM (8 8 7 8 rows: 0.8.9 SKIN, 0.9.7 SCOPE, 0.9.9-stab CPU CLOCK, p1 CPU CORES, MIDI MAP, LEARN, LOAD in AUDIO; V10.12 BLUETOOTH), 1..8 each in a run, their rows and values fit the lens's panel",
+    bad += check("MENU tabs: DISPLAY CONTROL AUDIO SYSTEM (8 12 8 8 rows: 0.8.9 SKIN, 0.9.7 SCOPE, 0.9.9-stab CPU CLOCK, p1 CPU CORES, MIDI MAP, LEARN, LOAD in AUDIO; V10.12 BLUETOOTH; V10.6z4 OCT BEND in AUDIO; V10.6z6 VELOCITY VEL MIN AFTERTOUCH VEL LEARN in CONTROL), each in a run, their rows and values fit the lens's panel",
                  ok && MTAB_COUNT == 4u && str_eq(MTAB_NAME[0], "DISPLAY") && mtab_rows(MTAB_DISPLAY) == 8u &&
-                 mtab_rows(MTAB_CONTROL) == 8u && mtab_rows(MTAB_AUDIO) == 7u && mtab_rows(MTAB_SYSTEM) == 8u);   /* (0.6.58: INIT SYSTEM;
+                 mtab_rows(MTAB_CONTROL) == 12u && mtab_rows(MTAB_AUDIO) == 8u && mtab_rows(MTAB_SYSTEM) == 8u);   /* (0.6.58: INIT SYSTEM;
                                                                          * 0.6.72: MIDI OUT in CONTROL; 0.9.9-stab: CPU CLOCK in SYSTEM) */
 
     ui_power_on();
@@ -2871,9 +2891,9 @@ static int test_menu_tabs(void)
     hold(B_HOME);
     frame();
     ok = ui.menu == 1 && ui.mlv == 1u && lz_on() && lz_fam() == LZ_MENU && lz_tabs() == 4u && lz_tab_lit(0) &&
-         lz_crumb_is("MENU \xB7 DISPLAY \xB7 COLOR") && lz_count_is("1/31");
+         lz_crumb_is("MENU \xB7 DISPLAY \xB7 COLOR") && lz_count_is("1/36");
     turn(EN_SELECT, 1); frame();
-    ok &= ui.mlv == 1u && lz_tab_lit(0) && lz_crumb_is("MENU \xB7 DISPLAY \xB7 SKIN") && lz_count_is("2/31");
+    ok &= ui.mlv == 1u && lz_tab_lit(0) && lz_crumb_is("MENU \xB7 DISPLAY \xB7 SKIN") && lz_count_is("2/36");
     turn(EN_ALGO, 1); frame();
     ok &= menu_tab() == MTAB_CONTROL && lz_tab_lit(1) && lz_crumb_is("MENU \xB7 CONTROL \xB7 HOLD");
     turn(EN_SELECT, 2); frame();
@@ -2882,7 +2902,7 @@ static int test_menu_tabs(void)
     ok &= (fx_latch & 1u) != 0u;
     turn(EN_K3, -1); frame();
     menu_close();
-    bad += check("0.9.2 MENU: four tabs (the row's lit), MENU . TAB . ROW and n/31 (0.9.7: SCOPE; 0.9.9-stab: CPU CLOCK; p1: CPU CORES, MIDI MAP, LEARN; V10.12: BLUETOOTH); ALGORITHM the tab, any knob the value", ok && MI_COUNT == 31u);
+    bad += check("0.9.2 MENU: four tabs (the row's lit), MENU . TAB . ROW and n/36 (0.9.7: SCOPE; 0.9.9-stab: CPU CLOCK; p1: CPU CORES, MIDI MAP, LEARN; V10.12: BLUETOOTH; V10.6z4: OCT BEND; V10.6z6: the keys' four); ALGORITHM the tab, any knob the value", ok && MI_COUNT == 36u);
 
     /* (V10.12) MENU > SYSTEM > BLUETOOTH: OFF by default (no mark: older settings), refused while playing, ON kept in
      * TRIO's retired favourites row with its mark; here (no radio, no segment) ON reads NO SEG; OFF again; the boot
@@ -3048,11 +3068,14 @@ static int test_menu_tabs(void)
         press(B_OCTUP);
         ok &= ui.menu == 3u && menu_get(MI_BT) == 1u;
         press(B_OCTDN);                                    /* FAR: the hand away, level 80 */
+        ok &= msg_is("HOLD STILL...") && bpc.on == 1u && favorites.factory[6][22] == 0u;   /* (V10.6z8: ~2.5 s of it) */
+        prox_take();
         ok &= ui.menu == 3u && favorites.factory[6][22] == 160u && msg_is("PROX FAR SET") && menu_get(MI_BT) == 1u;
         for (k = 0; k < 40u; k++)
             w[k] = LV(40u);
         { uint32_t r_; for (r_ = 0; r_ < 8u; r_++) bt_prox_step(w, 40, 1, t += 400u); }
         press(B_OCTUP);                                    /* NEAR: the hand on the antenna, level 40 */
+        prox_take();
         bt_prox_step(w, 0, 1, t += 10u);
         ok &= favorites.factory[6][23] == 80u && msg_is("PROX NEAR SET") && mod_prox > 32600;
         for (k = 0; k < 40u; k++)
@@ -3807,13 +3830,16 @@ static int test_product_ux(void)
         if (!page_visible(i))
             continue;
         press(B_REC);
-        if (PAGES[i].graph == GR_SONG)
+        if (SONG_CLIPS(&PAGES[i])) {                   /* (V10.6s) CLIPS: REC is SONG REC (the launches as rows) */
+            ok &= song.rec == 0 && !transport_req && live.srec == 1u && msg_is("SONG REC: PLAY");
+            live.srec = 0;
+        } else if (PAGES[i].graph == GR_SONG)
             ok &= song.rec == 0 && !transport_req && msg_is("[SEQ] TO RECORD");
         else if (PAGES[i].graph == GR_ROLL)            /* #133: STEP's roll arms step recording, stopped */
             ok &= song.rec == 1 && !transport_req && ui.page == i && !ui.home;
         else ok &= song.rec == 1 && transport_req == 0 && ui.page == i && !ui.home;
     }
-    bad += check("REC stays on every page, SONG stopped asks for pattern recording (STEP: step recording, stopped)", ok);
+    bad += check("REC stays on every page, SONG stopped asks for pattern recording (STEP: step recording, stopped; CLIPS: SONG REC)", ok);
     ui_power_on(); hold(B_HOME); press(B_REC);
     bad += check("REC in the MENU does nothing (the menu stays, no arm, no transport start)",
                  ui.menu == 1 && song.rec == 0 && !transport_req);
@@ -5601,10 +5627,20 @@ static int test_step_rec(void)
         for (i = 0; i < NSTEP && !t->step[i].n; i++) ;
         while (t->seq_idx != i) events_block(CTL);
         for (b2 = 0; b2 < NVOICE; b2++) first += t->v[b2].active && t->v[b2].gate;
-        for (b2 = 0; b2 < 200u; b2++) events_block(CTL);
+        for (b2 = 0; b2 < 100u; b2++) events_block(CTL);   /* (V10.6z4: 100 blocks, ~145 ms: the chord now ends where
+                                                         * it was let go, 200 blocks from its quantised start) */
         for (b2 = 0; b2 < NVOICE; b2++) later += t->v[b2].active && t->v[b2].gate;
         ok = first == 1u && later == 3u;
         bad += check("STRUM, playing back: the step's chord comes in one note after another (1, then all 3)", ok);
+        {   /* (V10.6o, the owner: a long STRUM recorded came back fast) played back at the keys' gaps, not squeezed */
+            t->p[P_CSTR] = 110;                          /* (~0.4 s apart: far past half a step's gate) */
+            while (t->seq_idx == i) events_block(CTL);
+            while (t->seq_idx != i) events_block(CTL);
+            events_block(CTL);
+            ok = t->ss_n >= 1u && t->ss_gap == chord_gap(t);
+            bad += check("V10.6o STRUM to ~1 s played back at the keys' own gaps (it was squeezed into half the gate)", ok);
+            t->p[P_CSTR] = 64;
+        }
         {   /* (V10.22, a tester: strums recorded an octave low played back an octave higher) OCT -1, STRUM, VOICINGs:
              * the notes played back are the notes heard when recorded */
             uint32_t vo, okv = 1;
@@ -6044,7 +6080,7 @@ static int test_fm6_charts(void)
 
 #if !FELUCCA_FM4
 /* DIGITAL retired (src/fm4_convert.c): engine 1 is on no track and in no list; its sounds arrive as FM6 with a patch
- * of their own: a user preset of it, its preset numbers (set_engine_of / apply_preset_to), a track that got engine 1
+ * of their own (V10.6s: the init patch, no conversion): a user preset of it, its preset numbers (set_engine_of / apply_preset_to), a track that got engine 1
  * any other way (the main loop's net); the favourites of its presets move to FM6's; the power-on pad is FM6 PAD */
 static int test_fm4_retired(void)
 {
@@ -6070,14 +6106,14 @@ static int test_fm4_retired(void)
         turn(EN_K2, 1);
         seen |= 1u << TSEL->eng_req;
     }
-    bad += check("PRESETS KNOB 2: the engines in order (0.9.9: DRUM first; snd5: NOISE STRING ADD last, round), DIGITAL skipped, back to the first",
-                 seen == all && TSEL->eng_req == 0u && eng_step(0, 1) == ENGI_FM6 && eng_step(ENGI_FM6, 1) == ENGI_PHASE &&
-                 eng_step(ENGI_FM6, -1) == 0u && eng_step(0, -1) == ENGI_LOFI && eng_step(ENGI_DRUM, 1) == ENGI_VOICE &&
-                 eng_step(ENGI_VOICE, 1) == ENGI_ANIMAL && eng_step(ENGI_DRUM, -1) == ENGI_INPUT && eng_step(ENGI_NOISE, 1) == ENGI_STRING &&
+    bad += check("PRESETS KNOB 2: the engines in order (V10.6d: DRUM ANALOG PHASE FM6 VOICE ANIMAL MATH ..; EXT last, round), DIGITAL skipped, back to the first",
+                 seen == all && TSEL->eng_req == 0u && eng_step(0, 1) == ENGI_PHASE && eng_step(ENGI_FM6, 1) == ENGI_VOICE &&
+                 eng_step(ENGI_FM6, -1) == ENGI_PHASE && eng_step(0, -1) == ENGI_DRUM && eng_step(ENGI_DRUM, 1) == 0u &&
+                 eng_step(ENGI_VOICE, 1) == ENGI_ANIMAL && eng_step(ENGI_ANIMAL, 1) == ENGI_LOFI && eng_step(ENGI_DRUM, -1) == ENGI_INPUT && eng_step(ENGI_NOISE, 1) == ENGI_STRING &&
                  eng_step(ENGI_STRING, 1) == ENGI_ADD && eng_step(ENGI_ADD, 1) == ENGI_INPUT && eng_step(ENGI_INPUT, 1) == ENGI_DRUM);   /* (V10.54: INPUT last) */
     {   /* the display order (engines.c ENGINE_ORDER, 0.9.9): every engine one can pick once; the PRESETS list follows it
          * (was ANALOG FM6 PHASE LOFI VOICE WHEEL NOISE DRUM ANIMAL: test_engine_order_099 has PROGRAM CHANGE's) */
-        static const char *const ORDER[] = {"DRUM", "VOICE", "ANIMAL", "LOFI", "ANALOG", "FM6", "PHASE", "WHEEL", "NOISE", "STRING", "ADD", "INPUT"};
+        static const char *const ORDER[] = {"DRUM", "ANALOG", "PHASE", "FM6", "VOICE", "ANIMAL", "MATH", "WHEEL", "NOISE", "STRING", "ADD", "EXT"};
         uint32_t last = 0xFFu, r = 0, n = 0;
         ok = NENG_SHOWN == NELEM(ORDER);
         for (i = 0; ok && i < NENG_SHOWN; i++)
@@ -6092,13 +6128,13 @@ static int test_fm4_retired(void)
             last = e;
             r++;
         }
-        bad += check("engines shown DRUM VOICE ANIMAL LOFI ANALOG FM6 PHASE WHEEL NOISE STRING ADD (ENGINE_ORDER); PRESETS lists them so",
+        bad += check("engines shown DRUM ANALOG PHASE FM6 VOICE ANIMAL MATH WHEEL NOISE STRING ADD EXT (ENGINE_ORDER); PRESETS lists them so",
                      ok && r == NENG_SHOWN);
     }
-    /* a user preset stored with engine 1: kept as it is, it loads as FM6 with the converted patch */
+    /* a user preset stored with engine 1: kept as it is, it loads as FM6 with the init patch (V10.6s) */
     for (i = 0; i < P_COUNT; i++)
         p[i] = param_desc_of(ENGI_DIGITAL, i)->def;
-    fm4_preset_values(p, 5);                           /* DIGITAL PAD */
+    fm4_preset_values(p, 5);                           /* (V10.6s: retired, the values stay the defaults) */
     {
         up_rec_t r;
         memset(&r, 0, sizeof r);
@@ -6113,8 +6149,9 @@ static int test_fm4_retired(void)
     }
     fm4_convert(p, v);
     up_load(7);
-    bad += check("a DIGITAL user preset loads as FM6: the converted patch its own (SLOT OWN), preset = FM6 PAD",
-                 TSEL->eng_req == ENGI_FM6 && TSEL->preset == 4u && TSEL->p[P_E7] == FM6_OWN && !TSEL->p[P_E0] &&
+    bad += check("a DIGITAL user preset loads as FM6: the init patch its own (SLOT OWN), preset 0",
+                 TSEL->eng_req == ENGI_FM6 && TSEL->preset == 0u && TSEL->p[P_E7] == FM6_OWN &&
+                 !memcmp(v + FP_NAME, "INIT VOICE", 10) &&
                  !memcmp(fm6_patch[song.sel], v, FP_SIZE) && fm6_slot[song.sel] == FM6_OWN && TSEL->user == 8u);
     frame();
     bad += check("  .. and the main loop keeps that patch (not a factory one)", !memcmp(fm6_patch[song.sel], v, FP_SIZE));
@@ -6125,7 +6162,7 @@ static int test_fm4_retired(void)
     up_store(8, "AGAIN");
     {
         uint8_t pk[FM6_PACKED], w[FP_SIZE + 1u];
-        bad += check("  saved again: an FM6 user preset with SLOT OWN and the converted patch beside it",
+        bad += check("  saved again: an FM6 user preset with SLOT OWN and its patch beside it",
                      up_rec(8)->engine == ENGI_FM6 && up_value(up_rec(8), P_E7) == FM6_OWN && !upf_get(8, pk) &&
                      (fm6_unpack(pk, w), !memcmp(w, v, FP_SIZE)));
         fm6_load_slot(song.sel, 2);                    /* another patch on the track, then the preset again */
@@ -6136,19 +6173,19 @@ static int test_fm4_retired(void)
     }
     /* preset numbers of engine 1 */
     set_engine_of(TSEL, ENGI_DIGITAL);
-    bad += check("engine 1 asked for: DIGITAL E.PIANO converted (FM6, PTCH TINE EP, the patch named E.PIANO)",
-                 TSEL->eng_req == ENGI_FM6 && TSEL->preset == 0u && !memcmp(fm6_patch[song.sel] + FP_NAME, "E.PIANO", 7));
+    bad += check("engine 1 asked for: FM6, the init patch (V10.6s: no DIGITAL preset first)",
+                 TSEL->eng_req == ENGI_FM6 && TSEL->preset == 0u && !memcmp(fm6_patch[song.sel] + FP_NAME, "INIT VOICE", 10));
     TSEL->eng_req = ENGI_DIGITAL;                      /* (the ISR's view: no other path does this) */
     apply_preset_to(TSEL, 1);
-    bad += check("a DIGITAL preset number (apply_preset_to): its sound converted (BELL)",
-                 TSEL->eng_req == ENGI_FM6 && TSEL->preset == 1u && !memcmp(fm6_patch[song.sel] + FP_NAME, "BELL", 4));
+    bad += check("a DIGITAL preset number (apply_preset_to): FM6, the init patch",
+                 TSEL->eng_req == ENGI_FM6 && TSEL->preset == 0u && !memcmp(fm6_patch[song.sel] + FP_NAME, "INIT VOICE", 10));
     for (i = 0; i < P_COUNT; i++)
         trk[2].p[i] = param_desc_of(ENGI_DIGITAL, i)->def;
     fm4_preset_values(trk[2].p, 2);
     trk[2].eng_req = ENGI_DIGITAL;
     frame();
-    bad += check("a track left on engine 1 any other way: the main loop converts it (BASS -> FM BASS)",
-                 trk[2].eng_req == ENGI_FM6 && trk[2].preset == 2u);
+    bad += check("a track left on engine 1 any other way: the main loop makes it FM6 (the init patch)",
+                 trk[2].eng_req == ENGI_FM6 && trk[2].preset == 0u && !memcmp(fm6_patch[2] + FP_NAME, "INIT VOICE", 10));
     {   /* favourites of DIGITAL presets (settings PER4) -> the FM6 presets that cover them */
         persist_t pe;
         memset(&pe, 0, sizeof pe);
@@ -7534,7 +7571,8 @@ static void tl_drum(void)
  * the level's other set, SAVE from elsewhere always USER, PRESETS the slot / project) */
 static int test_save_lens(void)
 {
-    static const char *const CH[8] = {"TIMELINE", "SECTIONS", "PROJECTS", "ARRANGE", "TOOLS", "SAVE SONG AS", "USER", "PRESETS"};
+    static const char *const CH[10] = {"TIMELINE", "PARTS", "CLIPS", "SECTIONS", "PROJECTS", "ARRANGE", "TOOLS", "SAVE SONG AS", "USER",
+                                       "PRESETS"};   /* (V10.6s: CLIPS) */
     static const char *const TP[2] = {"PROJECTS", "USER"};
     int bad = 0, ok;
     uint32_t pr;
@@ -7543,12 +7581,12 @@ static int test_save_lens(void)
     press(B_SAVE); frame();
     ok = save_on() && save_level() == SV_PROJ && SONG_TRK(cur_page()) && ui.act == 0u && lz_on() &&
          card_y() == LZ_CARD_Y && graph_y() == LZ_GRAPH_Y && foot_y() == LZ_FOOT_Y && lz_tab_lit(0) &&
-         lz_crumb_is("SAVE \xB7 SONG \xB7 TIMELINE") && lz_count_is("1/8");
-    bad += check("V10.1 SAVE from HOME at power-on: SONG's TIMELINE; the tabs (SONG lit), the crumb, 1/8", ok);
-    bad += check("V10.1 SAVE: one chain TIMELINE SECTIONS PROJECTS ARRANGE TOOLS SAVE SONG AS USER PRESETS; a SAVE tap the next group, round",
-                 chain_walk(B_SAVE, CH, 8, TP, 2));
+         lz_crumb_is("SAVE \xB7 SONG \xB7 TIMELINE") && lz_count_is("1/10");
+    bad += check("V10.1 SAVE from HOME at power-on: SONG's TIMELINE; the tabs (SONG lit), the crumb, 1/10", ok);
+    bad += check("V10.1 SAVE: one chain TIMELINE PARTS CLIPS SECTIONS PROJECTS ARRANGE TOOLS SAVE SONG AS USER PRESETS; a SAVE tap the next group, round",
+                 chain_walk(B_SAVE, CH, 10, TP, 2));
     ui_power_on(); go_home(); frame(); press(B_SAVE); frame();
-    turn(EN_SELECT, 3); frame();                                             /* ARRANGE, left there */
+    turn(EN_SELECT, 5); frame();                                             /* ARRANGE, left there */
     go_home(); frame(); press(B_SAVE); frame();
     ok = cur_page()->graph == GR_SONG && !SONG_TRK(cur_page()) && save_level() == SV_PROJ;   /* (the page left) */
     turn(EN_SELECT, -2); frame();
@@ -7597,26 +7635,76 @@ static int test_save_lens(void)
     ok &= chain_config.count == 1u && chain_config.row[0].slot == 2u;
     bad += check("V10.4 ARRANGE / TIMELINE: OCT- asks DELETE ROW? for the row picked (OCT+ deletes, OCT- keeps it)", ok);
     ui_power_on();
-    go_home(); frame();                                                      /* (add15) ARRANGE 2 */
+    go_home(); frame();                                                      /* (V10.6o) TIMELINE, the owner's mock-up B */
+    my_steps(&trk[0]); my_steps(&trk[2]); trk[2].p[P_MUTE] = 1;
+    section_store(0); section_store(1); section_store(2);
     chain_config.count = 2;
     chain_config.row[0] = (chain_row_t){0, 4}; chain_config.row[1] = (chain_row_t){1, 4};
     memset(song_idx.tsrc[song_cur], 0, sizeof song_idx.tsrc[song_cur]);
+    memset(song_idx.tvar[song_cur], 0, sizeof song_idx.tvar[song_cur]);
+    memset(song_idx.scene[song_cur], 0, sizeof song_idx.scene[song_cur]);
     press(B_SAVE); frame();
     nav_put(SEC_SAVE, "TIMELINE"); frame();
-    ok = SONG_TRK(cur_page()) && !SONG_TRK(&PAGES[nv_page(SEC_SAVE, 3)]) && SONG_TRK(&PAGES[nv_page(SEC_SAVE, 0)]);
+    ok = SONG_TRK(cur_page()) && !SONG_TRK(&PAGES[nv_page(SEC_SAVE, 4)]) && SONG_TRK(&PAGES[nv_page(SEC_SAVE, 0)]);
     turn(EN_K1, 1); frame();                                                 /* row 2 */
-    turn(EN_K2, 1); frame(); turn(EN_K2, 1); frame(); turn(EN_K2, 1); frame();   /* lane T3 (0 is SEC) */
-    turn(EN_K3, 1); frame(); turn(EN_K3, 1); frame(); turn(EN_K3, 1); frame();   /* FROM C */
-    ok &= ui.song_row == 1u && ui.song_tk == 3u && song_idx.tsrc[song_cur][1] == 3u << 6 && !song_idx.tsrc[song_cur][0] &&
-          row_src(1, 2, 1) == 2u && row_src(1, 0, 1) == 1u;
-    turn(EN_K4, 1); frame();                                                 /* (beta4) VAR: MUTE */
-    ok &= row_var(1, 2) == RV_MUTE && !row_var(1, 0) && !row_var(0, 2);
-    turn(EN_K4, 1); frame();
-    ok &= row_var(1, 2) == RV_THIN;
-    turn(EN_K2, -3); frame();                                                /* (beta5) lane SEC: the row's section, its bars */
-    turn(EN_K3, 1); frame(); turn(EN_K4, 1); frame();
-    ok &= ui.song_tk == 0u && chain_config.row[1].slot == 2u && chain_config.row[1].bars == 5u;
-    bad += check("add15 SAVE > TIMELINE: lane T3 FROM C, VAR (MUTE, THIN); lane SEC the row's section and bars", ok);
+    turn(EN_K2, 1); frame();                                                 /* its section C */
+    turn(EN_K3, 2); frame();                                                 /* 6 bars */
+    ok &= ui.song_row == 1u && chain_config.row[1].slot == 2u && chain_config.row[1].bars == 6u && chain_config.row[0].slot == 0u;
+    track_select(2); frame();
+    turn(EN_K4, 1); frame(); turn(EN_K4, 1); frame();                        /* T3's VAR: MUTE, THIN */
+    ok &= row_var(1, 2) == RV_THIN && !row_var(1, 0) && !row_var(0, 2);
+    tl_key(8);                                                               /* G4: T3 FROM B */
+    ok &= row_src(1, 2, 2) == 1u && row_src(1, 0, 2) == 2u;
+    tl_key(8);                                                               /* (again: the row's own) */
+    ok &= row_src(1, 2, 2) == 2u;
+    bad += check("V10.6o TIMELINE: KNOB 1 the row, 2 its section, 3 its bars, 4 the ALGORITHM track's VAR; F4..B4 its FROM", ok);
+    tl_key(1);                                                               /* G3: T2 muted in row 2 (a scene) */
+    ok = song_idx.scene[song_cur][1].on & 1u && (song_idx.scene[song_cur][1].mute >> 1) & 1u && !song_idx.scene[song_cur][0].on;
+    tl_key(1);
+    ok &= !((song_idx.scene[song_cur][1].mute >> 1) & 1u);
+    tl_key(5);                                                               /* D4: T6 */
+    ok &= (song_idx.scene[song_cur][1].on >> 2) & 1u;
+    bad += check("V10.6o TIMELINE: a white key mutes / unmutes its track in the row (its scene; T5 T6 in .on)", ok);
+    press(B_OCTUP); frame();                                                 /* a copy of row 2 after it */
+    ok = chain_config.count == 3u && ui.song_row == 2u && chain_config.row[2].slot == 2u && chain_config.row[2].bars == 6u &&
+         row_var(2, 2) == RV_THIN && (song_idx.scene[song_cur][2].on >> 2) & 1u;
+    press(B_OCTDN); frame(); press(B_OCTUP); frame();                        /* DELETE ROW? yes */
+    ok &= chain_config.count == 2u && !ui.confirm;
+    bad += check("V10.6o TIMELINE: OCT+ a copy of the row after it (scene, VAR), OCT- deletes it (DELETE ROW?)", ok);
+    ui.song_row = 1;
+    press(B_PLAY); frame();                                                  /* stopped: row 2 loops */
+    ok = chain.armed && chain.hold && sec_stage.row == 1u && transport_req == 1u;
+    chain.armed = 0; transport_req = 0; song.playing = 1; chain.running = 1; chain.row = 1; chain.remaining = 6;
+    press(B_PLAY); frame();                                                  /* on it: the song goes on */
+    ok &= !chain.hold && chain.running && transport_req == 0u;
+    press(B_PLAY); frame();                                                  /* then PLAY stops, as anywhere */
+    ok &= transport_req == 2u;
+    chain_stop(); chain.running = 0; song.playing = 0; transport_req = 0; chain.ended = 0;
+    bad += check("V10.6o TIMELINE: PLAY loops the cursor's row; PLAY again the song goes on from it; again: STOP", ok);
+    chain_config.row[1].slot = 1; ui.song_row = 0;
+    nav_put(SEC_SAVE, "PARTS"); frame();                                     /* (V10.6o) PARTS, the owner's mock-up A */
+    frames(600);                                                             /* (the sections read: their tracks) */
+    ok = SONG_PARTS(cur_page()) && keys_mode() == 2u && (part_play.b[0] & 5u) == 1u;
+    turn(EN_K1, -3); frame(); turn(EN_K1, 1); frame();                       /* B */
+    press(B_OCTUP); frame();
+    ok &= ui.part == 1u && live.cur == 1 && !live.mode && !chain.running && transport_req == 1u;
+    transport_req = 0;
+    press(B_OCTDN); frame();                                                 /* the song from B's row */
+    ok &= live.mode && chain.armed && !chain.hold && ui.song_row == 1u && sec_stage.row == 1u;
+    chain.armed = 0; transport_req = 0;
+    bad += check("V10.6o PARTS: KNOB 1 + OCT+ the part loops (LOOP, live.cur); OCT- the song again from its row", ok);
+    ui.song_row = 0;
+    tl_key(2);                                                               /* A3: C at once (stopped) */
+    ok = ui.part == 2u && live.cur == 2 && !live.mode;
+    transport_req = 0;
+    tl_key(1);                                                               /* G3: B */
+    ok &= ui.part == 1u && live.cur == 1;
+    transport_req = 0;
+    turn(EN_K2, 1); frame();                                                 /* KNOB 2: B's row in the song */
+    ok &= ui.song_row == 1u;
+    turn(EN_K4, 1); frame();                                                 /* KNOB 4: PLAY plays the SONG */
+    ok &= live.mode == 1u;
+    bad += check("V10.6o PARTS: F3..B3 pick and loop A..D; KNOB 2 the part's row, KNOB 4 LOOP / SONG", ok);
     memset(song_idx.tvar[song_cur], 0, sizeof song_idx.tvar[song_cur]);
     chain_config.count = 0;
     ui_power_on();
@@ -8449,6 +8537,88 @@ static int test_song_layer(void)
     return bad;
 }
 
+/* (V10.6s) SAVE > CLIPS (the owner's song proposal C): the six tracks x the four parts. F3..B3 a whole part (stopped: at
+ * once, and PLAY); KNOB 1 the track, KNOB 2 the part, OCT+ that cell in on the next bar (queued until then: clip_go, then
+ * sounding: clip_now), that track only; OCT- the track stops on the bar; REC: SONG REC, the launches become the song's
+ * rows, a row's tracks FROM the parts they played (and the stop in its scene); the rows play the launches back */
+static int test_clips(void)
+{
+    int bad = 0, ok;
+    uint32_t bar, i, left;
+    ui_power_on();
+    if (song_cur) (void)song_select(0);
+    sl_steps(60); project_save(0);                      /* A: notes 60.. */
+    sl_steps(70); project_save(1);                      /* B: 70.. */
+    sl_steps(80); project_save(2);                      /* C: 80.. */
+    chain_defaults(&chain_config);
+    memset(song_idx.tsrc[song_cur], 0, sizeof song_idx.tsrc[song_cur]);
+    memset(song_idx.scene[song_cur], 0, sizeof song_idx.scene[song_cur]);
+    go_home(); frame(); press(B_SAVE); frame();
+    nav_put(SEC_SAVE, "CLIPS"); frames(600);
+    ok = SONG_CLIPS(cur_page()) && keys_mode() == 2u && lz_crumb_is("SAVE \xB7 SONG \xB7 CLIPS") &&
+         (part_play.b[1] & 0x3Fu) == 0x3Fu;
+    tl_key(0);                                          /* F3: part A, stopped: at once, and PLAY */
+    ok &= live.cur == 0 && trk[1].step[0].note[0] == 61 && transport_req == 1u;
+    for (i = 0; i < NTRK; i++) ok &= clip_now[i] == 1u && !clip_go[i];
+    bad += check("V10.6s CLIPS: F3 (stopped) every track part A at once, and PLAY", ok);
+    sl_play(256);
+    bar = chain_bar();
+    turn(EN_K1, 1); frame();                            /* T2 */
+    turn(EN_K2, 1); frame();                            /* B */
+    press(B_OCTUP);
+    ok = song.playing && song.sel == 1u && ui.part == 1u && clip_go[1] == 2u && clip_now[1] == 1u && live.req >= 0 &&
+         trk[1].step[0].note[0] == 61;
+    left = bar - chain.bar_pos;
+    sl_play(left > 512u ? left - 512u : 0u);            /* (just before the bar line) */
+    ok &= clip_go[1] == 2u && clip_now[1] == 1u && trk[1].step[0].note[0] == 61;
+    bad += check("V10.6s CLIPS: KNOB 1 T2, KNOB 2 B, OCT+: the cell queued (dashed), nothing changes before the bar", ok);
+    sl_play(1024);
+    ok = trk[1].step[0].note[0] == 71 && clip_now[1] == 2u && !clip_go[1] && live.req < 0;
+    for (i = 0; i < NTRK; i++)
+        ok &= i == 1u || (trk[i].step[0].note[0] == 60u + i && clip_now[i] == 1u);
+    bad += check("  .. on the next bar T2 plays B's pattern (framed: sounding), every other track A's as before", ok);
+    frame();
+    tl_key(2);                                          /* A3: part C, every track */
+    ok = clip_go[0] == 3u && clip_go[5] == 3u && trk[0].step[0].note[0] == 60;
+    sl_play(bar);
+    for (i = 0; i < NTRK; i++)
+        ok &= trk[i].step[0].note[0] == 80u + i && clip_now[i] == 3u && !clip_go[i];
+    bad += check("V10.6s CLIPS: a part key (A3: C) launches every track on the next bar", ok && live.cur == 2);
+    turn(EN_K1, 1); frame();                            /* T3 */
+    press(B_OCTDN);
+    ok = clip_go[2] == CLIP_STOP && !trk[2].p[P_MUTE];
+    sl_play(bar);
+    ok &= trk[2].p[P_MUTE] == 1 && clip_now[2] == CLIP_STOP && !trk[1].p[P_MUTE] && !trk[3].p[P_MUTE] &&
+          trk[2].step[0].note[0] == 82u && trk[0].step[0].note[0] == 80u;
+    bad += check("V10.6s CLIPS: OCT- stops the track on the next bar (the others play on)", ok);
+    press(B_REC);                                       /* SONG REC, from the next bar */
+    ok = live.srec == 1u;
+    sl_play(bar);                                       /* row 1: C (T3 stopped) */
+    ok &= live.srec == 2u;
+    turn(EN_K1, -2); frame(); turn(EN_K2, -2); frame(); /* T1, A */
+    press(B_OCTUP);
+    sl_play(bar);                                       /* row 2: T1 from A */
+    sl_play(bar);
+    press(B_REC);                                       /* off: the rows */
+    sl_play(256);
+    ok &= !live.srec && chain_config.count == 2u && chain_config.row[0].slot == 2u && chain_config.row[0].bars == 1u &&
+          chain_config.row[1].slot == 2u && chain_config.row[1].bars == 2u && msg_is("SONG ROWS 2");
+    ok &= row_src(0, 0, 2) == 2u && row_src(1, 0, 2) == 0u && row_src(1, 1, 2) == 2u && row_src(1, 2, 2) == 2u;
+    ok &= (song_idx.scene[song_cur][0].mute >> 2) & 1u && (song_idx.scene[song_cur][1].mute >> 2) & 1u &&
+          !(song_idx.scene[song_cur][1].mute & 1u);
+    bad += check("V10.6s CLIPS: REC records the launches as the song's rows (C 1 bar; C with T1 FROM A 2 bars; T3's stop)", ok);
+    transport_req = 2; sl_play(256);
+    ok = !song_stage(2, 1) && sec_stage.t[0].step[0].note[0] == 60u && sec_stage.t[1].step[0].note[0] == 81u &&
+         sec_stage.t[5].step[0].note[0] == 85u;
+    sec_stage.ready = 0;
+    bad += check("  .. the second row stages T1 from A, the rest from C (as it played)", ok);
+    chain_defaults(&chain_config);
+    memset(song_idx.tsrc[song_cur], 0, sizeof song_idx.tsrc[song_cur]);
+    memset(song_idx.scene[song_cur], 0, sizeof song_idx.scene[song_cur]);
+    ui_power_on();
+    return bad;
+}
+
 /* (0.6.12) LOFI BYTE / FLOAT's RTRG: a note on a sounding voice restarts the formula's time (off: it runs on) */
 static int test_lofi_rtrg(void)
 {
@@ -8459,6 +8629,8 @@ static int test_lofi_rtrg(void)
     ui_power_on();
     for (e = 0; e < NENGINES && ENGINES[e] != &ENG_LOFI; e++) {}
     set_engine_of(t, e); t->engine = t->eng_req;
+    bad += check("RETRIG: MATH's sounds start with RTRG ON (V10.6d: a voice in tune)", t->p[P_LRTRG] == 1);
+    t->p[P_LRTRG] = 0;
     t->p[P_E1] = RW_FLOAT; t->p[P_VOICE] = V_MONO; t->p[P_SUS] = 127;   /* (held: the voice sounding) */
     trk_note_on(t, 60, 100);
     v = &t->v[0];
@@ -8470,10 +8642,10 @@ static int test_lofi_rtrg(void)
     trk_note_on(t, 62, 100);                            /* (MONO: another key retriggers; the same one held does not) */
     bad += check("  ON: the formula from its start", v->ph[0] == 0u && v->ph[1] == 0u);
     go_title("RETRIG");
-    bad += check("  the RETRIG page: LOFI FLOAT's, RTRG on KNOB 1", str_eq(cur_page()->title, "RETRIG") &&
+    bad += check("  the RETRIG page: MATH FLOAT's, RTRG on KNOB 1", str_eq(cur_page()->title, "RETRIG") &&
                  str_eq(track_desc(t, P_LRTRG)->label, "RTRG"));
-    t->p[P_E1] = 0;
-    bad += check("  not on LOFI's other waves", !page_visible(ui.page));
+    t->p[P_E1] = RW_BYTE;
+    bad += check("  and BYTE's", page_visible(ui.page));
     return bad;
 }
 
@@ -8715,7 +8887,7 @@ static int test_dice_all(void)
             fm += trk[k].eng_req == ENGI_FM6;
             drums += drum_track(&trk[k]);
         }
-        ok = !strncmp(ui.msg, "GEN: ", 5);
+        ok = !strncmp(ui.msg, "GENE: ", 6);
         ok &= moved >= 1u && fm <= 2u && drums == 1u;
         for (r = 0; r < 30u && ok; r++) {               /* thirty more throws: the same holds, every style seen */
             dice_all();
@@ -9974,7 +10146,9 @@ static int test_click_menu(void)
     turn(EN_K1, -1); frame(); ok &= trk_live == 4u && !(ui_rec_prefs & 0x80u);   /* (0.6.18) TRACKS 4 */
     turn(EN_K1, 1); frame(); ok &= trk_live == NTRK && (ui_rec_prefs & 0x80u);   /* 6 */
     turn(EN_SELECT, 1); ok &= ui.menu_sel == MI_LOAD;     /* (p1: LOAD in AUDIO, as main 0.9.12) */
-    turn(EN_SELECT, 1); ok &= ui.menu_sel == MI_SERIAL;   /* (0.9.2: on into SYSTEM; was round within AUDIO) */
+    turn(EN_SELECT, 2); ok &= ui.menu_sel == MI_SERIAL;   /* (0.9.2: on into SYSTEM; was round within AUDIO; V10.6z4: past
+                                                         * OCT BEND, AUDIO's last, in the one frame: the frames after as
+                                                         * they were, H2's HOME timing too) */
     press(B_HOME);
     ok &= !ui.menu;
     bad += check("0.9.2 MENU > AUDIO: SELECT (was PRESETS) to CLICK, CLICK LEVEL, COUNT-IN, TRACKS; knobs / OCT step them, applied at once", ok);
@@ -11885,14 +12059,14 @@ static int test_lz_home(void)
     ok = home_level() == 1u && home_set() && home_macros() && lz_crumb_is("HOME \xB7 BEING \xB7 ROUTES") && lz_count_is("4/7");
     fm1_ms += 1000u;
     turn(EN_SELECT, 1); frame();                                    /* GEN 1 */
-    ok &= gen_on() && gen_page() == 0u && home_level() == 2u && lz_on() && lz_tab_lit(2) && lz_crumb_is("HOME \xB7 GEN \xB7 GEN 1") &&
+    ok &= gen_on() && gen_page() == 0u && home_level() == 2u && lz_on() && lz_tab_lit(2) && lz_crumb_is("HOME \xB7 GENE \xB7 GENE 1") &&
           lz_count_is("5/7");
     k = gp.genre;
     turn(EN_PRESET, 1); frame();
     ok &= gp.genre == (k == GEN_EXPLORE ? 0u : k == NGENRE ? GEN_EXPLORE : k + 1u);   /* PRESETS: the GENRE, KNOB 1's order
                                                          * (0.8.6: EXPLORE, RANDOM, the genres) */
     turn(EN_SELECT, 1); frame();
-    ok &= gen_on() && gen_page() == 1u && lz_crumb_is("HOME \xB7 GEN \xB7 GEN 2") && lz_count_is("6/7");
+    ok &= gen_on() && gen_page() == 1u && lz_crumb_is("HOME \xB7 GENE \xB7 GENE 2") && lz_count_is("6/7");
     turn(EN_SELECT, -2); frame();                                   /* back: ROUTES, GEN shut */
     ok &= !ui.confirm && ui.home && home_level() == 1u && home_set();
     turn(EN_SELECT, 1); frame();
@@ -12015,6 +12189,8 @@ static int test_lz_edit(void)
     ok &= (TSEL->preset != pr || TSEL->eng_req != 0u) && str_eq(cur_page()->title, "EDIT 2");   /* (the next sound) */
     bad += check("0.9.2 EDIT: EDIT from elsewhere the page left; PRESETS the next sound, the page stays", ok);
     ui_power_on(); set_engine_of(TSEL, 0); go_title("FOCUS"); frame();
+    for (v = 0; v < 12; v++)                                        /* (V10.6i: the preset's own MOD slots cleared: */
+        TSEL->p[P_M1SRC + v] = 0;                                   /* the FOCUS rules from a free matrix) */
     ui.focus = 0;
     turn(EN_K1, 4); frame();                                        /* PARAM: E5 (ANALOG's CUT) */
     ok = focus_k() == 4u && str_eq(ui.col[1], "CUT|") == 0;
@@ -13045,7 +13221,7 @@ static int test_nav_rules(void)
     held_turn(B_SCL, 1); frame();
     ok &= str_eq(cur_page()->title, "CHORD") && !ui.layer;   /* SCL + SELECT: its chain (from its page left, KEY) */
     fm1_ms += 1200u;
-    held_turn(B_SAVE, 2); frame();
+    held_turn(B_SAVE, 3); frame();                       /* (V10.6s: CLIPS after PARTS) */
     ok &= str_eq(cur_page()->title, "SECTIONS") || cur_page()->graph == GR_SLOTS;   /* SAVE + SELECT: its chain */
     fm1_ms += 1200u;
     held_turn(B_LFO, 1); frame();
@@ -13072,8 +13248,8 @@ static void ui_power_on_099(void)
  * each part sounds a note with no effects, none clipping */
 static int test_power_on_099(void)
 {
-    static const char *const ENG[NPART] = {"DRUM", "VOICE", "ANIMAL", "LOFI", "ANALOG", "FM6"};
-    static const char *const PRE[NPART] = {"DRUM-X", "SINGER EN", "CMOS BIRD", "BYTEBEAT", "FAT BASS", "TINE EP"};
+    static const char *const ENG[NPART] = {"DRUM", "ANALOG", "PHASE", "FM6", "VOICE", "ANIMAL"};   /* (V10.6d: a band in tune) */
+    static const char *const PRE[NPART] = {"ACOUSTIC", "FAT BASS", "GLASS PAD", "TINE EP", "CHOIR AAH", "WHISTLE"};
     int bad = 0, ok = 1;
     uint32_t i, k, b, drums = 0, live;
     int16_t p0[NTRK][P_COUNT];
@@ -13088,13 +13264,21 @@ static int test_power_on_099(void)
         ok &= seq_is_empty(&trk[i]) && !motion_count(&trk[i]) && trk_eng(&trk[i]) == TRK_DEF[i][0];
         drums += drum_track(&trk[i]);
     }
-    ok &= load_depth == 0 && song.sel == 0u && !memcmp(dx_kit, DX_KIT_DEF, sizeof dx_kit);
-    bad += check("0.9.9 power-on: T1 DRUM-X, T2 VOICE SINGER EN, T3 ANIMAL CMOS BIRD, T4 LOFI BYTEBEAT, T5 ANALOG FAT BASS, T6 FM6 TINE EP", ok);
-    ok = drums == 1u && drum_track(&trk[0]) && drum_elsewhere(&trk[1]) == 1u && !drum_elsewhere(&trk[0]) && perc_kit(&trk[0]);
-    ok &= trk[1].p[P_VLANG] == LG_EN && trk[1].p[P_VLYR] != 0;     /* (VOICE sings English words, its LYRIC's) */
+    ok &= load_depth == 0 && song.sel == 0u;
+    {                                                          /* (the kit: ACOUSTIC's, TRK_DEF's preset) */
+        static __typeof__(dx_kit) kk;
+        memcpy(&kk, &dx_kit, sizeof dx_kit);
+        dx_kit_load(TRK_PR_DRUM);
+        ok &= !memcmp(&kk, &dx_kit, sizeof dx_kit);
+    }
+    bad += check("V10.6d power-on: T1 DRUM-X ACOUSTIC, T2 ANALOG FAT BASS, T3 PHASE GLASS PAD, T4 FM6 TINE EP, T5 VOICE CHOIR AAH, T6 ANIMAL WHISTLE", ok);
+    ok = drums == 1u && drum_track(&trk[0]) && drum_elsewhere(&trk[1]) == 1u && !drum_elsewhere(&trk[0]);
+    for (k = 0; k < 8u; k++)                                   /* (its E values ACOUSTIC's: V10.6d) */
+        ok &= trk[0].p[P_E0 + k] == DRUM_PRESETS[TRK_PR_DRUM].e[k];
+    ok &= trk[4].p[P_VLYR] == 0;                               /* (VOICE its vowels, no words: V10.6d) */
     for (i = 0; i < NPART; i++)
         ok &= TRK_DEF[i][0] == eng_vis(i);                     /* (the display order's first six) */
-    bad += check("  .. DRUM on T1 alone (its factory kit); VOICE sings words (EN); T1..T6 the display order's first six", ok);
+    bad += check("  .. DRUM on T1 alone (its kit); VOICE sings vowels; T1..T6 the display order's first six", ok);
     for (i = 0; i < NTRK; i++) memcpy(p0[i], trk[i].p, sizeof p0[i]);
     trk[0].p[P_REV] = 90; trk[4].p[P_E0] = 3; set_engine_of(&trk[2], ENGI_PHASE);
     system_init();
@@ -13164,13 +13348,13 @@ static int test_power_on_099(void)
  * saved on 0.9.8's parts loads as it was saved, whatever the power-on */
 static int test_engine_order_099(void)
 {
-    static const char *const IDX[NENGINES] = {"ANALOG", 0, "PHASE", "LOFI", "-", "VOICE", "-", "WHEEL", "STRING", "-", "DRUM",
+    static const char *const IDX[NENGINES] = {"ANALOG", 0, "PHASE", "MATH", "-", "VOICE", "-", "WHEEL", "STRING", "-", "DRUM",
                                               "NOISE", "FM6", "ADD", "ANIMAL"};
     static const char *const PC[] = {"ANALOG", "FM6",
 #if FELUCCA_FM4
                                      "DIGITAL",
 #endif
-                                     "PHASE", "LOFI", "VOICE", "WHEEL", "NOISE", "DRUM", "ANIMAL", "STRING", "ADD", "INPUT"};   /* (V10.54) */
+                                     "PHASE", "MATH", "VOICE", "WHEEL", "NOISE", "DRUM", "ANIMAL", "STRING", "ADD", "EXT"};   /* (V10.54) */
     int bad = 0, ok = 1;
     uint32_t i, e, k, n, all, seen = 0;
     project_store_t st;
@@ -13194,23 +13378,29 @@ static int test_engine_order_099(void)
         ok &= k == eng_vis(n);
         k = eng_step(k, 1);
     }
-    ok &= k == ENGI_DRUM && eng_step(eng_step(ENGI_ANIMAL, 1), -1) == ENGI_ANIMAL && eng_step(ENGI_DIGITAL, 1) == (FELUCCA_FM4 ? ENGI_DRUM : ENGI_PHASE);
+    ok &= k == ENGI_DRUM && eng_step(eng_step(ENGI_ANIMAL, 1), -1) == ENGI_ANIMAL && eng_step(ENGI_DIGITAL, 1) == (FELUCCA_FM4 ? ENGI_DRUM : ENGI_VOICE);
     bad += check("  the selector: place <-> engine round trips (every engine once; DIGITAL / retired ones at FM6 / ANALOG's)", ok);
     preset_all_pos(&all);
     k = 0;
     ok = preset_all_at(0, &k) == ENGI_DRUM && k == 0u;            /* the PRESETS list: DRUM-X first */
     e = preset_all_at(preset_shown(ENGI_DRUM), &k);
-    ok &= e == ENGI_VOICE && k == preset_nth(ENGINES[ENGI_VOICE], 0);   /* the last kit, then VOICE's first */
+    ok &= e == ENGI_ANALOG && k == preset_nth(ENGINES[ENGI_ANALOG], 0);   /* the last kit, then ANALOG's first (V10.6d) */
     for (i = 0, n = 0; i < all; i++) {                             /* the same sounds in both orders */
         uint32_t k1, k2, e1 = preset_all_at(i, &k1), e2;
-        for (e2 = 0, n = 0; e2 < all && !n; e2++) {
+        for (e2 = 0, n = 0; e2 < all + 1u && !n; e2++) {   /* (V10.6h: PROGRAM CHANGE counts one more: 18 - 12 + 24 - 29) */
             uint32_t q, ee = preset_all_at_in(e2, &q, ENGINE_PC_ORDER);
             n = ee == e1 && q == k1;
         }
         (void)k2;
-        if (!n) break;
+        if (!n && !(e1 == ENGI_ANIMAL && k1 >= 24u)) break;   /* (V10.6h: ANIMAL's appended tonal ones by the list alone) */
     }
     ok &= i == all && NELEM(PC) == NENG_SHOWN;
+    {   /* (V10.6h) PROGRAM CHANGE as 0.9.8 counted: MATH 18 (LOFI's), ANIMAL 24; ANIMAL's first is right after VOICE's
+         * 15, LOFI's slot 15 (PC 3 + 15 .. after PHASE and FM6) MATH BASS */
+        uint32_t base = preset_shown(ENGI_ANALOG) + preset_shown(ENGI_FM6) + preset_shown(ENGI_PHASE), q;
+        ok &= preset_all_at_in(base + 15u, &q, ENGINE_PC_ORDER) == ENGI_LOFI && q == 4u;
+        ok &= preset_all_at_in(base + 18u, &q, ENGINE_PC_ORDER) == ENGI_VOICE && q == preset_nth(ENGINES[ENGI_VOICE], 0);
+    }
     for (i = 0; i < NELEM(PC); i++)
         ok &= str_eq(ENGINES[ENGINE_PC_ORDER[i]]->name, PC[i]);
     e = preset_all_at_in(0, &k, ENGINE_PC_ORDER);
@@ -13410,6 +13600,36 @@ static int test_scene(void)
     key_up(white(7));
     for (i = 0; i < 4u; i++) events_block(CTL);
     bad += check("SCENE: the key up ends every role", trk_gates(5) == 0u && trk_gates(4) == 0u && trk_gates(1) == 0u && !trk[3].arp_phys);
+    {   /* (V10.6j) BASS / LEAD play a pattern: the track's arp from SC_PAT; the kit's DRUM: a key writes its beat */
+        uint32_t kicks = 0;
+        scn_pat[4] = 7; sc_setup(4);
+        ok = trk[4].p[P_AMODE] == SC_PAT[0][7][1] && trk[4].p[P_ARATE] == SC_PAT[0][7][2] && trk[4].p[P_AGATE] == SC_PAT[0][7][3];
+        scn_role[0] = SC_DRUM; scn_pat[0] = 0;
+        key_down(white(9));
+        for (i = 0; i < 4u; i++) events_block(CTL);
+        ok &= trk_gates(4) >= 1u && scn_dreq != 0u;
+        key_up(white(9));
+        for (i = 0; i < 4u; i++) events_block(CTL);
+        sc_beat();
+        for (i = 0; i < 16u; i++) kicks += trk[0].step[i].hit & 1u;
+        ok &= kicks == 4u && !scn_dreq && trk[0].p[P_SLEN] == 16;
+        bad += check("SCENE BASS pattern ACID: the arp RND 1/16; the kit's DRUM FOUR: a key writes a four-on-the-floor beat", ok);
+        scn_role[0] = SC_KEEP; scn_pat[4] = 0; sc_setup(4);
+    }
+    {   /* (V10.6m) GEN: the generator writes T5 a bass line, ARP TRNS + QUANT SEQ; a key moves it to its chord's root */
+        uint32_t notes = 0;
+        scn_pat[4] = SC_GEN; sc_setup(4); sc_gen(4);
+        for (i = 0; i < (uint32_t)trk[4].p[P_SLEN]; i++) notes += trk[4].step[i].time == ST_NOTE && trk[4].step[i].n;
+        ok = notes >= 4u && trk[4].p[P_AMODE] == AM_TRNS && trk[4].p[P_QUANT] == QN_SEQ && trk[4].p[P_SLEN] >= 32;
+        key_down(white(7) + 4u);                         /* (four keys up: a third or a fourth away) */
+        for (i = 0; i < 4u; i++) events_block(CTL);
+        ok &= trk[4].trn != 0 && trk[4].trn >= -5 && trk[4].trn <= 6 && trk_gates(4) == 0u;
+        key_up(white(7) + 4u);
+        for (i = 0; i < 4u; i++) events_block(CTL);
+        bad += check("SCENE BASS GEN: a generated line (ARP TRNS, QUANT SEQ, 2 bars); a key moves it by its root, the nearest way", ok);
+        scn_pat[4] = 0; sc_setup(4);
+        trk[4].p[P_AMODE] = 0; trk[4].p[P_QUANT] = 0; trk[4].trn = 0;
+    }
     turn(EN_K3, -1);                                     /* (T5 BASS -> ARP: T4's ARP goes KEEP) */
     bad += check("SCENE: a role another track has: that track KEEP (no two alike)", scn_role[4] == SC_ARP && scn_role[3] == SC_KEEP);
     turn(EN_K1, -1);
@@ -13560,6 +13780,7 @@ int main(void)
     bad += test_fx_latch();
     bad += test_rec_layer();
     bad += test_song_layer();
+    bad += test_clips();
     bad += test_project_page();
     bad += test_lofi_rtrg();
     bad += test_key_latch();

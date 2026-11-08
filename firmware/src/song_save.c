@@ -48,7 +48,7 @@ static void song_index_target(const song_index_t *index, uint32_t target)
     memcpy(song_idx.tvar[target], index->tvar[target], sizeof index->tvar[target]);
 }
 
-static int song_save_as(uint32_t target, const char *name)
+static __attribute__((noinline)) int song_save_as(uint32_t target, const char *name)
 {
 #if FELUCCA_FLASH
     uint32_t section, current, mask = 0;

@@ -35,6 +35,13 @@ static uint32_t host_tick_dflt;                 /* (V10.33) TIMER4's ticks (the 
 static struct { volatile uint32_t notes, buttons; } fm1_in;
 #include "../firmware/src/core.h"
 #include "../firmware/src/engines.c"
+/* (V10.6o) DRUM-X's kit has no initializer any more (the firmware's power-on sets it): the host starts with the factory
+ * kit as the firmware's tracks do, before any test runs (__attribute: __attribute__ is defined away above) */
+static void __attribute((constructor)) host_dx_kit_boot(void)
+{
+    memcpy(dx_kit, DX_KIT_DEF, sizeof dx_kit);
+    memcpy(dx_lay, DX_LAY_DEF, sizeof dx_lay);
+}
 #include "../firmware/src/params.c"
 #include "../firmware/src/mod.c"
 #include "../firmware/src/voice.c"
@@ -113,6 +120,7 @@ static void host_preset_values(track_t *t, uint32_t e, uint32_t pi, const preset
     }
     for (i = 0; i < 4u; i++)
         t->p[P_DIST + i] = (int16_t)(p->fx[i] ? p->fx[i] - 1 : FX_DEF[i]);
+    preset_mods(t, p);                            /* (V10.6i) its movement (ui.c apply_preset_to) */
     fm6_track_loaded(t);                          /* FM6: the preset's patch (ui.c apply_preset_to) */
 }
 static void host_preset_req(track_t *t, uint32_t e, uint32_t pi)
