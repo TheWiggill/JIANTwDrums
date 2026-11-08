@@ -116,19 +116,22 @@ dos capturas:
   confiable.
 - **Cada tecla es distinta** (D4 lee ~77 más alto que el promedio, A#4 ~31 más bajo), así que cada tecla tiene su
   propia calibración: tres referencias, su golpe FUERTE, NORMAL y SUAVE. La velocidad sale **continua** de la lectura
-  pasando por esas tres (FUERTE 112, NORMAL 76, SUAVE 36, interpolando entre medio y con la mitad de la pendiente más
-  allá de las puntas), y después la curva (SOFT / NORMAL / HARD) y el piso VEL MIN (20 por defecto).
+  pasando por esas tres (FUERTE 104, NORMAL 76, SUAVE 40, interpolando entre medio y con la mitad de la pendiente más
+  allá de las puntas; dos lecturas a menos de 48 cuentas cuentan como su promedio, y cada golpe se acerca un octavo a
+  tu promedio reciente), y después la curva (SOFT / NORMAL / HARD) y el piso VEL MIN (20 por defecto).
 - **Arranca** de tus medianas (las de cada tecla donde había datos: G4, A#4, D4, D#4, F4, C4; el promedio en las
   demás) y **aprende sola** mientras tocás (VEL LEARN ON): en cada toque cada referencia da un pasito hacia tu propio
   percentil 15 (FUERTE), mediana (NORMAL) y percentil 85 (SUAVE) de esa tecla; las primeras 24 veces de cada tecla
-  más rápido. Un toque raro la mueve un pasito, nada más. Se guarda en la configuración medio minuto después de que
+  el doble de rápido. Un toque raro la mueve un pasito, nada más. Se guarda en la configuración medio minuto después de que
   dejás de tocar. **VEL LEARN RESET** (o el botón *Volver a la calibración de fábrica* de la página) vuelve al
   arranque.
-- **Latencia**: la nota espera el final de su golpe como mucho una lectura de su tecla (2,2 ms; 1,7 ms en promedio en
-  la prueba `tests/vel_test.c`). No se nota.
+- **Latencia**: la nota espera el final de su golpe una lectura de su tecla (2,2 ms), dos (4,4 ms) si la tecla
+  todavía no se apoyó y la lectura sigue bajando rápido (en la prueba `tests/vel_test.c`, con caídas de hasta 10 ms:
+  2,6 ms en promedio). No se nota.
 - **Presión (aftertouch)**: con la tecla abajo, la lectura sigue bajando si apretás más: eso es la presión, 0..127
   (MID: 2 por cuenta, con 8 cuentas de zona muerta para que un dedo apoyado no haga nada), suavizada, 0 al soltar.
-- La fila de arriba (C#5 a G5) sigue sin poder medirse: toca el promedio de tus últimas velocidades.
+- La fila de arriba (C#5 a G5) sigue sin poder medirse: sigue tu dinámica (tus últimos golpes, sobre todo los de
+  F4..C5, 3/4; tu promedio más largo 1/4; y una variación de -3..+4). Sin aftertouch.
 
 En la página, la sección **En vivo** muestra la velocidad de cada nota que tocás, la lectura de la que salió, la
 calibración de cada tecla (FUERTE / NORMAL / SUAVE) y la presión. Si una tecla suena siempre muy fuerte o muy suave,

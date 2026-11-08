@@ -66,7 +66,7 @@ static volatile uint8_t vd_cw, vd_cbusy, vd_cready;   /* the one written; its ke
 static vd_ev_t vd_ev[VD_NEV], vd_last;  /* the presses not read yet; the last one (the message line) */
 static volatile uint8_t vd_ev_w, vd_ev_r, vd_last_n;
 static volatile uint16_t vd_lost;       /* presses and captures nobody read in time */
-static void vel_driven(uint32_t key, const vd_key_t *k, uint32_t v);   /* (vel.c) */
+static void vel_driven(uint32_t key, vd_key_t *k, uint32_t v);   /* (vel.c) */
 static void vel_lift(uint32_t key, uint32_t strike);
 static void vel_wait(uint32_t k);
 
@@ -104,9 +104,10 @@ static void vd_sample(uint32_t col, uint32_t rowbit, uint32_t v, uint32_t driven
     if (driven) {                               /* only the force: no state change (a driven graze reads open too) */
         k->dnext = 0;
         if (k->st != VD_OPEN) {
+            vel_driven(key, k, v);              /* (V10.6z6) the strike's window, the pressure (vel.c; the lowest
+                                                 * before this one) */
             if (v < k->dmin)
                 k->dmin = (uint16_t)v;
-            vel_driven(key, k, v);              /* (V10.6z6) the strike's window, the pressure (vel.c) */
         }
         vd_cap_add(key, v | VD_DRIVEN);
         goto wait;

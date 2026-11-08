@@ -148,11 +148,19 @@ de Charles Vestal, *Velo*, github.com/charlesvestal/fm1-velocity, GPL-3.0). JIAN
 
 - **Velocidad**: qué tan fuerte llega la tecla, en los primeros milisegundos después de tocar. Es continua (1..127:
   cada toque entre suave y fuerte da un valor intermedio), y después pasa por la curva de MENU > CONTROL >
-  **VELOCITY** y el piso de **VEL MIN**. Una nota espera a su toque como mucho una lectura de su tecla (2,2 ms; 1,7 ms
-  en promedio): la latencia queda por debajo de lo que se nota. Llega a todo lo que toca una tecla: el sonido (los
-  motores y el VEL de la matriz), los acordes y el strum, el arpegiador, la grabación (solo 127 se graba como acento)
-  y el MIDI OUT. La fila de arriba (C#5..G5) no tiene sensor: toca el promedio de tus últimas velocidades (100 hasta
-  que toques las otras). VELOCITY **OFF**: todas las teclas 100, como antes.
+  **VELOCITY** y el piso de **VEL MIN**. Es más estable que en V10.6z9: dos lecturas cerca del fondo del golpe cuentan
+  como su promedio, una tecla que todavía está bajando recibe una lectura más, las puntas de la escala son un poco más
+  suaves y cada golpe se acerca un octavo a tus golpes recientes, así que el mismo golpe da casi la misma velocidad
+  (un tercio menos de dispersión en las pruebas) y suave y fuerte siguen igual de separados. Una nota espera a su
+  toque una lectura de su tecla (2,2 ms), dos (4,4 ms) solo si la tecla todavía está bajando: la latencia queda por
+  debajo de lo que se nota. Llega a todo lo que toca una tecla: el sonido (los motores y el VEL de la matriz), los
+  acordes y el strum, el arpegiador, la grabación (solo 127 se graba como acento) y el MIDI OUT. VELOCITY **OFF**:
+  todas las teclas 100, como antes.
+- **La fila de arriba (C#5..G5)** no tiene sensor (el FM-1 no puede leer la presión de esas siete teclas), así que
+  **sigue tu dinámica**: sobre todo tus últimos golpes (los de las teclas vecinas F4..C5 pesan más), un poco de tu
+  promedio más largo y una pequeña variación humana, nunca un valor fijo (100 hasta que toques las otras). Si tocás
+  suave abajo, toca suave; si das unos golpes fuertes, sube con vos. No tiene aftertouch (un acorde con teclas
+  sensadas conserva el de ellas).
 - **Calibración**: cada tecla es distinta, y cada una aprende tus toques suave, normal y fuerte mientras tocás (VEL
   LEARN ON, por defecto: se mueve despacio, un toque raro no la desarma). Empieza de la calibración de fábrica (medida
   en el FM-1 del dueño) y se guarda en la configuración, medio minuto después de que dejás de tocar. **VEL LEARN
@@ -2344,7 +2352,7 @@ SKIN  2/26**. El encabezado dice MENU · DISPLAY.
 | CONTROL | BPM LOCK | OFF, ON — DICE ALL conserva el tempo (el tempo es GLO + SELECT, F4 TAP de GLO o el BPM de GLOBAL) |
 | CONTROL | SCALE LEDS | OFF, ON — las teclas de la escala se iluminan, la tónica más brillante |
 | CONTROL | MIDI OUT | **KEYS**, CLOCK, ALL, OFF — qué sale por MIDI USB (ver [14](#14-midi-y-usb)) |
-| CONTROL | VELOCITY | OFF, SOFT, **NORMAL** (por defecto), HARD — (V10.6z6) las teclas suenan tan fuerte como las tocás (F3..C5; la fila de arriba C#5..G5 no tiene sensor y toca el promedio de tus últimas notas). La curva: SOFT más fuerte con menos, HARD pide más. OFF: todas las teclas 100, exactamente como antes. Ver [Velocidad y aftertouch de las teclas](#velocidad-y-aftertouch-de-las-teclas-v106z6) |
+| CONTROL | VELOCITY | OFF, SOFT, **NORMAL** (por defecto), HARD — (V10.6z6) las teclas suenan tan fuerte como las tocás (F3..C5; la fila de arriba C#5..G5 no tiene sensor y sigue tu dinámica reciente). La curva: SOFT más fuerte con menos, HARD pide más. OFF: todas las teclas 100, exactamente como antes. Ver [Velocidad y aftertouch de las teclas](#velocidad-y-aftertouch-de-las-teclas-v106z6) |
 | CONTROL | VEL MIN | 1, 10, **20** (por defecto), 30, 40, 50, 64, 80 — la velocidad del toque más suave (el rango se escala, sin saltos) |
 | CONTROL | AFTERTOUCH | OFF, LOW, **MID** (por defecto), HIGH — apretar más una tecla ya abajo: la fuente **AT** de la matriz (los sonidos nuevos la mandan al filtro, CUT +20), se graba y sale como aftertouch de canal con MIDI OUT ALL |
 | CONTROL | VEL LEARN | **ON** (por defecto), OFF, RESET — cada tecla aprende tus toques suave, normal y fuerte mientras tocás (queda en la configuración); RESET vuelve a la calibración de fábrica y sigue aprendiendo |
