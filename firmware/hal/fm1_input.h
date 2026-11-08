@@ -110,13 +110,18 @@
  * FM1_INPUT_DRIVE(col, rowbit) asks is taken with the row driven high (the pin's driver at strength drive - 1 is then
  * the divider's upper half: a seated key's range spreads); the row is an input with its pull-up again at the take,
  * before the rows are read. The rows' digital input buffers stay on (switching them off made Velo read phantom OCT-
- * / OCT+ presses and even start the update mode). Off (fm1_an.on 0, the default): one byte tested twice a tick, the
- * scan's writes and reads as before */
+ * / OCT+ presses and even start the update mode). Off (fm1_an.on 0; V10.6z6: the sampling is on while MENU > CONTROL >
+ * VELOCITY or AFTERTOUCH is not OFF, the defaults, src/vel.c): one byte tested twice a tick, the scan's writes and reads
+ * as before */
 #ifndef FM1_INPUT_ANALOG
 #define FM1_INPUT_ANALOG(col, rowbit, v, driven) ((void)0)
 #endif
 #ifndef FM1_INPUT_DRIVE
 #define FM1_INPUT_DRIVE(col, rowbit) 0
+#endif
+/* (V10.6z6) a note key's press debounced (k 0..26), just before its bit sets: the key velocity's (src/vel.c vel_note_on) */
+#ifndef FM1_INPUT_NOTE_ON
+#define FM1_INPUT_NOTE_ON(k) ((void)0)
 #endif
 
 #ifndef FM1_INPUT_IDLE
@@ -324,6 +329,7 @@ static void fm1__key(uint32_t id, uint32_t closed)
     if (note) {
         if (!on) {
             uint32_t d = FM1_INPUT_NOW() - fm1_in.note_t0[id - 14u];
+            FM1_INPUT_NOTE_ON(id - 14u);           /* (V10.6z6) before the key's bit: its velocity, or its wait */
             fm1_in.notes_pressed |= bit;
             fm1_in_stat.press_n++;
             fm1_in_stat.press_sum += d;

@@ -217,19 +217,41 @@ static __attribute__((noinline)) void mo_block(uint32_t n)   /* events_block: th
  * beside MIDI's): every engine follows, DRUM none. Recording, they are automation of P_XPR (the gates: the same curves
  * play back); MIDI OUT ALL sends them as CC1 (the vibrato's depth) and pitch bend (full: the range; set the receiver's
  * bend range to OCT BEND's) */
+#include "vel_kb.h"                                /* (V10.6z6) the keys' velocity and pressure */
+_Static_assert(VK_NTRK == NTRK, "vel_kb.h VK_NTRK: the tracks");
+static uint8_t kb_on[27];                           /* (below: how many of a key's notes sound) */
 #define KX_BSS __attribute__((section(".bss.kx")))   /* (out of the merged statics, as fx.c's djf: theirs keep their places) */
 static volatile uint8_t kx_g[2] KX_BSS;            /* the keys' gates: tracks (bit i) with OCT- (vibrato), OCT+ (bend) held */
 static volatile uint8_t kx_semi KX_BSS;            /* the bend's range, semitones (0: OFF) */
 static uint16_t kx_amt[NTRK][2] KX_BSS, kx_ph[NTRK] KX_BSS;   /* the ramps (vibrato depth, bend: 0..65535), the vibrato's phase */
 static uint8_t kx_mo[NTRK][2] KX_BSS;              /* MIDI OUT's last CC1, bend MSB - 64 */
+/* (V10.6z6) the keys' pressure (vel_kb.h vk[].at, MENU > CONTROL > AFTERTOUCH): a track's is its held keys' highest
+ * (vs.atl), or what its recording plays (P_XPR bits 2..4: 0..7), slewed (~12 ms) into t->at, the matrix's AT (mod.c;
+ * MIDI's channel aftertouch writes it too, the last one wins); MIDI OUT ALL sends it as channel aftertouch. Nothing
+ * pressed and nothing recorded: t->at untouched (bit for bit as before) */
 #define KX_STEP(ms) (int32_t)(65536u * CTL / ((uint32_t)FS / 1000u * (ms)))   /* a block's step of a ramp of ms */
 static __attribute__((noinline)) void kx_block(void)
 {
     uint32_t i, k, g;
+    for (i = 0; i < NTRK; i++)
+        vs.atl[i] = 0;
+    for (k = 0; k < VK_NK; k++)                     /* (V10.6z6) the held keys' pressure, per track */
+        if (kb_on[k] && vk[k].at > vs.atl[kb_trk[k] % NTRK])
+            vs.atl[kb_trk[k] % NTRK] = vk[k].at;
     for (i = 0; i < NTRK; i++) {
         int32_t x, q, v;
         g = 127u - (uint32_t)trk[i].p[P_XPR];
-        g = ((kx_g[0] >> i) & 1u) | ((kx_g[1] >> i) & 1u) << 1 | (g < 4u ? g : 0u);
+        g = g < 32u && !drum_track(&trk[i]) ? g : 0u;   /* (bits 0, 1 the gates; V10.6z6: 2..4 the pressure) */
+        x = (int32_t)(g >> 2) * 18;
+        x = (x > vs.atl[i] ? x : vs.atl[i]) << 8;
+        if (x != (q = vs.at8[i])) {                 /* (V10.6z6) the pressure, slewed */
+            q += (x - q + (x > q ? 7 : -7)) / 8;
+            vs.at8[i] = (uint16_t)q;
+            trk[i].at = (uint8_t)(q >> 8);
+            if (mo_lvl == MO_ALL && (q >> 9) != vs.ato[i])   /* (MIDI OUT: in steps of 2, 0 at the end) */
+                mo_send(0xD0u | i, (uint32_t)(vs.ato[i] = (uint8_t)(q >> 9)) << 1, 0);
+        }
+        g = ((kx_g[0] >> i) & 1u) | ((kx_g[1] >> i) & 1u) << 1 | (g & 3u);
         if (drum_track(&trk[i]))
             g = 0;
         for (k = 0; k < 2u; k++)
@@ -335,6 +357,9 @@ static uint32_t kb_map(const track_t *t, uint32_t k)
 #define KB_CH 4u
 static uint8_t kb_snd[27][KB_CH], kb_sn[27], kb_on[27];
 static uint16_t kb_sdue[27];                    /* (0.6.81) samples to the strum's next note */
+/* (V10.6z6) key velocity (vel_kb.h KB_VEL: each key's press's, 100 with VELOCITY OFF; its chord, strum, recording and
+ * MIDI OUT use it) */
+#define ARP_VEL(t) (vs.arpv[trk_index(t)] ^ 100u)    /* (stored ^ 100: 0, as zeroed, 100) */
 
 /* (JIANT 0.6.81) CHORD (SCL > CHORD; after the Omnichord and the Orchid, light): a key plays a chord on the track.
  * TRIAD 7TH ADD9 SUS2 SUS4 are built in the track's scale on the key (every tone in key; a key outside it takes the
@@ -548,6 +573,7 @@ static __attribute__((noinline)) void arp_chord_off(track_t *t, int rec)   /* th
 static __attribute__((noinline)) void arp_chord(track_t *t, const uint32_t *list, uint32_t n)
 {
     uint32_t i, nt, top = 0, o = t->arp_idx % (uint32_t)(t->p[P_AOCT] > 0 ? t->p[P_AOCT] : 1);
+    uint32_t av = ARP_VEL(t);                       /* (V10.6z6: its keys' velocity) */
     if (n > 4u)
         n = 4u;
     for (i = 0; i < n; i++) {                       /* the held notes (sorted or as played), o octaves up */
@@ -559,8 +585,8 @@ static __attribute__((noinline)) void arp_chord(track_t *t, const uint32_t *list
         else
             t->arp_ch[i - 1u] = (uint8_t)nt;
         if (rec_on(t))
-            rec_note(t, nt, 100);
-        seq_note_on(t, nt, 100);
+            rec_note(t, nt, av);
+        seq_note_on(t, nt, av);
     }
 }
 
@@ -725,10 +751,11 @@ static void arp_step_do(track_t *t, uint32_t n)
             ev_off = 0;
             return;
         }
+        uint32_t av = ARP_VEL(t);                   /* (V10.6z6: its keys' velocity) */
         t->arp_note = (uint8_t)list[j];
         if (rec_on(t))
-            rec_note(t, t->arp_note, 100);           /* recording: what the arp plays */
-        seq_note_on(t, t->arp_note, 100);
+            rec_note(t, t->arp_note, av);            /* recording: what the arp plays */
+        seq_note_on(t, t->arp_note, av);
     }
     ev_off = 0;
 }
@@ -1404,9 +1431,10 @@ static void key_next(uint32_t k, track_t *t)
     }
     if (!midi_local_held(t, x)) {
         in_norec = kb_sn[k] > 1u;                   /* (0.6.84: the chord's notes recorded at once, key_on) */
-        dxo_on(t, x, kb_oct[k], 100, DXO_KEY + (x>=86u&&x<=127u?x:k));
+        vs.arpv[trk_index(t)] = kb_velx[k];            /* (V10.6z6: the key's velocity, its arp's too) */
+        dxo_on(t, x, kb_oct[k], KB_VEL(k), DXO_KEY + (x>=86u&&x<=127u?x:k));
         in_norec = 0;
-        mo_key(t, 0x09u | (0x90u | mc) << 8 | drum_oct_note(x, kb_oct[k]) << 16 | 100u << 24);
+        mo_key(t, 0x09u | (0x90u | mc) << 8 | drum_oct_note(x, kb_oct[k]) << 16 | (uint32_t)KB_VEL(k) << 24);
     }
     kb_on[k]++;
 }
@@ -1431,7 +1459,7 @@ static void key_on(uint32_t k, track_t *t)
                                                      * key went down (the strum's later notes would fall into the next
                                                      * step); the sequencer strums it back as it plays (seq_step) */
         for (i = 0; i < n; i++)
-            rec_note(t, kb_snd[k][i], 100);
+            rec_note(t, kb_snd[k][i], KB_VEL(k));
     for (i = 0; i < n && (!gap || !i); i++)        /* (STRUM: the first now, the others by keys_strum) */
         key_next(k, t);
     kb_sdue[k] = (uint16_t)(gap < 65535u ? gap : 65535u);
@@ -1530,14 +1558,14 @@ static void scene_key(uint32_t k, int on)
         mc = trk_midi_ch(i);
         if (on && n > 1u && rec_on(t) && !t->p[P_AMODE])   /* (a chord: into one step, as key_on) */
             for (j = 0; j < n; j++)
-                rec_note(t, o[j], 100);
+                rec_note(t, o[j], KB_VEL(k));
         in_norec = (uint8_t)(on && n > 1u);
         for (j = 0; j < n; j++) {
             if (midi_local_held(t, o[j]))
                 continue;
             if (on) {
-                input_on(t, o[j], 100);
-                mo_key(t, 0x09u | (0x90u | mc) << 8 | (uint32_t)o[j] << 16 | 100u << 24);
+                input_on(t, o[j], KB_VEL(k));
+                mo_key(t, 0x09u | (0x90u | mc) << 8 | (uint32_t)o[j] << 16 | (uint32_t)KB_VEL(k) << 24);
             } else {
                 input_off(t, o[j]);
                 mo_key(t, 0x08u | (0x80u | mc) << 8 | (uint32_t)o[j] << 16);
@@ -1571,7 +1599,7 @@ static __attribute__((noinline)) void kb_lat(uint32_t k)
 
 static void keyboard_block(void)
 {
-    uint32_t cur = fm1_in.notes, ch, k;
+    uint32_t cur = fm1_in.notes & ~vk_hold, ch, k;   /* (V10.6z6: a press waiting for its strike, vel_kb.h: not yet) */
     uint32_t lay, fx;
     keys_strum(CTL);                              /* (0.6.81) the chords' strums */
     ch = cur ^ kb_prev;                           /* keys also sound while entering steps */

@@ -288,7 +288,8 @@ static const char *menu_short(uint32_t row)          /* a card's label: the row'
 {
     static const struct { uint8_t row; char s[9]; } SH[] = {
         {MI_SCROFF, "SCR OFF"}, {MI_ACCEL, "ACCEL"}, {MI_SCLLED, "SCL LEDS"}, {MI_LOWCUT, "SPK EQ"}, {MI_USB, "USB LVL"},
-        {MI_CLKLVL, "CLICK LV"}, {MI_RESTORE, "RESTORE"}, {MI_CPU, "CORES"}, {MI_CLOCK, "CPU MHZ"}, {MI_BT, "BT"}, {MI_PANEL, "CALIBR"}, {MI_INIT, "INIT SYS"}};
+        {MI_CLKLVL, "CLICK LV"}, {MI_RESTORE, "RESTORE"}, {MI_CPU, "CORES"}, {MI_CLOCK, "CPU MHZ"}, {MI_BT, "BT"}, {MI_PANEL, "CALIBR"}, {MI_INIT, "INIT SYS"},
+        {MI_AT, "AFTERT"}, {MI_VLEARN, "V.LEARN"}};
     uint32_t k;
     for (k = 0; k < NELEM(SH); k++)
         if (SH[k].row == row)
@@ -351,15 +352,19 @@ static void menu_panel(void)
         cv_text_r(228, 6 - AF_X_CAP_Y, &AF_X, "ALGO: TAB \xB7 SELECT: ROW", T_DIM, T_SURF);
         for (r = 0; r < n; r++) {               /* (0.8.9: seven rows fit, 17 apart; 0.9.7: eight, 15) */
             uint32_t row = f + r, in = r / 4u == menu_set();
-            int32_t y = 14 + (int32_t)r * (n > 7u ? 15 : n > 6u ? 17 : 20), h = n > 7u ? 14 : n > 6u ? 16 : 18;
+            int32_t y = 14 + (int32_t)r * (n > 8u ? 10 : n > 7u ? 15 : n > 6u ? 17 : 20), h = n > 8u ? 10 : n > 7u ? 14 : n > 6u ? 16 : 18;
             uint16_t bg = in ? T_TINT : T_RAISE;
             cv_rect(8, y, 224, h, bg);
             if (row == ui.menu_sel)
                 cv_rect(8, y, 3, h, T_ACCENT);
             GFX_HOOK_ALIGN(0, y, 0, y + h, AL_V, "menu row name centred up/down");
-            cv_text_on(16, y + CAP_IN(S, h), &AF_S, MI_NAME[row], in ? T_TEXT : T_MID, bg);
-            menu_val(row, v);
-            cv_text_r(in ? 218 : 226, y + CAP_IN(S, h), &AF_S, v, in ? T_TEXT : T_MID, bg);
+            {   /* (V10.6z6) more than eight rows (CONTROL's twelve): 10 apart, the small font */
+                const aafont_t *fo = n > 8u ? &AF_X : &AF_S;
+                int32_t ty = n > 8u ? y + CAP_IN(X, h) : y + CAP_IN(S, h);
+                cv_text_on(16, ty, fo, MI_NAME[row], in ? T_TEXT : T_MID, bg);
+                menu_val(row, v);
+                cv_text_r(in ? 218 : 226, ty, fo, v, in ? T_TEXT : T_MID, bg);
+            }
             if (in) {
                 char kn[2] = {(char)('1' + r % 4u), 0};
                 cv_text(221, y + 2 - AF_X_CAP_Y, &AF_X, kn, T_THEME);

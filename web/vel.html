@@ -4,6 +4,8 @@
 <!-- (V10.6z5) JIANT velocity diagnostic: turns the FM-1's key sensing on (editor protocol command 81 VEL,
      EDITOR_PROTOCOL.md; firmware/src/vel_diag.c), reads every press and capture over USB-MIDI and keeps them as text
      to save or copy. The sensing follows Velo (Charles Vestal, github.com/charlesvestal/fm1-velocity, GPL-3.0).
+     (V10.6z6, protocol 1.2) "En vivo": VEL op 4, each note's velocity and each key's calibration and pressure as the
+     firmware has them (firmware/src/vel.c); op 5 the calibration back to its seeds.
      Chrome / Edge on a computer, Chrome on Android (Web MIDI with SysEx). docs/VELOCITY_DIAG.es.md -->
 <html lang="es">
 <head>
@@ -36,6 +38,9 @@
   th, td { text-align: right; padding: 2px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
   th:first-child, td:first-child { text-align: left; }
   tr.key td { background: var(--hi); }
+  .vb { display: inline-block; height: 10px; background: var(--fg); vertical-align: middle; }
+  .vbt { display: inline-block; width: 128px; background: var(--line); vertical-align: middle; }
+  #lv { font: 600 28px/1.2 ui-monospace, Menlo, Consolas, monospace; min-height: 1.3em; margin: 8px 0; }
   #log { width: 100%; box-sizing: border-box; height: 260px; font: 12px/1.35 ui-monospace, Menlo, Consolas, monospace;
          color: var(--fg); background: var(--bg); border: 1px solid var(--line); padding: 6px; white-space: pre; }
 </style>
@@ -68,6 +73,22 @@
   <p class="dim">D: la lectura más baja con la fila empujada (más bajo = más fuerte). P: la más baja con pull-up.
      ms: del primer contacto a la tecla asentada.</p>
 
+  <h2>En vivo: la velocidad de cada nota (JIANT V10.6z6 o posterior)</h2>
+  <div class="bar">
+    <button id="live" disabled>Ver en vivo</button>
+    <button id="reset" disabled>Volver a la calibración de fábrica</button>
+    <span id="lvset" class="dim"></span>
+  </div>
+  <div id="lv"></div>
+  <div class="tbl"><table>
+    <thead><tr><th>tecla</th><th>velocidad</th><th></th><th>lectura</th><th>FUERTE</th><th>NORMAL</th><th>SUAVE</th><th>presión</th></tr></thead>
+    <tbody id="lvkeys"></tbody>
+  </table></div>
+  <p class="dim">Cada nota toma su velocidad (1..127) de la lectura más baja al golpe: más baja = más fuerte. Cada tecla
+     tiene su calibración (sus golpes FUERTE, NORMAL y SUAVE), que se va ajustando sola mientras tocás (MENU &gt; CONTROL
+     &gt; VEL LEARN). Las teclas de arriba (C#5 a G5) no se pueden medir: tocan el promedio de las últimas. Presión: lo
+     que apretás de más con la tecla abajo (aftertouch, MENU &gt; CONTROL &gt; AFTERTOUCH).</p>
+
   <h2>Registro</h2>
   <div class="bar">
     <button id="save" disabled>Guardar .txt</button>
@@ -86,7 +107,8 @@ const HDR = [0xF0, 0x7D, 0x46, 0x4C], INFO = 1, VEL = 81, NK = 20;
 const NAMES = ["F", "F#", "G", "G#", "A", "A#", "B", "C", "C#", "D", "D#", "E"];
 const keyName = (k) => NAMES[k % 12] + (3 + Math.floor((k + 5) / 12));
 const v14 = (b, i) => (b[i] | b[i + 1] << 7) - 8192;
-let midi = null, out = null, inp = null, waiting = null, polling = false, presses = 0, lines = [];
+let midi = null, out = null, inp = null, waiting = null, polling = false, presses = 0, lines = [], chain = Promise.resolve();
+let living = false, lvSeen = -1;
 const stats = Array.from({ length: NK }, () => ({ n: 0, lo: 0, hi: 0, sum: 0, p: null, ms: null }));
 
 function status(t) { $("status").textContent = t; }
@@ -110,8 +132,13 @@ function table() {
   $("keys").innerHTML = rows.join("");
 }
 
-/* one request, its reply (the same command), or null after a timeout */
+/* one request, its reply (the same command), or null after a timeout; one at a time (the two loops share the port) */
 function request(cmd, args, ms = 400) {
+  const p = chain.then(() => request1(cmd, args, ms));
+  chain = p;
+  return p;
+}
+function request1(cmd, args, ms) {
   return new Promise((resolve) => {
     const t = setTimeout(() => { waiting = null; resolve(null); }, ms);
     waiting = { cmd, done: (d) => { clearTimeout(t); waiting = null; resolve(d); } };
@@ -144,8 +171,9 @@ async function connect() {
     if (!/^JIANT/i.test(s)) { inp.onmidimessage = null; continue; }
     const v = await request(VEL, [0]);
     if (!v) { status(`${s}: este firmware no tiene el diagnóstico de velocidad (hace falta V10.6z5 o posterior).`); return; }
-    status(`Conectado: ${s} (${i.name}). Ahora tocá "Activar la medición".`);
+    status(`Conectado: ${s} (${i.name}). Ahora tocá "Activar la medición" o "Ver en vivo".`);
     $("on").disabled = false; $("off").disabled = false; $("connect").disabled = true;
+    $("live").disabled = false; $("reset").disabled = false;
     log(`# ${s}  ${new Date().toISOString()}  ${navigator.userAgent}`);
     return;
   }
@@ -180,6 +208,50 @@ async function poll() {
     }
   }
 }
+
+/* (V10.6z6) VEL op 4: the keys' velocity, calibration and pressure */
+const CURVE = ["OFF", "SOFT", "NORMAL", "HARD"], ATN = ["OFF", "LOW", "MID", "HIGH"];
+const bar = (v, max) => `<span class="vbt"><span class="vb" style="width:${Math.round(128 * Math.max(0, v) / max)}px"></span></span>`;
+function liveShow(r) {
+  if (r.length < 9 + 7 + 10 * NK) { $("lv").textContent = "Este FM-1 no tiene el segmento Bluetooth instalado: instalalo con el instalador web."; return false; }
+  const b = 9, curve = r[b], min = r[b + 1], at = r[b + 2], learn = r[b + 3], mean = r[b + 4], n = r[b + 5], last = r[b + 6];
+  $("lvset").textContent = `VELOCITY ${CURVE[curve & 3]} · VEL MIN ${min} · AFTERTOUCH ${ATN[at & 3]} · VEL LEARN ${learn ? "ON" : "OFF"} · arriba: ${mean}`;
+  const rows = [];
+  for (let k = 0; k < NK; k++) {
+    const o = b + 7 + 10 * k, vel = r[o], rd = v14(r, o + 1), h = v14(r, o + 3), nn = v14(r, o + 5), sf = v14(r, o + 7), pr = r[o + 9];
+    rows.push(`<tr${k === last && lvSeen >= 0 ? ' class="key"' : ""}><td>${keyName(k)}</td><td>${vel || "-"}</td><td>${bar(vel, 127)}</td>` +
+      `<td>${rd > 0 ? rd : "-"}</td><td>${h}</td><td>${nn}</td><td>${sf}</td><td>${bar(pr, 127)} ${pr || ""}</td></tr>`);
+  }
+  $("lvkeys").innerHTML = rows.join("");
+  if (n !== lvSeen) {
+    if (lvSeen >= 0) {
+      const o = b + 7 + 10 * last, vel = r[o], rd = v14(r, o + 1);
+      $("lv").textContent = `${keyName(last)}  velocidad ${vel}  (lectura ${rd})`;
+      log(`live ${keyName(last)} V${vel} D${rd}`);
+    }
+    lvSeen = n;
+  }
+  return true;
+}
+async function live() {
+  while (living) {
+    const r = await request(VEL, [4]);
+    if (!r) { $("lv").textContent = "Sin respuesta (hace falta JIANT V10.6z6 o posterior)."; living = false; break; }
+    if (!liveShow(r)) { living = false; break; }
+    await new Promise((f) => setTimeout(f, 60));
+  }
+  $("live").textContent = "Ver en vivo";
+}
+$("live").onclick = () => {
+  living = !living;
+  $("live").textContent = living ? "Dejar de ver" : "Ver en vivo";
+  if (living) { lvSeen = -1; live(); }
+};
+$("reset").onclick = async () => {
+  if (!confirm("¿Volver a la calibración de fábrica? Se pierde lo que el FM-1 aprendió de tu forma de tocar.")) return;
+  const r = await request(VEL, [5]);
+  if (r) { liveShow(r); log("# calibración: de fábrica"); status("Calibración de fábrica. Se vuelve a ajustar sola mientras tocás."); }
+};
 
 $("connect").onclick = connect;
 for (const b of document.querySelectorAll(".mark"))

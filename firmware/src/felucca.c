@@ -72,6 +72,8 @@ static void vd_sample(uint32_t col, uint32_t rowbit, uint32_t v, uint32_t driven
 static int vd_drive(uint32_t col, uint32_t rowbit);
 #define FM1_INPUT_ANALOG(col, rowbit, v, driven) vd_sample(col, rowbit, v, driven)
 #define FM1_INPUT_DRIVE(col, rowbit) vd_drive(col, rowbit)
+static void vel_note_on(uint32_t k);     /* (V10.6z6) a key's press: its velocity, or its wait (src/vel.c) */
+#define FM1_INPUT_NOTE_ON(k) vel_note_on(k)
 #include "fm1_input.h"
 #include "fm1_timer.h"
 #include "fm1_audio.h"
@@ -113,6 +115,7 @@ static int vd_drive(uint32_t col, uint32_t rowbit);
 #include "ui_input.c"
 #include "ui_layer.c"              /* the quick layers (FX GLO SCL EDIT REC held; SEQ TOOLS: ui_tools.c) */
 #include "vel_diag.c"              /* (V10.6z5) the velocity diagnostic (editor.c VEL, main.c, console `vel`) */
+#include "vel.c"                   /* (V10.6z6) key velocity and pressure (seq.c keyboard_block, kx_block; MENU) */
 
 /* --------------------------------------------- storage, update, editor --- */
 #if FELUCCA_FLASH

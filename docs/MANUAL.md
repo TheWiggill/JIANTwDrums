@@ -137,6 +137,31 @@ layer's shortcuts; on the DRUM grid they are steps and lanes; on the NAME screen
 | **OCT− + OCT+** held 5 s while running | Update mode (UBOOT), with a countdown from 2 s; let go to cancel. |
 | A note held + **OCT−** / **OCT+** (V10.6z4) | **Expression keys**: OCT− held fades in a vibrato like raising a mod wheel (~200 ms), OCT+ held bends the note up along a fixed smooth curve (~300 ms) to MENU > AUDIO > **OCT BEND**'s range (default 2 semitones); both ease back when let go. With no note held, OCT− / OCT+ change the octave as ever (OCT BEND OFF: always). Recorded as automation while recording (REC + EDIT clears it); with MIDI OUT ALL sent as CC1 and pitch bend (set the receiver's bend range to OCT BEND's). Both held on a note never starts UBOOT. |
 
+
+### Key velocity and aftertouch (V10.6z6)
+
+The FM-1's keys F3..C5 sit over a carbon pill whose resistance falls as you press harder (the method is Charles
+Vestal's, *Velo*, github.com/charlesvestal/fm1-velocity, GPL-3.0). JIANT reads it on every strike:
+
+- **Velocity**: how hard the key lands, in the first milliseconds after it touches. It is continuous (1..127: every
+  strike between soft and hard gives a value between), then MENU > CONTROL > **VELOCITY**'s curve and **VEL MIN**'s
+  floor. A note waits for its strike at most one reading of its key (2.2 ms; 1.7 ms on average), so the latency stays
+  under what you can feel. It reaches everything a key plays: the sound (the engines and the matrix's VEL), chords
+  and strums, the arpeggiator, recording (only 127 records as an accent) and MIDI OUT. The top row (C#5..G5) has no
+  sensor: it plays the mean of your recent velocities (100 until you play the others). VELOCITY **OFF**: every key
+  100, as before.
+- **Calibration**: every key is different, and each learns your own soft, normal and hard strikes as you play (VEL
+  LEARN ON, the default: it moves slowly, a stray strike does not throw it). It starts from the factory calibration
+  (measured on the owner's FM-1) and is kept in the settings, written half a minute after you stop playing. **VEL
+  LEARN RESET** puts the factory calibration back. To see it at work: the page `web/vel.html` (*En vivo*) shows each
+  note's velocity and each key's calibration.
+- **Aftertouch**: with a key held, press it further down: its pressure (0..127) is the matrix's **AT** source (EDIT >
+  MOD: any destination: filter, vibrato depth, level ...). New sounds (INIT SOUND, a new project) route it to the
+  filter (slot 4, AT -> CUT +20) when that slot is free; saved projects and presets keep their own matrix. A resting
+  finger does nothing (a dead zone), the value glides (no zipper), and lifting the key ends it. MENU > CONTROL >
+  **AFTERTOUCH** sets how sensitive it is (LOW, MID, HIGH) or turns it OFF. It works with OCT− / OCT+ held too; it
+  is recorded as automation with the expression keys and sent as channel aftertouch with MIDI OUT ALL.
+
 ---
 
 ## 2. The screen
@@ -2098,7 +2123,7 @@ track.
 **SELECT** walks every row (0.9.2), all four tabs in one chain (DISPLAY → CONTROL → AUDIO → SYSTEM; it stops at the
 first and the last), **ALGORITHM** jumps to the next / previous tab (its first row), **any knob** or **OCT+ / OCT−**
 changes the value; PRESETS does nothing here. HOME closes it (settings are saved then). The screen shows the tab's rows,
-the selected row's four as cards (ROWS 1–4 / ROWS 5–6; DISPLAY: ROWS 5–8) with their knob's number; the tabs on top,
+the selected row's four as cards (ROWS 1–4 / ROWS 5–6; DISPLAY: ROWS 5–8; CONTROL also ROWS 9–12, the keys' four) with their knob's number; the tabs on top,
 the footer **MENU · DISPLAY · SKIN  2/26**. The header says MENU · DISPLAY.
 
 | Tab | Row | Values |
@@ -2117,6 +2142,10 @@ the footer **MENU · DISPLAY · SKIN  2/26**. The header says MENU · DISPLAY.
 | CONTROL | BPM LOCK | OFF, ON — DICE ALL keeps the tempo (the tempo is GLO + SELECT, GLO's F4 TAP or GLOBAL's BPM) |
 | CONTROL | SCALE LEDS | OFF, ON — the keys of the scale glow, the root brighter |
 | CONTROL | MIDI OUT | **KEYS**, CLOCK, ALL, OFF — what goes out over USB MIDI (see [14](#14-midi-and-usb)) |
+| CONTROL | VELOCITY | OFF, SOFT, **NORMAL** (default), HARD — (V10.6z6) the keys play as hard as you strike them (F3..C5; the top row C#5..G5 has no sensor and plays the mean of your recent notes). The curve: SOFT louder for less, HARD needs more. OFF: every key 100, exactly as before. See [Key velocity and aftertouch](#key-velocity-and-aftertouch-v106z6) |
+| CONTROL | VEL MIN | 1, 10, **20** (default), 30, 40, 50, 64, 80 — the softest strike's velocity (the range is scaled, no step) |
+| CONTROL | AFTERTOUCH | OFF, LOW, **MID** (default), HIGH — pressing a held key harder: the matrix's **AT** source (new sounds route it to the filter, CUT +20), recorded, and sent as channel aftertouch with MIDI OUT ALL |
+| CONTROL | VEL LEARN | **ON** (default), OFF, RESET — each key learns your soft, normal and hard strikes as you play (kept in the settings); RESET puts the factory calibration back, then learns again |
 | AUDIO | SPEAKER EQ | FLAT, LOWCUT, BASS+ (an EQ on the master for the small speaker; also reaches the outputs and USB) |
 | AUDIO | USB LEVEL | MASTER (USB follows the MASTER knob), FIXED (USB at full level), −6 / −12 / −18 / −24 dB (USB fixed and attenuated: for a phone or a computer whose input clips at the full level) |
 | AUDIO | CLICK | OFF, REC (while a track is armed and playing), ON |

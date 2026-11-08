@@ -68,6 +68,12 @@ static void str_cpy(char *d, const char *s, unsigned max)
 static char host_msg[48];
 static void ui_message(const char *s) { str_cpy(host_msg, s, sizeof host_msg); }
 #include "../firmware/src/vel_diag.c"
+/* (V10.6z6) the keys' velocity (vel.c), off here (vk_on 0: the diagnostic alone, as V10.6z5): its main-loop needs */
+static struct { uint8_t factory[16][32]; } favorites;
+#define ENGI_SAMPLE 4u
+static volatile uint32_t fm1_ms;
+static void settings_save(void) {}
+#include "../firmware/src/vel.c"
 
 static int fails;
 static int check(const char *what, int ok)

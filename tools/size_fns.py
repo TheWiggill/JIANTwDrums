@@ -40,7 +40,9 @@ SIZE_FILES = ["ui.c", "favorites.c", "menu_items.c", "icons.c", "ui_graph.c", "u
               "eng_wheel.c", "bt.c", "click.c",
               # Whole-song SAVE is main-loop storage work, added after this list.
               # As above, anything reached from an ISR remains at -Os.
-              "song_save.c", "eng_input.c", "usb_host.c", "gen_track.c"]
+              "song_save.c", "eng_input.c", "usb_host.c", "gen_track.c",
+              # (V10.6z6) the velocity diagnostic and the keys' velocity: their main-loop side (the scan's, -Os)
+              "vel_diag.c", "vel.c"]
 ISR_ROOTS = ("fm1_alnk0_irq", "fm1_timer5_irq")      # hal/fm1_isr.S: the audio ISR, the key / LED scan (+ USB poll)
 DEF = re.compile(r"^(?:static|void|int|uint\w*|int\w*|const)\b[^;=(]*?\b([A-Za-z_]\w*)\s*\(", re.M)
 IR_DEF = re.compile(r"^(define [^\n]*?@\"?([\w.]+)\"?\([^\n]*\)(?: unnamed_addr| local_unnamed_addr)?)( #\d+[^\n]*\{)$",
@@ -154,7 +156,15 @@ def main(src, dst):
                   "track_desc", "trk_all_off", "trk_chance", "trk_fade_out", "trk_kit", "trk_note_off", "trk_nvoice",
                   "trk_trans", "uac_ep4_reset", "uac_rate_set", "uac_stream", "uh_parse_midi", "uh_parse_uac",
                   "uin_ep_config", "voice_begin", "voice_cap", "voice_off_at", "voice_room", "voice_start_rec",
-                  "wheel_note_on"}
+                  "wheel_note_on",
+                  # (V10.6z6) the keys' velocity: once a strike, a release, a driven sample of a held key (every
+                  # 4.4 ms), a press; the keys' pressure once a block
+                  "vel_map", "vel_driven", "vel_lift", "vel_take", "vel_wait", "vel_note_on",
+                  # .. and to make room for it, more of the same kind: a voice stolen, a SHIFT pass prepared (once a
+                  # pass) and its conditions, a lyric's POS, the PLAYHEADS back in phase, a chord glide's note, USB's
+                  # control transfers, a step's parts
+                  "voice_victim", "shift_prepare_pass", "shift_cond", "sy_seek", "live_heads", "cg_near", "e0_chunk",
+                  "step_parts"}
     names, hit = ((size_names() | cold_ui) - isr) | input_size | event_size, set()
     def mark(m):
         if m.group(2) not in names:

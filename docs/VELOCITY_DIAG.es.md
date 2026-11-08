@@ -104,6 +104,36 @@ el análisis, no hace falta mirarlas.
   tocarlo), tocá **Desactivar** o apagá el FM-1, y contalo en el mensaje. Al encenderlo de nuevo el diagnóstico
   está apagado.
 
+## Calibración (JIANT V10.6z6: la velocidad de verdad)
+
+Desde V10.6z6 el FM-1 **toca con velocidad** (MENU > CONTROL > VELOCITY, NORMAL por defecto; OFF deja todo como
+antes) usando lo que midió este diagnóstico, y con **aftertouch** (MENU > CONTROL > AFTERTOUCH). Lo que salió de tus
+dos capturas:
+
+- La medida que sirve es la **lectura D más baja en los primeros milisegundos** del toque (más baja = más fuerte). En
+  tu FM-1, con *drive* 2: suave ~675, normal ~594, fuerte ~560 (la primera captura, con notas sostenidas, dio ~690 /
+  655 / 610: otro día, otra mano; por eso la calibración se ajusta sola). Medir la pendiente del golpe no resultó más
+  confiable.
+- **Cada tecla es distinta** (D4 lee ~77 más alto que el promedio, A#4 ~31 más bajo), así que cada tecla tiene su
+  propia calibración: tres referencias, su golpe FUERTE, NORMAL y SUAVE. La velocidad sale **continua** de la lectura
+  pasando por esas tres (FUERTE 112, NORMAL 76, SUAVE 36, interpolando entre medio y con la mitad de la pendiente más
+  allá de las puntas), y después la curva (SOFT / NORMAL / HARD) y el piso VEL MIN (20 por defecto).
+- **Arranca** de tus medianas (las de cada tecla donde había datos: G4, A#4, D4, D#4, F4, C4; el promedio en las
+  demás) y **aprende sola** mientras tocás (VEL LEARN ON): en cada toque cada referencia da un pasito hacia tu propio
+  percentil 15 (FUERTE), mediana (NORMAL) y percentil 85 (SUAVE) de esa tecla; las primeras 24 veces de cada tecla
+  más rápido. Un toque raro la mueve un pasito, nada más. Se guarda en la configuración medio minuto después de que
+  dejás de tocar. **VEL LEARN RESET** (o el botón *Volver a la calibración de fábrica* de la página) vuelve al
+  arranque.
+- **Latencia**: la nota espera el final de su golpe como mucho una lectura de su tecla (2,2 ms; 1,7 ms en promedio en
+  la prueba `tests/vel_test.c`). No se nota.
+- **Presión (aftertouch)**: con la tecla abajo, la lectura sigue bajando si apretás más: eso es la presión, 0..127
+  (MID: 2 por cuenta, con 8 cuentas de zona muerta para que un dedo apoyado no haga nada), suavizada, 0 al soltar.
+- La fila de arriba (C#5 a G5) sigue sin poder medirse: toca el promedio de tus últimas velocidades.
+
+En la página, la sección **En vivo** muestra la velocidad de cada nota que tocás, la lectura de la que salió, la
+calibración de cada tecla (FUERTE / NORMAL / SUAVE) y la presión. Si una tecla suena siempre muy fuerte o muy suave,
+mirá ahí su calibración y mandá una captura.
+
 ## Para quien analiza los datos
 
 El registro es texto plano, una línea por evento:
