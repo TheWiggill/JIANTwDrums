@@ -35,9 +35,11 @@ static uint32_t mfnv(uint32_t h, const void *p, uint32_t n)
 }
 
 /* ---- 2. a project of before: the steps' MICRO set as 0.9.0 stored it (cwhen's bits 4-7, sixteenths) ---- */
-#define MICRO_OLD_090 0x249e3fdcu   /* (0.9.9 ctl64: the render in blocks of 64 differs from 0.9.0's bit for bit
+#define MICRO_OLD_090 0xe7ee65d3u   /* (0.9.9 ctl64: the render in blocks of 64 differs from 0.9.0's bit for bit
                                          * (the notes at their samples, the fades); was 0xd5c5b5c5: the steps' places as read
-                                         * from the project are unchanged, the second check below) */
+                                         * from the project are unchanged, the second check below. Then 0x249e3fdc, rewritten
+                                         * by 0.9.9-snd2's chorus (da051a3: 0xd8795d59) and gen6e's notes in a release
+                                         * (b587793), the goldens they rewrote; the steps' places as before) */
 #define MICRO_PACK_090 0x55f3c173u
 static void old_steps(void)
 {

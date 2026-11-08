@@ -1813,6 +1813,16 @@ back. **OCT+ with the settings unchanged throws a new seed** (another piece); tu
 the **same piece with that one thing changed** — every part draws its random numbers from its own stream, so BASS
 turned leaves the drums and the lead as they were. The screen shows **LAST: HOUSE 0421** (the genre and the seed).
 
+**A genre's throws differ** (V10.6z10). Each throw of a genre takes its own **bass** (one of the genre's three
+archetypes, a few of its steps moved), its own **groove** (the genre's extra kicks in a place or two of its idiom, the
+hats and the percussion from the genre's pools where they are not its identity: cumbia's guiro, the dembow's 3 + 3 + 2,
+jazz's ride stay; now and then a euclid on a percussion lane; IDM's breaks one of four), its own **progression** (the
+genre's own a third of the time, else one its harmony's grammar writes), its own **sounds** (another of the engine's
+presets of the same type a third of the time) and a **tempo** around ENERGY's place in the genre's range. In PARTS and
+SONG the **sections develop**: their bass, chords and arp a variation of A's, the lead's motif developed another way,
+a one-chord piece's sections denser or thinner, higher or lower. And **OCT+ never throws the core** (progression, bass,
+map, groove) **of one of the genre's last eight throws**: it tries other seeds first. A seed is still its song.
+
 The genres, as KNOB 1 turns them after EXPLORE and RANDOM (V10.6n: the owner's list, in its order):
 MINIMAL TECHNO, HARD TECHNO, HARD BASS, HOUSE, DEEP HOUSE, TECH HOUSE, TRIBAL, CUMBIA, REGGAETON, DEMBOW, ELECTRO,
 BREAKBEAT, DRUM & BASS, IDM GLITCH, IDM AMBIENT, IDM WEIRD, KRAUT, EBM, NEO CLASSIC, FUGA, ELECTRO METAL, TECHNO ROCK,
