@@ -1535,9 +1535,10 @@ static void gen_sound(track_t *t, uint32_t role, uint32_t ri)
     en = trk_engp(t);
     n = en->npresets;
     if (!n) return;
-    if (pre != 255u && gch(35) && !(role == RL_BASS && gs.g->lead == LD_EBM))   /* (V10.6z10) a third of the time another
-                                                         * of the engine's presets of the same type (EBM's bass: its two
-                                                         * oscillators always, the owner's) */
+    if (pre != 255u && gch(35) && !(role == RL_BASS && gs.g->lead == LD_EBM) && ri != SR_COWBELL)   /* (V10.6z10) a third of
+                                                         * the time another of the engine's presets of the same type (EBM's
+                                                         * bass: its two oscillators always, the owner's; phonk's and baile
+                                                         * funk's 808 COWBELL always) */
         for (i = 0; i < 6u; i++) {
             uint32_t k = gr() % n;
             if (PR_TAG(&en->presets[k]) == PR_TAG(&en->presets[pre % n]) && !gnever(en->presets[k].name)) { pre = k; break; }

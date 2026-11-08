@@ -376,8 +376,8 @@ enum { SR_SUB, SR_ACID, SR_REESE, SR_FMBASS, SR_ROCKBASS, SR_HOOK, SR_WOW, SR_PA
        SR_PIANO, SR_HARPSI, SR_DIST, SR_COWBELL, SR_FLUTE, SR_CHANT, SR_N };   /* (V10.6p: SUPERSAW gone, no genre's) */
 /* the factory presets by their place (eng_analog.c, eng_phase.c .. : ANALOG 2 SQR BASS, 4 ACID, 7 SUB BASS ..) */
 /* (V10.6z10, the owner: a genre's throws "the same sounds") an archetype's two options never one preset twice (SUB
- * BASS's SQR BASS, the 808's, the upright's, the cowbell's RING BELL, the chant's TALK BOX; EBM's FAT BASS twice: its
- * two oscillators, the owner's); a third of the time another of the engine's of the same type (gen.c gen_sound) */
+ * BASS's SQR BASS, the 808's, the upright's, the chant's TALK BOX; EBM's FAT BASS and phonk's 808 COWBELL twice: the
+ * owner's); a third of the time another of the engine's of the same type (gen.c gen_sound) */
 static const grecipe_t RECIPE[SR_N] = {
     /* ---- basses: their engine fixed */
     [SR_SUB]      = {{{EG_A, 7}, {EG_A, 2}, {EG_LO, 4}}, GR(0, 7), GR(56, 79), GR(88, 119), GR(16, 31), GR(32, 47), GR(0, 15), GR4(0, 7), GFT(0, 0), GNOWV, 0, 0, V_LEGATO},
@@ -438,7 +438,7 @@ static const grecipe_t RECIPE[SR_N] = {
     [SR_HARPSI]   = {{{ENGI_STRING, 6}, {EG_PH, 13}, {EG_FM, 7}}, GR(0, 7), GR(48, 71), GR(0, 7), GR(24, 47), GR(80, 111), GR(8, 23), GR4(8, 23), GFT(0, 0), GNOWV, 0, GDC(0, 4), V_POLY},
     /* (V10.6p) the TR-808's cowbell pitched (phonk's melody): ANALOG's 808 COWBELL, two squares a 6th and 79 cents apart
      * (the 808's 540 / 800 Hz, x 1.48; gen.c gen_sound keeps them), band-passed, a short decay, driven */
-    [SR_COWBELL]  = {{{EG_A, 25}, {EG_A, 13}, NO_}, GR(0, 7), GR(32, 47), GR(0, 7), GR(16, 31), GR(64, 79), GR(40, 63), GR4(0, 11), GFT(2, 0), GWV(1, 1, 0), 0, GDC(24, 0), V_POLY},
+    [SR_COWBELL]  = {{{EG_A, 25}, {EG_A, 25}, NO_}, GR(0, 7), GR(32, 47), GR(0, 7), GR(16, 31), GR(64, 79), GR(40, 63), GR4(0, 11), GFT(2, 0), GWV(1, 1, 0), 0, GDC(24, 0), V_POLY},
     /* (V10.6p) baile funk's flute (Bum Bum Tam Tam's Bach): ANIMAL's whistles, WHEEL's flute; the voice's chops and
      * shouts (VOICE's CHANT, short: phonk's Memphis chops, the MC's chant, EBM's shout) */
     [SR_FLUTE]    = {{{ENGI_ANIMAL, 25}, {EG_WH, 3}, {ENGI_ANIMAL, 5}}, GR(0, 15), GR(48, 79), GR(56, 87), GR(16, 39), GR(96, 119), GR(0, 15), GR4(4, 11), GFT(0, 0), GNOWV, 0, 0, V_LEGATO},
