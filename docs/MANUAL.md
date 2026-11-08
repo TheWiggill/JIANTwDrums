@@ -145,11 +145,17 @@ Vestal's, *Velo*, github.com/charlesvestal/fm1-velocity, GPL-3.0). JIANT reads i
 
 - **Velocity**: how hard the key lands, in the first milliseconds after it touches. It is continuous (1..127: every
   strike between soft and hard gives a value between), then MENU > CONTROL > **VELOCITY**'s curve and **VEL MIN**'s
-  floor. A note waits for its strike at most one reading of its key (2.2 ms; 1.7 ms on average), so the latency stays
-  under what you can feel. It reaches everything a key plays: the sound (the engines and the matrix's VEL), chords
-  and strums, the arpeggiator, recording (only 127 records as an accent) and MIDI OUT. The top row (C#5..G5) has no
-  sensor: it plays the mean of your recent velocities (100 until you play the others). VELOCITY **OFF**: every key
-  100, as before.
+  floor. It is steadier than in V10.6z9: two readings near the bottom of the strike count as their mean, a key still
+  coming down gets one reading more, the ends of the scale are a little gentler and each strike leans an eighth of
+  the way towards your recent ones, so the same strike gives nearly the same velocity (a third less spread in the
+  tests) while soft and hard stay as far apart. A note waits for its strike one reading of its key (2.2 ms), two
+  (4.4 ms) only when the key is still coming down, so the latency stays under what you can feel. It reaches
+  everything a key plays: the sound (the engines and the matrix's VEL), chords and strums, the arpeggiator, recording
+  (only 127 records as an accent) and MIDI OUT. VELOCITY **OFF**: every key 100, as before.
+- **The top row (C#5..G5)** has no sensor (the FM-1 cannot read those seven keys' pressure), so it **follows your
+  dynamics**: mostly your last few strikes (the nearby keys F4..C5 count most), a little of your longer average, and
+  a small human variation, never one fixed value (100 until you play the others). Play softly below it and it plays
+  softly; hit a few hard ones and it comes up with you. It has no aftertouch (a chord with sensed keys keeps theirs).
 - **Calibration**: every key is different, and each learns your own soft, normal and hard strikes as you play (VEL
   LEARN ON, the default: it moves slowly, a stray strike does not throw it). It starts from the factory calibration
   (measured on the owner's FM-1) and is kept in the settings, written half a minute after you stop playing. **VEL
@@ -2211,7 +2217,7 @@ the footer **MENU · DISPLAY · SKIN  2/26**. The header says MENU · DISPLAY.
 | CONTROL | BPM LOCK | OFF, ON — DICE ALL keeps the tempo (the tempo is GLO + SELECT, GLO's F4 TAP or GLOBAL's BPM) |
 | CONTROL | SCALE LEDS | OFF, ON — the keys of the scale glow, the root brighter |
 | CONTROL | MIDI OUT | **KEYS**, CLOCK, ALL, OFF — what goes out over USB MIDI (see [14](#14-midi-and-usb)) |
-| CONTROL | VELOCITY | OFF, SOFT, **NORMAL** (default), HARD — (V10.6z6) the keys play as hard as you strike them (F3..C5; the top row C#5..G5 has no sensor and plays the mean of your recent notes). The curve: SOFT louder for less, HARD needs more. OFF: every key 100, exactly as before. See [Key velocity and aftertouch](#key-velocity-and-aftertouch-v106z6) |
+| CONTROL | VELOCITY | OFF, SOFT, **NORMAL** (default), HARD — (V10.6z6) the keys play as hard as you strike them (F3..C5; the top row C#5..G5 has no sensor and follows your recent dynamics). The curve: SOFT louder for less, HARD needs more. OFF: every key 100, exactly as before. See [Key velocity and aftertouch](#key-velocity-and-aftertouch-v106z6) |
 | CONTROL | VEL MIN | 1, 10, **20** (default), 30, 40, 50, 64, 80 — the softest strike's velocity (the range is scaled, no step) |
 | CONTROL | AFTERTOUCH | OFF, LOW, **MID** (default), HIGH — pressing a held key harder: the matrix's **AT** source (new sounds route it to the filter, CUT +20), recorded, and sent as channel aftertouch with MIDI OUT ALL |
 | CONTROL | VEL LEARN | **ON** (default), OFF, RESET — each key learns your soft, normal and hard strikes as you play (kept in the settings); RESET puts the factory calibration back, then learns again |

@@ -225,8 +225,8 @@ Reply: the common part (`op, on, drive, lost v14, timeouts v14, master v14`), th
 Bluetooth segment is installed: the code is there; otherwise the reply ends here):
 
 - `curve` (VELOCITY: 0 OFF, 1 SOFT, 2 NORMAL, 3 HARD), `min` (VEL MIN, 1..80), `at` (AFTERTOUCH: 0 OFF, 1 LOW,
-  2 MID, 3 HIGH), `learn` (0/1), `mean` (the mean of the recent velocities, what the top row C#5..G5 plays: it has no
-  converter), `strikes` (a count of the strikes measured, 7 bits: a new one when it changes), `last` (the key of the
+  2 MID, 3 HIGH), `learn` (0/1), `mean` (the mean of the recent velocities, a quarter of what the top row C#5..G5 plays:
+  it has no converter; the rest its last few strikes'), `strikes` (a count of the strikes measured, 7 bits: a new one when it changes), `last` (the key of the
   last strike, 0..19);
 - then 20 × (`vel, reading v14, hard v14, normal v14, soft v14, pressure`), keys 0..19 (F3..C5): the key's last
   velocity (1..127, 0 none yet), the driven reading it came from (lower = harder), the key's calibration (its HARD,

@@ -2,28 +2,34 @@
  * Copyright (C) 2026 Juan Ignacio Antonucci (Juan Jiant) */
 /* (V10.6z6) Key velocity and pressure: stage 2 of the velocity diagnostic (vel_diag.c), after Velo (Charles Vestal,
  * github.com/charlesvestal/fm1-velocity, GPL-3.0: the drive and the reading of the carbon pill are his findings).
- * The 20 keys F3..C5 (rows PA7 / PA8); the top row C#5..G5 has no converter and plays the mean of the recent velocities.
+ * The 20 keys F3..C5 (rows PA7 / PA8); the top row C#5..G5 has no converter and follows your dynamics (vel_take).
  *
  * The strike (vd_sample, the scan's ISR): a key touched is sampled every 2.2 ms, every other sample with its row driven
  * high; its velocity comes from the lowest driven reading of an early window: from the touch to the first driven sample
  * after the key seated, or after its press was debounced, whichever comes first (the owner's two captures,
  * docs/VELOCITY_DIAG.es.md: the minimum in an early window is the reliable measure, lower = harder; a sample that
- * catches the key still falling reads high). The digital scan debounces a press 1.1..2.2 ms after its contact closes;
- * a press whose window is still open then waits (vel_note_on: its bit held back from the keys' block, vk_hold) and its
- * key's next sample is taken driven: the window closes there, at most one sample period later (2.2 ms; tests/vel_test.c
- * measures it on 400 modelled presses: 1.7 ms on average). A key whose touch has not been sampled yet waits too (at
- * most VK_WAIT of its samples, then the velocity so far). The pressure's zero is the lowest driven reading once seated.
+ * catches the key still falling reads high). Two driven readings within VD_NEAR of each other count as their mean (a
+ * single reading's noise, another column's interference, halved). The digital scan debounces a press 1.1..2.2 ms after
+ * its contact closes; a press whose window is still open then waits (vel_note_on: its bit held back from the keys'
+ * block, vk_hold) and its key's next sample is taken driven: the window closes there, one sample period later (2.2 ms),
+ * or two if the key is not seated yet and its reading still falling fast (VD_EXT; tests/vel_test.c measures it on 400
+ * modelled presses, falls up to 10 ms: 2.6 ms on average, 4.4 at most). A key whose touch has not been sampled yet
+ * waits too (at most VK_WAIT of its samples, then the velocity so far). The pressure's zero is the lowest driven
+ * reading once seated.
  *
  * The velocity (vel_map), continuous: each key keeps three references, its HARD, NORMAL and SOFT strikes (vs.ref);
- * the strike's reading maps piecewise-linearly through them, HARD 112, NORMAL 76, SOFT 36, on at half the slope past
- * either end (clamped 1..127); then MENU > CONTROL > VELOCITY's curve (SOFT: louder for less, v + v (127 - v) / 254;
+ * the strike's reading maps piecewise-linearly through them, HARD 104, NORMAL 76, SOFT 40, on at half the slope past
+ * either end (clamped 1..127), an eighth of the way to your recent strikes' mean (VB_N: one strike's own noise counts
+ * less; tests/vel_test.c 9.: identical strikes' spread a third less than V10.6z9's, soft..hard as far apart in those
+ * spreads); then MENU > CONTROL > VELOCITY's curve (SOFT: louder for less, v + v (127 - v) / 254;
  * NORMAL as it is; HARD: v - v (127 - v) / 254) and VEL MIN's floor (1..127 scaled onto MIN..127, no step).
  * VELOCITY OFF: every key 100, as before V10.6z6 (and with AFTERTOUCH OFF too the scan samples nothing: bit for bit).
  *
  * The calibration (vel_lift, at the key's release; MENU > CONTROL > VEL LEARN ON, the default): each seated strike's
- * reading (the one its velocity came from) moves the key's references a step towards its own running quantiles, sign steps that no freak strike can throw (HARD the
- * 15th percentile: down 34 / up 6 sixteenths of a count; NORMAL the median, 16 / 16; SOFT the 85th, up 34 / down 6;
- * four times that for a key's first 24 strikes after a reset), kept at least 8 (HARD..NORMAL) and 16 (NORMAL..SOFT)
+ * reading (the one its velocity came from) moves the key's references a step towards its own running quantiles, sign
+ * steps that no freak strike can throw (HARD the 15th percentile: down 34 / up 6 sixteenths of a count; NORMAL the
+ * median, 16 / 16; SOFT the 85th, up 34 / down 6; twice that for a key's first 24 strikes after a reset: at most ~4
+ * counts a strike, was four times), kept at least 8 (HARD..NORMAL) and 16 (NORMAL..SOFT)
  * counts apart. Seeded from the owner's measured medians (HARD 560, NORMAL 594, SOFT 675, DRIVE 2) moved by each key's
  * offset where the captures had it (VC_OFS: its mean against the others'). Kept in the settings (favorites row 4, the
  * retired SAMPLE engine's: no engine reads it; 12 bits a key, NORMAL 400..904 by 8, SOFT - NORMAL 16..128 by 16,
@@ -39,6 +45,15 @@
 #define VC_NOM_N 594
 #define VC_NOM_S 675
 #define VC_MARK 0xA7u                   /* favorites.factory[4][1]: the calibration saved */
+#define VD_NEAR 48u                     /* two driven readings this near: the strike their mean (the noise,
+                                         * another column's interference, +-20 in turn, halved) */
+#define VD_EXT (k->st != VD_DOWN && vk_cnt[key] > 1u && (k->dmin == VD_NONE || v + VD_NEAR < k->dmin))
+                                        /* the window would close on a press waiting, the key not seated and
+                                         * its reading still falling fast: one more sample, driven, if the wait allows */
+#define VM_HARD 104                     /* HARD's and SOFT's velocities (were 112 / 36: the ends gentler) */
+#define VM_SOFT 40
+#define VB_N 8u                         /* a strike's velocity 1 / VB_N of the way to your recent ones */
+#define VK_UP 12u                       /* F4..C5: the top row's neighbours, their strikes weigh twice for it */
 #define VEL_BARRIER() __asm__ volatile("" ::: "memory")
 static const int8_t VC_OFS[VK_NK] = {0, 0, 0, 0, 0, 0, 0, 15, 0, 77, -1, 0, 5, 0, 34, 0, 0, -31, 0, 0};
 static const uint8_t VC_MIN[8] = {1, 10, 20, 30, 40, 50, 64, 80};
@@ -60,7 +75,7 @@ static __attribute__((noinline)) void vel_cal_reset(void)
 static __attribute__((noinline)) uint32_t vel_map(uint32_t key, uint32_t d)
 {
     const uint16_t *r = vs.ref[key];
-    int32_t x = (int32_t)d, j = x > r[1] >> 4, lo = r[j] >> 4, hi = r[j + 1] >> 4, ylo = j ? 76 : 112, yhi = j ? 36 : 76, v;
+    int32_t x = (int32_t)d, j = x > r[1] >> 4, lo = r[j] >> 4, hi = r[j + 1] >> 4, ylo = j ? 76 : VM_HARD, yhi = j ? VM_SOFT : 76, v;
     v = ylo + (yhi - ylo) * (x - lo) / (hi - lo);
     if (x < lo || x > hi)
         v = (v + (x < lo ? ylo : yhi)) / 2;
@@ -70,10 +85,27 @@ static __attribute__((noinline)) uint32_t vel_map(uint32_t key, uint32_t d)
     return (uint32_t)(vs.min + (v - 1) * (127 - vs.min) / 126);
 }
 
-/* (ISR) key k's press let through to the keys' block (seq.c) with its velocity */
+/* (ISR) key k's press let through to the keys' block (seq.c) with its velocity: 100 with VELOCITY OFF (bit for bit as
+ * before); its strike's; for the top row (no converter; or a key with no driven reading yet) your dynamics: the last
+ * few strikes (vs.fast: half of the way each from F4..C5, its neighbours, a quarter from the others) 3/4, the longer
+ * mean 1/4, and -3..+4 of humanised variation (vs.hz, a sequence), so it follows you instead of a constant. No
+ * pressure there (0): a channel's AT is its held keys' highest (seq.c kx_block), so a chord with a sensed key keeps
+ * that key's, and pressure borrowed from a key not held would move a note nobody presses */
 static __attribute__((noinline)) void vel_take(uint32_t k)
 {
-    kb_velx[k] = (uint8_t)(vk_vel(k) ^ 100u);
+    uint32_t v = 100u, m;
+    if (vk_on & 1u) {
+        v = k < VK_NK ? vk[k].vel : 0u;
+        if (!v) {                               /* the top row (no converter), or no driven reading yet: your recent
+                                                 * strikes (the last few's 3/4, the longer mean's 1/4), -3..+4 */
+            int32_t h;
+            m = vk_mean ? vk_mean : 100u;
+            vs.hz = (uint8_t)(vs.hz * 5u + 1u);
+            h = (int32_t)((3u * (vs.fast ? vs.fast : m) + m + 2u) / 4u + (vs.hz >> 5)) - 3;
+            v = h < (int32_t)vs.min ? vs.min : h > 127 ? 127u : (uint32_t)h;
+        }
+    }
+    kb_velx[k] = (uint8_t)(v ^ 100u);
     VEL_BARRIER();                              /* (the velocity before the press: the audio ISR may come between) */
     vk_hold &= ~(1u << k);
 }
@@ -97,29 +129,44 @@ static __attribute__((noinline)) void vel_wait(uint32_t k)
     if ((vk_hold >> k) & 1u && !--vk_cnt[k])
         vel_take(k);
 }
-/* (ISR, vd_sample) a driven reading v of key key, touched: the strike's window (its velocity so far from k's lowest
- * driven reading; it closes once seated, or once its press waits: vel_note_on), the pressure's zero once seated, then
- * the pressure (top) */
-static __attribute__((noinline)) void vel_driven(uint32_t key, const vd_key_t *k, uint32_t v)
+/* (ISR, vd_sample) a driven reading v of key key, touched (k->dmin: the lowest before it): the strike's window (its
+ * velocity so far from the window's reading; it closes once seated, or once its press waits: vel_note_on, one sample
+ * later while the key is not seated yet: VD_EXT), the pressure's zero once seated, then the pressure (top) */
+static __attribute__((noinline)) void vel_driven(uint32_t key, vd_key_t *k, uint32_t v)
 {
-    uint32_t d = k->dmin, s = vs.strike[key];
+    uint32_t d = k->dmin, s = vs.strike[key], m;
     int32_t t, a = vk[key].at;
+    if (d == VD_NONE || d + VD_NEAR < v)        /* (the lowest so far; two readings near the bottom: their mean) */
+        d = d < v ? d : v;
+    else if (v + VD_NEAR > d)
+        d = (d + v + 1u) / 2u;
+    else
+        d = v;
     if (vk[key].pend && vk_on) {
         uint32_t x = vel_map(key, d);
         vk[key].vel = (uint8_t)x;
         if (k->st == VD_DOWN || ((vk_hold >> key) & 1u)) {   /* (closed) */
+            if (vk[key].pend == 1u && VD_EXT) {
+                vk[key].pend = 2;               /* (still coming down: the next sample driven, the window closes there) */
+                k->dnext = 1;
+                return;
+            }
+            m = vk_mean ? vk_mean : 100u;
             vk[key].pend = 0;
+            vk[key].vel = (uint8_t)(((VB_N - 1u) * x + m + VB_N / 2u) / VB_N);   /* (an eighth of the way to your recent strikes) */
             vs.vd[key] = (uint16_t)d;
             if ((vk_hold >> key) & 1u)
                 vel_take(key);
-            vk_mean = (uint8_t)(((vk_mean ? vk_mean : 100u) * 7u + x + 4u) / 8u);
+            vk_mean = (uint8_t)((m * 7u + x + 4u) / 8u);
+            m = vs.fast ? vs.fast : m;          /* (the top row's: the last few strikes, the upper keys' most) */
+            vs.fast = (uint8_t)(key >= VK_UP ? (m + x + 1u) / 2u : (3u * m + x + 2u) / 4u);
             vs.last = (uint8_t)key;
             vs.rn++;
         }
     }
     if (s == VD_NONE) {
         if (k->st == VD_DOWN)
-            vs.strike[key] = (uint16_t)d;       /* (settled: the pressure's zero) */
+            vs.strike[key] = (uint16_t)(v < k->dmin ? v : k->dmin);   /* (settled: the pressure's zero) */
         return;
     }
     if (!vs.atr)
@@ -135,7 +182,7 @@ static __attribute__((noinline)) void vel_lift(uint32_t key, uint32_t strike)
 {
     static const uint8_t DN[3] = {34, 16, 6}, UP[3] = {6, 16, 34};
     uint16_t *r = vs.ref[key];
-    int32_t m = (int32_t)vs.vd[key] << 4, f = vs.n[key] < 24u ? 4 : 1, j, n;
+    int32_t m = (int32_t)vs.vd[key] << 4, f = vs.n[key] < 24u ? 2 : 1, j, n;
     vk[key].at = 0;
     if (strike == VD_NONE || vk[key].pend || !vs.learn || !(vk_on & 1u) || fm1_an.drive != 2u)
         return;
