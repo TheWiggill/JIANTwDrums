@@ -336,10 +336,16 @@ static const preset_t ANALOG_PRESETS[] = {
      * band-passed (FILTER BP), a short decay, driven */
     {"808 COWBELL", {1, 79, 64, 0, 74, 50, 30, 6}, {0, 40, 0, 30}, 20, TAG(BELL), FX(10, 0, 20, 25), PAT(7),
      MODS(P_FTYPE, 2, MMOD(1, PS_VEL, PD_CUT, 12))},       /* (TYPE 2: BP) */
+    /* RISK LEAD: a bright, slightly gritty prog-electronic lead (in the spirit of Risk of Rain 2's soundtrack): a saw
+     * with osc 2 an octave below, 12 ct off (as Skiff's SUB wave voices it), a little noise and drive, a resonant filter
+     * opened by the envelope, mono (legato) with a timed glide, a vibrato that comes late, velocity on the cutoff,
+     * chorus and a little delay */
+    {"RISK LEAD", {0, 12, 72, 2, 84, 32, 28, -12}, {3, 72, 100, 48}, 16, 1 | TAG(LEAD), FX(12, 25, 22, 20), PAT(4),
+     MODS(MLFO(LW_SIN, 90, 1, 0), P_LFADE, 85, MMOD(1, PS_VEL, PD_CUT, 14), P_GLIDE, 28, P_GLMODE, 1)},
 };
 /* (V10.6i) the browsing order (ui.c preset_order): to play, then the experiments, then the INITs. 4 5 6 in a row:
  * ui_test steps from ACID (TRK_OLD) to SINE KEY to RAVE */
-static const uint8_t ANALOG_ORDER[] = {14, 2, 7, 0, 21, 15, 11, 3, 19, 8, 20, 23, 24, 25, 4, 5,  /* to play */
+static const uint8_t ANALOG_ORDER[] = {14, 2, 7, 0, 21, 15, 11, 3, 19, 8, 20, 23, 24, 25, 26, 4, 5,  /* to play */
                                        6, 17, 12, 16, 18, 13, 1, 22,                            /* experiments */
                                        9, 10};                                                  /* INIT */
 _Static_assert(sizeof ANALOG_ORDER == NELEM(ANALOG_PRESETS), "ANALOG's browsing order: every preset once");
