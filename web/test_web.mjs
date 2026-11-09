@@ -209,9 +209,11 @@ async function editorMock() {
     const md = [];
     for (let i = 49; i < 61; i++) md.push(E.parse[E.CMD.DESC](await rq(E.req.desc(0, i))));
     ok(md.map((d) => d.label).join() === "SRC1,DEST1,AMT1,SRC2,DEST2,AMT2,SRC3,DEST3,AMT3,SRC4,DEST4,AMT4"
-      && md[0].names.join() === "OFF,LFO,ENV,VEL,KEY,RAND,MODW,AT,EXPR,M1,M2,M3,M4,STEP,NOISE,PROX,ENV2,FOLLOW" && md[1].names.length === 30
-      && md[1].names[11] === "VIB" && md[1].names[19] === "E8" && md[1].names[21] === "PNCH" && md[1].names[22] === "D.TIM" && md[1].names[29] === "C.DEP" && md[2].min === -64 && md[2].max === 63 && md.every((d) => d.def === 0),
-      "editor: matrix parameters 49..60 over DESC (30 DST names: the macros M1..M4, the master CLIP PNCH, the FX buses)");
+      /* (12228a7, 2026-11-05: FOLLOW became IN ENV, the track followers T1..T6 ENV after it; 7e3aba5: RATE / VIB named
+         L.RATE / L.PIT, F.CUT and LEVEL at the end: 32 DST names) */
+      && md[0].names.join() === "OFF,LFO,ENV,VEL,KEY,RAND,MODW,AT,EXPR,M1,M2,M3,M4,STEP,NOISE,PROX,ENV2,IN ENV,T1 ENV,T2 ENV,T3 ENV,T4 ENV,T5 ENV,T6 ENV" && md[1].names.length === 32
+      && md[1].names[11] === "L.PIT" && md[1].names[19] === "E8" && md[1].names[21] === "PNCH" && md[1].names[22] === "D.TIM" && md[1].names[29] === "C.DEP" && md[1].names[31] === "LEVEL" && md[2].min === -64 && md[2].max === 63 && md.every((d) => d.def === 0),
+      "editor: matrix parameters 49..60 over DESC (32 DST names: the macros M1..M4, the master CLIP PNCH, the FX buses, F.CUT LEVEL)");
     await rq(E.req.set(0, 52, 1));
     await rq(E.req.set(0, 53, 12));
     await rq(E.req.set(0, 54, -30));
@@ -369,7 +371,7 @@ async function editorMock() {
     const rd = E.parse[E.CMD.DESC](await rq(E.req.desc(1, 14)));
     const r1 = E.parse[E.CMD.SET](await rq(E.req.set(1, 14, 5)));
     const r0 = E.parse[E.CMD.SET](await rq(E.req.set(1, 14, 0)));
-    ok(rd.label === "ROUTE" && rd.def === 0 && eq(rd.names, ["CH1-6", "SEL"]) && r1.value === 1 && r0.value === 0 && info.gcount === 72,
+    ok(rd.label === "ROUTE" && rd.def === 0 && eq(rd.names, ["CH1-6", "SEL"]) && r1.value === 1 && r0.value === 0 && info.gcount === 73,   /* (V10.49: G_DRTIME 72 appended) */
       "editor: MIDI IN routing (ROUT CH1-6 / SEL, global id 14)");
   }
   {
@@ -380,7 +382,7 @@ async function editorMock() {
     const inert = [25, 26].map(async (id) => E.parse[E.CMD.DESC](await rq(E.req.desc(1, id))));
     const [d25, d26] = await Promise.all(inert);
     ok(rd.label === "TYPE" && rd.def === 0 && eq(rd.names, ["ROOM", "SPRING", "SHIMR", "RESO", "CLOUD"]) && r1.value === 4 && r0.value === 0 &&
-       d25.label === "PUNCH" && d26.label === "DUCK" && d25.max === 100 && info.gcount === 72,
+       d25.label === "PUNCH" && d26.label === "DUCK" && d25.max === 100 && info.gcount === 73,   /* (V10.49 G_DRTIME) */
       "editor: REVERB TYPE (ROOM SPRING SHIMR RESO CLOUD, set 10 clamps to 4, global id 24; 25, 26 PNCH and DUCK, JIANT's master)");
   }
   const st = E.parse[E.CMD.STEP_SET](await rq(E.req.stepSet(5, { n: 2, notes: [60, 64], time: 0, flags: 1, vel: 100 })));

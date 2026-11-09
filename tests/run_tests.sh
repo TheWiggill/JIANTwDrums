@@ -369,7 +369,8 @@ if [ -f build/gen/felucca_tables.h ]; then
     run "regression: golden renders, health, voices, CPU budget" "$OUT/regress" tests/golden.txt tests/cpu_baseline.txt
     $CC -O2 -w -pthread -Ibuild/gen -Ifirmware/src -o "$OUT/mc_thread_test" tests/mc_thread_test.c -lm
     run "mixer: serial, deferred, real thread, delays and lost job" python3 tests/mc_thread_test.py "$OUT/mc_thread_test"
-    $CC -w -Ibuild/gen -Ifirmware/src -o "$OUT/descdump" tests/descdump.c -lm
+    # (FM4_CONVERT 1: the DIGITAL -> FM6 conversion the editor mirrors, kept in the tree; the firmware retired it in V10.6s)
+    $CC -w -DFM4_CONVERT=1 -Ibuild/gen -Ifirmware/src -o "$OUT/descdump" tests/descdump.c -lm
     echo "== parameter and engine tables as JSON (for the editor mock test)"
     "$OUT/descdump" > "$OUT/desc.json" || fail=1
     $CC -O2 -w -Ibuild/gen -Ifirmware/src -o "$OUT/filter_test" tests/filter_test.c -lm
