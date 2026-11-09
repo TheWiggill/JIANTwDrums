@@ -270,6 +270,12 @@ static const preset_t ANALOG_PRESETS[] = {
     {"DARK PAD", {0, 18, 64, 6, 38, 30, 10, -12}, {70, 95, 120, 100}, 12, TAG(PAD), FX(0, 55, 30, 75), PAT(5)},
     {"GLASS KEYS", {3, 8, 60, 0, 120, 0, 0, 19}, {0, 82, 20, 65}, 0, TAG(KEYS), FX(0, 35, 35, 50), PAT(6)},
     {"ORGAN SQR", {1, 4, 64, 0, 100, 0, 5, 12}, {0, 64, 127, 30}, 0, TAG(KEYS), FX(0, 35, 10, 35), PAT(6)},
+    /* RISK LEAD: a bright, slightly gritty prog-electronic lead (in the spirit of Risk of Rain 2's soundtrack): a saw
+     * with osc 2 an octave below, 12 ct off (as Skiff's SUB wave voices it; SAW3's stack beat like two leads out of
+     * tune), a little noise and drive, a resonant filter opened by the envelope, mono (legato), chorus
+     * and a little delay (kept low: with DLY 2 > PITCH set, a louder send echoes it as a second lead in another key).
+     * Glide and the late vibrato are the track's (GLIDE, LFO): see the RISK LEAD patch file */
+    {"RISK LEAD", {0, 12, 72, 2, 84, 32, 28, -12}, {3, 72, 100, 48}, 16, 1 | TAG(LEAD), FX(12, 25, 22, 20), PAT(4)},
 };
 
 static const engine_t ENG_ANALOG = {
