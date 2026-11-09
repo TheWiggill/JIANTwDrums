@@ -717,6 +717,15 @@ static const preset_t DRUM_PRESETS[] = {                /* (0.7.2) one a factory
      MODS(MLFO(LW_TRI, -1, 0, 0), P_LPHASE, -1, MMOD(1, PS_LFO, PD_E(2), 10))},   /* TONE opens and closes over 4 bars */
     {"BREAKS", {62, 66, 74, 62, 71, 0, 0, 10}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(4, 0, 0, 22), PAT(12)},
     {"HIP HOP", {58, 62, 56, 64, 67, 0, 0, 18}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(6, 0, 0, 20), PAT(14)},   /* (V10.34) */
+    /* (from Skiff by illuminus5, GPL-3.0) its DRUM-X kits' presets, their macros and sends as Skiff has them (Skiff's
+     * INDUSTRIAL as INDUS KIT: JIANT has an INDUSTRIAL of its own) */
+    {"DEEP KIT", {64, 60, 64, 62, 60, 0, 0, 10}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(0, 0, 0, 30), PAT(12)},
+    {"CLICK KIT", {64, 64, 70, 64, 64, 0, 0, 0}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(0, 0, 20, 15), PAT(12)},
+    {"INDUS KIT", {64, 62, 70, 64, 70, 20, 30, 40}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(10, 0, 10, 35), PAT(12)},
+    {"SOFT KIT", {64, 64, 56, 60, 56, 0, 0, 0}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(0, 0, 0, 40), PAT(12)},
+    {"GLITCH KIT", {64, 64, 70, 60, 64, 30, 20, 0}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(0, 0, 35, 20), PAT(12)},
+    {"TRIBAL KIT", {64, 64, 64, 64, 60, 0, 0, 0}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(0, 0, 0, 35), PAT(12)},
+    {"LASER KIT", {64, 64, 70, 64, 64, 10, 0, 10}, {0, 100, 127, 100}, 0, TAG(DRUM), FX(0, 0, 30, 25), PAT(12)},
 };
 _Static_assert(sizeof DRUM_PRESETS / sizeof DRUM_PRESETS[0] == sizeof DX_KITS / sizeof DX_KITS[0], "a DRUM preset a kit");
 /* (0.7.2) a factory kit into the section's: the sounds, their LAYERs, their SENDs (the project saves them) */

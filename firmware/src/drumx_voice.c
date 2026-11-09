@@ -584,6 +584,99 @@ static const dx_kit_t DX_KITS[] = {
         },
         {0, 8, 0, 0, 0, 0, 4, 0}, {0, 206, 204, 0, 0, 0, 196, 0},   /* the layers; the sends (bus << 6 | amount) */
     },
+    /* (from Skiff by illuminus5, GPL-3.0: its DRUM-X kits DEEP .. LASER, eng_drumx.c DX_KITS; the lanes as Skiff has
+     * them, the layers DRUM-X's, no sends) */
+    {   /* DEEP KIT (Skiff) */
+        {
+            {DX_MODE(DXW_SINE, DXF_LP, 1) | DXM_LONG << 5, {6, 60, 84, 2, 10}, {10, 80, 92, 4, 30}},   /* KICK */
+            {DX_MODE(DXW_SINE, DXF_BP, 0), {36, 20, 60, 90, 60}, {40, 28, 70, 100, 70}},   /* SNARE */
+            {DX_MODE(DXW_SINE, DXF_BP, 0), {56, 0, 52, 127, 70}, {52, 0, 64, 127, 64}},   /* CLAP */
+            {DX_MODE(DXW_METAL, DXF_HP, 0), {92, 0, 18, 100, 104}, {96, 0, 24, 110, 110}},   /* HAT CL */
+            {DX_MODE(DXW_METAL, DXF_HP, 0), {92, 0, 70, 100, 100}, {96, 0, 84, 110, 106}},   /* HAT OP */
+            {DX_MODE(DXW_SINE, DXF_LP, 1) | DXM_LONG << 5, {22, 50, 80, 6, 20}, {28, 70, 92, 10, 40}},   /* TOM */
+            {DX_MODE(DXW_BELL, DXF_HP, 1), {58, 8, 16, 10, 40}, {62, 16, 22, 20, 50}},   /* RIM */
+            {DX_MODE(DXW_METAL, DXF_BP, 0), {64, 0, 80, 0, 36}, {70, 0, 92, 10, 48}},   /* BELL */
+        },
+        {0, 6, 0, 9, 9, 0, 0, 11}, {0, 0, 0, 0, 0, 0, 0, 0},   /* the layers; the sends (bus << 6 | amount) */
+    },
+    {   /* CLICK KIT (Skiff) */
+        {
+            {DX_MODE(DXW_SINE, DXF_LP, 1), {16, 100, 60, 10, 40}, {20, 120, 68, 20, 70}},   /* KICK */
+            {DX_MODE(DXW_FM, DXF_HP, 0), {60, 10, 40, 70, 110}, {66, 0, 46, 90, 120}},   /* SNARE */
+            {DX_MODE(DXW_SINE, DXF_HP, 0), {70, 0, 30, 127, 100}, {66, 0, 40, 127, 96}},   /* CLAP */
+            {DX_MODE(DXW_METAL, DXF_HP, 0), {116, 0, 8, 60, 124}, {120, 0, 12, 80, 127}},   /* HAT CL */
+            {DX_MODE(DXW_METAL, DXF_HP, 0), {116, 0, 40, 60, 120}, {120, 0, 50, 80, 124}},   /* HAT OP */
+            {DX_MODE(DXW_FM, DXF_LP, 1), {40, 60, 36, 0, 50}, {46, 80, 44, 0, 70}},   /* TOM */
+            {DX_MODE(DXW_BELL, DXF_HP, 1), {80, 20, 8, 0, 60}, {86, 30, 10, 10, 80}},   /* RIM */
+            {DX_MODE(DXW_FM, DXF_BP, 0), {88, 0, 30, 0, 80}, {92, 0, 40, 0, 90}},   /* BELL */
+        },
+        {0, 6, 0, 9, 9, 0, 0, 11}, {0, 0, 0, 0, 0, 0, 0, 0},   /* the layers; the sends (bus << 6 | amount) */
+    },
+    {   /* INDUS KIT (Skiff) */
+        {
+            {DX_MODE(DXW_FM, DXF_LP, 1) | DX_DRIVE, {10, 90, 70, 20, 70}, {14, 110, 80, 30, 100}},   /* KICK */
+            {DX_MODE(DXW_METAL, DXF_BP, 0) | DX_DRIVE, {44, 30, 50, 100, 80}, {50, 40, 60, 110, 90}},   /* SNARE */
+            {DX_MODE(DXW_METAL, DXF_BP, 0), {64, 0, 46, 120, 90}, {60, 0, 56, 124, 84}},   /* CLAP */
+            {DX_MODE(DXW_METAL, DXF_HP, 0) | DX_DRIVE, {104, 0, 20, 110, 116}, {110, 0, 28, 120, 122}},   /* HAT CL */
+            {DX_MODE(DXW_METAL, DXF_HP, 0), {104, 0, 72, 110, 112}, {110, 0, 84, 120, 118}},   /* HAT OP */
+            {DX_MODE(DXW_METAL, DXF_LP, 1), {28, 50, 60, 20, 60}, {34, 70, 72, 30, 80}},   /* TOM */
+            {DX_MODE(DXW_BELL, DXF_BP, 1) | DX_DRIVE, {70, 20, 20, 30, 70}, {76, 30, 26, 40, 90}},   /* RIM */
+            {DX_MODE(DXW_BELL, DXF_BP, 0), {60, 10, 90, 10, 60}, {66, 20, 94, 20, 74}},   /* BELL */
+        },
+        {0, 6, 0, 9, 9, 0, 0, 11}, {0, 0, 0, 0, 0, 0, 0, 0},   /* the layers; the sends (bus << 6 | amount) */
+    },
+    {   /* SOFT KIT (Skiff) */
+        {
+            {DX_MODE(DXW_SINE, DXF_LP, 1), {12, 40, 76, 0, 4}, {14, 54, 86, 2, 14}},   /* KICK */
+            {DX_MODE(DXW_SINE, DXF_LP, 0), {42, 10, 46, 60, 50}, {44, 16, 56, 70, 56}},   /* SNARE */
+            {DX_MODE(DXW_SINE, DXF_LP, 0), {60, 0, 40, 127, 60}, {58, 0, 50, 127, 56}},   /* CLAP */
+            {DX_MODE(DXW_METAL, DXF_BP, 0), {90, 0, 16, 100, 90}, {94, 0, 22, 110, 96}},   /* HAT CL */
+            {DX_MODE(DXW_METAL, DXF_BP, 0), {90, 0, 60, 100, 86}, {94, 0, 70, 110, 92}},   /* HAT OP */
+            {DX_MODE(DXW_SINE, DXF_LP, 1), {32, 20, 60, 4, 10}, {36, 30, 70, 8, 20}},   /* TOM */
+            {DX_MODE(DXW_SINE, DXF_BP, 1), {66, 4, 12, 20, 40}, {70, 8, 16, 30, 50}},   /* RIM */
+            {DX_MODE(DXW_SINE, DXF_BP, 0), {78, 0, 60, 0, 20}, {80, 0, 72, 4, 30}},   /* BELL */
+        },
+        {0, 6, 0, 9, 9, 0, 0, 11}, {0, 0, 0, 0, 0, 0, 0, 0},   /* the layers; the sends (bus << 6 | amount) */
+    },
+    {   /* GLITCH KIT (Skiff) */
+        {
+            {DX_MODE(DXW_FM, DXF_LP, 1) | DXM_NOISE << 5, {12, 80, 56, 10, 60}, {18, 110, 64, 20, 90}},   /* KICK */
+            {DX_MODE(DXW_FM, DXF_BP, 0) | DXM_NOISE << 5, {50, 60, 40, 90, 100}, {58, 80, 48, 100, 110}},   /* SNARE */
+            {DX_MODE(DXW_METAL, DXF_HP, 0), {76, 20, 30, 110, 110}, {70, 30, 40, 120, 104}},   /* CLAP */
+            {DX_MODE(DXW_METAL, DXF_HP, 0) | DXM_NOISE << 5, {110, 30, 10, 80, 120}, {118, 50, 14, 90, 126}},   /* HAT CL */
+            {DX_MODE(DXW_BELL, DXF_HP, 0), {108, 20, 44, 80, 116}, {114, 30, 52, 90, 122}},   /* HAT OP */
+            {DX_MODE(DXW_FM, DXF_LP, 0) | DXM_NOISE << 5, {36, 90, 40, 10, 80}, {44, 110, 48, 20, 100}},   /* TOM */
+            {DX_MODE(DXW_BELL, DXF_HP, 1) | DXM_NOISE << 5, {84, 40, 10, 30, 80}, {90, 60, 14, 40, 100}},   /* RIM */
+            {DX_MODE(DXW_FM, DXF_BP, 0) | DXM_SINE << 5, {72, 50, 50, 0, 90}, {80, 70, 60, 10, 100}},   /* BELL */
+        },
+        {0, 6, 0, 9, 9, 0, 0, 11}, {0, 0, 0, 0, 0, 0, 0, 0},   /* the layers; the sends (bus << 6 | amount) */
+    },
+    {   /* TRIBAL KIT (Skiff) */
+        {
+            {DX_MODE(DXW_SINE, DXF_LP, 1) | DXM_LONG << 5, {14, 50, 80, 0, 20}, {18, 64, 90, 4, 30}},   /* KICK */
+            {DX_MODE(DXW_SINE, DXF_BP, 1), {46, 40, 50, 40, 50}, {50, 50, 58, 50, 60}},   /* SNARE */
+            {DX_MODE(DXW_SINE, DXF_BP, 0), {58, 0, 40, 127, 72}, {54, 0, 48, 127, 66}},   /* CLAP */
+            {DX_MODE(DXW_METAL, DXF_BP, 0), {96, 0, 14, 110, 100}, {100, 0, 18, 120, 106}},   /* HAT CL */
+            {DX_MODE(DXW_METAL, DXF_BP, 0), {96, 0, 40, 110, 96}, {100, 0, 50, 120, 102}},   /* HAT OP */
+            {DX_MODE(DXW_SINE, DXF_LP, 1) | DXM_LONG << 5, {30, 60, 70, 4, 24}, {36, 80, 80, 8, 34}},   /* TOM */
+            {DX_MODE(DXW_BELL, DXF_BP, 1), {74, 10, 18, 4, 50}, {78, 16, 22, 10, 60}},   /* RIM */
+            {DX_MODE(DXW_BELL, DXF_BP, 0), {76, 0, 70, 0, 40}, {80, 0, 80, 4, 50}},   /* BELL */
+        },
+        {0, 6, 0, 9, 9, 0, 0, 11}, {0, 0, 0, 0, 0, 0, 0, 0},   /* the layers; the sends (bus << 6 | amount) */
+    },
+    {   /* LASER KIT (Skiff) */
+        {
+            {DX_MODE(DXW_SINE, DXF_LP, 1), {10, 110, 70, 0, 30}, {14, 127, 80, 6, 50}},   /* KICK */
+            {DX_MODE(DXW_FM, DXF_BP, 0) | DXM_SINE << 5, {50, 70, 50, 80, 90}, {56, 90, 60, 90, 100}},   /* SNARE */
+            {DX_MODE(DXW_SINE, DXF_BP, 0), {62, 0, 44, 127, 86}, {58, 0, 54, 127, 80}},   /* CLAP */
+            {DX_MODE(DXW_METAL, DXF_HP, 0), {106, 0, 14, 90, 120}, {110, 0, 18, 100, 124}},   /* HAT CL */
+            {DX_MODE(DXW_METAL, DXF_HP, 0), {106, 0, 56, 90, 116}, {110, 0, 64, 100, 120}},   /* HAT OP */
+            {DX_MODE(DXW_SINE, DXF_LP, 1) | DXM_SINE << 5, {40, 100, 60, 0, 40}, {48, 120, 70, 0, 60}},   /* TOM */
+            {DX_MODE(DXW_FM, DXF_HP, 1) | DXM_SINE << 5, {90, 90, 20, 0, 80}, {96, 110, 26, 0, 100}},   /* RIM */
+            {DX_MODE(DXW_SINE, DXF_LP, 0) | DXM_SINE << 5, {70, 127, 50, 0, 40}, {80, 127, 60, 0, 60}},   /* BELL */
+        },
+        {0, 6, 0, 9, 9, 0, 0, 11}, {0, 0, 0, 0, 0, 0, 0, 0},   /* the layers; the sends (bus << 6 | amount) */
+    },
 };
 #define DX_NKIT ((uint32_t)(sizeof DX_KITS / sizeof DX_KITS[0]))
 /* (V10.6o) the factory kit (DX_KIT_DEF: what a project without one gets) and (0.6.49) its LAYERs (FEEDBK 0: the snare,
