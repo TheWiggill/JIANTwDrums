@@ -1109,6 +1109,7 @@ static __attribute__((noinline)) void comp_knob(uint32_t slot, int32_t steps)
 static uint32_t tl_len(const track_t *t);
 static void tl_take(const track_t *t);
 static void tl_shift(track_t *t, uint32_t len, uint32_t d);
+static void tl_order(track_t *t, uint32_t len, const uint8_t *src);
 static uint32_t tl_stretch(track_t *t, int32_t k);
 static uint32_t tl_repeat(track_t *t, uint32_t k);
 static struct {
@@ -1153,8 +1154,20 @@ static void shape_knob(uint32_t slot, int32_t steps)
     int32_t d = steps > 0 ? 1 : -1;
     if (slot == 0u) { shp_i = (uint8_t)clamp((int32_t)shp_i + d, 0, 14); shape_apply(0); }
     else if (slot == 1u) { shp_r = (uint8_t)clamp((int32_t)shp_r + d, 0, 8); shape_apply(1); }
-    else if (slot == 2u && ndg_step) {                  /* (V10.25) the cursor step off the grid, 64ths of a step */
+    else if (slot == 2u && ndg_step == 1u) {            /* (V10.25) the cursor step off the grid, 64ths of a step */
         micro_edit(steps);
+    } else if (slot == 2u && ndg_step) {                /* (V10.7.4) OCT+ again: the cursor step itself a step left / right
+                                                         * (traded with its neighbour, wrapping in LEN), the cursor with it */
+        track_t *t = TSEL;
+        uint8_t src[NSTEP];
+        uint32_t len = tl_len(t), c = ui.cursor % len, nb = (c + (d > 0 ? 1u : len - 1u)) % len, j;
+        if (chain_busy()) { ui_message("SONG PLAYS: STOP IT TO EDIT"); return; }
+        undo_mark();
+        for (j = 0; j < len; j++)
+            src[j] = (uint8_t)(j == c ? nb : j == nb ? c : j);
+        tl_take(t);
+        tl_order(t, len, src);
+        ui.cursor = (uint8_t)nb;
     } else if (slot == 2u) {
         track_t *t = TSEL;
         if (chain_busy()) { ui_message("SONG PLAYS: STOP IT TO EDIT"); return; }
@@ -2972,8 +2985,9 @@ static void ui_input_frame(void)
                 break;
             }
             if (!ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_SHAPE) {   /* (V10.25) STRETCH: NUDGE's */
-                ndg_step = b == B_OCTUP;                /* mode, OCT- the sequence (blue), OCT+ the step (red) */
-                ui_message(ndg_step ? "NUDGE: THE STEP'S MICRO TIMING" : "NUDGE: THE WHOLE SEQUENCE");
+                ndg_step = b != B_OCTUP ? 0u : ndg_step == 1u ? 2u : 1u;   /* mode, OCT- the sequence (blue), OCT+ the
+                                                         * step's MICRO (red), OCT+ again the step itself (V10.7.4) */
+                ui_message(ndg_step == 2u ? "NUDGE: THE STEP" : ndg_step ? "NUDGE: THE STEP'S MICRO TIMING" : "NUDGE: THE WHOLE SEQUENCE");
                 ui.force = 1;
                 break;
             }

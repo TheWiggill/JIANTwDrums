@@ -1,6 +1,6 @@
 # JIANT FM — Manual de usuario
 
-**JIANT FM V10.7.3 para el M-VAVE FM-1**
+**JIANT FM V10.7.4 para el M-VAVE FM-1**
 
 > *English version: [MANUAL.md](MANUAL.md).*
 
@@ -591,7 +591,7 @@ recorre página por página, un toque de **SEQ** salta al grupo siguiente.
 | Grupo (toque de SEQ) | Página (SELECT) | KNOB 1 | KNOB 2 | KNOB 3 | KNOB 4 |
 | --- | --- | --- | --- | --- | --- |
 | PATTERN | PATTERN | LEN | DIV | SWING | GATE |
-| PATTERN | STRETCH | STRETCH (/8 … /2, x1, x2 … x8) | REPEAT (OFF, x2 … x8, TO 64) | NUDGE (OCT− la secuencia, OCT+ el MICRO del paso, V10.25) | ROTATE (−32 … +32) |
+| PATTERN | STRETCH | STRETCH (/8 … /2, x1, x2 … x8) | REPEAT (OFF, x2 … x8, TO 64) | NUDGE (OCT− la secuencia, OCT+ el MICRO del paso, OCT+ otra vez el paso) | ROTATE (−32 … +32) |
 | PATTERN | PLAYHEADS | HEAD | RATE | DIR | INTERVAL |
 | TRACK | TRACK | PITCH | CHANCE | HUMAN | REC Q |
 | EUCLID | EUCLID (V10.6) | HITS (DRUM-X con LANE ALL: DENSITY, V10.7) | STEPS (2–64) | ROTATE | LANE (DRUM-X: ALL, BD … CB) · VARY (melódica) |
@@ -1416,11 +1416,13 @@ timing. Una nota tocada justo en el primer instante después de PLAY va al paso 
   - **KNOB 2 REPEAT**: copia los pasos 1..LEN detrás de sí mismos, **x2 … x8** veces o **TO 64** (todas las copias
     enteras que entren), con automatización y locks; **OFF** a la izquierda: como estaba. Cuatro notas pasan a ser una
     base de 64 pasos sobre la que grabar más notas (REC en vivo suma encima).
-  - **KNOB 3 NUDGE** tiene dos modos (V10.25), que se eligen con OCT− / OCT+ en esta página:
+  - **KNOB 3 NUDGE** tiene tres modos (V10.25, V10.7.4), que se eligen con OCT− / OCT+ en esta página:
     - **OCT− (azul `< >`)**: toda la secuencia un paso a la derecha / izquierda, dando la vuelta dentro de LEN (como
       TOOLS A3 / B3).
     - **OCT+ (rojo, un número)**: el **microtiming del paso del cursor**, 1/64 de paso por detent (−32 … +31; unos 2 ms
       a 120 BPM), adelantado o atrasado, como lo graba REC Q. PRESETS mueve el cursor al paso; la tarjeta muestra el valor.
+    - **OCT+ otra vez (rojo, S y el número del paso)** (V10.7.4): **el paso del cursor mismo**, un paso a la derecha / izquierda
+      por detent (cambia de lugar con su vecino, dando la vuelta dentro de LEN); el cursor lo acompaña.
   - **KNOB 4 ROTATE** (−32 … +32; era el OFFSET de SHIFT): la secuencia leída desde otro paso, sin mover los pasos —
     una rotación en vivo, automatizable (también en el KNOB 3 de la capa SCL).
 - **MICRO** (0.6.92, KNOB 4 de NOTE; era el OFFSET de la página TIMING): el lugar propio del paso enfocado fuera de la

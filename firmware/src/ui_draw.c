@@ -1492,7 +1492,10 @@ static void draw_columns(void)
         else if (r) { val[0] = 'x'; fmt_int(val + 1, r); }
         else str_cpy(val, "TO 64", sizeof val);
         gauge_column(1, "REPEAT", val, r != 1 ? VAL(1u) : T_DIM, (int32_t)shp_r * 1000 / 8);
-        if (ndg_step) {                                  /* (V10.25) red: the cursor step's MICRO (64ths) */
+        if (ndg_step == 2u) {                            /* (V10.7.4) the cursor step moved by steps */
+            val[0] = 'S'; fmt_int(val + 1, (int32_t)(ui.cursor % NSTEP) + 1);
+            text_column(2, "NUDGE", val, T_REC);
+        } else if (ndg_step) {                           /* (V10.25) red: the cursor step's MICRO (64ths) */
             int32_t m = ST_MICRO(&TSEL->step[ui.cursor % NSTEP]);
             val[0] = m > 0 ? '+' : 0;
             fmt_int(val + (m > 0), m);

@@ -1,6 +1,6 @@
 # JIANT FM — User Manual
 
-**JIANT FM V10.7.3 for the M-VAVE FM-1**
+**JIANT FM V10.7.4 for the M-VAVE FM-1**
 
 > *Versión en español: [MANUAL.es.md](MANUAL.es.md).*
 
@@ -573,7 +573,7 @@ them page by page, a **SEQ** tap jumps to the next group.
 | Group (SEQ tap) | Page (SELECT) | KNOB 1 | KNOB 2 | KNOB 3 | KNOB 4 |
 | --- | --- | --- | --- | --- | --- |
 | PATTERN | PATTERN | LEN | DIV | SWING | GATE |
-| PATTERN | STRETCH | STRETCH (/8 … /2, x1, x2 … x8) | REPEAT (OFF, x2 … x8, TO 64) | NUDGE (OCT− the sequence, OCT+ the step's MICRO, V10.25) | ROTATE (−32 … +32) |
+| PATTERN | STRETCH | STRETCH (/8 … /2, x1, x2 … x8) | REPEAT (OFF, x2 … x8, TO 64) | NUDGE (OCT− the sequence, OCT+ the step's MICRO, OCT+ again the step) | ROTATE (−32 … +32) |
 | PATTERN | PLAYHEADS | HEAD | RATE | DIR | INTERVAL |
 | TRACK | TRACK | PITCH | CHANCE | HUMAN | REC Q |
 | EUCLID | EUCLID (V10.6) | HITS (DRUM-X LANE ALL: DENSITY, V10.7) | STEPS (2–64) | ROTATE | LANE (DRUM-X: ALL, BD … CB) · VARY (melodic) |
@@ -1359,10 +1359,12 @@ to the last step).
   - **KNOB 2 REPEAT**: copies steps 1..LEN after themselves, **x2 … x8** times or **TO 64** (as many whole copies as
     fit), automation and locks too; **OFF** at the left: as it was. Four notes become a 64-step bed to record more notes
     over (live REC overdubs).
-  - **KNOB 3 NUDGE** has two modes (V10.25), picked with OCT− / OCT+ on this page:
+  - **KNOB 3 NUDGE** has three modes (V10.25, V10.7.4), picked with OCT− / OCT+ on this page:
     - **OCT− (blue `< >`)**: the whole sequence one step right / left, round inside LEN (as TOOLS A3 / B3).
     - **OCT+ (red, a number)**: the **cursor step's micro timing**, 1/64 of a step a detent (−32 … +31; about 2 ms at
       120 BPM), early or late, as REC Q records it. PRESETS moves the cursor to the step; the card shows its value.
+    - **OCT+ again (red, S and the step's number)** (V10.7.4): **the cursor step itself**, one step right / left a
+      detent (it trades places with its neighbour, round inside LEN); the cursor goes with it.
   - **KNOB 4 ROTATE** (−32 … +32; it was SHIFT's OFFSET): the sequence read from another step, without moving the
     steps themselves — a live, automatable rotation (also on the SCL layer's KNOB 3).
 - **MICRO** (0.6.92, NOTE's KNOB 4; it was the TIMING page's OFFSET): the focused step's own place off the grid, in
