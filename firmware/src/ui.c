@@ -1581,6 +1581,8 @@ static void apply_preset_to(track_t *t, uint32_t pi)
     t->p[P_REL] = e->presets[pi].env[3];
     t->p[P_ED_FLT] = e->presets[pi].fenv;
     t->p[P_VOICE] = PR_MONO(&e->presets[pi]) ? V_LEGATO : V_POLY;   /* mono presets keep the legato feel */
+    if (PR_TAG(&e->presets[pi]) == PT_BASS)           /* (VEL, the owner: a bass is better even) a bass's VEL 0 %: */
+        t->p[P_TVEL] = 0;                             /* every note at 100, its ACCENTs still 127 */
     if (e == &ENG_LOFI || e == &ENG_DRUM)             /* (V10.6d) MATH: RTRG on, each note the formula from its start */
         t->p[P_LRTRG] = e == &ENG_DRUM ? km : 1;
     if (e == &ENG_FORMANT) {                          /* (0.8.5) VOICE's words: LANG, LYRIC (0: its vowels) */

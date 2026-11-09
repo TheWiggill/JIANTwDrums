@@ -109,7 +109,7 @@ static void dx_kit3_knob(uint32_t k, int32_t s)
     else dx_glue = (uint8_t)clamp((int32_t)dx_glue + (s > 0 ? 1 : -1), 0, 15);
     dx_tone = (uint8_t)(bp | fb << 4);
 }
-static void dx_kit3_cards(void)
+static __attribute__((noinline)) void dx_kit3_cards(void)
 {
     if(cur_page()->title[4]=='4') {
         empty_column(0);

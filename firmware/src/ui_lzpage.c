@@ -152,7 +152,7 @@ static void lfo_cap(const track_t *t, int32_t x, int32_t y, int mode)   /* "1.18
         str_cpy(b + str_len(b), t->p[P_LPHASE] < 0 ? " \xB7 FREE" : " \xB7 TRIG", 32 - str_len(b));
     ed_cap(x, y, b, T_TEXT);
 }
-static void graph_lfodest(const track_t *t, const page_t *pg)
+static __attribute__((noinline)) void graph_lfodest(const track_t *t, const page_t *pg)
 {
     int32_t x, py = 0, src = mulq15(t->lfo_val, t->lfo_fade), k;
     uint32_t span = 0xFFFFFFFFu / 40u, ph = t->lfo_ph - 20u * span;
@@ -244,7 +244,7 @@ static uint16_t note_col(uint32_t n)
 {
     return settings.palette == UI_JIANT_INDEX ? heat_col(40 + (int32_t)(n % 12u) * 200 / 11) : T_THEME;
 }
-static void graph_key(const track_t *t, const page_t *pg)
+static __attribute__((noinline)) void graph_key(const track_t *t, const page_t *pg)
 {
     static const char *const NN[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
     static const uint8_t BLK[12] = {0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0};
@@ -292,7 +292,7 @@ static void graph_key(const track_t *t, const page_t *pg)
             cv_rect(8 + (int32_t)i * 9, BLK[i % 12u] ? 110 : 120, 8, 1, T_TEXT);
     }
 }
-static void graph_chord(const track_t *t)
+static __attribute__((noinline)) void graph_chord(const track_t *t)
 {
     static const char *const RN[7] = {"I", "II", "III", "IV", "V", "VI", "VII"};
     uint32_t mask = scale_mask(t), deg[12], c = 0, i, d, rt = (uint32_t)clamp(t->p[P_ROOT], 0, 11);

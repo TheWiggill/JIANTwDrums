@@ -944,9 +944,23 @@ function legacyKeys(keys) {
     return seen[b] > 1 ? `${b}#${seen[b]}` : b;
   });
 }
+/* (after V10.7.2) the slot after STRUM (P_TVEL 80, MUTATE's retired one, labelled LEVEL before) is VEL: a file of before
+   reads its value as VEL (127 there: 100 %) and its later LEVEL#n (the MSEQ steps) as today's LEVEL#n-1, so the steps
+   keep their places */
+function velKeys(keys, toKeys) {
+  if (!keys || !toKeys || keys.includes("VEL") || !toKeys.includes("VEL")) return keys;
+  const at = keys.indexOf("STRUM") + 1, m = at > 0 ? /^LEVEL#(\d+)$/.exec(keys[at] || "") : null;
+  if (!m) return keys;
+  const n = +m[1];
+  return keys.map((k, j) => {
+    if (j === at) return "VEL";
+    const x = /^LEVEL#(\d+)$/.exec(k);
+    return x && +x[1] > n ? (+x[1] - 1 > 1 ? `LEVEL#${+x[1] - 1}` : "LEVEL") : k;
+  });
+}
 function remapParams(p, fromKeys, toKeys, pe0) {
   if (!fromKeys && toKeys && pe0 && p.length !== toKeys.length) return tailParams(p, toKeys.length, pe0);
-  fromKeys = legacyKeys(fromKeys);
+  fromKeys = velKeys(legacyKeys(fromKeys), toKeys);
   if (!fromKeys || !toKeys || sameKeys(fromKeys, toKeys)) return p.slice();
   const at = new Map(fromKeys.map((k, i) => [k, i]));
   return toKeys.map((k) => (at.has(k) ? p[at.get(k)] ?? null : null));
@@ -2941,7 +2955,9 @@ const LAYOUT = (pe0) => [
                                                     FELUCCA_FM4=1 firmware only: DIGITAL retired, its engine is "-") */
     ...[0, 1, 2, 3].map((k) => [`OP${k + 1}`, 0, [61 + 5 * k, 62 + 5 * k, 63 + 5 * k, 64 + 5 * k]]),
     ["OP LVL", 0, [65, 70, 75, 80]]] }] : []),
-  { t: "VOICE", pages: [["LEVEL", 0, [0]], ["VOICE", 0, [37, 38, 41, 42]]] },   /* (JIANT 0.4: no VOICE 2: PAN on MIXER, MUTE there and GLO) */
+  { t: "VOICE", pages: [["LEVEL", 0, [0]], ["VOICE", 0, [37, 38, 41, 42]],   /* (JIANT 0.4: no VOICE 2: PAN on MIXER, MUTE there and GLO) */
+    ...(dev && dev.pdesc && dev.pdesc[80] && dev.pdesc[80].label === "VEL" ? [["VEL", 0, [80]]] : [])] },   /* (after V10.7.2) the sound's
+                                                    velocity amount (P_TVEL 80), where the device names it so */
   { t: "FX", pages: [["FX", 0, [33, 34, 35, 36]], ["MASTER", 1, [21, 25, 26, 13]], ...(dev && dev.gdesc && dev.gdesc[17] && dev.gdesc[17].label === "DJ FILT" ? [["DJ FILTER", 1, [17]]] : []),   /* (0.9.1, as the device names it) */ ...(pe0 >= 112 ? [["DIST", 0, [33, 91, 92]]] : []), ...(dev && dev.info && dev.info.gcount >= 66 ? [["AUTO PAN", 0, [45, 46, 48, 47]], ["SLICER", 1, [37, 38, 39, 40]], ["SL BUS", 1, [41, 42, 43, 44]],
       ["SL BUS 2", 1, [45, 46, 47]], ["SL PITCH", 1, [48, 49]], ...[0, 1, 2, 3].map((k) => [`PITCH ${4 * k + 1}-${4 * k + 4}`, 1,
       [50 + 4 * k, 51 + 4 * k, 52 + 4 * k, 53 + 4 * k]])] : [["SLICER", 0, [45, 46, 47, 48]]]),   /* (0.6.3: one, on a bus) */

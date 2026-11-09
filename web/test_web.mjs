@@ -674,6 +674,12 @@ async function editorLibrarian() {
     ok(JSON.stringify(E.legacyKeys(old)) === JSON.stringify(keys) && back.every((v, i) => v === i),
        "librarian: a file with the old labels (LVL, PIT, SWG) maps onto LEVEL, PITCH, SWING");
   }
+  {   /* (after V10.7.2) slot 80 is VEL (was MUTATE's, labelled LEVEL): a file of before keeps its MSEQ levels in place */
+    const now = ["LEVEL", "STRUM", "VEL", "ROTATE", "LEVEL#2", "LEVEL#3", "E0"], before = ["LEVEL", "STRUM", "LEVEL#2", "ROTATE", "LEVEL#3", "LEVEL#4", "E0"];
+    const back = E.remapParams([1, 2, 127, 4, 50, 60, 7], before, now, 6);
+    ok(js(back) === js([1, 2, 127, 4, 50, 60, 7]) && js(E.remapParams([1, 2, 3, 4, 5, 6, 7], now, now, 6)) === js([1, 2, 3, 4, 5, 6, 7]),
+       "librarian: a file of before VEL: its slot 80 read as VEL, its MSEQ levels (LEVEL#n) in their places");
+  }
 
   const b = await E.bank.list(rq);
   ok(b.total === 32 && b.slots.length === 32 && b.slots[1].used && b.slots[1].name === "GLASS BELL" && !b.slots[3].used

@@ -249,7 +249,7 @@ static int mom_keep(uint32_t t, uint32_t id)           /* (t, id) kept as it is 
     mom_n++;
     return 1;
 }
-static void mom_knob(uint32_t k, int32_t s)
+static __attribute__((noinline)) void mom_knob(uint32_t k, int32_t s)
 {
     const param_desc_t *d;
     int16_t *vp;

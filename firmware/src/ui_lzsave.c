@@ -60,7 +60,7 @@ static void graph_lib(void)
 }
 /* (V10.24, the user's pick A) TOOLS by scope: at the left a picture of what the action takes (the steps, the sound's
  * wave, the song's rows, everything), at the right the scope's actions; under them a bar fills while OCT+ is held */
-static void graph_lz_tools(void)
+static __attribute__((noinline)) void graph_lz_tools(void)
 {
     static const char *const WHAT[6] = {"CLEAR SEQ", "INIT SOUND", "DELETE ROW", "CLEAR SONG", "NEW PROJECT", "CPU TEST"};
     static const char *const ON[6] = {"STEPS + AUTO", "ENGINE DEFAULT", "", "ALL ROWS", "EVERYTHING", "HEAVY SONG"};
@@ -240,7 +240,7 @@ static uint32_t tl_muted(uint32_t r, uint32_t k)
     sc = &song_idx.scene[song_cur][j];
     return k < 4u ? (sc->mute >> k) & 1u : (sc->on >> (k - 3u)) & 1u;
 }
-static void graph_tl(void)
+static __attribute__((noinline)) void graph_tl(void)
 {
     uint32_t n = chain_config.count, r = ui.song_row < n ? ui.song_row : n - 1u, k;
     char b[24];
@@ -421,7 +421,7 @@ static void lz_track_being(void)
     sound_name(t, b);
     cv_free_text(42 - HALF_UP(text_w(&AF_X, b) < 76 ? text_w(&AF_X, b) : 76), 99, &AF_X, b, T_TEXT, T_SURF, 76);
 }
-static void graph_sound(void)
+static __attribute__((noinline)) void graph_sound(void)
 {
     uint32_t k;
     lz_track_being();

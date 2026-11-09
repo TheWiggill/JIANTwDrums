@@ -2067,7 +2067,7 @@ static uint16_t sec_col(uint32_t s)
 /* (0.9.9-seq2f) GLO > COMPS' roll: the lane's 16 steps as columns, each one's component mark on top (comp_col, as a
  * track's), its LENGTH a line after it, the six tracks it applies to as small marks in rows below, the cursor step
  * framed, the global step playing underlined; MONO / POLY at the right */
-static void graph_gcomp(void)
+static __attribute__((noinline)) void graph_gcomp(void)
 {
     uint32_t i, k, j, h = graph_h(), play = song.playing ? gl_step_at(0) % GL_N : GL_N;
     int32_t x0 = 12, cw = 13, y0 = 8;

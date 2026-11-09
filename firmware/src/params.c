@@ -281,6 +281,7 @@ static const param_desc_t HUM_DESC[3] = {                /* (0.6.87) SEQ > HUMAN
                                                          * one amount, P_HVEL; TIME and GATE stay stored, 127) */
 static const param_desc_t RECQ_DESC = {"REC Q", F_PCT, 0, 127, 127, 0, 0};   /* (0.6.88) P_HRQ: 100 % on the grid */
 static const param_desc_t DRIFT_DESC = {"DRIFT", F_PCTINV, 0, 127, 127, 0, 0};   /* (0.7.8) P_DRIFT: 127 = 0 % */
+static const param_desc_t TVEL_DESC = {"VEL", F_PCT, 0, 127, 127, 0, 0};   /* (after V10.7.2) P_TVEL: 127 = 100 % (core.h) */
 static const param_desc_t WROT_DESC[2] = {               /* (0.7.8) WHEEL's ROTOR: P_WRDEP (127 = 100 %, as before), P_WDUST */
     {"DEPTH", F_PCT, 0, 127, 127, 0, 0}, {"DUST", F_PCTINV, 0, 127, 127, 0, 0}};
 static const param_desc_t VLANG_DESC = {"LANG", F_ENUM, 0, LG_N - 1, 0, N_LANG, 0};   /* (0.8.5) VOICE's words: */
@@ -324,6 +325,7 @@ static const param_desc_t *track_desc(const track_t *t, uint32_t id)
         case P_HGAT: return &HUM_DESC[2];
         case P_HRQ: return &RECQ_DESC;
         case P_DRIFT: return &DRIFT_DESC;
+        case P_TVEL: return &TVEL_DESC;
         case P_WRDEP: return &WROT_DESC[0];
         case P_WDUST: return &WROT_DESC[1];
         default: break;
@@ -371,10 +373,11 @@ static int param_kept(uint32_t i)
            (i >= P_SLCR && i <= P_SLDEPTH) || i == P_SOFS || i == P_POFS ||
            (!FELUCCA_FM4 && (i == P_HVEL || i == P_HTIM || i == P_HGAT || i == P_HRQ)) ||   /* (0.6.87) HUMAN: the sequencer's, a sound
                                                          * keeps it (FELUCCA_FM4: DIGITAL's OP SUS / LEVEL there) */
-           (!FELUCCA_FM4 && (i == P_CHRD || i == P_CVOI || i == P_CSTR || i == P_CLEN || i == P_TCHAN ||
-                             i == P_MCFG));   /* (0.7.0) SCL > CHORD, C.LEN, CHANCE: the sequencer's too (a
-                                                         * community report: browsing presets switched CHORD off); (V10.6i)
-                                                         * MUTATE's old slots are ENV 2's now: a sound's, set by its preset */
+           (!FELUCCA_FM4 && (i == P_CHRD || i == P_CVOI || i == P_CSTR || i == P_CLEN || i == P_TCHAN));   /* (0.7.0)
+                                                         * SCL > CHORD, C.LEN, CHANCE: the sequencer's too (a community
+                                                         * report: browsing presets switched CHORD off); (V10.6i) MUTATE's
+                                                         * old slots are ENV 2's now, (VEL) its P_MCFG the sound's VEL: a
+                                                         * sound's, set by its preset */
 }
 
 /* a stored value as the parameter takes it (projects, user presets, motion): inside d's range. FM6's SLOT is never
@@ -801,8 +804,8 @@ static const page_t PAGES[] = {
     {"EUCLID", FAM_SEQ, SC_TRACK, GR_EUCLID, {ID_EU0, ID_EU0 + 1u, ID_EU0 + 2u, ID_EU0 + 3u}},   /* (V10.6, MUTATE's place)
                                                          * HITS STEPS ROTATE, LANE / VARY (ui_euclid.c) */
     /* (0.8.5) LENTE everywhere (ui_lens.c): pages the mock-up added, appended (the table's order is no one's index) */
-    {"VOICE 2", FAM_EDIT, SC_TRACK, GR_NONE, {P_ALLOC, P_DETUNE, 0xFF, 0xFF}},   /* EDIT > TONE: ALLOC, UNISON's DETUNE (in
-                                                         * TP since Felucca, on no page until now) */
+    {"VOICE 2", FAM_EDIT, SC_TRACK, GR_NONE, {P_ALLOC, P_DETUNE, P_TVEL, 0xFF}},   /* EDIT > TONE: ALLOC, UNISON's DETUNE (in
+                                                         * TP since Felucca, on no page until now), (after V10.7.2) VEL */
     {"FOCUS", FAM_EDIT, SC_TRACK, GR_FOCUS, {0xFF, 0xFF, 0xFF, 0xFF}},   /* EDIT's detail on a synth: PARAM (E1..E8), its
                                                          * VALUE, the MOD slot aimed at it: SRC AMT (ui_input.c focus_knob) */
     {"STAGE", FAM_ENV, SC_TRACK, GR_STAGE, {0xFF, 0xFF, P_ELOOP, 0xFF}},   /* ENV's detail: STAGE (ATK DEC SUS REL), its

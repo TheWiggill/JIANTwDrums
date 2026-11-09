@@ -142,7 +142,13 @@ enum {                          /* per-track parameters */
  * WHAT = PARAM moves, MUT_PIDS); P_MCFG, DIGITAL's free OP4 LEVEL slot, holds 127 - cfg (its stored default 127: cfg 0 in
  * every project and preset before it): bits 0..2 WHAT, 3..5 LOOP, 6 SCALE OFF. WHAT 0 with P_MSND / P_MPAT set is the
  * 0.6.43 MUTATE as it was (SOUND / PATTERN every OFF 1 2 4 8 16 32 bars: every old project plays the same) */
-#define P_MCFG P_FM4_LEVEL
+/* (after V10.7.2, the owner: "many sounds don't benefit from velocity, basses, certain leads") EDIT > VOICE 2's VEL, the sound's
+ * velocity amount, in MUTATE's old P_MCFG (retired with MUTATE in V10.6, read by nothing since): 127 (its stored default:
+ * every project, preset and GENE song before it) 100 %, the velocity as played; less: each note's distance from 100
+ * scaled by VEL / 127, 0 every note at 100 (VELOCITY OFF's) from every source: the keys, the sequencer, the arp, MIDI;
+ * the matrix's VEL reads it too. A step's ACCENT keeps its 127, HUMAN and RATCHET's DECAY act on the scaled value;
+ * the recording keeps the key's own (seq.c tvel, STEP_VEL) */
+#define P_TVEL P_FM4_LEVEL
 #define P_MORPH P_FM3_ATK              /* (JIANT 0.6.45) EDIT > MORPH: ANALOG PHASE LOFI's wave on towards the next ones
                                          * (0: as WAVE has it; every project and preset before it), in DIGITAL's slot */
 #define P_CLEN P_FM3_DEC               /* (JIANT 0.6.47) SHIFT > C.LEN: the step components as a lane of their own, steps

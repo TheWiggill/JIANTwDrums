@@ -17,7 +17,7 @@ a generator and effects, all inside the little keyboard. It is a fork of [Felucc
 The emulator runs the same code as the FM-1, with sound, played with the computer keyboard or the mouse. The installer
 always offers the current public version first, and the earlier ones under it.
 
-## This release: V10.7.1
+## This release: V10.7.3
 
 ### Installing
 
@@ -469,7 +469,7 @@ JIANT's modifications are distributed under the same license.
 
 Every update is listed here, newest first. (Since 0.6.80 at the end of the page: what the synth does comes first.)
 
-### V10.7.1 — public (2026-11-08)
+### V10.7.3 — public (2026-11-08)
 
 Everything since V10.6c, the last public version (V10.6o … V10.6z9 were betas; V10.7 adds the GENE mix pass and steadier velocity):
 

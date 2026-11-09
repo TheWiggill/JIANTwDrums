@@ -14,7 +14,11 @@
  * 5. the default routing: with AFTERTOUCH on, INIT SOUND and a new project's sounds AT -> CUT 20 in the matrix's free
  *    slot 4 (not on a DRUM track, not over a slot in use; AFTERTOUCH OFF: none, as before); a preset load adds none;
  * 6. the MENU: CONTROL's rows VELOCITY, VEL MIN, AFTERTOUCH, VEL LEARN (an older setting: NORMAL, 20, MID, ON); RESET
- *    asks for the seeds (vel.c) once picked, and reads RESET. */
+ *    asks for the seeds (vel.c) once picked, and reads RESET;
+ * 7. (after V10.7.2) a sound's VEL (EDIT > VOICE 2, core.h P_TVEL): 100 % (127, the default and every older store's)
+ *    as played; 0 % every note 100 from the keys, the sequencer, the arp and MIDI in (the matrix's VEL too), a step's
+ *    ACCENT 127 still, the recording the key's own; 50 % halfway; a preset sets it (the factory basses 0 %, the others
+ *    100 %), a project keeps it, an older one loads at 100 %. */
 #define UI_TEST_NO_MAIN 1
 #include "ui_test.c"
 
@@ -52,10 +56,25 @@ static void setup(void)
     mo_lvl = MO_KEYS;
     song.sel = 0;
     memset(&vs, 0, sizeof vs);
+    trk[0].p[P_TVEL] = 127;                           /* (track 1 at power-on is a bass, its VEL 0 %: 7.) */
     frame();
     n_on = 0;
     n_at = 0;
     at_last = 999;
+}
+static uint32_t vvel(const track_t *t)               /* the velocity the newest voice sounds */
+{
+    uint32_t i, best = 0, age = 0;
+    for (i = 0; i < NVOICE; i++)
+        if (t->v[i].active && t->v[i].age >= age) { age = t->v[i].age; best = t->v[i].vel; }
+    return best;
+}
+static void gclear_step(step_t *s) { memset(s, 0, sizeof *s); }
+static uint32_t page_find(const char *title)
+{
+    uint32_t i;
+    for (i = 0; i < NPAGES; i++) if (str_eq(PAGES[i].title, title)) return i;
+    return 0;
 }
 static uint32_t KEY = 12u;                            /* F4: a key with a converter */
 
@@ -279,6 +298,112 @@ int main(void)
     menu_put(MI_VLEARN, 2);
     ck("   VEL LEARN RESET: the seeds asked for once picked (vel.c), it reads RESET", k == 2u && vk_cal == 1u &&
        menu_get(MI_VLEARN) == 2u);
+    /* ---- 7. a sound's VEL */
+    {
+        track_t *t = &trk[0];
+        uint32_t e, pi, okb = 1, nb = 0, no = 0;
+        setup();
+        vs.on = 1;
+        trk[3].p[P_TVEL] = 0;
+        track_defaults(&trk[3]);
+        ck("7. VEL: 100 % by default (127; NRPN 80, VOICE 2's KNOB 3)", trk[3].p[P_TVEL] == 127 && track_desc(&trk[3], P_TVEL)->def == 127 &&
+           str_eq(track_desc(&trk[3], P_TVEL)->label, "VEL") && track_desc(&trk[3], P_TVEL)->max == 127 && P_TVEL == 80 && PAGES[page_find("VOICE 2")].id[2] == P_TVEL);
+        t->p[P_TVEL] = 127;                           /* (track 1 at power-on is a bass: 0 %) */
+        kb_velx[KEY] = 37u ^ 100u;
+        key_down(KEY); blocks(4);
+        ck("   100 %: a key's 37 as played (the voice, the matrix's VEL)", t->m_vel == 37u && vvel(t) == 37u);
+        key_up(KEY); blocks(8);
+        t->p[P_TVEL] = 0;
+        key_down(KEY); blocks(4);
+        ck("   0 %: a key's 37 plays 100 (the voice, the matrix's VEL)", t->m_vel == 100u && vvel(t) == 100u);
+        key_up(KEY); blocks(8);
+        kb_velx[KEY] = 127u ^ 100u;
+        key_down(KEY); blocks(4);
+        ck("   0 %: a key struck at 127 plays 100 too (only a step's ACCENT keeps 127)", t->m_vel == 100u);
+        key_up(KEY); blocks(8);
+        t->p[P_TVEL] = 64;
+        kb_velx[KEY] = 37u ^ 100u;
+        key_down(KEY); blocks(4);
+        ck("   50 %: a key's 37 plays 69 (halfway to 100)", t->m_vel == 69u && vvel(t) == 69u);
+        key_up(KEY); blocks(8);
+        t->p[P_TVEL] = 0;
+        /* the sequencer playing a step of 40 and an accented one */
+        for (pi = 0; pi < 16u; pi++) gclear_step(&t->step[pi]);
+        t->step[0].time = ST_NOTE; t->step[0].n = 1; t->step[0].note[0] = 60; t->step[0].vel = 40;
+        t->step[1].time = ST_NOTE; t->step[1].n = 1; t->step[1].note[0] = 62; t->step[1].vel = 40; t->step[1].flags = SF_ACCENT;
+        t->p[P_SLEN] = 2; t->p[P_SDIV] = 2; song.g[G_BPM] = 120;
+        transport_req = 1;
+        {
+            uint32_t n100 = 0, n127 = 0, other = 0, j, last = 0;
+            for (j = 0; j < 120u; j++) {
+                blocks(16u * (FS / 1000u) / CTL / 4u);
+                if (t->m_vel && t->m_key != last) { last = t->m_key; n100 += t->m_vel == 100u; n127 += t->m_vel == 127u;
+                                                    other += t->m_vel != 100u && t->m_vel != 127u; }
+            }
+            snprintf(what, sizeof what, "   0 %%: the sequencer's step of 40 plays 100 (%u), its ACCENT still 127 (%u), none else (%u)",
+                     n100, n127, other);
+            ck(what, n100 >= 1u && n127 >= 1u && !other);
+        }
+        transport_req = 2; ms_run(64);
+        /* MIDI in */
+        midi_enqueue(0x9u | 0x90u << 8 | 64u << 16 | 30u << 24, 1); events_block(CTL);
+        ck("   0 %: a MIDI note of 30 plays 100", t->m_vel == 100u);
+        midi_enqueue(0x8u | 0x80u << 8 | 64u << 16, 1); blocks(8);
+        /* the arp: the keys' velocity, even at 127 (not an accent) */
+        midi_out_mode = MO_ALL; frame();
+        kb_velx[KEY] = 127u ^ 100u;
+        t->p[P_AMODE] = 1;
+        transport_req = 1; ms_run(32);
+        t->m_vel = 0;
+        key_down(KEY); ms_run(400);
+        ck("   0 %: the arp's notes of a key struck at 127 play 100", t->m_vel == 100u);
+        key_up(KEY); transport_req = 2; ms_run(32);
+        t->p[P_AMODE] = 0; midi_out_mode = MO_KEYS; frame();
+        /* recorded: the key's own velocity */
+        setup();
+        vs.on = 1;
+        t->p[P_TVEL] = 0;
+        kb_velx[KEY] = 37u ^ 100u;
+        t->p[P_SLEN] = 16; t->p[P_SDIV] = 2; song.g[G_BPM] = 120;
+        song.rec = 1; transport_req = 1; ms_run(32);
+        key_down(KEY); ms_run(160); key_up(KEY); ms_run(64);
+        {
+            uint32_t v = 0;
+            for (i = 0; i < 16u; i++) if (t->step[i].vel) v = t->step[i].vel;
+            ck("   0 %: the recording keeps the key's 37 (VEL up later: the dynamics back)", v == 37u);
+        }
+        song.rec = 0; transport_req = 2; ms_run(32);
+        /* presets: the factory basses 0 %, every other 100 % */
+        for (e = 0; e < NENGINES; e++) {
+            const engine_t *en = ENGINES[e];
+            if (en->name[0] == '-' || eng_gone(e) || !en->npresets) continue;
+            set_engine_of(t, e);
+            for (pi = 0; pi < en->npresets; pi++) {
+                uint32_t bass = PR_TAG(&en->presets[pi]) == PT_BASS;
+                t->p[P_TVEL] = 40;
+                apply_preset_to(t, pi);
+                t->engine = t->eng_req;
+                okb &= t->p[P_TVEL] == (bass ? 0 : 127);
+                nb += bass; no += !bass;
+            }
+        }
+        snprintf(what, sizeof what, "   a preset sets it: the %u factory basses 0 %%, the other %u presets 100 %%", nb, no);
+        ck(what, okb && nb >= 10u && no > nb);
+        /* a project keeps it; one of before loads at 100 % */
+        setup();
+        trk[1].p[P_TVEL] = 40; trk[2].p[P_TVEL] = 127;
+        project_save(1);
+        trk[1].p[P_TVEL] = 99; trk[2].p[P_TVEL] = 0;
+        project_load(1);
+        ck("   a project keeps each track's VEL (40, 127)", trk[1].p[P_TVEL] == 40 && trk[2].p[P_TVEL] == 127);
+        {
+            int16_t in[69], out[P_COUNT], def[P_COUNT];
+            for (i = 0; i < P_COUNT; i++) def[i] = TP[i].def;
+            for (i = 0; i < 69u; i++) in[i] = 5;
+            params_by_count(out, in, 69u, def);         /* (a store of P_COUNT 69: before the DIGITAL slots) */
+            ck("   an older store without the slot: VEL 100 % (its default)", out[P_TVEL] == 127);
+        }
+    }
     printf("vel_seq: %s\n", bad ? "FAILED" : "all ok");
     return bad != 0;
 }

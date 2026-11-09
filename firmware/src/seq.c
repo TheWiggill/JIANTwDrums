@@ -360,6 +360,15 @@ static uint16_t kb_sdue[27];                    /* (0.6.81) samples to the strum
 /* (V10.6z6) key velocity (vel_kb.h KB_VEL: each key's press's, 100 with VELOCITY OFF; its chord, strum, recording and
  * MIDI OUT use it) */
 #define ARP_VEL(t) (vs.arpv[trk_index(t)] ^ 100u)    /* (stored ^ 100: 0, as zeroed, 100) */
+/* (VEL, core.h P_TVEL) a velocity as track t's sound takes it: its distance from 100 scaled by VEL / 127 (127, every
+ * store before: as played; 0: 100). Applied where a velocity enters, before what the FM-1 adds to it: the keys and MIDI
+ * in (input_on, after the recording: the step keeps the key's own), the arp's notes, a step's own (STEP_VEL); a
+ * step's ACCENT (127), HUMAN's spread and RATCHET's DECAY act after it, as they would on any note */
+static inline uint32_t tvel(const track_t *t, uint32_t v)
+{
+    return FELUCCA_FM4 && t->eng_req % NENGINES == ENGI_DIGITAL ? v : (uint32_t)(100 + ((int32_t)v - 100) * t->p[P_TVEL] / 127);
+}
+#define STEP_VEL(t, s) ((s)->flags & SF_ACCENT ? 127u : tvel((t), (s)->vel ? (s)->vel : 96u))
 
 /* (JIANT 0.6.81) CHORD (SCL > CHORD; after the Omnichord and the Orchid, light): a key plays a chord on the track.
  * TRIAD 7TH ADD9 SUS2 SUS4 are built in the track's scale on the key (every tone in key; a key outside it takes the
@@ -586,7 +595,7 @@ static __attribute__((noinline)) void arp_chord(track_t *t, const uint32_t *list
             t->arp_ch[i - 1u] = (uint8_t)nt;
         if (rec_on(t))
             rec_note(t, nt, av);
-        seq_note_on(t, nt, av);
+        seq_note_on(t, nt, tvel(t, av));
     }
 }
 
@@ -755,7 +764,7 @@ static void arp_step_do(track_t *t, uint32_t n)
         t->arp_note = (uint8_t)list[j];
         if (rec_on(t))
             rec_note(t, t->arp_note, av);            /* recording: what the arp plays */
-        seq_note_on(t, t->arp_note, av);
+        seq_note_on(t, t->arp_note, tvel(t, av));
     }
     ev_off = 0;
 }
@@ -1073,7 +1082,7 @@ static void input_on(track_t *t, uint32_t note, uint32_t vel)
     if (t->p[P_AMODE])
         arp_add(t, note);
     else
-        trk_note_on(t, note, vel);
+        trk_note_on(t, note, tvel(t, vel));         /* (VEL: the sound's share of it; recorded as played) */
 }
 
 static int midi_note_held(const track_t *t, uint32_t note);
@@ -2676,7 +2685,7 @@ static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint
 {
     uint32_t unit = t->seq_fit & 128u ? step_samples(t, period, t->seq_idx) : period;
     uint32_t i, j, gate = fit_scale_samples(unit, (uint32_t)t->p[P_SGATE], 7u);
-    uint32_t vel = (s->flags & SF_ACCENT) ? 127u : (s->vel ? s->vel : 96u);
+    uint32_t vel = STEP_VEL(t, s);
     uint32_t slide_in = t->seq_hold && t->seq_n && !(skip & SEQ_REP);
     uint32_t len = t->p[P_SLEN] ? (uint32_t)t->p[P_SLEN] : 1u;
     uint32_t next_tie = shift_ahead(t, 1u, len)->time == ST_TIE;
@@ -2707,7 +2716,7 @@ static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint
     if (s->time == ST_TIE && arp) {
         s = arp;                                    /* (0.6.39) the arpeggio goes on over the TIE */
         cont = 1;
-        vel = (s->flags & SF_ACCENT) ? 127u : (s->vel ? s->vel : 96u);
+        vel = STEP_VEL(t, s);
     } else if (s->time == ST_TIE) {
         if (t->seq_n) {
             t->seq_off = (CT_LEN(s) ? unit * CT_LEN(s) / 16u : gate + unit / 2u) + ev_off;   /* (V10.6z4) LEN: where the
@@ -2970,7 +2979,7 @@ static __attribute__((noinline)) void seq_lane_rat(track_t *t, uint32_t period, 
 {
     const step_t *s = t->cv_on ? &t->cvs : shift_step(t, t->seq_idx);
     uint32_t sl = step_samples(t, period, t->seq_idx), pos = t->seq_pos, prev, l, k, any = 0;
-    uint32_t vel = (s->flags & SF_ACCENT) ? 127u : (s->vel ? s->vel : 96u);
+    uint32_t vel = STEP_VEL(t, s);
     if (pos >= 0x7FFFFFFFu || s->time != ST_NOTE) {
         t->lr_on = 0;
         return;

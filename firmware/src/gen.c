@@ -1558,6 +1558,8 @@ static __attribute__((noinline)) void gen_sound(track_t *t, uint32_t role, uint3
             pre = k;                                    /* (p1, main 0.9.12: a bass's sound only on the bass, by its type) */
     }
     apply_preset_to(t, pre % n);
+    if (role == RL_BASS)                                /* (VEL) the bass 75 %: evener, as the owner wants a */
+        t->p[P_TVEL] = 96;                              /* bass, its ghosts ('x' 'g') still softer, ACCENTs 127 */
     for (i = 0; i < 8u; i++) {                          /* (a sixteenth of each range: still that sound, a bit its own) */
         const param_desc_t *d = track_desc(t, P_E0 + i);
         int32_t span = (d->max - d->min) / 16;

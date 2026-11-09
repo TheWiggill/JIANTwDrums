@@ -1,6 +1,6 @@
 # JIANT FM — User Manual
 
-**JIANT FM V10.7.1 for the M-VAVE FM-1**
+**JIANT FM V10.7.3 for the M-VAVE FM-1**
 
 > *Versión en español: [MANUAL.es.md](MANUAL.es.md).*
 
@@ -220,6 +220,15 @@ Vestal's, *Velo*, github.com/charlesvestal/fm1-velocity, GPL-3.0). JIANT reads i
   finger does nothing (a dead zone), the value glides (no zipper), and lifting the key ends it. MENU > CONTROL >
   **AFTERTOUCH** sets how sensitive it is (LOW, MID, HIGH) or turns it OFF. It works with OCT− / OCT+ held too; it
   is recorded as automation with the expression keys and sent as channel aftertouch with MIDI OUT ALL.
+- **A sound's VEL** (EDIT > VOICE 2, KNOB 3; 0..100 %, every engine but DRUM): how much velocity reaches *this* sound.
+  **100 %** (every project, preset and song made before it) plays each note as hard as it was played; less brings every
+  note's velocity toward 100 (50 %: a strike of 60 plays 80, one of 120 plays 110); **0 %** plays every note at 100,
+  as VELOCITY OFF does, but for this track only. It applies to every source: the keys, the sequencer's steps, the arp,
+  the punch-in repeats and MIDI in; the matrix's **VEL** reads the same value. A step's **ACCENT** still plays 127, and HUMAN and a RATCHET's DECAY
+  still vary the notes.
+  Recording keeps the velocity you played, so turning VEL up later brings the dynamics back. The factory **bass**
+  presets load at **0 %** (a bass is better even), GENE's bass at **75 %** (its composed ghost notes still softer); every other
+  preset at 100 %. Kept with the sound (projects, user presets, songs); NRPN 80, and the web editor's VOICE group.
 
 ---
 
@@ -519,7 +528,7 @@ since 0.6.51: every project opens as it was.
 | LEVELS | KICK | SNARE | CLAP | HATCL | DRUM |
 | LEVELS 2 | HATOP | TOM | RIM | BELL | DRUM |
 | VOICE | VOICE | GLIDE | MODE | PRIO | every engine |
-| VOICE 2 (0.8.5) | ALLOC | DETUNE (UNI's spread) | — | — | every engine but DRUM |
+| VOICE 2 (0.8.5) | ALLOC | DETUNE (UNI's spread) | VEL (the sound's velocity amount, 0..100 %) | — | every engine but DRUM |
 | SWARM, SWARM 2 (V10.6z6) | SIDE (FAR / NEAR) | that side's RATE, MOVE, TONE / NOISE, MOD | | (SWARM 2: NOW, the morph and its source) | EXT with SOURCE SWARM |
 | FOCUS (0.8.5) | PARAM (E1–E8) | its value | SRC (the MOD slot on it) | AMT | the synths (not FM6, DRUM) |
 
