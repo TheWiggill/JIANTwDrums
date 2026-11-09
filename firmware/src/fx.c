@@ -2595,7 +2595,7 @@ static __attribute__((noinline)) void perf_master(int32_t *out, uint32_t n)
  * or the other (DRUM-X's kit and its IMAGE / SEND buffers are one for all; 0.6.71: always core 0). The parts go to
  * whichever core has less to do, by what each took the last blocks (0.6.73: measured; was their sounding voices and
  * engines, mc_split). A core 1 that misread, faulted or did not come back is held for good: its block of those parts is
- * dropped and core 0 renders every part from the next one. REC held at power-on: core 0 alone (mc_off). MENU > ABOUT
+ * dropped and core 0 renders every part from the next one. REC + PLAY held at power-on: core 0 alone (mc_off; REC alone: UBOOT, main.c). MENU > ABOUT
  * says which (mc_status) */
 #if FELUCCA_DUAL_CORE
 #define mc_run(f, a) fm1_mc_run(f, a)
@@ -2616,7 +2616,7 @@ static int mc_wait(void) { return 0; }
 #endif
 #define mc_live() (mc_host != 0)
 #endif
-static volatile uint8_t mc_off;                          /* REC held at power-on: one core this session (main.c) */
+static volatile uint8_t mc_off;                          /* REC + PLAY held at power-on: one core this session (main.c) */
 static volatile int8_t mc_cur = -1;                      /* the part core 1 is in (a job given up: its matrix put back) */
 static uint8_t mc_mask_last;                             /* the parts core 1 had the last block (MENU > ABOUT, tests) */
 static uint32_t mc_jobs;                                 /* (0.6.72) blocks core 1 rendered parts in (console status) */

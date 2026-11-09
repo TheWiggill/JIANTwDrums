@@ -135,6 +135,8 @@ layer's shortcuts; on the DRUM grid they are steps and lanes; on the NAME screen
 | Step keys held (SEQ, the roll / grid) + **SELECT** / a step key + **REC** | **COPY** those steps / **PASTE** them from that step (see Copy and paste). |
 | **OCT− + OCT+** held at power-on | HARDWARE CALIBRATION. |
 | **OCT− + OCT+** held 5 s while running | Update mode (UBOOT), with a countdown from 2 s; let go to cancel. |
+| **REC** held at power-on | Update mode (UBOOT) at once, as on the official firmware: M-UPGRADE and M-Flasher find the FM-1. |
+| **REC + PLAY** held at power-on | One core this session. |
 
 ---
 
@@ -2276,8 +2278,8 @@ waiting for the bar is called off. If something still plays after a clear, it ma
 **REC and press FX** to erase it (or **SEQ + REC** to clear everything).
 
 **Two cores (0.6.71, test).** The second core renders some synth tracks; MENU > ABOUT says **CORES 2**, or
-**CORES 1** and why (REC held at power-on, a bad read, no answer, a fault: then it stays on one core until switched
-off). Hold **REC** while powering on to play on one core.
+**CORES 1** and why (REC + PLAY held at power-on, a bad read, no answer, a fault: then it stays on one core until switched
+off). Hold **REC + PLAY** while powering on to play on one core (**REC** alone enters the update mode).
 
 **Clicks, stutters, the load meter full.** Keep TRACKS on 4, try **LOAD LITE** or **ECO**, use fewer voices (MONO,
 fewer FM6 tracks), lighter reverbs (CLOUD and SHIMMER are the heaviest). Check MENU > SYSTEM > ABOUT > AUDIO LOAD.
