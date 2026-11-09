@@ -3,7 +3,7 @@ name: Build firmware
 # Nothing is published or released. The toolchain and SDK steps are the same as public-release.yml's.
 on:
   push:
-    branches: [preset/risk-lead]
+    branches: [preset/risk-lead, v10.6-drums]
   workflow_dispatch:
 permissions:
   contents: read
