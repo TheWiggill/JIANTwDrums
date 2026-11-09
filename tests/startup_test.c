@@ -51,11 +51,13 @@ static int startup_case(int saved, int restore, int noprefs)
     ok &= !memcmp(song_idx.scene, want.scene, sizeof want.scene);
     /* Advance beyond the splash and the arrangement's two-second automatic save. */
     for (i = 0; i < 2000u; i++) web_render(128);
+    /* (2432580, 2026-11-04, SAVE SONG AS: song_poll stamps the song's PLAY mode into its rows' rsv[2], SONG_MODE_TAG;
+     * an index from before has 0 there, so it is written once, the rows, bars, END and scenes as they were. An empty
+     * flash gets the default index so, tag and all) */
+    want.rows[want.cur].rsv[2] = (uint8_t)(SONG_MODE_TAG | (live.mode ? 1u : 0u));
+    want.rsv[1] = 1;                                   /* (V10.6p: songs 7, 8's retirement checked, written with it) */
     ok &= !memcmp(&chain_config, &want.rows[want.cur], sizeof chain_config);
-    if (saved)
-        ok &= st_load(OBJ_SONGIDX, &got, sizeof got) == (int)sizeof got && !memcmp(&got, &want, sizeof got);
-    else
-        ok &= st_load(OBJ_SONGIDX, &got, sizeof got) < 0;
+    ok &= st_load(OBJ_SONGIDX, &got, sizeof got) == (int)sizeof got && !memcmp(&got, &want, sizeof got);
     printf("startup: %s, RESTORE LAST %s: rows, bars, END, scenes and flash %s\n",
            saved ? "saved project 3" : "empty flash", restore ? "ON" : "OFF", ok ? "ok" : "FAIL");
     return !ok;

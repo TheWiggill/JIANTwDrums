@@ -8,6 +8,8 @@
  *   editor              a malformed BACKUP_PUT does not stop the transport */
 #define EDITOR_TEST_NO_MAIN 1
 #include "editor_test.c"
+static void excite_turn(track_t *t, const int16_t *vp, int32_t old) { (void)t; (void)vp; (void)old; }   /* (editor_test.c
+                                                         * leaves it to us, V10.7.2: ui_input.c is not built here) */
 #include "legacy_proj.h"                        /* (V10.6s) FUN5, retired: refused */
 
 static int projects(void)
