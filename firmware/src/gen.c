@@ -594,8 +594,10 @@ static void gen_drums(track_t *t, uint32_t len)
         if (gs.drum_fill || (!(gs.song && g->fills != FL_LINEAR) && bars >= 2u && fl != FL_NONE && (bars >= 4u || gch(50)))) {
             uint32_t lane = map[1] ? 1u : map[2] ? 2u : 6u;
             switch (fl) {
-            case FL_ROLL:
-                gdrum_clear_region(t, base + 12u, base + 16u, 0x10u);
+            case FL_ROLL:                               /* (V10.7.5, after Compas: cumbia's break, a song's fill section:
+                                                         * the bar the kick's and the guiro's alone, the roll its fill) */
+                k = gs.drum_fill && (g->drum == DM_CUMBIA || g->drum - DM_CUMB2 < 2u);
+                gdrum_clear_region(t, k ? base : base + 12u, base + 16u, k ? 0xF6u : 0x10u);
                 for (k = 0; k < 4u; k++) {
                     gdrum_hit(t, base + 12u + k, lane, 70 + (int32_t)k * 15, k == 3u);
                     if (e > 55 && k >= 2u) glane_rat(&t->step[base + 12u + k], lane, 2);
@@ -780,6 +782,8 @@ static void gen_bass(track_t *t, uint32_t len)
             break;
         case '2': case '3': case '5': case '6': case '9': n[0] = gbass_tone(cc, root, c); break;
         case 'L': n[0] = gbass_tone(cc, root, '5') - 12; break;
+        case '4': n[0] = root + 5; break;               /* (V10.7.5: cumbia's turn, a perfect fourth over the root; out
+                                                         * of the mode, the last loop below makes it the root) */
         case '8': n[0] = root + 12; break;
         case 'A': case 'B': {                           /* (into the next root as it will sound: the loop's first note
                                                          * when the loop closes) */
