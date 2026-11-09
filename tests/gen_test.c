@@ -932,10 +932,15 @@ int main(void)
             bad += gcheck("  GENRE's order: EXPLORE, RANDOM, MINIMAL TECHNO, .. HOUSE .. (back from EXPLORE: the last genre)", ok);
         }
         frames(800);
+        /* (V10.6z: song_draft_begin refuses a throw while the transport is busy, "STOP TO GENERATE"; the host has no audio
+         * thread, so one block here takes PLAY's request as the audio callback would, or OCT+ below met a start still
+         * pending) */
         press(B_PLAY); frames(4);
-        bad += gcheck("  (0.6.97) PLAY on the GEN screen: the transport runs, the screen stays", (song.playing || transport_req == 1) && ui.confirm == CF_DICE_ALL);
+        { int32_t o[2 * CTL]; mix_block(o, CTL); }
+        bad += gcheck("  (0.6.97) PLAY on the GEN screen: the transport runs, the screen stays", song.playing && ui.confirm == CF_DICE_ALL);
         press(B_PLAY); frames(4);
-        bad += gcheck("  PLAY again: stopped, the screen stays", (!song.playing || transport_req == 2) && ui.confirm == CF_DICE_ALL);
+        { int32_t o[2 * CTL]; mix_block(o, CTL); }
+        bad += gcheck("  PLAY again: stopped, the screen stays", !song.playing && !transport_req && ui.confirm == CF_DICE_ALL);
         frames(8);
         frames(800);                                    /* (the knobs quiet a moment after a button: ui_layer.c) */
         turn(EN_K1, 1); turn(EN_K1, 1); turn(EN_K1, 1); turn(EN_K1, 1); turn(EN_K1, 1); turn(EN_K3, 2);
