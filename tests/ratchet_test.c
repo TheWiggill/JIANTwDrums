@@ -442,6 +442,9 @@ static int human(void)
         uint32_t len = step_len(t, 0), b, n = 0, lo = 999999, hi = 0, vlo = 127, vhi = 0, cmax = len / 3u, early = 0;
         uint32_t cap = FS * 40u / 1000u < cmax ? FS * 40u / 1000u : cmax, apart = 0, lo_b = 0;   /* (0.6.92: 40 ms) */
         if (pass == 2u) { t->p[P_VOICE] = V_POLY; t->step[0].n = 3; t->step[0].note[1] = 64; t->step[0].note[2] = 67; }
+        t->p[P_GLIDE] = 0;                              /* (the power-on sound's GLIDE, V10.6d: POLY + GLIDE slides the
+                                                         * chord into the next step's on the same voices, seq.c chord_auto:
+                                                         * no note-on to count) */
         t->p[P_HVEL] = pass ? 0 : 127;                  /* (100 %, 0 %) */
         t->p[P_HTIM] = pass ? 0 : 127;
         uint32_t st = 0;
