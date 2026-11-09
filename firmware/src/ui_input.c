@@ -1149,6 +1149,13 @@ static void shape_apply(uint32_t which)
     if (which == 0u && shp_k() > 1 && was * (uint32_t)shp_k() > NSTEP) str_cpy(m + str_len(m), " CUT", 5);
     ui_message(m);
 }
+/* (NUDGE's step) a note's first step: back from i over TIEs; one past its last: on from i over TIEs, inside len */
+static __attribute__((noinline)) uint32_t ndg_note(const step_t *s, uint32_t i) { while (i && s[i].time == ST_TIE) i--; return i; }
+static __attribute__((noinline)) uint32_t ndg_end(const step_t *s, uint32_t i, uint32_t len)
+{
+    while (++i < len && s[i].time == ST_TIE) {}
+    return i;
+}
 static void shape_knob(uint32_t slot, int32_t steps)
 {
     int32_t d = steps > 0 ? 1 : -1;
@@ -1157,17 +1164,28 @@ static void shape_knob(uint32_t slot, int32_t steps)
     else if (slot == 2u && ndg_step == 1u) {            /* (V10.25) the cursor step off the grid, 64ths of a step */
         micro_edit(steps);
     } else if (slot == 2u && ndg_step) {                /* (V10.7.4) OCT+ again: the cursor step itself a step left / right
-                                                         * (traded with its neighbour, wrapping in LEN), the cursor with it */
+                                                         * (traded with its neighbour), the cursor with it. A note moves with
+                                                         * its TIEs and trades with the neighbour's note whole (V10.7.4
+                                                         * swapped single steps: a moved note lost its length, the TIE left
+                                                         * behind lengthened the note before it); at step 1 / LEN it stays
+                                                         * (V10.7.4 wrapped: a note's TIEs cannot) */
         track_t *t = TSEL;
         uint8_t src[NSTEP];
-        uint32_t len = tl_len(t), c = ui.cursor % len, nb = (c + (d > 0 ? 1u : len - 1u)) % len, j;
+        uint32_t len = tl_len(t), c = ui.cursor % len, a, b, x, y, z, j;
         if (chain_busy()) { ui_message("SONG PLAYS: STOP IT TO EDIT"); return; }
+        a = ndg_note(t->step, c);                       /* the cursor's note [a, b): back over its TIEs, past them */
+        b = ndg_end(t->step, a, len);
+        if (d > 0 ? b >= len : !a)                      /* (an end: it stays) */
+            return;
+        if (d > 0) { x = a; y = b; z = ndg_end(t->step, b, len); }
+        else { y = a; z = b; x = ndg_note(t->step, a - 1u); }
+        for (j = 0; j < len; j++)                       /* [x, y) and [y, z) trade places */
+            src[j] = (uint8_t)(j < x || j >= z ? j : j - x < z - y ? y + j - x : j - (z - y));
+        x = d > 0 ? x + z - y : x;                      /* (the note's new place) */
         undo_mark();
-        for (j = 0; j < len; j++)
-            src[j] = (uint8_t)(j == c ? nb : j == nb ? c : j);
         tl_take(t);
         tl_order(t, len, src);
-        ui.cursor = (uint8_t)nb;
+        ui.cursor = (uint8_t)x;
     } else if (slot == 2u) {
         track_t *t = TSEL;
         if (chain_busy()) { ui_message("SONG PLAYS: STOP IT TO EDIT"); return; }

@@ -1364,7 +1364,8 @@ to the last step).
     - **OCT+ (red, a number)**: the **cursor step's micro timing**, 1/64 of a step a detent (−32 … +31; about 2 ms at
       120 BPM), early or late, as REC Q records it. PRESETS moves the cursor to the step; the card shows its value.
     - **OCT+ again (red, S and the step's number)** (V10.7.4): **the cursor step itself**, one step right / left a
-      detent (it trades places with its neighbour, round inside LEN); the cursor goes with it.
+      detent (it trades places with its neighbour; a note moves with its TIEs and trades with the neighbouring note
+      whole; at step 1 and at LEN it stays); the cursor goes with it.
   - **KNOB 4 ROTATE** (−32 … +32; it was SHIFT's OFFSET): the sequence read from another step, without moving the
     steps themselves — a live, automatable rotation (also on the SCL layer's KNOB 3).
 - **MICRO** (0.6.92, NOTE's KNOB 4; it was the TIMING page's OFFSET): the focused step's own place off the grid, in

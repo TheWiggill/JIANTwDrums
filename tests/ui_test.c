@@ -13598,7 +13598,42 @@ static int test_nudge_micro(void)
     ok &= ndg_step == 0u;
     turn(EN_K3, 1);
     ok &= t->step[1].note[0] == 60 && ST_MICRO(&t->step[1]) == 2;   /* (the sequence a step right, its MICRO with it) */
-    return check("NUDGE: OCT+ the step's MICRO (64ths), OCT- the whole sequence a step (V10.25)", ok);
+    ok = check("NUDGE: OCT+ the step's MICRO (64ths), OCT- the whole sequence a step (V10.25)", ok) == 0;
+    {   /* (V10.7.4) OCT+ again: the cursor step moved a step; a note moves with its TIEs (its length), the locks with it,
+         * the neighbour's note keeps its own; UNDO puts it back */
+        uint32_t i;
+        int16_t lv;
+        step_t keep[NSTEP];
+        int ok2;
+        ui_power_on();
+        song.sel = 1; t = TSEL;
+        for (i = 0; i < NSTEP; i++) step_clear(&t->step[i]);
+        t->p[P_SLEN] = 16;
+        t->step[1] = (step_t){{64}, 1, ST_NOTE, 0, 100};
+        t->step[2] = (step_t){{60}, 1, ST_NOTE, 0, 100};
+        t->step[3].time = ST_TIE; t->step[3].vel = 100;
+        (void)motion_set_lock(t, 2, P_PAN, 20);
+        memcpy(keep, t->step, sizeof keep);
+        go_title("STRETCH"); frame();
+        ui.cursor = 2;
+        press(B_OCTUP); press(B_OCTUP);
+        ok2 = ndg_step == 2u;
+        turn(EN_K3, 1); frame();
+        ok2 &= t->step[1].time == ST_NOTE && t->step[1].note[0] == 64 && t->step[2].time == ST_REST &&
+               t->step[3].time == ST_NOTE && t->step[3].note[0] == 60 && t->step[4].time == ST_TIE &&
+               t->step[5].time == ST_REST && ui.cursor == 3u;
+        ok2 &= motion_lock_get(t, 3, P_PAN, &lv) && lv == 20 && !motion_lock_get(t, 2, P_PAN, &lv);
+        (void)undo_do(); frame();
+        ok2 &= !memcmp(keep, t->step, sizeof keep) && motion_lock_get(t, 2, P_PAN, &lv) && lv == 20;   /* (UNDO: as before) */
+        ui.cursor = 2;
+        turn(EN_K3, -1); frame();                             /* (left: past the note at 1, which keeps its length) */
+        ok2 &= t->step[1].time == ST_NOTE && t->step[1].note[0] == 60 && t->step[2].time == ST_TIE &&
+               t->step[3].time == ST_NOTE && t->step[3].note[0] == 64 && t->step[4].time == ST_REST && ui.cursor == 1u;
+        ok2 &= motion_lock_get(t, 1, P_PAN, &lv) && lv == 20;
+        if (!ok2) for (i = 0; i < 6u; i++) printf("  step %u: time %u note %u\n", i, t->step[i].time, t->step[i].note[0]);
+        ok &= !check("NUDGE: OCT+ again moves the cursor step (V10.7.4): a note with its TIEs and its locks, the neighbour whole", ok2);
+    }
+    return !ok;
 }
 /* (V10.25) SCL > SCENE: one key plays every track given a role (T6 CHORD a triad, T5 BASS an octave down, T2 LEAD an
  * octave up, T4 ARP the chord into its arp); the kit and KEEP tracks are not reached; the key up ends them all; REC
