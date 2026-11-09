@@ -351,6 +351,19 @@ static void fm1_main(void)
     fm1_guard_lock_top();
     fm1_irq_enable_all();
     fm1_delay_ms(30);
+    /* REC alone held at power-on: UBOOT, the update mode M-VAVE's updaters (M-UPGRADE, M-Flasher) wait for, as the
+     * official firmware has it (a recovery that needs no working update in this firmware). REC + PLAY: one core this
+     * session (mc_off below; MENU > CPU CORES too) */
+    if (((fm1_in.buttons >> panel.btn[B_REC]) & 1u) && !((fm1_in.buttons >> panel.btn[B_PLAY]) & 1u)) {
+        fm1_audio_stop();
+        lcd_fill(0, 0, 240, 240, T_BG);
+        draw_text_box(0, 110, 240, &AF_M, "UBOOT (REC)", T_THEME, 1);
+        fm1_delay_ms(20);
+        usb_detach();
+        fm1_delay_ms(30);
+        bootguard.pending = 0;
+        fm1_enter_uboot();
+    }
     if ((fm1_in.buttons & 3u) == 3u) {
         panel_setup();                        /* OCT- + OCT+ held at power-on */
         settings_save();
@@ -359,7 +372,7 @@ static void fm1_main(void)
     /* (0.6.71) the second core, unless REC is held at power-on (one core this session: mc_off), a boot failed (a second
      * would enter UBOOT), or it was given up / beside a crash since power-on (hal/fm1_multicore.h fm1_mc_bar). Its entry
      * word is in the protected top of RAM: opened for it, interrupts off (up to 20 ms: under the splash) */
-    mc_off = (uint8_t)((fm1_in.buttons >> panel.btn[B_REC]) & 1u);
+    mc_off = (uint8_t)((fm1_in.buttons >> panel.btn[B_REC]) & (fm1_in.buttons >> panel.btn[B_PLAY]) & 1u);   /* REC + PLAY */
     if (!mc_off && !bootguard.failed && !fm1_mc_barred() && !(cpu_cfg & CPU_1CORE) && fm1_power_ready) {
                                                 /* (p1: MENU > CPU CORES) (V10.6z) and only on the stock supplies
                                                  * (fm1_power_init read back; not after a SAFE START): with the radio

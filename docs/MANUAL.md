@@ -195,6 +195,8 @@ layer's shortcuts; on the DRUM grid they are steps and lanes; on the NAME screen
 | **OCT− + OCT+** held at power-on | HARDWARE CALIBRATION. |
 | **OCT− + OCT+** held 5 s while running | Update mode (UBOOT), with a countdown from 2 s; let go to cancel. |
 | A note held + **OCT−** / **OCT+** (V10.6z4) | **Expression keys**: OCT− held fades in a vibrato like raising a mod wheel (~200 ms), OCT+ held bends the note up along a fixed smooth curve (~300 ms) to MENU > AUDIO > **OCT BEND**'s range (default 2 semitones); both ease back when let go. With no note held, OCT− / OCT+ change the octave as ever (OCT BEND OFF: always). Recorded as automation while recording (REC + EDIT clears it); with MIDI OUT ALL sent as CC1 and pitch bend (set the receiver's bend range to OCT BEND's). Both held on a note never starts UBOOT. |
+| **REC** held at power-on | Update mode (UBOOT) at once, as on the official firmware: M-UPGRADE and M-Flasher find the FM-1. |
+| **REC + PLAY** held at power-on | One core this session. |
 
 
 ### Key velocity and aftertouch (V10.6z7)
@@ -2934,9 +2936,9 @@ says **CORES 2**, or **CORES 1** and why. Since 0.9.12 **MENU › SYSTEM › CPU
 **1 CORE**, kept with the settings, from the next start. If the FM-1 crashes or hangs while both cores work, or the
 second core misreads, stops answering or faults, it **turns 2 CORES off for good** and says so (**2 CORES OFF AFTER A
 CRASH** / **CORE 2 FAILED: 1 CORE**, then MENU › SYSTEM › CPU CORES); ABOUT then reads **CORES 1 (AFTER A CRASH)**. Set
-2 CORES again only if you want to test it. Hold **REC** while powering on for one core that session only.
+2 CORES again only if you want to test it. Hold **REC + PLAY** while powering on for one core that session only (**REC** alone enters the update mode).
 With both cores running the tracks share **12 voices** instead of 8 (each track still at most 8); on one core (1 CORE
-set, after a crash, REC held) it is 8, and a second core that stops brings the budget back to 8 from the next note.
+set, after a crash, REC + PLAY held) it is 8, and a second core that stops brings the budget back to 8 from the next note.
 
 **It crashes: a red screen "JIANT CRASH" (or "FELUCCA CRASH" before 0.7.0) with numbers.** Take a photo of it and
 tell us the version (MENU › SYSTEM › ABOUT). How to read it:
@@ -2956,7 +2958,7 @@ tell us the version (MENU › SYSTEM › ABOUT). How to read it:
 
 **What to try when it crashes now and then (even idle).** In this order, a few hours each:
 1. **MENU › SYSTEM › CPU CORES 1 CORE** (0.9.12 does it by itself after the first crash with both cores; before 0.9.12,
-   hold REC at every power-on).
+   hold REC + PLAY at every power-on).
 2. **MENU › SYSTEM › CPU CLOCK 320 MHZ**: the chip at JieLi's rated clock instead of the 360 MHz the FM-1's boot
    sets (switched at the next power-on; ABOUT shows **CPU 320 MHZ**). About 11 % less CPU: a heavy song may shed
    voices sooner (LOAD LITE helps). If the FM-1 refuses (its clock is set up differently), ABOUT keeps **CPU 360 MHZ**.
