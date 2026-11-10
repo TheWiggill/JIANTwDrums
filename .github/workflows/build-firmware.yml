@@ -42,7 +42,14 @@ jobs:
           FELUCCA_REPIN: '1'
         run: |
           pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
-          python3 tools/build.py
+          set -o pipefail
+          # on a failure, its error lines as annotations too (readable without signing in to GitHub)
+          python3 tools/build.py 2>&1 | tee build.log || {
+            { grep -iE "error|FAIL|SystemExit|assert|undefined|Traceback|failed" build.log | tail -25; echo ----; tail -15 build.log; } \
+              | cut -c1-300 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}' > err.txt
+            echo "::error::$(cat err.txt)"
+            exit 1
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: jiant-firmware-${{ github.sha }}
