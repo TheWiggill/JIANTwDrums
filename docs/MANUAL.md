@@ -1070,8 +1070,8 @@ pitch over the same time (the other engines: a straight line, as before).
 
 DRUM-X is a synthesized kit of eight sounds, **BD SD CP CH OH TM RS CB**, generated in real time.
 
-- (0.7.2) **Nine kits as the DRUM engine's presets**: DRUM-X (the factory kit), 909 CLUB, 808 BOOM, LOFI DUST,
-  INDUSTRIAL, ACOUSTIC, BREAKS, HIP HOP (V10.34: boom bap, suggests the pattern BOOM BAP). Browsing one (PRESETS on HOME, the editor, a PROGRAM CHANGE)
+- (0.7.2) **Twelve kits as the DRUM engine's presets**: DRUM-X (the factory kit), 909 CLUB, LOFI DUST,
+  ACOUSTIC, BREAKS, HIP HOP (V10.34: boom bap, suggests the pattern BOOM BAP), and from Skiff DEEP, CLICK, INDUS, SOFT, GLITCH and TRIBAL KIT. Browsing one (PRESETS on HOME, the editor, a PROGRAM CHANGE)
   loads the whole kit into the section: the eight sounds' A and B sides, their LAYERs and SENDs, and the track's KIT
   knobs. Switching engines, INIT SOUND, a project load and GEN leave the section's kit as it is; DRUM-X brings the
   factory kit back. Edit any of them in EDIT > SOUND; the section saves the result.

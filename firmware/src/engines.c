@@ -180,7 +180,7 @@ static const struct {
  * electric piano, T5 VOICE's vowels (no words), T6 ANIMAL's WHISTLE (C3 is C3). Each its preset's sound, dry (ui.c
  * power_sound_of: no DIST CHOR DLY REV send, the effects are the player's to add); was DRUM-X SINGER EN CMOS BIRD
  * BYTEBEAT FAT BASS TINE EP */
-#define TRK_PR_DRUM 5u           /* ACOUSTIC (eng_drum.c DRUM_PRESETS) */
+#define TRK_PR_DRUM 3u           /* ACOUSTIC (eng_drum.c DRUM_PRESETS) */
 #define TRK_PR_ANALOG 14u        /* FAT BASS (eng_analog.c) */
 #define TRK_PR_PHASE 9u          /* GLASS PAD (eng_phase.c) */
 #define TRK_PR_ANIMAL 24u        /* WHISTLE (eng_animal.c) */

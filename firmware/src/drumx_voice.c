@@ -494,19 +494,6 @@ static const dx_kit_t DX_KITS[] = {
         },
         {0, 6, 0, 0, 0, 0, 0, 0}, {0, 210, 214, 0, 0, 0, 0, 0},   /* the layers; the sends (bus << 6 | amount) */
     },
-    {   /* 808 BOOM */
-        {
-            {DX_MODE(DXW_SINE, DXF_LP, 1) | DXM_LONG << 5, {3, 40, 102, 0, 6}, {8, 70, 118, 6, 46}},   /* KICK */
-            {DX_MODE(DXW_SINE, DXF_BP, 0), {36, 18, 46, 90, 66}, {42, 6, 58, 114, 46}},   /* SNARE */
-            {DX_MODE(DXW_SINE, DXF_BP, 0), {56, 0, 50, 127, 70}, {50, 0, 62, 127, 62}},   /* CLAP */
-            {DX_MODE(DXW_METAL, DXF_HP, 0), {92, 0, 14, 96, 118}, {100, 0, 6, 112, 124}},   /* HAT CL */
-            {DX_MODE(DXW_METAL, DXF_HP, 0), {92, 0, 60, 96, 114}, {100, 0, 72, 112, 120}},   /* HAT OP */
-            {DX_MODE(DXW_SINE, DXF_HP, 1) | DXM_LONG << 5, {24, 26, 82, 14, 42}, {30, 46, 92, 20, 62}},   /* TOM */
-            {DX_MODE(DXW_BELL, DXF_HP, 1), {65, 10, 14, 16, 38}, {72, 24, 20, 30, 52}},   /* RIM */
-            {DX_MODE(DXW_METAL, DXF_BP, 1), {62, 0, 56, 34, 0}, {66, 0, 66, 46, 16}},   /* BELL */
-        },
-        {0, 4, 0, 0, 0, 0, 0, 0}, {0, 204, 208, 0, 0, 0, 0, 0},   /* the layers; the sends (bus << 6 | amount) */
-    },
     {   /* LOFI DUST */
         {
             {DX_MODE(DXW_SINE, DXF_LP, 1), {11, 78, 58, 14, 0}, {16, 108, 74, 20, 40}},   /* KICK */
@@ -519,19 +506,6 @@ static const dx_kit_t DX_KITS[] = {
             {DX_MODE(DXW_METAL, DXF_BP, 1), {66, 0, 32, 34, 10}, {70, 0, 42, 46, 36}},   /* BELL */
         },
         {0, 9, 0, 0, 0, 0, 5, 0}, {0, 202, 202, 0, 0, 0, 0, 0},   /* the layers; the sends (bus << 6 | amount) */
-    },
-    {   /* INDUSTRIAL */
-        {
-            {DX_MODE(DXW_FM, DXF_LP, 1) | DX_DRIVE, {7, 104, 80, 18, 64}, {12, 127, 96, 24, 104}},   /* KICK */
-            {DX_MODE(DXW_METAL, DXF_HP, 0), {42, 54, 64, 102, 124}, {48, 42, 76, 126, 104}},   /* SNARE */
-            {DX_MODE(DXW_SINE, DXF_BP, 0), {60, 0, 54, 127, 108}, {54, 0, 66, 127, 100}},   /* CLAP */
-            {DX_MODE(DXW_METAL, DXF_HP, 0), {100, 0, 32, 106, 127}, {108, 0, 24, 122, 127}},   /* HAT CL */
-            {DX_MODE(DXW_METAL, DXF_HP, 0), {100, 0, 76, 106, 127}, {108, 0, 88, 122, 127}},   /* HAT OP */
-            {DX_MODE(DXW_SINE, DXF_HP, 1) | DX_DRIVE, {30, 64, 76, 20, 88}, {36, 84, 86, 30, 108}},   /* TOM */
-            {DX_MODE(DXW_BELL, DXF_HP, 1) | DXM_NOISE << 5, {63, 22, 20, 28, 70}, {70, 36, 26, 42, 84}},   /* RIM */
-            {DX_MODE(DXW_METAL, DXF_BP, 1) | DXM_NOISE << 5, {64, 0, 48, 46, 96}, {68, 0, 58, 58, 120}},   /* BELL */
-        },
-        {0, 12, 0, 0, 0, 0, 6, 0}, {0, 218, 212, 0, 0, 144, 152, 0},   /* the layers; the sends (bus << 6 | amount) */
     },
     {   /* ACOUSTIC */
         {
@@ -650,19 +624,6 @@ static const dx_kit_t DX_KITS[] = {
             {DX_MODE(DXW_SINE, DXF_LP, 1) | DXM_LONG << 5, {30, 60, 70, 4, 24}, {36, 80, 80, 8, 34}},   /* TOM */
             {DX_MODE(DXW_BELL, DXF_BP, 1), {74, 10, 18, 4, 50}, {78, 16, 22, 10, 60}},   /* RIM */
             {DX_MODE(DXW_BELL, DXF_BP, 0), {76, 0, 70, 0, 40}, {80, 0, 80, 4, 50}},   /* BELL */
-        },
-        {0, 6, 0, 9, 9, 0, 0, 11}, {0, 0, 0, 0, 0, 0, 0, 0},   /* the layers; the sends (bus << 6 | amount) */
-    },
-    {   /* LASER KIT (Skiff) */
-        {
-            {DX_MODE(DXW_SINE, DXF_LP, 1), {10, 110, 70, 0, 30}, {14, 127, 80, 6, 50}},   /* KICK */
-            {DX_MODE(DXW_FM, DXF_BP, 0) | DXM_SINE << 5, {50, 70, 50, 80, 90}, {56, 90, 60, 90, 100}},   /* SNARE */
-            {DX_MODE(DXW_SINE, DXF_BP, 0), {62, 0, 44, 127, 86}, {58, 0, 54, 127, 80}},   /* CLAP */
-            {DX_MODE(DXW_METAL, DXF_HP, 0), {106, 0, 14, 90, 120}, {110, 0, 18, 100, 124}},   /* HAT CL */
-            {DX_MODE(DXW_METAL, DXF_HP, 0), {106, 0, 56, 90, 116}, {110, 0, 64, 100, 120}},   /* HAT OP */
-            {DX_MODE(DXW_SINE, DXF_LP, 1) | DXM_SINE << 5, {40, 100, 60, 0, 40}, {48, 120, 70, 0, 60}},   /* TOM */
-            {DX_MODE(DXW_FM, DXF_HP, 1) | DXM_SINE << 5, {90, 90, 20, 0, 80}, {96, 110, 26, 0, 100}},   /* RIM */
-            {DX_MODE(DXW_SINE, DXF_LP, 0) | DXM_SINE << 5, {70, 127, 50, 0, 40}, {80, 127, 60, 0, 60}},   /* BELL */
         },
         {0, 6, 0, 9, 9, 0, 0, 11}, {0, 0, 0, 0, 0, 0, 0, 0},   /* the layers; the sends (bus << 6 | amount) */
     },
