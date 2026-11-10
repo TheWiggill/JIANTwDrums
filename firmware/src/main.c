@@ -369,7 +369,7 @@ static void fm1_main(void)
         settings_save();
     }
 #if FELUCCA_DUAL_CORE
-    /* (0.6.71) the second core, unless REC is held at power-on (one core this session: mc_off), a boot failed (a second
+    /* (0.6.71) the second core, unless REC + PLAY is held at power-on (one core this session: mc_off), a boot failed (a second
      * would enter UBOOT), or it was given up / beside a crash since power-on (hal/fm1_multicore.h fm1_mc_bar). Its entry
      * word is in the protected top of RAM: opened for it, interrupts off (up to 20 ms: under the splash) */
     mc_off = (uint8_t)((fm1_in.buttons >> panel.btn[B_REC]) & (fm1_in.buttons >> panel.btn[B_PLAY]) & 1u);   /* REC + PLAY */
