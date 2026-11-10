@@ -38,8 +38,8 @@ jobs:
         env:
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
           JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
-          # the new kits and presets grow the sound's tables: record the flash layout anew (tools/build.py)
-          FELUCCA_REPIN: '1'
+          # the new kits and presets grow the sound's tables: record the addresses anew, in the recorded order (tools/build.py)
+          FELUCCA_REPIN: 'keep'
         run: |
           pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
           set -o pipefail
